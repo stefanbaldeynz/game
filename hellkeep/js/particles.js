@@ -1,8 +1,9 @@
 // A pool of glowing particles drawn in one go. Used for fire, sparks and embers.
-// Each particle fades from white-hot yellow through orange and red to nothing.
+// Each particle fades from white-hot through orange and red (fire) or cyan and blue (frost) to nothing.
 
 class ParticleSystem {
-  constructor(scene, { max, size, texture, damping = 0.98 }) {
+  constructor(scene, { max, size, texture, damping = 0.98, palette = 'fire' }) {
+    this.frost = palette === 'frost';
     this.max = max;
     this.damping = damping;
     this.next = 0;
@@ -69,9 +70,15 @@ class ParticleSystem {
 
       const age = 1 - this.life[i] / this.maxLife[i];
       const fade = 1 - age;
-      this.colors[k] = fade;
-      this.colors[k + 1] = Math.max(0, 0.85 - age * 1.1) * fade;
-      this.colors[k + 2] = Math.max(0, 0.45 - age * 1.8) * fade;
+      if (this.frost) {
+        this.colors[k] = Math.max(0, 0.8 - age * 1.4) * fade;
+        this.colors[k + 1] = Math.max(0, 0.95 - age * 0.7) * fade;
+        this.colors[k + 2] = fade;
+      } else {
+        this.colors[k] = fade;
+        this.colors[k + 1] = Math.max(0, 0.85 - age * 1.1) * fade;
+        this.colors[k + 2] = Math.max(0, 0.45 - age * 1.8) * fade;
+      }
     }
     this.positionAttr.needsUpdate = true;
     this.colorAttr.needsUpdate = true;

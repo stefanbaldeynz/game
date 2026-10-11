@@ -40,6 +40,10 @@ function blotches(g, w, h, count, colors, minR, maxR, alpha) {
 }
 
 // Wandering jagged lines.
+function pick(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
+
 function cracks(g, w, h, count, color, width) {
   g.strokeStyle = color;
   g.lineWidth = width;
@@ -61,10 +65,11 @@ function cracks(g, w, h, count, color, width) {
 }
 
 const Textures = {
-  // Dark red-brown castle bricks. Sized for one wall face (4 wide x 7 tall).
+  // Castle bricks in the round's colours. Sized for one wall face (4 wide x 7 tall).
   castleWall() {
+    const t = THEME.wall;
     return canvasTexture(makeCanvas(256, 448, (g, w, h) => {
-      g.fillStyle = '#120c0a';
+      g.fillStyle = t.mortar;
       g.fillRect(0, 0, w, h);
       const rowH = 32;
       const brickW = 64;
@@ -72,75 +77,79 @@ const Textures = {
         const offset = row % 2 ? brickW / 2 : 0;
         const y = row * rowH;
         for (let x = -offset; x < w; x += brickW) {
-          g.fillStyle = `hsl(${rand(4, 18)}, ${rand(12, 24)}%, ${rand(20, 32)}%)`;
+          g.fillStyle = `hsl(${rand(...t.hue)}, ${rand(...t.sat)}%, ${rand(...t.light)}%)`;
           g.fillRect(x + 2, y + 2, brickW - 4, rowH - 4);
-          g.fillStyle = 'rgba(255, 220, 200, 0.08)';
+          g.fillStyle = 'rgba(255, 240, 230, 0.08)';
           g.fillRect(x + 2, y + 2, brickW - 4, 3);
           g.fillStyle = 'rgba(0, 0, 0, 0.35)';
           g.fillRect(x + 2, y + rowH - 5, brickW - 4, 3);
         }
       }
-      speckle(g, w, h, 6000, ['#000', '#3a2a24', '#6a4a3a'], 1, 3, 0.35);
+      speckle(g, w, h, 6000, t.speckle, 1, 3, 0.35);
       cracks(g, w, h, 14, 'rgba(0, 0, 0, 0.55)', 1);
-      // Soot and old blood near the floor.
+      // Soot (or frost) near the floor.
       const soot = g.createLinearGradient(0, h * 0.6, 0, h);
       soot.addColorStop(0, 'rgba(0, 0, 0, 0)');
-      soot.addColorStop(1, 'rgba(25, 0, 0, 0.6)');
+      soot.addColorStop(1, t.soot);
       g.fillStyle = soot;
       g.fillRect(0, 0, w, h);
     }));
   },
 
-  // Rough hell rock with a few glowing cracks.
+  // Rough rock cliffs with a few glowing cracks.
   rock() {
+    const t = THEME.rock;
     return canvasTexture(makeCanvas(256, 512, (g, w, h) => {
-      g.fillStyle = '#2e1610';
+      g.fillStyle = t.base;
       g.fillRect(0, 0, w, h);
-      blotches(g, w, h, 140, ['#120806', '#4a2218', '#3a1a12'], 10, 50, 0.3);
-      speckle(g, w, h, 7000, ['#000', '#5a2a1c', '#1a0a06'], 1, 3, 0.45);
+      blotches(g, w, h, 140, t.blotches, 10, 50, 0.3);
+      speckle(g, w, h, 7000, t.speckle, 1, 3, 0.45);
       cracks(g, w, h, 35, 'rgba(0, 0, 0, 0.7)', 2);
-      cracks(g, w, h, 8, 'rgba(255, 90, 20, 0.6)', 1.5);
+      cracks(g, w, h, 8, t.glow, 1.5);
     }));
   },
 
   // Big flagstones for the castle floor: 2x2 stones per map cell.
   castleFloor(repeatX, repeatY) {
+    const t = THEME.floor;
     return canvasTexture(makeCanvas(256, 256, (g, w, h) => {
-      g.fillStyle = '#0e0a09';
+      g.fillStyle = t.grout;
       g.fillRect(0, 0, w, h);
       const s = w / 2;
       for (let i = 0; i < 2; i++) {
         for (let j = 0; j < 2; j++) {
-          g.fillStyle = `hsl(${rand(0, 15)}, ${rand(6, 16)}%, ${rand(17, 25)}%)`;
+          g.fillStyle = `hsl(${rand(...t.hue)}, ${rand(...t.sat)}%, ${rand(...t.light)}%)`;
           g.fillRect(i * s + 3, j * s + 3, s - 6, s - 6);
         }
       }
-      speckle(g, w, h, 4000, ['#000', '#3a2a24', '#5a4034'], 1, 3, 0.35);
+      speckle(g, w, h, 4000, t.speckle, 1, 3, 0.35);
       cracks(g, w, h, 10, 'rgba(0, 0, 0, 0.5)', 1);
-      blotches(g, w, h, 3, ['#3a0503'], 12, 30, 0.3);
+      blotches(g, w, h, 3, [t.stain], 12, 30, 0.3);
     }), repeatX, repeatY);
   },
 
-  // Scorched ground outside the castle, cracked with glowing seams.
+  // The ground outside the castle, cracked with glowing seams.
   ground(repeatX, repeatY) {
+    const t = THEME.ground;
     return canvasTexture(makeCanvas(512, 512, (g, w, h) => {
-      g.fillStyle = '#221009';
+      g.fillStyle = t.base;
       g.fillRect(0, 0, w, h);
-      blotches(g, w, h, 120, ['#0e0604', '#3a1a10', '#2a120a'], 10, 45, 0.35);
-      speckle(g, w, h, 12000, ['#000', '#4a2414', '#140804'], 1, 3, 0.45);
-      cracks(g, w, h, 30, 'rgba(0, 0, 0, 0.75)', 2);
-      cracks(g, w, h, 9, 'rgba(255, 100, 20, 0.55)', 1.2);
+      blotches(g, w, h, 120, t.blotches, 10, 45, 0.35);
+      speckle(g, w, h, 12000, t.speckle, 1, 3, 0.45);
+      cracks(g, w, h, 30, t.crack, 2);
+      cracks(g, w, h, 9, t.glow, 1.2);
     }), repeatX, repeatY);
   },
 
-  // Dark stone ceiling crossed by heavy wooden beams.
+  // Dark stone ceiling crossed by heavy beams.
   ceiling(repeatX, repeatY) {
+    const t = THEME.ceiling;
     return canvasTexture(makeCanvas(256, 256, (g, w, h) => {
-      g.fillStyle = '#150e0b';
+      g.fillStyle = t.base;
       g.fillRect(0, 0, w, h);
-      speckle(g, w, h, 3000, ['#000', '#2a1a14'], 1, 3, 0.4);
+      speckle(g, w, h, 3000, ['#000', '#2a2a2a'], 1, 3, 0.4);
       for (const y of [0, 128]) {
-        g.fillStyle = '#2a170c';
+        g.fillStyle = t.beam;
         g.fillRect(0, y, w, 26);
         for (let i = 0; i < 6; i++) {
           g.fillStyle = 'rgba(0, 0, 0, 0.3)';
@@ -150,15 +159,67 @@ const Textures = {
     }), repeatX, repeatY);
   },
 
-  // Bright molten lava with dark floating crust.
-  lava() {
+  // Glowing pools: molten lava in round 1, freezing water in round 2.
+  hazard() {
+    const t = THEME.hazard;
     return canvasTexture(makeCanvas(256, 256, (g, w, h) => {
-      g.fillStyle = '#e04a00';
+      g.fillStyle = t.base;
       g.fillRect(0, 0, w, h);
-      blotches(g, w, h, 40, ['#ffb020', '#ff7a10'], 8, 30, 0.7);
-      blotches(g, w, h, 15, ['#ffe070'], 3, 10, 0.8);
-      blotches(g, w, h, 25, ['#2a0602', '#4a0e04'], 10, 35, 0.7);
-      cracks(g, w, h, 10, 'rgba(255, 220, 80, 0.8)', 2);
+      blotches(g, w, h, 40, t.bright, 8, 30, 0.7);
+      blotches(g, w, h, 15, t.hot, 3, 10, 0.8);
+      blotches(g, w, h, 25, t.crust, 10, 35, 0.7);
+      cracks(g, w, h, 10, t.cracks, 2);
+    }));
+  },
+
+  // Ice elephant hide: wrinkled blue-grey...
+  elephantSkin() {
+    return canvasTexture(makeCanvas(256, 256, (g, w, h) => {
+      g.fillStyle = '#5a6a7c';
+      g.fillRect(0, 0, w, h);
+      blotches(g, w, h, 60, ['#4a5a6c', '#6a7c90', '#3e4c5c'], 10, 40, 0.4);
+      g.lineWidth = 1.5;
+      for (let i = 0; i < 260; i++) {
+        const x = rand(0, w);
+        const y = rand(0, h);
+        g.strokeStyle = pick(['rgba(20, 30, 45, 0.5)', 'rgba(150, 170, 190, 0.35)']);
+        g.beginPath();
+        g.moveTo(x, y);
+        g.quadraticCurveTo(x + rand(5, 12), y + rand(-3, 3), x + rand(12, 26), y + rand(-2, 2));
+        g.stroke();
+      }
+      speckle(g, w, h, 3000, ['#2a3440', '#9ab0c4'], 1, 2, 0.4);
+    }));
+  },
+
+  // ...cracked with frozen blue fire (used as the glow map).
+  elephantCracks() {
+    return canvasTexture(makeCanvas(256, 256, (g, w, h) => {
+      g.fillStyle = '#000';
+      g.fillRect(0, 0, w, h);
+      cracks(g, w, h, 26, '#2aa8ff', 2.5);
+      cracks(g, w, h, 14, '#c8f4ff', 1);
+      speckle(g, w, h, 300, ['#5ad0ff'], 1, 2, 0.6);
+    }));
+  },
+
+  // The devil: deep red, with darker muscle shading...
+  devilSkin() {
+    return canvasTexture(makeCanvas(256, 256, (g, w, h) => {
+      g.fillStyle = '#8a1410';
+      g.fillRect(0, 0, w, h);
+      blotches(g, w, h, 50, ['#5a0a08', '#a82018', '#6e0e0a'], 12, 40, 0.5);
+      speckle(g, w, h, 4000, ['#3a0404', '#c03020'], 1, 2, 0.4);
+    }));
+  },
+
+  // ...and veins of hellfire.
+  devilVeins() {
+    return canvasTexture(makeCanvas(256, 256, (g, w, h) => {
+      g.fillStyle = '#000';
+      g.fillRect(0, 0, w, h);
+      cracks(g, w, h, 18, '#ff7a10', 2);
+      cracks(g, w, h, 10, '#ffd040', 1);
     }));
   },
 
@@ -194,24 +255,19 @@ const Textures = {
     }));
   },
 
-  // Burning red sky with a glowing horizon and drifting smoke.
+  // Sky with a glowing horizon and drifting clouds of smoke (or snow).
   sky() {
     return new THREE.CanvasTexture(makeCanvas(512, 256, (g, w, h) => {
       const grad = g.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, '#070101');
-      grad.addColorStop(0.3, '#2a0603');
-      grad.addColorStop(0.46, '#8a2208');
-      grad.addColorStop(0.5, '#d04a10');
-      grad.addColorStop(0.54, '#3a0804');
-      grad.addColorStop(1, '#0a0202');
+      for (const [stop, color] of THEME.sky) grad.addColorStop(stop, color);
       g.fillStyle = grad;
       g.fillRect(0, 0, w, h);
       g.save();
       g.beginPath();
       g.rect(0, 0, w, h * 0.48);
       g.clip();
-      blotches(g, w, h * 0.48, 60, ['#000', '#1a0302'], 20, 70, 0.35);
-      blotches(g, w, h * 0.48, 20, ['#ff5a10'], 10, 40, 0.08);
+      blotches(g, w, h * 0.48, 60, THEME.skyClouds, 20, 70, 0.35);
+      blotches(g, w, h * 0.48, 20, [THEME.skyGlow], 10, 40, 0.08);
       g.restore();
     }));
   },
@@ -271,16 +327,16 @@ const Textures = {
       };
       shape();
       const cloth = g.createLinearGradient(0, 0, w, 0);
-      cloth.addColorStop(0, '#3a0303');
-      cloth.addColorStop(0.5, '#7a0a08');
-      cloth.addColorStop(1, '#3a0303');
+      cloth.addColorStop(0, THEME.banner.dark);
+      cloth.addColorStop(0.5, THEME.banner.mid);
+      cloth.addColorStop(1, THEME.banner.dark);
       g.fillStyle = cloth;
       g.fill();
       g.save();
       g.clip();
       speckle(g, w, h, 1500, ['#000', '#9a1a10'], 1, 2, 0.3);
       g.restore();
-      g.strokeStyle = '#c89a3a';
+      g.strokeStyle = THEME.banner.trim;
       g.lineWidth = 4;
       g.strokeRect(10, 10, w - 20, h - 80);
       // Sigil: a ring with a flame inside and two horns.
@@ -288,13 +344,13 @@ const Textures = {
       g.beginPath();
       g.arc(w / 2, 100, 32, 0, Math.PI * 2);
       g.stroke();
-      g.fillStyle = '#ff9a20';
+      g.fillStyle = THEME.banner.flame;
       g.beginPath();
       g.moveTo(w / 2, 72);
       g.bezierCurveTo(w / 2 + 22, 95, w / 2 + 14, 122, w / 2, 124);
       g.bezierCurveTo(w / 2 - 14, 122, w / 2 - 22, 95, w / 2, 72);
       g.fill();
-      g.fillStyle = '#c89a3a';
+      g.fillStyle = THEME.banner.trim;
       for (const side of [-1, 1]) {
         g.beginPath();
         g.moveTo(w / 2 + side * 24, 78);

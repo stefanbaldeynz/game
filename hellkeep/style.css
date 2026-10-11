@@ -225,3 +225,81 @@ body {
   font-weight: 600;
   color: #ffcf9a;
 }
+
+/* ---------- Rounds, boss bar and jetpack fuel ---------- */
+
+.hidden {
+  display: none !important;
+}
+
+#round {
+  position: absolute;
+  top: 16px;
+  left: 20px;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffcf9a;
+  text-shadow: 0 2px 3px #000;
+}
+
+#overlay h2 {
+  margin: 4px 0 0;
+  font-weight: 400;
+  font-size: 24px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #ffcf9a;
+}
+
+#boss {
+  position: absolute;
+  top: 54px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(520px, calc(100% - 32px));
+  text-align: center;
+}
+
+.boss-name {
+  font-family: 'Metal Mania', 'Oswald', serif;
+  font-size: 28px;
+  color: #ff5a1a;
+  text-shadow: 0 0 12px rgba(255, 60, 0, 0.8), 0 2px 2px #000;
+}
+
+.bar {
+  height: 14px;
+  margin-top: 4px;
+  background: rgba(20, 0, 0, 0.75);
+  border: 1px solid rgba(255, 120, 60, 0.5);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+#boss-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #a01008, #ff5a1a);
+  transition: width 0.15s;
+}
+
+#fuel {
+  margin-top: 8px;
+  min-width: 120px;
+}
+
+#fuel .bar {
+  height: 8px;
+  border-color: rgba(120, 200, 255, 0.5);
+}
+
+#fuel-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #2a7ad0, #7fd8ff);
+}
+
+.controls {
+  grid-template-columns: repeat(2, auto);
+}

@@ -132,6 +132,43 @@ const Sound = (() => {
       tone({ type: 'sine', from: 520, to: 780, duration: 0.12, gain: 0.25 });
       tone({ type: 'sine', from: 780, to: 1170, duration: 0.15, gain: 0.2, delay: 0.08 });
     },
+    // Elephant trumpet: a brassy blast that bends up then down.
+    trumpet(volume = 1) {
+      tone({ type: 'sawtooth', from: 330, to: 520, duration: 0.35, gain: 0.18 * volume });
+      tone({ type: 'sawtooth', from: 520, to: 280, duration: 0.6, gain: 0.16 * volume, delay: 0.3 });
+      tone({ type: 'square', from: 660, to: 1040, duration: 0.35, gain: 0.05 * volume });
+    },
+    elephantDeath(volume = 1) {
+      tone({ type: 'sawtooth', from: 400, to: 90, duration: 1.2, gain: 0.2 * volume });
+      noise({ duration: 0.8, freq: 300, gain: 0.4 * volume, delay: 0.5 });
+    },
+    gore() {
+      noise({ duration: 0.2, freq: 900, gain: 0.4 });
+      tone({ type: 'square', from: 140, to: 60, duration: 0.2, gain: 0.2 });
+    },
+    thud() {
+      noise({ duration: 0.5, freq: 200, gain: 0.7 });
+      tone({ type: 'sine', from: 80, to: 35, duration: 0.4, gain: 0.4 });
+    },
+    roar() {
+      tone({ type: 'sawtooth', from: 110, to: 70, duration: 1.4, gain: 0.3 });
+      tone({ type: 'sawtooth', from: 165, to: 95, duration: 1.4, gain: 0.15 });
+      noise({ duration: 1.3, freq: 600, gain: 0.35 });
+    },
+    fireball() {
+      noise({ duration: 0.5, freq: 900, gain: 0.3 });
+      tone({ type: 'sawtooth', from: 200, to: 90, duration: 0.4, gain: 0.1 });
+    },
+    explosion(volume = 1) {
+      noise({ duration: 0.9, freq: 700, gain: 0.7 * volume });
+      tone({ type: 'sine', from: 90, to: 30, duration: 0.6, gain: 0.5 * volume });
+    },
+    jump() {
+      tone({ type: 'sine', from: 260, to: 420, duration: 0.12, gain: 0.08 });
+    },
+    jetpack() {
+      noise({ duration: 0.12, freq: 1600, gain: 0.12 });
+    },
     swap() {
       noise({ duration: 0.06, freq: 2500, gain: 0.2, type: 'highpass' });
     },
