@@ -5,7 +5,9 @@ A first-person shooter in the style of Doom and GoldenEye, in two rounds.
 - **Round 1: The Burning Keep.** Walk through the lava fields of hell to a burning castle. Flaming hellhounds guard every hall, and the **devil** waits by the throne. Kill them all to finish the round.
 - **Round 2: The Frozen Depths.** A frozen castle with freezing pools and falling snow. **Ice elephants** with huge tusks, burning with blue fire, roam its halls. Bring them all down to beat the game.
 
-There is a heavy metal soundtrack that the game plays live. Round 1 is fast thrash, and it switches to a heavier boss riff when the devil fights you. Round 2 is slow, crushing doom metal. Press **M** to turn it off or on.
+There is an industrial metal soundtrack in a Rammstein style that the game plays live: plucked-string guitar synthesis, double-tracked high-gain guitars, a stomping kick and synth pads. Round 1 marches in drop D, and it switches to a relentless boss riff when the devil fights you. Round 2 crawls along in low C. Press **M** to turn it off or on.
+
+The graphics use modern effects: bloom (fire, lava and eyes glow), a filmic colour grade with a vignette and film grain, anti-aliasing, reflective metal guns and bullet holes. Press **G** to switch to plain rendering on slower computers.
 
 ## Play
 
@@ -18,9 +20,10 @@ Open `index.html` in Chrome or Edge, then click to start. The game needs an inte
 | Left click | Shoot (hold to keep firing with the rifle) |
 | Shift | Sprint |
 | Space | Jump. Press again in mid-air to **double jump** |
-| Hold Space (after a double jump) | **Jetpack**, once you have it |
+| Hold Space (after a double jump) | **Fly with angel wings**, once you have them |
 | 1 / 2 / 3 or mouse wheel | Pistol / shotgun / rifle |
 | M | Music on/off |
+| G | Graphics high/low (switch to low if the game runs slowly) |
 | Esc | Pause |
 
 ## The rules
@@ -31,14 +34,14 @@ Open `index.html` in Chrome or Edge, then click to start. The game needs an inte
 - Enemies sleep until they see you, get close, or hear a gunshot nearby. Then they hunt you down.
 - **Lava and freezing water hurt**, but only when you're standing in them. Jump over them.
 - **Hellhounds** bite, but they can't reach you in the air.
-- **The devil** (1,200 health) throws fireballs. Strafe to dodge them. Up close he stabs with his trident. Below half health he gets enraged: he moves faster and throws three fireballs at once. When he dies he drops a **jetpack**.
-- **The jetpack:** double jump, then keep holding Space to fly. The fuel gauge under your health refills while you stand on the ground.
-- **Ice elephants** (320 health) rear up, trumpet, then **charge**. A charge hits hard and throws you back. A single jump isn't high enough to clear one, but a double jump or the jetpack is. If an elephant charges into a wall, it's stunned for a moment. Up close it gores you with its tusks.
-- Round 2 starts with all three guns and the jetpack.
+- **The devil** (1,200 health) throws fireballs. Strafe to dodge them. Up close he stabs with his trident. Below half health he gets enraged: he moves faster and throws three fireballs at once. When he dies he drops the **angel wings** he stole.
+- **Angel wings:** double jump, then keep holding Space to fly. You see your wings beating at the edges of the screen. The stamina gauge under your health refills while you stand on the ground.
+- **Ice elephants** (320 health) rear up, trumpet, then **charge**. A charge hits hard and throws you back. A single jump isn't high enough to clear one, but a double jump or the wings are. If an elephant charges into a wall, it's stunned for a moment. Up close it gores you with its tusks.
+- Round 2 starts with all three guns and the angel wings.
 
 ## How the code is organised
 
-Every file in `js/` is a plain script, loaded in this order by `index.html`:
+`index.html` loads three.js and its add-ons (bloom etc.) as modules from the web, then every file in `js/` in this order:
 
 | File | What it does |
 | --- | --- |
@@ -46,14 +49,16 @@ Every file in `js/` is a plain script, loaded in this order by `index.html`:
 | `rounds.js` | **The rounds:** each round's map (an ASCII grid you can edit), colour theme and starting gear |
 | `textures.js` | Draws every texture (bricks, lava, ice, the creatures' skins...) with code, so there are no image files |
 | `sound.js` | Makes every sound effect with the Web Audio API, so there are no audio files |
-| `music.js` | **The heavy metal soundtrack**, played live by code (distorted guitar, bass and drums). The riffs are written as letter patterns you can edit |
+| `music.js` | **The industrial metal soundtrack**, played live by code (plucked-string guitars, bass, drums, synth pads). The riffs are written as letter patterns you can edit |
 | `particles.js` | Fire, blue fire, sparks, embers and snow |
 | `level.js` | Builds the round's map in 3D, plus collision and enemy path finding |
 | `hounds.js` | The hellhound model, animation and AI |
 | `elephants.js` | The ice elephant model, animation and AI (walk, wind-up, charge, stun, gore) |
 | `devil.js` | The devil boss and his fireballs |
+| `wings.js` | The angel wings: the feathered models, the pickup and the wingbeat animation |
 | `weapons.js` | **Gun stats** (damage, fire rate, spread...) and the gun models |
-| `main.js` | Controls, jumping and the jetpack, shooting, pickups, the on-screen display (HUD) and the game loop |
+| `graphics.js` | Modern graphics: bloom, the filmic colour grade, anti-aliasing, reflections and bullet holes |
+| `main.js` | Controls, jumping and flying, shooting, pickups, the on-screen display (HUD) and the game loop |
 
 Easy things to try changing:
 
@@ -61,7 +66,8 @@ Easy things to try changing:
 - **The guns:** tweak the numbers in `WEAPONS` in `weapons.js`.
 - **The enemies:** the numbers at the top of `hounds.js`, `elephants.js` and `devil.js`.
 - **The music:** edit the riffs, drum patterns and tempo (`bpm`) in `SONGS` at the top of `music.js`. The comment there explains the letters.
-- **Jumping and the jetpack:** `JUMP_SPEED`, `GRAVITY` and the `JETPACK_` numbers at the top of `main.js`.
+- **Jumping and flying:** `JUMP_SPEED`, `GRAVITY` and the `WING_` numbers at the top of `main.js`.
+- **Brightness:** `exposure` in each theme in `rounds.js`.
 
 Tips:
 

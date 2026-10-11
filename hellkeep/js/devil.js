@@ -1,6 +1,6 @@
 // The devil: round 1's mini boss, waiting by the throne.
 // Hurls fireballs, stabs with his trident up close, and gets angrier below half health.
-// When he dies he drops a jetpack.
+// When he dies he drops a pair of angel wings.
 
 const DEVIL_HP = 1200;
 const DEVIL_RADIUS = 0.8;
@@ -202,8 +202,8 @@ class Devil {
     for (let i = 0; i < 160; i++) {
       game.fire.emit(this.x + rand(-0.8, 0.8), rand(0.5, 3.5), this.z + rand(-0.8, 0.8), rand(-5, 5), rand(0, 6), rand(-5, 5), rand(0.6, 1.4), 1);
     }
-    game.dropPickup('jetpack', this.x, this.z);
-    game.showMessage('The devil is dead! He dropped a JETPACK', 4);
+    game.dropPickup('wings', this.x, this.z);
+    game.showMessage('The devil is dead! He dropped his stolen ANGEL WINGS', 4);
     game.onEnemyKilled(this);
   }
 

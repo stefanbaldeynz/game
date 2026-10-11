@@ -226,7 +226,7 @@ body {
   color: #ffcf9a;
 }
 
-/* ---------- Rounds, boss bar and jetpack fuel ---------- */
+/* ---------- Rounds, boss bar and wing stamina ---------- */
 
 .hidden {
   display: none !important;
@@ -284,20 +284,20 @@ body {
   transition: width 0.15s;
 }
 
-#fuel {
+#wings {
   margin-top: 8px;
   min-width: 120px;
 }
 
-#fuel .bar {
+#wings .bar {
   height: 8px;
-  border-color: rgba(120, 200, 255, 0.5);
+  border-color: rgba(255, 220, 140, 0.5);
 }
 
-#fuel-fill {
+#wings-fill {
   height: 100%;
   width: 100%;
-  background: linear-gradient(90deg, #2a7ad0, #7fd8ff);
+  background: linear-gradient(90deg, #d8a840, #fff2c0);
 }
 
 .controls {

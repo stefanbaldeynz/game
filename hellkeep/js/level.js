@@ -190,7 +190,7 @@ function buildLevel(scene) {
   const outsideDepth = (MAP_H - CASTLE_ROWS) * CELL;
   addPlane(scene, Textures.castleFloor(MAP_W, CASTLE_ROWS), width, castleDepth, width / 2, 0, castleDepth / 2, -Math.PI / 2);
   addPlane(scene, Textures.ground(MAP_W / 2, (MAP_H - CASTLE_ROWS) / 2), width, outsideDepth, width / 2, 0, castleDepth + outsideDepth / 2, -Math.PI / 2);
-  // Double-sided so it also looks like a roof if you jetpack up over the walls.
+  // Double-sided so it also looks like a roof if you fly up over the walls.
   addPlane(scene, Textures.ceiling(MAP_W, CASTLE_ROWS), width, castleDepth, width / 2, WALL_H, castleDepth / 2, Math.PI / 2, THREE.DoubleSide);
 
   // Lava pools: unlit, so they glow.

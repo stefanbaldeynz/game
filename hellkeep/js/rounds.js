@@ -14,6 +14,7 @@ const HELL_THEME = {
   background: 0x1c0504,
   fogDensity: 0.03,
   hemi: [0xff9a6a, 0x3a1010, 1.4],
+  exposure: 1.45, // overall brightness with the modern graphics on
   wall: { mortar: '#120c0a', hue: [4, 18], sat: [12, 24], light: [20, 32], speckle: ['#000', '#3a2a24', '#6a4a3a'], soot: 'rgba(25, 0, 0, 0.6)' },
   rock: { base: '#2e1610', blotches: ['#120806', '#4a2218', '#3a1a12'], speckle: ['#000', '#5a2a1c', '#1a0a06'], glow: 'rgba(255, 90, 20, 0.6)' },
   floor: { grout: '#0e0a09', hue: [0, 15], sat: [6, 16], light: [17, 25], speckle: ['#000', '#3a2a24', '#5a4034'], stain: '#3a0503' },
@@ -34,6 +35,7 @@ const ICE_THEME = {
   background: 0x0a1424,
   fogDensity: 0.03,
   hemi: [0x9ad0ff, 0x101a30, 1.35],
+  exposure: 1.1,
   wall: { mortar: '#0a0f18', hue: [195, 215], sat: [15, 30], light: [28, 42], speckle: ['#000', '#2a3a4a', '#9ac8e8'], soot: 'rgba(200, 230, 255, 0.3)' },
   rock: { base: '#1a2a3a', blotches: ['#0a121c', '#3a5a78', '#2a4058'], speckle: ['#000', '#5a7a98', '#0a1420'], glow: 'rgba(90, 200, 255, 0.6)' },
   floor: { grout: '#0a0f16', hue: [200, 215], sat: [15, 30], light: [30, 42], speckle: ['#000', '#3a5068', '#bfe0f5'], stain: '#9fd8ff' },
@@ -58,7 +60,7 @@ const ROUNDS = {
     throne: [12, 1],
     towers: [[10, 18, 12], [14, 18, 12], [0, 18, 11], [24, 18, 11], [8, 9, 15], [16, 9, 15], [12, 0, 20]],
     banners: [[9, 1], [15, 1], [10, 10], [14, 10], [8, 19], [16, 19]],
-    loadout: { owned: { pistol: true, shotgun: true, rifle: false }, ammo: { bullets: 60, shells: 16 }, jetpack: false },
+    loadout: { owned: { pistol: true, shotgun: true, rifle: false }, ammo: { bullets: 60, shells: 16 }, wings: false },
     map: [
       '#########################',
       '#,,,,#,,,,,,,,,,,,,#,,,,#',
@@ -100,7 +102,7 @@ const ROUNDS = {
     throne: null,
     towers: [[10, 18, 12], [14, 18, 12], [0, 18, 11], [24, 18, 11], [8, 10, 15], [16, 10, 15], [12, 0, 20]],
     banners: [[9, 1], [15, 1], [10, 11], [14, 11], [8, 19], [16, 19]],
-    loadout: { owned: { pistol: true, shotgun: true, rifle: true }, ammo: { bullets: 140, shells: 24 }, jetpack: true },
+    loadout: { owned: { pistol: true, shotgun: true, rifle: true }, ammo: { bullets: 140, shells: 24 }, wings: true },
     map: [
       '#########################',
       '#,,,,,,,,,,,,,,,,,,,,,,a#',

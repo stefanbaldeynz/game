@@ -169,8 +169,10 @@ const Sound = (() => {
     jump() {
       tone({ type: 'sine', from: 260, to: 420, duration: 0.12, gain: 0.08 });
     },
-    jetpack() {
-      noise({ duration: 0.12, freq: 1600, gain: 0.12 });
+    // A deep whoosh of feathers on each downstroke.
+    wingFlap() {
+      noise({ duration: 0.28, freq: 380, gain: 0.35 });
+      noise({ duration: 0.18, freq: 1200, gain: 0.06, type: 'bandpass' });
     },
     swap() {
       noise({ duration: 0.06, freq: 2500, gain: 0.2, type: 'highpass' });

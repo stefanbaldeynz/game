@@ -2,7 +2,7 @@
 // Round 1: storm a castle in hell, put down every hellhound and the devil on the throne.
 // Round 2: the frozen depths, where ice elephants burning with blue fire roam.
 
-if (typeof THREE === 'undefined') {
+if (typeof THREE === 'undefined') { // (index.html also checks this while loading)
   document.getElementById('overlay-text').textContent =
     'Could not load the 3D engine (three.js). Check your internet connection and reload the page.';
   throw new Error('three.js failed to load');
@@ -19,10 +19,10 @@ const SHOT_RANGE = 70;
 
 const JUMP_SPEED = 6.5;      // each jump (you get two: the second one in mid-air)
 const GRAVITY = 18;
-const JETPACK_THRUST = 26;   // stronger than gravity, so you climb
-const JETPACK_MAX_RISE = 5;  // fastest climb speed
-const JETPACK_BURN = 0.33;   // fuel used per second (a full tank lasts about 3 seconds)
-const JETPACK_REFILL = 0.25; // fuel regained per second while standing on the ground
+const WING_LIFT = 26;        // stronger than gravity, so you climb
+const WING_MAX_RISE = 5;     // fastest climb speed
+const WING_TIRE = 0.33;      // stamina used per second of flying (full stamina lasts about 3 seconds)
+const WING_REST = 0.25;      // stamina regained per second while standing on the ground
 
 // ---------- Page elements ----------
 
@@ -42,8 +42,8 @@ const hud = {
   slots: [...document.querySelectorAll('#slots span')],
   boss: document.getElementById('boss'),
   bossFill: document.getElementById('boss-fill'),
-  fuel: document.getElementById('fuel'),
-  fuelFill: document.getElementById('fuel-fill'),
+  wings: document.getElementById('wings'),
+  wingsFill: document.getElementById('wings-fill'),
 };
 overlayRound.textContent = ROUND.title;
 overlayText.textContent = ROUND.intro;
@@ -60,9 +60,13 @@ document.getElementById('game').appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(THEME.background);
 scene.fog = new THREE.FogExp2(THEME.background, THEME.fogDensity);
-scene.add(new THREE.HemisphereLight(...THEME.hemi));
+// The fill light. Scaled down because the filmic tone curve brightens the mid-tones.
+const AMBIENT_SCALE = 0.8;
+const [skyColor, groundColor, ambient] = THEME.hemi;
+scene.add(new THREE.HemisphereLight(skyColor, groundColor, ambient * AMBIENT_SCALE));
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 400);
+// A wide field of view, like Unreal Tournament, for a fast arena-shooter feel.
+const camera = new THREE.PerspectiveCamera(85, window.innerWidth / window.innerHeight, 0.1, 400);
 camera.rotation.order = 'YXZ';
 
 // Lights up the world for a split second when you fire.
@@ -72,7 +76,7 @@ scene.add(gunLight);
 // The gun is drawn in its own scene on top of the world, so it never pokes through walls.
 const weaponScene = new THREE.Scene();
 const weaponCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.01, 10);
-weaponScene.add(new THREE.HemisphereLight(0xffc49a, 0x3a1010, 1.1));
+weaponScene.add(new THREE.HemisphereLight(0xffc49a, 0x3a1010, 0.5));
 const weaponKeyLight = new THREE.DirectionalLight(THEME.palette === 'frost' ? 0x9ad0ff : 0xff9a60, 0.9);
 weaponKeyLight.position.set(-1, 1, 0.5);
 weaponScene.add(weaponKeyLight);
@@ -80,9 +84,13 @@ const weaponFlashLight = new THREE.PointLight(0xffb060, 0, 3);
 weaponFlashLight.position.set(0.15, 0, -0.9);
 weaponScene.add(weaponFlashLight);
 
+// Bloom, filmic colour, anti-aliasing and reflections (see graphics.js). G switches it off.
+const graphics = createGraphics(renderer, scene, camera, weaponScene, weaponCamera);
+
 // ---------- World ----------
 
 const level = buildLevel(scene);
+const bulletHoles = new BulletHoles(scene);
 const glowTexture = Textures.glow();
 const ammoMaterial = new THREE.MeshStandardMaterial({ map: Textures.ammoCrate(), emissive: 0xffffff, emissiveIntensity: 0.25 });
 ammoMaterial.emissiveMap = ammoMaterial.map;
@@ -107,9 +115,8 @@ const game = {
   },
   ammo: { ...loadout.ammo },
   owned: { ...loadout.owned },
-  jetpack: loadout.jetpack,
-  fuel: 1,
-  jetSoundTimer: 0,
+  wings: loadout.wings,
+  stamina: 1,  // how much flying the wings have left (0 to 1)
   knock: { x: 0, z: 0 },
   weapon: 'shotgun',
   pendingWeapon: null,
@@ -166,26 +173,15 @@ for (const name of WEAPON_ORDER) {
   viewmodels[name] = vm;
 }
 
-// Twin fuel tanks with nozzles: the jetpack the devil drops.
-function buildJetpack() {
-  const group = new THREE.Group();
-  const metal = new THREE.MeshStandardMaterial({ color: 0x8a8f98, metalness: 0.8, roughness: 0.3 });
-  const red = new THREE.MeshStandardMaterial({ color: 0xa01810, metalness: 0.5, roughness: 0.4 });
-  for (const side of [-1, 1]) {
-    addPart(group, new THREE.CylinderGeometry(0.16, 0.16, 0.7, 14), red, side * 0.2, 0.1, 0);
-    addPart(group, new THREE.SphereGeometry(0.16, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), red, side * 0.2, 0.45, 0);
-    addPart(group, new THREE.CylinderGeometry(0.07, 0.12, 0.18, 10), metal, side * 0.2, -0.33, 0);
-  }
-  addPart(group, new THREE.BoxGeometry(0.5, 0.5, 0.12), metal, 0, 0.1, 0.18);
-  return group;
-}
+// The angel wings you see at the edges of the screen once you have them.
+const firstPersonWings = new FirstPersonWings(weaponScene);
 
 function createPickup(type, x, z) {
   let mesh;
   if (type === 'ammo') mesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.55), ammoMaterial);
   else if (type === 'health') mesh = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.45, 0.65), healthMaterial);
-  else if (type === 'jetpack') {
-    mesh = buildJetpack();
+  else if (type === 'wings') {
+    mesh = buildWingsPickup();
     mesh.scale.setScalar(1.6);
   } else {
     mesh = buildRifle().group;
@@ -193,7 +189,7 @@ function createPickup(type, x, z) {
   }
   mesh.position.set(x, 0.5, z);
   scene.add(mesh);
-  const colors = { health: 0x30ff60, jetpack: 0x40c0ff };
+  const colors = { health: 0x30ff60, wings: 0xffe08a };
   const glow = new THREE.Sprite(new THREE.SpriteMaterial({
     map: glowTexture,
     color: colors[type] || 0xffb030,
@@ -223,6 +219,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'Digit2') switchWeapon('shotgun');
   if (e.code === 'Digit3') switchWeapon('rifle');
   if (e.code === 'KeyM') showMessage(Music.toggle() ? 'Music on' : 'Music off', 1.5);
+  if (e.code === 'KeyG') showMessage(graphics.toggle() ? 'Graphics: high (bloom and film effects)' : 'Graphics: low (faster)', 2);
   if (e.code === 'Space') {
     e.preventDefault();
     if (!e.repeat) jump();
@@ -277,7 +274,7 @@ document.addEventListener('pointerlockchange', () => {
   const locked = document.pointerLockElement === renderer.domElement;
   if (locked && (game.state === 'menu' || game.state === 'paused')) {
     if (game.state === 'menu') {
-      const tip = game.jetpack ? ' Hold Space after a double jump to use the jetpack.' : ' Space to jump, twice to double jump.';
+      const tip = game.wings ? ' Double jump, then hold Space to fly with your angel wings.' : ' Space to jump, twice to double jump.';
       showMessage(ROUND.intro + tip, 5);
     }
     game.state = 'playing';
@@ -294,6 +291,7 @@ window.addEventListener('resize', () => {
   camera.aspect = weaponCamera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   weaponCamera.updateProjectionMatrix();
+  graphics.resize();
 });
 
 // ---------- Weapons and shooting ----------
@@ -368,13 +366,29 @@ function raySphere(origin, dir, sphere) {
 
 function shootRay(origin, dir, damage) {
   // Walk along the ray until it hits a wall, the floor or the ceiling.
+  // Also work out which surface it hit and exactly where, for the bullet hole.
   let wallT = SHOT_RANGE;
+  let surface = null;
   for (let t = 0.2; t < SHOT_RANGE; t += 0.08) {
     const x = origin.x + dir.x * t;
     const y = origin.y + dir.y * t;
     const z = origin.z + dir.z * t;
-    if (y <= 0 || y >= ceilingAt(x, z) || isWallAt(x, z)) {
+    const ceiling = ceilingAt(x, z);
+    if (y <= 0 || y >= ceiling || isWallAt(x, z)) {
       wallT = t;
+      const px = x - dir.x * 0.08; // the last point before the hit
+      const pz = z - dir.z * 0.08;
+      if (y <= 0) surface = { point: new THREE.Vector3(x, 0.01, z), normal: new THREE.Vector3(0, 1, 0) };
+      else if (y >= ceiling) surface = { point: new THREE.Vector3(x, ceiling - 0.01, z), normal: new THREE.Vector3(0, -1, 0) };
+      else if (cellOf(px) !== cellOf(x)) {
+        const side = px < x ? -1 : 1;
+        const faceX = (side < 0 ? cellOf(x) : cellOf(x) + 1) * CELL;
+        surface = { point: new THREE.Vector3(faceX, y, z), normal: new THREE.Vector3(side, 0, 0) };
+      } else {
+        const side = pz < z ? -1 : 1;
+        const faceZ = (side < 0 ? cellOf(z) : cellOf(z) + 1) * CELL;
+        surface = { point: new THREE.Vector3(x, y, faceZ), normal: new THREE.Vector3(0, 0, side) };
+      }
       break;
     }
   }
@@ -401,6 +415,7 @@ function shootRay(origin, dir, damage) {
     target.takeDamage(damage, dir);
     for (let i = 0; i < 6; i++) game.fire.emit(hx, hy, hz, rand(-2, 2), rand(0, 3), rand(-2, 2), rand(0.2, 0.45), 1);
   } else if (wallT < SHOT_RANGE) {
+    if (surface) bulletHoles.add(surface.point, surface.normal);
     for (let i = 0; i < 6; i++) {
       game.sparks.emit(hx, hy, hz, -dir.x * 2 + rand(-2, 2), rand(0, 3), -dir.z * 2 + rand(-2, 2), rand(0.2, 0.5), -9);
     }
@@ -535,25 +550,22 @@ function updatePlayer(dt) {
   if (game.mouseDown) tryFire();
 }
 
-// Jumping, double jumping, the jetpack and gravity.
+// Jumping, double jumping, flying with the angel wings, and gravity.
 function updateVertical(dt) {
   const p = game.player;
+  game.flying = false;
   if (p.grounded) {
-    game.fuel = Math.min(1, game.fuel + JETPACK_REFILL * dt);
+    game.stamina = Math.min(1, game.stamina + WING_REST * dt);
     return;
   }
-  // Hold Space after your double jump to fire up the jetpack.
-  const thrusting = game.jetpack && keys.Space && p.jumps >= 2 && game.fuel > 0 && p.vy < 1.5;
-  if (thrusting) {
-    p.vy = Math.min(JETPACK_MAX_RISE, p.vy + JETPACK_THRUST * dt);
-    game.fuel = Math.max(0, game.fuel - JETPACK_BURN * dt);
-    for (let i = 0; i < 3; i++) {
-      game.fire.emit(p.x + rand(-0.25, 0.25), p.y + 0.6, p.z + rand(-0.25, 0.25), rand(-0.4, 0.4), rand(-6, -3), rand(-0.4, 0.4), rand(0.15, 0.3), 0);
-    }
-    game.jetSoundTimer -= dt;
-    if (game.jetSoundTimer <= 0) {
-      game.jetSoundTimer = 0.1;
-      Sound.jetpack();
+  // Hold Space after your double jump to beat your wings and fly.
+  game.flying = game.wings && keys.Space && p.jumps >= 2 && game.stamina > 0 && p.vy < 1.5;
+  if (game.flying) {
+    p.vy = Math.min(WING_MAX_RISE, p.vy + WING_LIFT * dt);
+    game.stamina = Math.max(0, game.stamina - WING_TIRE * dt);
+    // A trail of glowing motes drifting down behind you.
+    if (Math.random() < dt * 30) {
+      game.sparks.emit(p.x + rand(-0.8, 0.8), p.y + rand(0.8, 1.6), p.z + rand(-0.8, 0.8), rand(-0.3, 0.3), rand(-1.5, -0.5), rand(-0.3, 0.3), rand(0.6, 1.2), 0);
     }
   }
   p.vy -= GRAVITY * dt;
@@ -600,10 +612,10 @@ function collect(pickup) {
     game.ammo.bullets = Math.min(MAX_AMMO.bullets, game.ammo.bullets + 40);
     showMessage('You got the rifle! Press 3', 3);
     switchWeapon('rifle');
-  } else if (pickup.type === 'jetpack') {
-    game.jetpack = true;
-    game.fuel = 1;
-    showMessage('JETPACK! Double jump, then hold Space to fly', 4);
+  } else if (pickup.type === 'wings') {
+    game.wings = true;
+    game.stamina = 1;
+    showMessage('ANGEL WINGS! Double jump, then hold Space to fly', 4);
   }
   pickup.taken = true;
   scene.remove(pickup.mesh);
@@ -650,6 +662,14 @@ function updateViewmodel(dt) {
   vm.group.position.set(vm.base.x + bobX, vm.base.y + bobY + airLag - game.lower * 0.4, vm.base.z + game.recoil * 0.08);
   vm.group.rotation.set(game.recoil * 0.25, 0.06, 0); // angled slightly toward the crosshair
   vm.group.visible = game.state !== 'dead';
+
+  // Angel wings at the edges of the screen: folded on the ground, beating while you fly.
+  const downstroke = firstPersonWings.update(dt, {
+    owned: game.wings && game.state !== 'dead',
+    airborne: !game.player.grounded,
+    flying: game.flying && game.state === 'playing',
+  });
+  if (downstroke) Sound.wingFlap();
 
   // Shotgun pump slides back and forward after each shot.
   if (vm.pump) {
@@ -753,8 +773,8 @@ function updateHud(dt) {
   const boss = game.enemies.find((e) => e.type === 'devil' && e.alive && e.awake);
   hud.boss.classList.toggle('hidden', !boss);
   if (boss) hud.bossFill.style.width = `${(boss.hp / boss.maxHp) * 100}%`;
-  hud.fuel.classList.toggle('hidden', !game.jetpack);
-  hud.fuelFill.style.width = `${game.fuel * 100}%`;
+  hud.wings.classList.toggle('hidden', !game.wings);
+  hud.wingsFill.style.width = `${game.stamina * 100}%`;
 
   game.hurt = Math.max(0, game.hurt - dt * 1.5);
   hud.damage.style.opacity = Math.min(0.85, game.hurt);
@@ -794,10 +814,7 @@ function frame() {
   game.sparks.update(dt);
   updateHud(dt);
 
-  renderer.clear();
-  renderer.render(scene, camera);
-  renderer.clearDepth();
-  renderer.render(weaponScene, weaponCamera);
+  graphics.render(t);
 }
 
 // Dev helper: open index.html#preview to start without mouse capture (handy for screenshots).
