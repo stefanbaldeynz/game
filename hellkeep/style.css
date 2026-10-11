@@ -1,0 +1,227 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #0a0202;
+  color: #f3d9c4;
+  font-family: 'Oswald', system-ui, sans-serif;
+  user-select: none;
+}
+
+#game,
+#game canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---------- HUD ---------- */
+
+#hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+#damage {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(120, 0, 0, 0) 35%, rgba(170, 0, 0, 0.9) 100%);
+  opacity: 0;
+}
+
+#crosshair {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+}
+
+#crosshair::before,
+#crosshair::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 220, 180, 0.85);
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.9);
+}
+
+#crosshair::before {
+  left: 11px;
+  top: 0;
+  width: 2px;
+  height: 24px;
+}
+
+#crosshair::after {
+  top: 11px;
+  left: 0;
+  width: 24px;
+  height: 2px;
+}
+
+#message {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 26px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #ffcf8a;
+  text-shadow: 0 0 12px rgba(255, 90, 0, 0.8), 0 2px 2px #000;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+#hounds {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  font-size: 20px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ff9a5a;
+  text-shadow: 0 2px 3px #000;
+}
+
+.panel {
+  position: absolute;
+  bottom: 18px;
+  padding: 10px 18px 8px;
+  background: linear-gradient(rgba(30, 6, 4, 0.55), rgba(10, 2, 2, 0.8));
+  border: 1px solid rgba(255, 120, 60, 0.35);
+  border-radius: 6px;
+}
+
+#health-box {
+  left: 20px;
+}
+
+#weapon-box {
+  right: 20px;
+  text-align: right;
+}
+
+.label {
+  font-size: 14px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #c98b6a;
+}
+
+.value {
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 1;
+  color: #ffd9b0;
+  text-shadow: 0 0 10px rgba(255, 80, 0, 0.6);
+}
+
+.value.low {
+  color: #ff4a3a;
+}
+
+#slots {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+#slots span {
+  color: rgba(255, 200, 170, 0.2);
+}
+
+#slots span.owned {
+  color: rgba(255, 200, 170, 0.6);
+}
+
+#slots span.active {
+  color: #ffb060;
+  text-shadow: 0 0 8px rgba(255, 120, 0, 0.8);
+}
+
+/* ---------- Menu / pause / game over screen ---------- */
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  text-align: center;
+  background: radial-gradient(ellipse at center, rgba(40, 4, 2, 0.5), rgba(5, 0, 0, 0.92));
+  cursor: pointer;
+}
+
+#overlay.hidden {
+  display: none;
+}
+
+#overlay h1 {
+  margin: 0;
+  font-family: 'Metal Mania', 'Oswald', serif;
+  font-weight: 400;
+  font-size: clamp(56px, 12vw, 128px);
+  letter-spacing: 0.04em;
+  color: #ff5a1a;
+  text-shadow: 0 0 30px rgba(255, 60, 0, 0.8), 0 4px 0 #3a0500;
+}
+
+#overlay p {
+  max-width: 560px;
+  font-size: 18px;
+  line-height: 1.5;
+  color: #e8c2a8;
+}
+
+#overlay button {
+  font: inherit;
+  font-size: 22px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 12px 32px;
+  color: #ffe0c0;
+  background: rgba(120, 20, 5, 0.6);
+  border: 1px solid #ff6a2a;
+  border-radius: 4px;
+  cursor: pointer;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    box-shadow: 0 0 24px rgba(255, 90, 20, 0.7);
+  }
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 6px 26px;
+  margin-top: 28px;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #b88a72;
+}
+
+.controls b {
+  font-weight: 600;
+  color: #ffcf9a;
+}

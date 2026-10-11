@@ -3,13 +3,90 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Coin Dash</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Stefan's Game Collection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 48px 16px;
+      background: radial-gradient(ellipse at top, #1e2440, #0b0d18 70%);
+      color: #e8e8f0;
+      font-family: 'Fredoka', system-ui, sans-serif;
+    }
+    h1 {
+      margin: 0 0 8px;
+      text-align: center;
+      font-size: clamp(32px, 6vw, 52px);
+      font-weight: 600;
+    }
+    .sub {
+      margin: 0 0 40px;
+      text-align: center;
+      opacity: 0.7;
+    }
+    .games {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      max-width: 980px;
+      margin: 0 auto;
+    }
+    a.card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 24px;
+      border-radius: 14px;
+      color: inherit;
+      text-decoration: none;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    a.card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+    }
+    .card h2 { margin: 0; font-size: 26px; font-weight: 600; }
+    .card p { margin: 0; line-height: 1.45; opacity: 0.85; }
+    .card .tag { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; }
+    .astro { background: linear-gradient(160deg, #123a52, #0b1424); }
+    .astro h2 { color: #4cc9f0; }
+    .hell { background: linear-gradient(160deg, #4a0c06, #170303); }
+    .hell h2 { color: #ff6a2a; }
+    .kiwi { background: linear-gradient(160deg, #2f5a24, #13240f); }
+    .kiwi h2 { color: #f2c94c; }
+    .coin { background: linear-gradient(160deg, #3a3354, #17142a); }
+    .coin h2 { color: #f5c542; }
+  </style>
 </head>
 <body>
-  <h1>Coin Dash</h1>
-  <canvas id="game" width="640" height="480"></canvas>
-  <p class="help">Move with arrow keys or WASD. Grab coins and dodge the red blocks. Press Space to restart.</p>
-  <script src="game.js"></script>
+  <h1>Game Collection</h1>
+  <p class="sub">Pick a game. They all run right here in the browser.</p>
+  <div class="games">
+    <a class="card astro" href="astro-blaster/index.html">
+      <span class="tag">Arcade shooter · 2D</span>
+      <h2>Astro Blaster</h2>
+      <p>Fly The Chow Hauler, blast asteroids and dodge the debris.</p>
+    </a>
+    <a class="card hell" href="hellkeep/index.html">
+      <span class="tag">First-person shooter · 3D</span>
+      <h2>Hellkeep</h2>
+      <p>Storm a castle in hell with a pistol, shotgun and rifle. Put down every flaming hellhound.</p>
+    </a>
+    <a class="card kiwi" href="kiwi-canyon/index.html">
+      <span class="tag">Tower defense + FPS · 3D</span>
+      <h2>Kiwi Canyon</h2>
+      <p>Build towers on the rim of a New Zealand canyon, then jump down with your rifle to stop 10 waves of kiwis.</p>
+    </a>
+    <a class="card coin" href="coin-dash/index.html">
+      <span class="tag">Arcade · 2D · the very first game</span>
+      <h2>Coin Dash</h2>
+      <p>Grab the coins and dodge the bouncing red blocks.</p>
+    </a>
+  </div>
 </body>
 </html>

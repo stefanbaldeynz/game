@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hellkeep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Metal+Mania&family=Oswald:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game"></div>
+
+  <div id="hud">
+    <div id="damage"></div>
+    <div id="crosshair"></div>
+    <div id="message"></div>
+    <div id="hounds"></div>
+    <div id="health-box" class="panel">
+      <div class="label">Health</div>
+      <div id="health" class="value">100</div>
+    </div>
+    <div id="weapon-box" class="panel">
+      <div id="slots">
+        <span data-weapon="pistol">1 Pistol</span>
+        <span data-weapon="shotgun">2 Shotgun</span>
+        <span data-weapon="rifle">3 Rifle</span>
+      </div>
+      <div id="ammo-label" class="label">Shells</div>
+      <div id="ammo" class="value">16</div>
+    </div>
+  </div>
+
+  <div id="overlay">
+    <h1 id="overlay-title">Hellkeep</h1>
+    <p id="overlay-text">The gates of the castle in hell stand open. Hellhounds wreathed in fire guard every hall. Go in and put them all down.</p>
+    <button id="overlay-button" type="button">Click to play</button>
+    <div class="controls">
+      <div><b>WASD</b> move</div>
+      <div><b>Mouse</b> look</div>
+      <div><b>Click</b> shoot</div>
+      <div><b>Shift</b> sprint</div>
+      <div><b>1 2 3</b> / wheel: guns</div>
+      <div><b>Esc</b> pause</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/textures.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/level.js"></script>
+  <script src="js/hounds.js"></script>
+  <script src="js/weapons.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
