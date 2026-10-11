@@ -229,6 +229,24 @@ const Textures = {
       g.fillRect(0, 0, w, h);
       blotches(g, w, h, 50, ['#5a0a08', '#a82018', '#6e0e0a'], 12, 40, 0.5);
       speckle(g, w, h, 4000, ['#3a0404', '#c03020'], 1, 2, 0.4);
+      // Tribal tattoos: dark sweeping curves and points.
+      g.strokeStyle = 'rgba(30, 0, 0, 0.75)';
+      g.lineCap = 'round';
+      for (let i = 0; i < 9; i++) {
+        let x = rand(0, w);
+        let y = rand(0, h);
+        g.lineWidth = rand(3, 6);
+        g.beginPath();
+        g.moveTo(x, y);
+        for (let s = 0; s < 3; s++) {
+          const cx = x + rand(-40, 40);
+          const cy = y + rand(-40, 40);
+          x += rand(-50, 50);
+          y += rand(-50, 50);
+          g.quadraticCurveTo(cx, cy, x, y);
+        }
+        g.stroke();
+      }
     }));
   },
 
@@ -301,6 +319,157 @@ const Textures = {
       g.stroke();
     }));
     return texture;
+  },
+
+  // Glazed white porcelain painted with blue Delft-style vines, curls, flowers and birds.
+  porcelain() {
+    return canvasTexture(makeCanvas(512, 256, (g, w, h) => {
+      g.fillStyle = '#f5f6f8';
+      g.fillRect(0, 0, w, h);
+      const blues = ['#1f3f95', '#2a52b0', '#3a64c4'];
+      g.lineCap = 'round';
+      // Long scrolling vines.
+      for (let i = 0; i < 8; i++) {
+        g.strokeStyle = pick(blues);
+        g.lineWidth = rand(2, 4);
+        let x = rand(0, w);
+        let y = rand(0, h);
+        g.beginPath();
+        g.moveTo(x, y);
+        for (let s = 0; s < 5; s++) {
+          const cx = x + rand(-60, 60);
+          const cy = y + rand(-50, 50);
+          x += rand(-80, 80);
+          y += rand(-50, 50);
+          g.quadraticCurveTo(cx, cy, x, y);
+        }
+        g.stroke();
+      }
+      // Little curls.
+      for (let i = 0; i < 34; i++) {
+        const cx = rand(0, w);
+        const cy = rand(0, h);
+        const r = rand(6, 16);
+        g.strokeStyle = pick(blues);
+        g.lineWidth = 1.5;
+        g.beginPath();
+        for (let a = 0; a < Math.PI * 3; a += 0.2) {
+          const rr = r * (1 - a / (Math.PI * 3.2));
+          g.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+        }
+        g.stroke();
+      }
+      // Leaves.
+      for (let i = 0; i < 70; i++) {
+        g.fillStyle = pick(blues);
+        g.beginPath();
+        g.ellipse(rand(0, w), rand(0, h), rand(3, 8), rand(1.5, 3), rand(0, Math.PI), 0, Math.PI * 2);
+        g.fill();
+      }
+      // Flowers.
+      for (let i = 0; i < 12; i++) {
+        const cx = rand(0, w);
+        const cy = rand(0, h);
+        const r = rand(7, 13);
+        g.fillStyle = pick(blues);
+        for (let p = 0; p < 6; p++) {
+          const a = (p / 6) * Math.PI * 2;
+          g.beginPath();
+          g.ellipse(cx + Math.cos(a) * r * 0.7, cy + Math.sin(a) * r * 0.7, r * 0.45, r * 0.25, a, 0, Math.PI * 2);
+          g.fill();
+        }
+        g.fillStyle = '#f5f6f8';
+        g.beginPath();
+        g.arc(cx, cy, r * 0.25, 0, Math.PI * 2);
+        g.fill();
+      }
+      // Birds in flight.
+      for (let i = 0; i < 4; i++) {
+        const cx = rand(20, w - 20);
+        const cy = rand(20, h - 20);
+        g.fillStyle = pick(blues);
+        g.beginPath();
+        g.ellipse(cx, cy, 10, 4, -0.3, 0, Math.PI * 2);
+        g.fill();
+        g.beginPath();
+        g.moveTo(cx - 2, cy - 2);
+        g.quadraticCurveTo(cx - 8, cy - 16, cx + 6, cy - 18);
+        g.quadraticCurveTo(cx + 2, cy - 8, cx + 4, cy - 2);
+        g.fill();
+      }
+    }, 2));
+  },
+
+  // Engraved silver scrollwork for the shotgun's receiver plates.
+  engraving() {
+    return canvasTexture(makeCanvas(256, 128, (g, w, h) => {
+      g.fillStyle = '#b8bcc4';
+      g.fillRect(0, 0, w, h);
+      g.lineWidth = 2;
+      for (let i = 0; i < 22; i++) {
+        const cx = rand(0, w);
+        const cy = rand(0, h);
+        const r = rand(8, 20);
+        g.strokeStyle = pick(['#5a5e68', '#70747e']);
+        g.beginPath();
+        for (let a = 0; a < Math.PI * 3.5; a += 0.15) {
+          const rr = r * (1 - a / (Math.PI * 3.7));
+          g.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+        }
+        g.stroke();
+      }
+      g.strokeStyle = '#4a4e58';
+      g.lineWidth = 3;
+      g.strokeRect(4, 4, w - 8, h - 8);
+    }, 2));
+  },
+
+  // The "UT FLAK SHOTGUN" lettering on the front grip (see-through background).
+  flakLabel() {
+    return colorTexture(makeCanvas(256, 48, (g, w, h) => {
+      g.fillStyle = '#2a3442';
+      g.font = 'bold 30px "Arial Black", Impact, sans-serif';
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('UT FLAK SHOTGUN', w / 2, h / 2 + 1);
+    }, 2));
+  },
+
+  // Black leather with creases (jacket, trousers, boots).
+  leather() {
+    return canvasTexture(makeCanvas(256, 256, (g, w, h) => {
+      g.fillStyle = '#141212';
+      g.fillRect(0, 0, w, h);
+      blotches(g, w, h, 40, ['#0a0909', '#22201f'], 10, 40, 0.5);
+      speckle(g, w, h, 4000, ['#000', '#2c2a28'], 1, 2, 0.5);
+      g.strokeStyle = 'rgba(70, 66, 62, 0.5)';
+      g.lineWidth = 1;
+      for (let i = 0; i < 40; i++) {
+        const x = rand(0, w);
+        const y = rand(0, h);
+        g.beginPath();
+        g.moveTo(x, y);
+        g.quadraticCurveTo(x + rand(-10, 10), y + rand(5, 15), x + rand(-20, 20), y + rand(15, 35));
+        g.stroke();
+      }
+    }));
+  },
+
+  // The patch on the devil's jacket.
+  patch() {
+    return colorTexture(makeCanvas(128, 64, (g, w, h) => {
+      g.fillStyle = '#1a0606';
+      g.fillRect(0, 0, w, h);
+      g.strokeStyle = '#a01010';
+      g.setLineDash([4, 3]);
+      g.lineWidth = 2;
+      g.strokeRect(4, 4, w - 8, h - 8);
+      g.fillStyle = '#e02020';
+      g.font = 'bold 22px Impact, "Arial Black", sans-serif';
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('HELLKEEP', w / 2, h / 2 + 1);
+    }, 2));
   },
 
   // A bullet hole: dark pit with a scorched ring and a few cracks (see-through around it).

@@ -8,6 +8,7 @@
 //   T  brazier              P  player start
 //   H  hellhound            E  ice elephant           D  the devil (boss)
 //   a  ammo crate           h  health box             f  rifle
+//   s  the Flak Shotgun on its display pedestal
 // North is the top. Rows 0-18 are inside the castle (they get a ceiling).
 
 const HELL_THEME = {
@@ -60,7 +61,7 @@ const ROUNDS = {
     throne: [12, 1],
     towers: [[10, 18, 12], [14, 18, 12], [0, 18, 11], [24, 18, 11], [8, 9, 15], [16, 9, 15], [12, 0, 20]],
     banners: [[9, 1], [15, 1], [10, 10], [14, 10], [8, 19], [16, 19]],
-    loadout: { owned: { pistol: true, shotgun: true, rifle: false }, ammo: { bullets: 60, shells: 16 }, wings: false },
+    loadout: { owned: { pistol: true, shotgun: false, rifle: true }, ammo: { bullets: 150, shells: 0 }, wings: false },
     map: [
       '#########################',
       '#,,,,#,,,,,,,,,,,,,#,,,,#',
@@ -78,7 +79,7 @@ const ROUNDS = {
       '#,,,,,,,,,,,,,,,,,,,,,,,#',
       '#,,,a,,,#,,,,,,,#,,,h,,,#',
       '#,,H,,,,#,,,,,,,#,,,,H,,#',
-      '#,,,,,,,#,,,f,,,#,,,,,,,#',
+      '#,,,,,,,#,,,s,,,#,,,,,,,#',
       '#,h,,,,,#,,,,,,,#,,,,,a,#',
       '###########,,,###########',
       'R.......................R',

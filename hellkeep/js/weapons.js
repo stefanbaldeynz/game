@@ -14,7 +14,7 @@ const WEAPONS = {
     sound: 'pistol',
   },
   shotgun: {
-    name: 'Shotgun',
+    name: 'Flak Shotgun',
     ammo: 'shells',
     damage: 11,
     pellets: 9,
@@ -69,22 +69,105 @@ function buildPistol() {
   return { group, muzzle: new THREE.Vector3(0, 0.035, -0.24), base: new THREE.Vector3(0.15, -0.16, -0.4) };
 }
 
+let flakTextures = null;
+
+// The Flak Shotgun: four chrome barrels, glazed Delft-blue porcelain, gold bands,
+// engraved silver, a scope and glowing cyan energy cells.
 function buildShotgun() {
+  if (!flakTextures) {
+    flakTextures = { porcelain: Textures.porcelain(), engraving: Textures.engraving(), label: Textures.flakLabel() };
+  }
+  const chrome = new THREE.MeshStandardMaterial({ color: 0xe0e3e8, metalness: 1, roughness: 0.08, envMapIntensity: 0.8 });
+  const gold = new THREE.MeshStandardMaterial({ color: 0xd8ac48, metalness: 1, roughness: 0.25 });
+  const porcelain = new THREE.MeshPhysicalMaterial({
+    map: flakTextures.porcelain,
+    color: 0xb8bec8,       // tones the white down so the blue painting survives the bloom
+    envMapIntensity: 0.35,
+    roughness: 0.2,
+    clearcoat: 0.6,        // the shiny glaze
+    clearcoatRoughness: 0.05,
+  });
+  const engraved = new THREE.MeshStandardMaterial({
+    map: flakTextures.engraving,
+    bumpMap: flakTextures.engraving,
+    bumpScale: 0.6,
+    metalness: 1,
+    roughness: 0.3,
+  });
+  const glow = new THREE.MeshBasicMaterial({ color: 0x7ff6ff }); // bright enough to bloom
+  const dark = new THREE.MeshBasicMaterial({ color: 0x050505 });
+  const label = new THREE.MeshBasicMaterial({ map: flakTextures.label, transparent: true });
   const group = new THREE.Group();
-  const steel = gunMetal(0x2e3034);
-  const wood = gunWood();
-  addPart(group, tube(0.022, 0.7), steel, 0, 0.045, -0.37);  // barrel
-  addPart(group, tube(0.018, 0.55), steel, 0, 0, -0.3);      // magazine tube
-  const pump = addPart(group, tube(0.038, 0.2), wood, 0, 0, -0.36);
-  addPart(group, new THREE.BoxGeometry(0.07, 0.1, 0.24), steel, 0, 0.02, 0.06);       // receiver
-  addPart(group, new THREE.BoxGeometry(0.055, 0.12, 0.3), wood, 0, -0.04, 0.32).rotation.x = 0.15; // stock
-  addPart(group, new THREE.BoxGeometry(0.012, 0.018, 0.02), steel, 0, 0.075, -0.69); // bead sight
+
+  // Four chrome barrels in a 2x2 cluster, sleeved in porcelain at the back.
+  for (const [x, y] of [[-0.037, 0.087], [0.037, 0.087], [-0.037, 0.013], [0.037, 0.013]]) {
+    addPart(group, tube(0.033, 0.46), chrome, x, y, -0.55);
+    addPart(group, tube(0.038, 0.03), chrome, x, y, -0.77); // muzzle rim
+    const bore = addPart(group, new THREE.CircleGeometry(0.026, 16), dark, x, y, -0.786);
+    bore.rotation.y = Math.PI;
+    addPart(group, tube(0.039, 0.24), porcelain, x, y, -0.2);
+  }
+  for (const z of [-0.33, -0.08]) addPart(group, tube(0.088, 0.02), gold, 0, 0.05, z);
+
+  // Glowing energy cells along both sides, capped in chrome.
+  for (const side of [-1, 1]) {
+    addPart(group, tube(0.013, 0.2), glow, side * 0.08, 0.05, -0.2);
+    addPart(group, tube(0.018, 0.02), chrome, side * 0.08, 0.05, -0.31);
+    addPart(group, tube(0.018, 0.02), chrome, side * 0.08, 0.05, -0.09);
+  }
+
+  // Chrome drum, then a porcelain receiver with engraved silver side plates and a hammer.
+  addPart(group, tube(0.07, 0.1), chrome, 0, 0.05, -0.02);
+  addPart(group, new THREE.BoxGeometry(0.1, 0.13, 0.2), porcelain, 0, 0.03, 0.12);
+  for (const side of [-1, 1]) {
+    const plate = addPart(group, new THREE.PlaneGeometry(0.17, 0.1), engraved, side * 0.0505, 0.03, 0.12);
+    plate.rotation.y = side * Math.PI / 2;
+  }
+  addPart(group, new THREE.BoxGeometry(0.02, 0.05, 0.03), chrome, 0, 0.12, 0.2).rotation.x = -0.4;
+
+  // Scope with a glowing cyan lens, on gold mounts.
+  addPart(group, tube(0.024, 0.26), chrome, 0, 0.17, -0.06);
+  addPart(group, tube(0.027, 0.12), porcelain, 0, 0.17, -0.06);
+  addPart(group, tube(0.032, 0.03), chrome, 0, 0.17, -0.2);
+  const lens = addPart(group, new THREE.CircleGeometry(0.024, 16), glow, 0, 0.17, -0.216);
+  lens.rotation.y = Math.PI;
+  for (const z of [-0.12, 0.02]) addPart(group, new THREE.BoxGeometry(0.02, 0.05, 0.02), gold, 0, 0.135, z);
+
+  // Trigger guard and trigger.
+  const guard = addPart(group, new THREE.TorusGeometry(0.04, 0.007, 8, 20, Math.PI), chrome, 0, -0.04, 0.14);
+  guard.rotation.set(0, Math.PI / 2, Math.PI);
+  addPart(group, new THREE.BoxGeometry(0.008, 0.035, 0.012), chrome, 0, -0.035, 0.13);
+
+  // Front grip angled down under the barrels: label, gauge, glowing window, chrome end plate.
+  const fore = new THREE.Group();
+  fore.position.set(0, -0.03, -0.3);
+  fore.rotation.x = 0.5;
+  group.add(fore);
+  addPart(fore, new THREE.BoxGeometry(0.07, 0.3, 0.1), porcelain, 0, -0.15, 0);
+  addPart(fore, new THREE.BoxGeometry(0.075, 0.02, 0.105), chrome, 0, -0.31, 0);
+  addPart(fore, new THREE.BoxGeometry(0.072, 0.06, 0.03), glow, 0, -0.22, 0.035);
+  for (const side of [-1, 1]) {
+    const text = addPart(fore, new THREE.PlaneGeometry(0.24, 0.045), label, side * 0.0355, -0.15, -0.02);
+    text.rotation.set(0, side * Math.PI / 2, Math.PI / 2);
+    const gauge = addPart(fore, new THREE.CircleGeometry(0.018, 16), glow, side * 0.0356, -0.05, 0.02);
+    gauge.rotation.y = side * Math.PI / 2;
+    const ring = addPart(fore, new THREE.TorusGeometry(0.02, 0.004, 6, 20), gold, side * 0.0358, -0.05, 0.02);
+    ring.rotation.y = side * Math.PI / 2;
+  }
+
+  // Stock with a glowing window and a chrome butt plate.
+  const stock = new THREE.Group();
+  stock.position.set(0, 0, 0.22);
+  stock.rotation.x = 0.12;
+  group.add(stock);
+  addPart(stock, new THREE.BoxGeometry(0.07, 0.12, 0.34), porcelain, 0, -0.02, 0.17);
+  addPart(stock, new THREE.BoxGeometry(0.074, 0.05, 0.12), glow, 0, -0.02, 0.2);
+  addPart(stock, new THREE.BoxGeometry(0.075, 0.13, 0.02), chrome, 0, -0.02, 0.345);
+
   return {
     group,
-    muzzle: new THREE.Vector3(0, 0.045, -0.74),
-    base: new THREE.Vector3(0.2, -0.22, -0.58),
-    pump,
-    pumpZ: -0.36,
+    muzzle: new THREE.Vector3(0, 0.05, -0.8),
+    base: new THREE.Vector3(0.22, -0.25, -0.58),
   };
 }
 

@@ -173,6 +173,10 @@ function buildLevel(scene) {
       else if (ch === 'a') level.pickups.push({ type: 'ammo', x, z });
       else if (ch === 'h') level.pickups.push({ type: 'health', x, z });
       else if (ch === 'f') level.pickups.push({ type: 'rifle', x, z });
+      else if (ch === 's') {
+        level.pickups.push({ type: 'shotgun', x, z });
+        obstacles.push({ x, z, r: 0.6 }); // its display pedestal
+      }
       else if (ch === 'T') level.fires.push(addBrazier(scene, x, z));
     }
   }
