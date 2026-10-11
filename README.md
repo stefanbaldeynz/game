@@ -1,9 +1,11 @@
-# game
+# Game Collection
 
-My own little browser game. No build tools or installs: open `index.html` in a browser to play.
+My collection of browser games. There are no build tools or installs. Open `index.html` to pick a game, or open any game's own `index.html`.
 
-## Project layout
+| Game | Folder | What it is |
+| --- | --- | --- |
+| Astro Blaster | [`astro-blaster/`](astro-blaster/) | 2D arcade space shooter. Fly The Chow Hauler and blast asteroids. |
+| Hellkeep | [`hellkeep/`](hellkeep/) | 3D first-person shooter. Fight flaming hellhounds in a castle in hell. |
+| Kiwi Canyon | [`kiwi-canyon/`](kiwi-canyon/) | 3D tower defense with a first-person mode. Stop 10 waves of kiwis in a New Zealand canyon. |
 
-- `index.html` is the page that hosts the game
-- `style.css` holds the styles
-- `game.js` holds the game loop, input, and drawing
+Each folder is a complete game with its own README explaining how to play and how the code is organised. The 3D games load the three.js engine from the internet, so they need a connection the first time.
