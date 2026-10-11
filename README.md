@@ -1,6 +1,6 @@
 # Astro Blaster
 
-An arcade space shooter that runs in the browser. Fly your ship, blast the asteroids and don't get hit.
+An arcade space shooter that runs in the browser. You fly **The Chow Hauler**, a battered cargo ship with glowing ration canisters and twin cannons. Blast the asteroids and don't get hit.
 
 No build tools or installs: open `index.html` in a browser to play.
 

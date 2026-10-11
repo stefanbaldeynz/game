@@ -3,7 +3,7 @@ const ctx = canvas.getContext('2d');
 const W = canvas.width;
 const H = canvas.height;
 
-const SHIP_RADIUS = 14;
+const SHIP_RADIUS = 16;
 const FIRE_COOLDOWN = 10; // frames between shots
 const INVULN_FRAMES = 120; // safe time after getting hit
 const FRAMES_PER_LEVEL = 900; // 15 seconds at 60 fps
@@ -73,7 +73,7 @@ function startGame() {
     paused: false,
     highScore: state.highScore,
     newBest: false,
-    ship: { x: W / 2, y: H - 70, speed: 4.5, cooldown: 0, invuln: INVULN_FRAMES },
+    ship: { x: W / 2, y: H - 70, speed: 4.5, cooldown: 0, invuln: INVULN_FRAMES, tilt: 0, barrel: 1 },
     bullets: [],
     asteroids: [],
     particles: [],
@@ -185,12 +185,16 @@ function update() {
   if (keys['arrowdown'] || keys['s']) dy += 1;
   const len = Math.hypot(dx, dy) || 1;
   s.x = clamp(s.x + (dx / len) * s.speed, 20, W - 20);
-  s.y = clamp(s.y + (dy / len) * s.speed, 40, H - 30);
+  s.y = clamp(s.y + (dy / len) * s.speed, 40, H - 32);
+  // Bank slightly into turns.
+  s.tilt += (dx * 0.18 - s.tilt) * 0.2;
 
   if (s.cooldown > 0) s.cooldown -= 1;
   if (s.invuln > 0) s.invuln -= 1;
   if (keys[' '] && s.cooldown <= 0) {
-    state.bullets.push({ x: s.x, y: s.y - 20 });
+    // Alternate between the two cannons.
+    s.barrel = -s.barrel;
+    state.bullets.push({ x: s.x + s.barrel * 6, y: s.y - 34 });
     s.cooldown = FIRE_COOLDOWN;
   }
   for (const b of state.bullets) b.y -= 9;
@@ -230,27 +234,144 @@ function update() {
   state.bullets = state.bullets.filter((b) => !b.dead && b.y > -10);
 }
 
-function drawShip(x, y, scale, flame) {
+// Top-down take on "The Chow Hauler": a battered gunmetal cargo ship with
+// glowing ration canisters, twin cannons, blue engines and a crate on a loader arm.
+function drawShip(x, y, scale, flame, tilt = 0) {
   ctx.save();
   ctx.translate(x, y);
+  ctx.rotate(tilt);
   ctx.scale(scale, scale);
+  ctx.lineJoin = 'round';
+
   if (flame) {
-    ctx.fillStyle = '#ff9f1c';
+    ctx.shadowColor = '#3b82f6';
+    ctx.shadowBlur = 12;
+    for (const ex of [-8, 8]) {
+      const len = rand(10, 20);
+      ctx.fillStyle = 'rgba(96, 165, 250, 0.85)';
+      ctx.beginPath();
+      ctx.moveTo(ex - 4, 25);
+      ctx.lineTo(ex, 25 + len);
+      ctx.lineTo(ex + 4, 25);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#e0f2fe';
+      ctx.beginPath();
+      ctx.moveTo(ex - 2, 25);
+      ctx.lineTo(ex, 25 + len * 0.55);
+      ctx.lineTo(ex + 2, 25);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  }
+
+  // Swept wings.
+  ctx.fillStyle = '#2b2f36';
+  ctx.strokeStyle = '#4b5260';
+  ctx.lineWidth = 1.5;
+  for (const side of [-1, 1]) {
     ctx.beginPath();
-    ctx.moveTo(-6, 12);
-    ctx.lineTo(0, 14 + rand(6, 16));
-    ctx.lineTo(6, 12);
+    ctx.moveTo(side * 11, 0);
+    ctx.lineTo(side * 32, 14);
+    ctx.lineTo(side * 32, 21);
+    ctx.lineTo(side * 11, 19);
     ctx.closePath();
     ctx.fill();
+    ctx.stroke();
   }
-  ctx.fillStyle = '#4cc9f0';
+
+  // Twin cannons and engine pods.
+  ctx.fillStyle = '#6b7280';
+  ctx.fillRect(-7, -35, 2.5, 12);
+  ctx.fillRect(4.5, -35, 2.5, 12);
+  ctx.fillStyle = '#1f2937';
+  ctx.fillRect(-13, 16, 10, 10);
+  ctx.fillRect(3, 16, 10, 10);
+
+  // Boxy main hull with panel lines.
+  ctx.fillStyle = '#353a43';
+  ctx.strokeStyle = '#15171b';
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(0, -20);
-  ctx.lineTo(16, 16);
-  ctx.lineTo(0, 8);
-  ctx.lineTo(-16, 16);
+  ctx.moveTo(-7, -27);
+  ctx.lineTo(7, -27);
+  ctx.lineTo(12, -17);
+  ctx.lineTo(12, 20);
+  ctx.lineTo(-12, 20);
+  ctx.lineTo(-12, -17);
   ctx.closePath();
   ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = '#23262c';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-12, -6);
+  ctx.lineTo(12, -6);
+  ctx.moveTo(-12, 8);
+  ctx.lineTo(12, 8);
+  ctx.moveTo(0, -6);
+  ctx.lineTo(0, 20);
+  ctx.stroke();
+
+  // Loader arm out to the cargo crate.
+  ctx.strokeStyle = '#6b7280';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-18, -2);
+  ctx.lineTo(-22, -2);
+  ctx.stroke();
+
+  // Orange glowing parts: cockpit, ration canisters, cargo crate.
+  ctx.shadowColor = '#ff8c1a';
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = '#ff9d3a';
+  ctx.beginPath();
+  ctx.moveTo(-5, -23);
+  ctx.lineTo(5, -23);
+  ctx.lineTo(7, -14);
+  ctx.lineTo(-7, -14);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#f28c28';
+  ctx.fillRect(-18, -11, 6, 17);
+  ctx.fillRect(12, -11, 6, 17);
+  ctx.fillStyle = '#ffb347';
+  ctx.fillRect(-31, -7, 9, 9);
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = '#7c3f0e';
+  for (const cx of [-18, 12]) {
+    ctx.fillRect(cx, -6, 6, 2);
+    ctx.fillRect(cx, 1, 6, 2);
+  }
+  ctx.strokeStyle = '#7c3f0e';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-31, -7, 9, 9);
+  ctx.beginPath();
+  ctx.moveTo(-31, -7);
+  ctx.lineTo(-22, 2);
+  ctx.moveTo(-22, -7);
+  ctx.lineTo(-31, 2);
+  ctx.stroke();
+
+  // Blue engine nozzles.
+  ctx.shadowColor = '#3b82f6';
+  ctx.shadowBlur = 8;
+  ctx.fillStyle = '#93c5fd';
+  ctx.fillRect(-11, 24, 6, 2);
+  ctx.fillRect(5, 24, 6, 2);
+
+  // Blinking red running lights on the wingtips and nose.
+  ctx.shadowColor = '#ef4444';
+  ctx.fillStyle = Math.floor(performance.now() / 400) % 2 ? '#ef4444' : '#7f1d1d';
+  for (const [lx, ly] of [[-31, 18], [31, 18], [-9, -20], [9, -20]]) {
+    ctx.beginPath();
+    ctx.arc(lx, ly, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+
   ctx.restore();
 }
 
@@ -308,17 +429,19 @@ function draw() {
   ctx.globalAlpha = 1;
 
   if (state.mode === 'title') {
-    centerText('ASTRO BLASTER', H / 2 - 60, 44, '#4cc9f0');
-    centerText("Shoot the asteroids. Don't get hit.", H / 2 - 15, 18);
-    centerText('Press Enter to start', H / 2 + 40, 22, '#ffd166');
-    if (state.highScore > 0) centerText(`High score: ${state.highScore}`, H / 2 + 80, 16);
+    centerText('ASTRO BLASTER', 150, 44, '#4cc9f0');
+    centerText("Shoot the asteroids. Don't get hit.", 190, 18);
+    drawShip(W / 2, 315, 2, true, Math.sin(performance.now() / 600) * 0.08);
+    centerText('THE CHOW HAULER', 440, 16, '#f28c28');
+    centerText('Press Enter to start', 500, 22, '#ffd166');
+    if (state.highScore > 0) centerText(`High score: ${state.highScore}`, 540, 16);
     return;
   }
 
   const s = state.ship;
   // Blink while invulnerable after a hit.
   const visible = s.invuln <= 0 || Math.floor(s.invuln / 6) % 2 === 0;
-  if (state.mode === 'playing' && visible) drawShip(s.x, s.y, 1, !state.paused);
+  if (state.mode === 'playing' && visible) drawShip(s.x, s.y, 1, !state.paused, s.tilt);
 
   ctx.fillStyle = '#e8e8f0';
   ctx.font = 'bold 18px system-ui, sans-serif';
@@ -326,7 +449,7 @@ function draw() {
   ctx.fillText(`Score: ${state.score}`, 12, 26);
   ctx.textAlign = 'center';
   ctx.fillText(`Level ${level()}`, W / 2, 26);
-  for (let i = 0; i < state.lives; i++) drawShip(W - 20 - i * 24, 20, 0.5, false);
+  for (let i = 0; i < state.lives; i++) drawShip(W - 22 - i * 26, 22, 0.35, false);
 
   if (state.paused) {
     dim();
