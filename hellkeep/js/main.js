@@ -222,6 +222,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'Digit1') switchWeapon('pistol');
   if (e.code === 'Digit2') switchWeapon('shotgun');
   if (e.code === 'Digit3') switchWeapon('rifle');
+  if (e.code === 'KeyM') showMessage(Music.toggle() ? 'Music on' : 'Music off', 1.5);
   if (e.code === 'Space') {
     e.preventDefault();
     if (!e.repeat) jump();
@@ -267,6 +268,7 @@ overlay.addEventListener('click', () => {
   }
   Sound.init();
   Sound.resume();
+  Music.start(ROUND_NUMBER);
   const request = renderer.domElement.requestPointerLock();
   if (request && request.catch) request.catch(() => {});
 });
@@ -416,6 +418,7 @@ function damagePlayer(amount) {
   Sound.hurt();
   if (p.health <= 0) {
     game.state = 'dead';
+    Music.stop();
     game.mouseDown = false;
     document.exitPointerLock();
     const total = game.enemies.length;
@@ -450,6 +453,7 @@ function onEnemyKilled() {
 
 function win() {
   game.state = 'won';
+  Music.stop();
   game.mouseDown = false;
   document.exitPointerLock();
   const minutes = Math.floor(game.time / 60);
@@ -780,6 +784,9 @@ function frame() {
     }
   }
   for (const enemy of game.enemies) enemy.update(dt, t, playing);
+  // The music switches to the heavier boss riff while the devil is fighting.
+  const bossFight = game.enemies.some((e) => e.type === 'devil' && e.alive && e.awake);
+  Music.setSection(bossFight ? 'boss' : 'main');
   updateCamera(dt);
   updateViewmodel(dt);
   updateWorld(dt, t);
