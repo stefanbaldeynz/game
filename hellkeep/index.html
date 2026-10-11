@@ -25,9 +25,9 @@
     <div id="health-box" class="panel">
       <div class="label">Health</div>
       <div id="health" class="value">100</div>
-      <div id="fuel" class="hidden">
-        <div class="label">Jetpack</div>
-        <div class="bar"><div id="fuel-fill"></div></div>
+      <div id="wings" class="hidden">
+        <div class="label">Angel wings</div>
+        <div class="bar"><div id="wings-fill"></div></div>
       </div>
     </div>
     <div id="weapon-box" class="panel">
@@ -53,24 +53,59 @@
       <div><b>Shift</b> sprint</div>
       <div><b>1 2 3</b> / wheel: guns</div>
       <div><b>Space</b> jump · twice: double jump</div>
-      <div><b>Hold Space</b> jetpack (once you have it)</div>
+      <div><b>Hold Space</b> fly with angel wings (once you have them)</div>
       <div><b>M</b> music on/off</div>
+      <div><b>G</b> graphics high/low</div>
       <div><b>Esc</b> pause</div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
-  <script src="js/util.js"></script>
-  <script src="js/rounds.js"></script>
-  <script src="js/textures.js"></script>
-  <script src="js/sound.js"></script>
-  <script src="js/music.js"></script>
-  <script src="js/particles.js"></script>
-  <script src="js/level.js"></script>
-  <script src="js/hounds.js"></script>
-  <script src="js/elephants.js"></script>
-  <script src="js/devil.js"></script>
-  <script src="js/weapons.js"></script>
-  <script src="js/main.js"></script>
+  <!--
+    three.js and its post-processing add-ons (bloom etc.) are loaded as modules from the web.
+    Once they're ready, the game's own scripts are loaded one after another, in this order.
+  -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.149.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+    THREE.ColorManagement.legacyMode = false; // treat colours as sRGB, like the textures
+    window.THREE = THREE;
+    window.THREE_ADDONS = { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, RoomEnvironment };
+
+    const scripts = [
+      'util', 'rounds', 'textures', 'sound', 'music', 'particles', 'level',
+      'hounds', 'elephants', 'devil', 'wings', 'weapons', 'graphics', 'main',
+    ];
+    for (const name of scripts) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = `js/${name}.js`;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error(`Could not load js/${name}.js`));
+        document.body.appendChild(script);
+      });
+    }
+  </script>
+  <script>
+    // If the 3D engine can't be downloaded, say so instead of showing a blank screen.
+    setTimeout(() => {
+      if (!window.THREE) {
+        document.getElementById('overlay-text').textContent =
+          'Could not load the 3D engine (three.js). Check your internet connection and reload the page.';
+      }
+    }, 8000);
+  </script>
 </body>
 </html>

@@ -173,6 +173,10 @@ function buildLevel(scene) {
       else if (ch === 'a') level.pickups.push({ type: 'ammo', x, z });
       else if (ch === 'h') level.pickups.push({ type: 'health', x, z });
       else if (ch === 'f') level.pickups.push({ type: 'rifle', x, z });
+      else if (ch === 's') {
+        level.pickups.push({ type: 'shotgun', x, z });
+        obstacles.push({ x, z, r: 0.6 }); // its display pedestal
+      }
       else if (ch === 'T') level.fires.push(addBrazier(scene, x, z));
     }
   }
@@ -190,7 +194,7 @@ function buildLevel(scene) {
   const outsideDepth = (MAP_H - CASTLE_ROWS) * CELL;
   addPlane(scene, Textures.castleFloor(MAP_W, CASTLE_ROWS), width, castleDepth, width / 2, 0, castleDepth / 2, -Math.PI / 2);
   addPlane(scene, Textures.ground(MAP_W / 2, (MAP_H - CASTLE_ROWS) / 2), width, outsideDepth, width / 2, 0, castleDepth + outsideDepth / 2, -Math.PI / 2);
-  // Double-sided so it also looks like a roof if you jetpack up over the walls.
+  // Double-sided so it also looks like a roof if you fly up over the walls.
   addPlane(scene, Textures.ceiling(MAP_W, CASTLE_ROWS), width, castleDepth, width / 2, WALL_H, castleDepth / 2, Math.PI / 2, THREE.DoubleSide);
 
   // Lava pools: unlit, so they glow.

@@ -1,6 +1,6 @@
 // Ice elephants: huge frozen beasts wreathed in blue fire, with long curved tusks.
 // They plod after you, then rear up, trumpet and charge in a straight line.
-// Jump (or jetpack) over a charge to dodge it. A charge into a wall stuns them for a moment.
+// Double jump (or fly) over a charge to dodge it. A charge into a wall stuns them for a moment.
 
 const ELEPHANT_HP = 320;
 const ELEPHANT_RADIUS = 1.0;
