@@ -28,13 +28,13 @@ Open `index.html` in Chrome or Edge, then click to start. The game needs an inte
 
 ## The rules
 
-- You start round 1 with a **pistol** and a **shotgun**. The **rifle** is waiting just inside the castle gate.
+- You start round 1 with a **pistol** and an **assault rifle**. The **Flak Shotgun** (four chrome barrels, Delft-blue porcelain, glowing cyan energy cells) turns slowly on a display pedestal just inside the castle gate. Walk up to it to take it.
 - The pistol and rifle share **bullets**. The shotgun uses **shells**.
 - Green-glowing **health boxes** give +25 health. Yellow-glowing **ammo crates** give +25 bullets and +6 shells.
 - Enemies sleep until they see you, get close, or hear a gunshot nearby. Then they hunt you down.
 - **Lava and freezing water hurt**, but only when you're standing in them. Jump over them.
 - **Hellhounds** bite, but they can't reach you in the air.
-- **The devil** (1,200 health) throws fireballs. Strafe to dodge them. Up close he stabs with his trident. Below half health he gets enraged: he moves faster and throws three fireballs at once. When he dies he drops the **angel wings** he stole.
+- **The devil** (1,200 health) is a heavy metal demon in a studded leather jacket, with long black hair, huge horns and a flaming tail. He headbangs and blasts fireballs from his Flying V guitar with a distorted power chord. Strafe to dodge them. Up close he swings the guitar at you. Below half health he gets enraged: he moves faster and throws three fireballs at once. When he dies he drops the **angel wings** he stole.
 - **Angel wings:** double jump, then keep holding Space to fly. You see your wings beating at the edges of the screen. The stamina gauge under your health refills while you stand on the ground.
 - **Ice elephants** (320 health) rear up, trumpet, then **charge**. A charge hits hard and throws you back. A single jump isn't high enough to clear one, but a double jump or the wings are. If an elephant charges into a wall, it's stunned for a moment. Up close it gores you with its tusks.
 - Round 2 starts with all three guns and the angel wings.
@@ -47,16 +47,16 @@ Open `index.html` in Chrome or Edge, then click to start. The game needs an inte
 | --- | --- |
 | `util.js` | Small shared helpers |
 | `rounds.js` | **The rounds:** each round's map (an ASCII grid you can edit), colour theme and starting gear |
-| `textures.js` | Draws every texture (bricks, lava, ice, the creatures' skins...) with code, so there are no image files |
+| `textures.js` | Draws every texture (bricks, lava, ice, the creatures' skins, the Delft porcelain, leather...) with code, so there are no image files |
 | `sound.js` | Makes every sound effect with the Web Audio API, so there are no audio files |
 | `music.js` | **The soundtrack:** recorded MP3 tracks per round (from the `music` folder), plus the synthesised industrial metal songs played live by code (plucked-string guitars, bass, drums, synth pads). The riffs are written as letter patterns you can edit |
 | `particles.js` | Fire, blue fire, sparks, embers and snow |
 | `level.js` | Builds the round's map in 3D, plus collision and enemy path finding |
 | `hounds.js` | The hellhound model, animation and AI |
 | `elephants.js` | The ice elephant model, animation and AI (walk, wind-up, charge, stun, gore) |
-| `devil.js` | The devil boss and his fireballs |
+| `devil.js` | The devil boss (the metal demon and his Flying V) and his fireballs |
 | `wings.js` | The angel wings: the feathered models, the pickup and the wingbeat animation |
-| `weapons.js` | **Gun stats** (damage, fire rate, spread...) and the gun models |
+| `weapons.js` | **Gun stats** (damage, fire rate, spread...) and the gun models, including the Flak Shotgun |
 | `graphics.js` | Modern graphics: bloom, the filmic colour grade, anti-aliasing, reflections and bullet holes |
 | `main.js` | Controls, jumping and flying, shooting, pickups, the on-screen display (HUD) and the game loop |
 

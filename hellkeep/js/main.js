@@ -118,7 +118,7 @@ const game = {
   wings: loadout.wings,
   stamina: 1,  // how much flying the wings have left (0 to 1)
   knock: { x: 0, z: 0 },
-  weapon: 'shotgun',
+  weapon: ['shotgun', 'rifle', 'pistol'].find((w) => loadout.owned[w]), // best gun you start with
   pendingWeapon: null,
   lower: 0,      // 0 = gun raised, 1 = lowered out of view (while switching)
   cooldown: 0,
@@ -183,6 +183,8 @@ function createPickup(type, x, z) {
   else if (type === 'wings') {
     mesh = buildWingsPickup();
     mesh.scale.setScalar(1.6);
+  } else if (type === 'shotgun') {
+    return createShotgunDisplay(x, z);
   } else {
     mesh = buildRifle().group;
     mesh.scale.setScalar(1.8);
@@ -202,6 +204,43 @@ function createPickup(type, x, z) {
   glow.position.set(x, 0.4, z);
   scene.add(glow);
   return { type, x, z, mesh, glow, phase: rand(0, 6), taken: false };
+}
+
+// The Flak Shotgun, big and slowly turning above a stone pedestal, lit in cyan.
+function createShotgunDisplay(x, z) {
+  const pedestal = new THREE.Group();
+  const stone = new THREE.MeshStandardMaterial({ color: 0x3a3230, roughness: 0.8 });
+  const gold = new THREE.MeshStandardMaterial({ color: 0xd8ac48, metalness: 1, roughness: 0.25, envMap: graphics.envMap });
+  addPart(pedestal, new THREE.CylinderGeometry(0.55, 0.7, 0.2, 16), stone, 0, 0.1, 0);
+  addPart(pedestal, new THREE.CylinderGeometry(0.4, 0.45, 0.8, 16), stone, 0, 0.6, 0);
+  addPart(pedestal, new THREE.CylinderGeometry(0.55, 0.45, 0.12, 16), stone, 0, 1.06, 0);
+  addPart(pedestal, new THREE.TorusGeometry(0.5, 0.025, 8, 32), gold, 0, 1.12, 0).rotation.x = Math.PI / 2;
+  pedestal.position.set(x, 0, z);
+  scene.add(pedestal);
+
+  const mesh = buildShotgun().group;
+  mesh.traverse((part) => {
+    if (part.material && part.material.metalness !== undefined) part.material.envMap = graphics.envMap; // shiny chrome
+  });
+  mesh.scale.setScalar(2.6);
+  mesh.position.set(x, 1.75, z);
+  scene.add(mesh);
+
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: glowTexture,
+    color: 0x40e8ff,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    transparent: true,
+    opacity: 0.25,
+  }));
+  glow.scale.set(2.4, 2.4, 1);
+  glow.position.set(x, 1.75, z);
+  scene.add(glow);
+  const light = new THREE.PointLight(0x60e8ff, 2.2, 9, 1.5);
+  light.position.set(x, 2.6, z);
+  scene.add(light);
+  return { type: 'shotgun', x, z, mesh, glow, light, phase: 0, taken: false, display: true };
 }
 
 function dropPickup(type, x, z) {
@@ -590,8 +629,8 @@ function updatePickups(dt, t) {
   const p = game.player;
   for (const pickup of game.pickups) {
     if (pickup.taken) continue;
-    pickup.mesh.rotation.y += dt * 1.2;
-    pickup.mesh.position.y = 0.5 + Math.sin(t * 2 + pickup.phase) * 0.1;
+    pickup.mesh.rotation.y += dt * (pickup.display ? 0.6 : 1.2);
+    pickup.mesh.position.y = (pickup.display ? 1.75 : 0.5) + Math.sin(t * 2 + pickup.phase) * 0.1;
     if (p.y < 1.5 && Math.hypot(pickup.x - p.x, pickup.z - p.z) < 1.3) collect(pickup);
   }
 }
@@ -612,6 +651,12 @@ function collect(pickup) {
     game.ammo.bullets = Math.min(MAX_AMMO.bullets, game.ammo.bullets + 40);
     showMessage('You got the rifle! Press 3', 3);
     switchWeapon('rifle');
+  } else if (pickup.type === 'shotgun') {
+    game.owned.shotgun = true;
+    game.ammo.shells = Math.min(MAX_AMMO.shells, game.ammo.shells + 20);
+    showMessage('You got the FLAK SHOTGUN! Press 2', 3);
+    switchWeapon('shotgun');
+    pickup.light.intensity = 0;
   } else if (pickup.type === 'wings') {
     game.wings = true;
     game.stamina = 1;

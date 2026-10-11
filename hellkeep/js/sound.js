@@ -169,6 +169,32 @@ const Sound = (() => {
     jump() {
       tone({ type: 'sine', from: 260, to: 420, duration: 0.12, gain: 0.08 });
     },
+    // The devil's guitar: a big distorted E power chord.
+    powerChord() {
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      const shaper = ctx.createWaveShaper();
+      const curve = new Float32Array(1024);
+      for (let i = 0; i < curve.length; i++) curve[i] = Math.tanh(12 * ((i * 2) / curve.length - 1));
+      shaper.curve = curve;
+      const cabinet = ctx.createBiquadFilter();
+      cabinet.type = 'lowpass';
+      cabinet.frequency.value = 4000;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.18, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+      shaper.connect(cabinet);
+      cabinet.connect(g);
+      g.connect(master);
+      for (const f of [82.4, 123.5, 164.8]) {
+        const osc = ctx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.value = f;
+        osc.connect(shaper);
+        osc.start(t);
+        osc.stop(t + 0.9);
+      }
+    },
     // A deep whoosh of feathers on each downstroke.
     wingFlap() {
       noise({ duration: 0.28, freq: 380, gain: 0.35 });

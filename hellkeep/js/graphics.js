@@ -111,6 +111,7 @@ function createGraphics(renderer, scene, camera, weaponScene, weaponCamera) {
       return enabled;
     },
     resize,
+    envMap: weaponScene.environment, // for shiny things out in the world, like the shotgun display
     toggle() {
       enabled = !enabled;
       try {
