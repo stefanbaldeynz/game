@@ -5,7 +5,7 @@ A first-person shooter in the style of Doom and GoldenEye, in two rounds.
 - **Round 1: The Burning Keep.** Walk through the lava fields of hell to a burning castle. Flaming hellhounds guard every hall, and the **devil** waits by the throne. Kill them all to finish the round.
 - **Round 2: The Frozen Depths.** A frozen castle with freezing pools and falling snow. **Ice elephants** with huge tusks, burning with blue fire, roam its halls. Bring them all down to beat the game.
 
-There is an industrial metal soundtrack in a Rammstein style that the game plays live: plucked-string guitar synthesis, double-tracked high-gain guitars, a stomping kick and synth pads. Round 1 marches in drop D, and it switches to a relentless boss riff when the devil fights you. Round 2 crawls along in low C. Press **M** to turn it off or on.
+Round 1 plays the recorded track `music/Blood_and_Iron_Rite.mp3` on a loop. Round 2 has an industrial metal soundtrack in a Rammstein style that the game plays live: plucked-string guitar synthesis, double-tracked high-gain guitars, a stomping kick and synth pads, crawling along in low C. If the MP3 is missing, round 1 falls back to its own synthesised song, which marches in drop D and switches to a relentless boss riff while the devil fights. Press **M** to turn the music off or on.
 
 The graphics use modern effects: bloom (fire, lava and eyes glow), a filmic colour grade with a vignette and film grain, anti-aliasing, reflective metal guns and bullet holes. Press **G** to switch to plain rendering on slower computers.
 
@@ -49,7 +49,7 @@ Open `index.html` in Chrome or Edge, then click to start. The game needs an inte
 | `rounds.js` | **The rounds:** each round's map (an ASCII grid you can edit), colour theme and starting gear |
 | `textures.js` | Draws every texture (bricks, lava, ice, the creatures' skins...) with code, so there are no image files |
 | `sound.js` | Makes every sound effect with the Web Audio API, so there are no audio files |
-| `music.js` | **The industrial metal soundtrack**, played live by code (plucked-string guitars, bass, drums, synth pads). The riffs are written as letter patterns you can edit |
+| `music.js` | **The soundtrack:** recorded MP3 tracks per round (from the `music` folder), plus the synthesised industrial metal songs played live by code (plucked-string guitars, bass, drums, synth pads). The riffs are written as letter patterns you can edit |
 | `particles.js` | Fire, blue fire, sparks, embers and snow |
 | `level.js` | Builds the round's map in 3D, plus collision and enemy path finding |
 | `hounds.js` | The hellhound model, animation and AI |
@@ -65,7 +65,7 @@ Easy things to try changing:
 - **The levels:** edit a `map` in `rounds.js`. The legend is at the top.
 - **The guns:** tweak the numbers in `WEAPONS` in `weapons.js`.
 - **The enemies:** the numbers at the top of `hounds.js`, `elephants.js` and `devil.js`.
-- **The music:** edit the riffs, drum patterns and tempo (`bpm`) in `SONGS` at the top of `music.js`. The comment there explains the letters.
+- **The music:** to use your own MP3, put it in the `music` folder and list it in `TRACKS` at the top of `music.js` (by round number). For the synthesised songs, edit the riffs, drum patterns and tempo (`bpm`) in `SONGS`. The comment there explains the letters.
 - **Jumping and flying:** `JUMP_SPEED`, `GRAVITY` and the `WING_` numbers at the top of `main.js`.
 - **Brightness:** `exposure` in each theme in `rounds.js`.
 

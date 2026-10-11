@@ -14,6 +14,12 @@
 // "pad" is the synth chord under the bar (a minor chord on that letter), or '' for none.
 // Drum bars use x for a hit and . for nothing.
 
+// Recorded soundtracks (MP3s in the music folder) by round. Rounds without one use the
+// synthesised songs below. To use your own track, drop it in hellkeep/music/ and list it here.
+const TRACKS = {
+  1: 'music/Blood_and_Iron_Rite.mp3',
+};
+
 const NOTE_OFFSETS = { e: 0, f: 1, g: 3, a: 5, b: 6, h: 7, c: 8, d: 10 };
 
 const SONGS = {
@@ -84,6 +90,9 @@ for (const [name, song] of Object.entries(SONGS)) {
 
 const Music = (() => {
   const MUSIC_VOLUME = 0.6;
+  const TRACK_VOLUME = 0.55; // recorded tracks are mastered loud, so play them a little quieter
+  let track = null;        // the <audio> element when a recorded track is playing
+  let trackFade = null;
   let ctx = null;
   let out = null;          // music volume (mute toggles this)
   let guitarSides = null;  // left and right guitar amps
@@ -410,28 +419,76 @@ const Music = (() => {
     }
   }
 
-  return {
-    start(round) {
-      if (timer) return;
-      ctx = Sound.context();
-      if (!ctx || !SONGS[round]) return;
-      song = SONGS[round];
-      chordCache = {};
-      buildChain();
-      // Prepare every chord the song uses up front, so nothing stutters mid-game.
-      for (const bars of Object.values(song.sections)) {
-        for (const bar of bars) {
-          for (const ch of bar.riff) {
-            const lower = ch.toLowerCase();
-            if (lower in NOTE_OFFSETS) for (const side of [0, 1]) chordBuffer(lower, ch === lower, side);
-          }
+  // Recorded tracks are played with a plain <audio> element (it works when the game is
+  // opened straight from a file). If one won't load or play, the synthesised song takes over.
+  function startTrack(round) {
+    const audio = new Audio(TRACKS[round]);
+    audio.loop = true;
+    audio.volume = enabled ? TRACK_VOLUME : 0;
+    let failed = false;
+    const fallBack = () => {
+      if (failed || track !== audio) return;
+      failed = true;
+      track = null;
+      audio.pause();
+      startSynth(round);
+    };
+    audio.addEventListener('error', fallBack);
+    audio.play().catch(fallBack);
+    track = audio;
+  }
+
+  // Smoothly slide the recorded track's volume (the <audio> element has no built-in fade).
+  function fadeTrack(to, seconds, then) {
+    const audio = track;
+    clearInterval(trackFade);
+    const from = audio.volume;
+    const start = performance.now();
+    trackFade = setInterval(() => {
+      const k = Math.min(1, (performance.now() - start) / (seconds * 1000));
+      audio.volume = from + (to - from) * k;
+      if (k >= 1) {
+        clearInterval(trackFade);
+        if (then) then();
+      }
+    }, 30);
+  }
+
+  function startSynth(round) {
+    if (timer) return;
+    ctx = Sound.context();
+    if (!ctx || !SONGS[round]) return;
+    song = SONGS[round];
+    chordCache = {};
+    buildChain();
+    // Prepare every chord the song uses up front, so nothing stutters mid-game.
+    for (const bars of Object.values(song.sections)) {
+      for (const bar of bars) {
+        for (const ch of bar.riff) {
+          const lower = ch.toLowerCase();
+          if (lower in NOTE_OFFSETS) for (const side of [0, 1]) chordBuffer(lower, ch === lower, side);
         }
       }
-      nextTime = ctx.currentTime + 0.1;
-      timer = setInterval(schedule, 25);
+    }
+    nextTime = ctx.currentTime + 0.1;
+    timer = setInterval(schedule, 25);
+  }
+
+  return {
+    // Play the round's recorded track if it has one, otherwise its synthesised song.
+    start(round) {
+      if (timer || track) return;
+      if (TRACKS[round]) startTrack(round);
+      else startSynth(round);
+    },
+
+    // Is a recorded track playing (rather than the synthesised song)?
+    get playingTrack() {
+      return !!track;
     },
 
     // Switch riffs at the start of the next bar (e.g. 'boss' while the devil fights).
+    // Recorded tracks just keep playing.
     setSection(name) {
       if (!song || !song.sections[name] || name === section || name === pendingSection) return;
       pendingSection = name;
@@ -440,12 +497,17 @@ const Music = (() => {
     toggle() {
       enabled = !enabled;
       saveEnabled();
+      if (track) fadeTrack(enabled ? TRACK_VOLUME : 0, 0.3);
       if (out) out.gain.setTargetAtTime(enabled ? MUSIC_VOLUME : 0, ctx.currentTime, 0.1);
       return enabled;
     },
 
     // Fade out and stop (when you die or finish a round).
     stop() {
+      if (track) {
+        const audio = track;
+        fadeTrack(0, 1.5, () => audio.pause());
+      }
       if (!timer) return;
       out.gain.setTargetAtTime(0, ctx.currentTime, 0.5);
       setTimeout(() => {
