@@ -1,4 +1,6 @@
-// Hellkeep: a small Doom-style shooter. Storm a castle in hell and put down every hellhound.
+// Hellkeep: a small Doom-style shooter in two rounds.
+// Round 1: storm a castle in hell, put down every hellhound and the devil on the throne.
+// Round 2: the frozen depths, where ice elephants burning with blue fire roam.
 
 if (typeof THREE === 'undefined') {
   document.getElementById('overlay-text').textContent =
@@ -15,21 +17,37 @@ const MAX_HEALTH = 100;
 const MAX_AMMO = { bullets: 250, shells: 50 };
 const SHOT_RANGE = 70;
 
+const JUMP_SPEED = 6.5;      // each jump (you get two: the second one in mid-air)
+const GRAVITY = 18;
+const JETPACK_THRUST = 26;   // stronger than gravity, so you climb
+const JETPACK_MAX_RISE = 5;  // fastest climb speed
+const JETPACK_BURN = 0.33;   // fuel used per second (a full tank lasts about 3 seconds)
+const JETPACK_REFILL = 0.25; // fuel regained per second while standing on the ground
+
 // ---------- Page elements ----------
 
 const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
+const overlayRound = document.getElementById('overlay-round');
 const overlayText = document.getElementById('overlay-text');
 const overlayButton = document.getElementById('overlay-button');
 const hud = {
   health: document.getElementById('health'),
   ammo: document.getElementById('ammo'),
   ammoLabel: document.getElementById('ammo-label'),
-  hounds: document.getElementById('hounds'),
+  enemies: document.getElementById('hounds'),
+  round: document.getElementById('round'),
   message: document.getElementById('message'),
   damage: document.getElementById('damage'),
   slots: [...document.querySelectorAll('#slots span')],
+  boss: document.getElementById('boss'),
+  bossFill: document.getElementById('boss-fill'),
+  fuel: document.getElementById('fuel'),
+  fuelFill: document.getElementById('fuel-fill'),
 };
+overlayRound.textContent = ROUND.title;
+overlayText.textContent = ROUND.intro;
+hud.round.textContent = ROUND.title;
 
 // ---------- Renderer, scenes and cameras ----------
 
@@ -40,9 +58,9 @@ renderer.autoClear = false;
 document.getElementById('game').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x1c0504);
-scene.fog = new THREE.FogExp2(0x1c0504, 0.03);
-scene.add(new THREE.HemisphereLight(0xff9a6a, 0x3a1010, 1.4));
+scene.background = new THREE.Color(THEME.background);
+scene.fog = new THREE.FogExp2(THEME.background, THEME.fogDensity);
+scene.add(new THREE.HemisphereLight(...THEME.hemi));
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 400);
 camera.rotation.order = 'YXZ';
@@ -55,7 +73,7 @@ scene.add(gunLight);
 const weaponScene = new THREE.Scene();
 const weaponCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.01, 10);
 weaponScene.add(new THREE.HemisphereLight(0xffc49a, 0x3a1010, 1.1));
-const weaponKeyLight = new THREE.DirectionalLight(0xff9a60, 0.9);
+const weaponKeyLight = new THREE.DirectionalLight(THEME.palette === 'frost' ? 0x9ad0ff : 0xff9a60, 0.9);
 weaponKeyLight.position.set(-1, 1, 0.5);
 weaponScene.add(weaponKeyLight);
 const weaponFlashLight = new THREE.PointLight(0xffb060, 0, 3);
@@ -71,11 +89,28 @@ ammoMaterial.emissiveMap = ammoMaterial.map;
 const healthMaterial = new THREE.MeshStandardMaterial({ map: Textures.healthBox(), emissive: 0xffffff, emissiveIntensity: 0.25 });
 healthMaterial.emissiveMap = healthMaterial.map;
 
+const loadout = ROUND.loadout;
 const game = {
   state: 'menu', // menu | playing | paused | dead | won
-  player: { x: level.playerStart.x, z: level.playerStart.z, yaw: 0, pitch: 0, health: MAX_HEALTH },
-  ammo: { bullets: 60, shells: 16 },
-  owned: { pistol: true, shotgun: true, rifle: false },
+  player: {
+    x: level.playerStart.x,
+    z: level.playerStart.z,
+    y: 0,      // height of your feet above the floor
+    vy: 0,     // vertical speed
+    vx: 0,     // how fast you're moving (the devil uses this to aim ahead of you)
+    vz: 0,
+    grounded: true,
+    jumps: 0,  // jumps used since you left the ground (max 2)
+    yaw: 0,
+    pitch: 0,
+    health: MAX_HEALTH,
+  },
+  ammo: { ...loadout.ammo },
+  owned: { ...loadout.owned },
+  jetpack: loadout.jetpack,
+  fuel: 1,
+  jetSoundTimer: 0,
+  knock: { x: 0, z: 0 },
   weapon: 'shotgun',
   pendingWeapon: null,
   lower: 0,      // 0 = gun raised, 1 = lowered out of view (while switching)
@@ -94,14 +129,21 @@ const game = {
   time: 0,
   kills: 0,
   godMode: false,
-  fire: new ParticleSystem(scene, { max: 3000, size: 0.55, texture: glowTexture, damping: 0.96 }),
-  sparks: new ParticleSystem(scene, { max: 1000, size: 0.13, texture: glowTexture, damping: 0.97 }),
-  hounds: [],
+  fire: new ParticleSystem(scene, { max: 4000, size: 0.55, texture: glowTexture, damping: 0.96, palette: THEME.palette }),
+  sparks: new ParticleSystem(scene, { max: 2000, size: 0.13, texture: glowTexture, damping: 0.97, palette: THEME.palette }),
+  enemies: [],
+  projectiles: [],
   pickups: [],
   damagePlayer,
-  onHoundKilled,
+  knockPlayer,
+  shakeNear,
+  onEnemyKilled,
+  dropPickup,
+  showMessage,
 };
-game.hounds = level.hounds.map((spot) => new Hound(scene, spot.x, spot.z));
+
+const ENEMY_TYPES = { hound: Hound, elephant: Elephant, devil: Devil };
+game.enemies = level.enemies.map((spot) => new ENEMY_TYPES[spot.type](scene, spot.x, spot.z));
 game.pickups = level.pickups.map((spot) => createPickup(spot.type, spot.x, spot.z));
 
 const viewmodels = {};
@@ -124,19 +166,37 @@ for (const name of WEAPON_ORDER) {
   viewmodels[name] = vm;
 }
 
+// Twin fuel tanks with nozzles: the jetpack the devil drops.
+function buildJetpack() {
+  const group = new THREE.Group();
+  const metal = new THREE.MeshStandardMaterial({ color: 0x8a8f98, metalness: 0.8, roughness: 0.3 });
+  const red = new THREE.MeshStandardMaterial({ color: 0xa01810, metalness: 0.5, roughness: 0.4 });
+  for (const side of [-1, 1]) {
+    addPart(group, new THREE.CylinderGeometry(0.16, 0.16, 0.7, 14), red, side * 0.2, 0.1, 0);
+    addPart(group, new THREE.SphereGeometry(0.16, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), red, side * 0.2, 0.45, 0);
+    addPart(group, new THREE.CylinderGeometry(0.07, 0.12, 0.18, 10), metal, side * 0.2, -0.33, 0);
+  }
+  addPart(group, new THREE.BoxGeometry(0.5, 0.5, 0.12), metal, 0, 0.1, 0.18);
+  return group;
+}
+
 function createPickup(type, x, z) {
   let mesh;
   if (type === 'ammo') mesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.55), ammoMaterial);
   else if (type === 'health') mesh = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.45, 0.65), healthMaterial);
-  else {
+  else if (type === 'jetpack') {
+    mesh = buildJetpack();
+    mesh.scale.setScalar(1.6);
+  } else {
     mesh = buildRifle().group;
     mesh.scale.setScalar(1.8);
   }
   mesh.position.set(x, 0.5, z);
   scene.add(mesh);
+  const colors = { health: 0x30ff60, jetpack: 0x40c0ff };
   const glow = new THREE.Sprite(new THREE.SpriteMaterial({
     map: glowTexture,
-    color: type === 'health' ? 0x30ff60 : 0xffb030,
+    color: colors[type] || 0xffb030,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
     transparent: true,
@@ -146,6 +206,10 @@ function createPickup(type, x, z) {
   glow.position.set(x, 0.4, z);
   scene.add(glow);
   return { type, x, z, mesh, glow, phase: rand(0, 6), taken: false };
+}
+
+function dropPickup(type, x, z) {
+  game.pickups.push(createPickup(type, x, z));
 }
 
 // ---------- Input ----------
@@ -158,6 +222,10 @@ addEventListener('keydown', (e) => {
   if (e.code === 'Digit1') switchWeapon('pistol');
   if (e.code === 'Digit2') switchWeapon('shotgun');
   if (e.code === 'Digit3') switchWeapon('rifle');
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (!e.repeat) jump();
+  }
 });
 addEventListener('keyup', (e) => {
   keys[e.code] = false;
@@ -187,7 +255,13 @@ document.addEventListener('wheel', (e) => {
 });
 
 overlay.addEventListener('click', () => {
+  if (game.state === 'won' && ROUND_NUMBER < LAST_ROUND) {
+    location.hash = `round=${ROUND_NUMBER + 1}`;
+    location.reload();
+    return;
+  }
   if (game.state === 'dead' || game.state === 'won') {
+    location.hash = game.state === 'dead' ? `round=${ROUND_NUMBER}` : '';
     location.reload();
     return;
   }
@@ -200,13 +274,16 @@ overlay.addEventListener('click', () => {
 document.addEventListener('pointerlockchange', () => {
   const locked = document.pointerLockElement === renderer.domElement;
   if (locked && (game.state === 'menu' || game.state === 'paused')) {
-    if (game.state === 'menu') showMessage('Enter the castle. Kill every hellhound.', 4);
+    if (game.state === 'menu') {
+      const tip = game.jetpack ? ' Hold Space after a double jump to use the jetpack.' : ' Space to jump, twice to double jump.';
+      showMessage(ROUND.intro + tip, 5);
+    }
     game.state = 'playing';
     overlay.classList.add('hidden');
   } else if (!locked && game.state === 'playing') {
     game.state = 'paused';
     game.mouseDown = false;
-    showOverlay('Paused', 'The hounds are waiting.', 'Click to resume');
+    showOverlay('Paused', 'The castle is waiting.', 'Click to resume');
   }
 });
 
@@ -265,10 +342,10 @@ function tryFire() {
     shootRay(origin, dir, weapon.damage);
   }
 
-  // Gunfire wakes up hounds nearby, even through walls.
+  // Gunfire wakes up enemies nearby, even through walls.
   const p = game.player;
-  for (const hound of game.hounds) {
-    if (hound.alive && Math.hypot(hound.x - p.x, hound.z - p.z) < 18) hound.alert();
+  for (const enemy of game.enemies) {
+    if (enemy.alive && Math.hypot(enemy.x - p.x, enemy.z - p.z) < 18) enemy.alert();
   }
 }
 
@@ -300,16 +377,16 @@ function shootRay(origin, dir, damage) {
     }
   }
 
-  // Then find the closest hound in front of that.
+  // Then find the closest enemy in front of that.
   let target = null;
   let targetT = wallT;
-  for (const hound of game.hounds) {
-    if (!hound.alive) continue;
-    for (const sphere of hound.hitSpheres()) {
+  for (const enemy of game.enemies) {
+    if (!enemy.alive) continue;
+    for (const sphere of enemy.hitSpheres()) {
       const t = raySphere(origin, dir, sphere);
       if (t !== null && t < targetT) {
         targetT = t;
-        target = hound;
+        target = enemy;
       }
     }
   }
@@ -335,22 +412,39 @@ function damagePlayer(amount) {
   const p = game.player;
   p.health = Math.max(0, p.health - amount);
   game.hurt = Math.min(1, game.hurt + amount / 25);
-  game.shake = 1;
+  game.shake = Math.max(game.shake, 1);
   Sound.hurt();
   if (p.health <= 0) {
     game.state = 'dead';
     game.mouseDown = false;
     document.exitPointerLock();
-    const total = game.hounds.length;
-    showOverlay('You died', `Torn apart by hellhounds. You put down ${game.kills} of ${total}.`, 'Click to try again');
+    const total = game.enemies.length;
+    showOverlay('You died', `${ROUND.title}. You put down ${game.kills} of ${total} enemies.`, `Click to retry round ${ROUND_NUMBER}`);
   }
 }
 
-function onHoundKilled() {
+// Shove the player (elephant charges, trident stabs). Pops you off the ground a little.
+function knockPlayer(dx, dz, strength) {
+  game.knock.x += dx * strength;
+  game.knock.z += dz * strength;
+  const p = game.player;
+  if (p.grounded) {
+    p.vy = 4;
+    p.grounded = false;
+    p.jumps = 2; // no double jump while flying backwards
+  }
+}
+
+function shakeNear(x, z, amount) {
+  const d = Math.hypot(game.player.x - x, game.player.z - z);
+  game.shake = Math.max(game.shake, amount * Math.max(0, 1 - d / 25));
+}
+
+function onEnemyKilled() {
   game.kills += 1;
-  if (game.hounds.every((h) => !h.alive)) {
-    game.winTimer = 2;
-    showMessage('The castle falls silent...', 3);
+  if (game.enemies.every((e) => !e.alive)) {
+    game.winTimer = 3;
+    showMessage(ROUND_NUMBER < LAST_ROUND ? 'The castle falls silent...' : 'The frozen depths fall silent...', 3);
   }
 }
 
@@ -360,15 +454,36 @@ function win() {
   document.exitPointerLock();
   const minutes = Math.floor(game.time / 60);
   const seconds = String(Math.floor(game.time % 60)).padStart(2, '0');
-  showOverlay(
-    'Castle cleared',
-    `Every hellhound is dead. Time: ${minutes}:${seconds}. Health left: ${Math.ceil(game.player.health)}.`,
-    'Click to play again',
-  );
+  const stats = `Time: ${minutes}:${seconds}. Health left: ${Math.ceil(game.player.health)}.`;
+  if (ROUND_NUMBER < LAST_ROUND) {
+    showOverlay(`Round ${ROUND_NUMBER} complete`, `${stats} Something colder waits below...`, `Continue to round ${ROUND_NUMBER + 1}`);
+  } else {
+    showOverlay('Hellkeep conquered', `You beat every round! ${stats}`, 'Click to play again from round 1');
+  }
+}
+
+function jump() {
+  const p = game.player;
+  if (p.grounded) {
+    p.vy = JUMP_SPEED;
+    p.grounded = false;
+    p.jumps = 1;
+    Sound.jump();
+  } else if (p.jumps < 2) {
+    // Double jump: a second kick in mid-air.
+    p.vy = JUMP_SPEED;
+    p.jumps = 2;
+    Sound.jump();
+    for (let i = 0; i < 12; i++) {
+      game.sparks.emit(p.x + rand(-0.3, 0.3), p.y + 0.1, p.z + rand(-0.3, 0.3), rand(-2, 2), rand(-1, 0), rand(-2, 2), rand(0.2, 0.4), 0);
+    }
+  }
 }
 
 function updatePlayer(dt) {
   const p = game.player;
+  const startX = p.x;
+  const startZ = p.z;
   const sin = Math.sin(p.yaw);
   const cos = Math.cos(p.yaw);
   let forward = 0;
@@ -387,10 +502,21 @@ function updatePlayer(dt) {
     const mz = (-cos * forward - sin * strafe) * speed * dt;
     moveWithCollision(p, mx, mz, PLAYER_RADIUS, false);
   }
-  game.moveAmount += ((len > 0 ? 1 : 0) - game.moveAmount) * Math.min(1, dt * 10);
+  // Knockback slides you and fades out quickly.
+  moveWithCollision(p, game.knock.x * dt, game.knock.z * dt, PLAYER_RADIUS, false);
+  const fade = Math.exp(-dt * 6);
+  game.knock.x *= fade;
+  game.knock.z *= fade;
+
+  updateVertical(dt);
+
+  p.vx = (p.x - startX) / dt;
+  p.vz = (p.z - startZ) / dt;
+  game.moveAmount += ((len > 0 && p.grounded ? 1 : 0) - game.moveAmount) * Math.min(1, dt * 10);
   game.bobPhase += dt * speed * 1.4 * game.moveAmount;
 
-  if (isLavaAt(p.x, p.z)) {
+  // Lava (or freezing water) only hurts when you're standing in it.
+  if (p.grounded && isLavaAt(p.x, p.z)) {
     game.lavaTimer -= dt;
     if (game.lavaTimer <= 0) {
       game.lavaTimer = 0.35;
@@ -405,13 +531,52 @@ function updatePlayer(dt) {
   if (game.mouseDown) tryFire();
 }
 
+// Jumping, double jumping, the jetpack and gravity.
+function updateVertical(dt) {
+  const p = game.player;
+  if (p.grounded) {
+    game.fuel = Math.min(1, game.fuel + JETPACK_REFILL * dt);
+    return;
+  }
+  // Hold Space after your double jump to fire up the jetpack.
+  const thrusting = game.jetpack && keys.Space && p.jumps >= 2 && game.fuel > 0 && p.vy < 1.5;
+  if (thrusting) {
+    p.vy = Math.min(JETPACK_MAX_RISE, p.vy + JETPACK_THRUST * dt);
+    game.fuel = Math.max(0, game.fuel - JETPACK_BURN * dt);
+    for (let i = 0; i < 3; i++) {
+      game.fire.emit(p.x + rand(-0.25, 0.25), p.y + 0.6, p.z + rand(-0.25, 0.25), rand(-0.4, 0.4), rand(-6, -3), rand(-0.4, 0.4), rand(0.15, 0.3), 0);
+    }
+    game.jetSoundTimer -= dt;
+    if (game.jetSoundTimer <= 0) {
+      game.jetSoundTimer = 0.1;
+      Sound.jetpack();
+    }
+  }
+  p.vy -= GRAVITY * dt;
+  p.y += p.vy * dt;
+
+  // Bump your head on the castle ceiling, or the top of the sky outside.
+  const top = (cellOf(p.z) < CASTLE_ROWS ? WALL_H : ROCK_H - 1) - EYE_HEIGHT - 0.2;
+  if (p.y > top) {
+    p.y = top;
+    p.vy = Math.min(0, p.vy);
+  }
+  if (p.y <= 0) {
+    if (p.vy < -9) game.shake = Math.max(game.shake, 0.4); // heavy landing
+    p.y = 0;
+    p.vy = 0;
+    p.grounded = true;
+    p.jumps = 0;
+  }
+}
+
 function updatePickups(dt, t) {
   const p = game.player;
   for (const pickup of game.pickups) {
     if (pickup.taken) continue;
     pickup.mesh.rotation.y += dt * 1.2;
     pickup.mesh.position.y = 0.5 + Math.sin(t * 2 + pickup.phase) * 0.1;
-    if (Math.hypot(pickup.x - p.x, pickup.z - p.z) < 1.3) collect(pickup);
+    if (p.y < 1.5 && Math.hypot(pickup.x - p.x, pickup.z - p.z) < 1.3) collect(pickup);
   }
 }
 
@@ -431,6 +596,10 @@ function collect(pickup) {
     game.ammo.bullets = Math.min(MAX_AMMO.bullets, game.ammo.bullets + 40);
     showMessage('You got the rifle! Press 3', 3);
     switchWeapon('rifle');
+  } else if (pickup.type === 'jetpack') {
+    game.jetpack = true;
+    game.fuel = 1;
+    showMessage('JETPACK! Double jump, then hold Space to fly', 4);
   }
   pickup.taken = true;
   scene.remove(pickup.mesh);
@@ -438,11 +607,16 @@ function collect(pickup) {
   Sound.pickup();
 }
 
+function updateProjectiles(dt) {
+  for (const projectile of game.projectiles) projectile.update(dt);
+  game.projectiles = game.projectiles.filter((p) => !p.done);
+}
+
 function updateCamera(dt) {
   const p = game.player;
   if (game.state === 'dead') game.eye = Math.max(0.35, game.eye - dt * 3);
   const bob = Math.abs(Math.sin(game.bobPhase)) * 0.06 * game.moveAmount;
-  camera.position.set(p.x, game.eye + bob, p.z);
+  camera.position.set(p.x, p.y + game.eye + bob, p.z);
   const shake = game.shake * 0.02;
   camera.rotation.set(p.pitch + rand(-shake, shake), p.yaw + rand(-shake, shake), 0);
   game.shake = Math.max(0, game.shake - dt * 3);
@@ -467,7 +641,9 @@ function updateViewmodel(dt) {
   const weapon = WEAPONS[game.weapon];
   const bobX = Math.sin(game.bobPhase) * 0.015 * game.moveAmount;
   const bobY = -Math.abs(Math.cos(game.bobPhase)) * 0.012 * game.moveAmount;
-  vm.group.position.set(vm.base.x + bobX, vm.base.y + bobY - game.lower * 0.4, vm.base.z + game.recoil * 0.08);
+  // The gun lags a little when you jump or fall.
+  const airLag = clamp(-game.player.vy * 0.006, -0.04, 0.04);
+  vm.group.position.set(vm.base.x + bobX, vm.base.y + bobY + airLag - game.lower * 0.4, vm.base.z + game.recoil * 0.08);
   vm.group.rotation.set(game.recoil * 0.25, 0.06, 0); // angled slightly toward the crosshair
   vm.group.visible = game.state !== 'dead';
 
@@ -487,6 +663,7 @@ function updateViewmodel(dt) {
 // ---------- World effects ----------
 
 let emberAcc = 0;
+let snowAcc = 0;
 
 function updateWorld(dt, t) {
   level.lavaTexture.offset.set(t * 0.02, t * 0.013);
@@ -504,7 +681,7 @@ function updateWorld(dt, t) {
     }
   });
 
-  // Embers drifting up from the lava.
+  // Embers (or icy mist) drifting up from the pools.
   emberAcc += dt * 25;
   while (emberAcc >= 1 && level.lavaCells.length) {
     emberAcc -= 1;
@@ -514,6 +691,19 @@ function updateWorld(dt, t) {
       rand(-0.3, 0.3), rand(0.8, 2.2), rand(-0.3, 0.3),
       rand(1.5, 3), 0.2,
     );
+  }
+
+  // Snow drifting down over the frozen wasteland outside.
+  if (THEME.snow) {
+    snowAcc += dt * 120;
+    while (snowAcc >= 1) {
+      snowAcc -= 1;
+      game.sparks.emit(
+        rand(0, MAP_W * CELL), rand(0.5, 13), rand(CASTLE_ROWS * CELL, MAP_H * CELL),
+        rand(0.2, 0.6), -1, rand(-0.2, 0.2),
+        rand(3, 6), -0.4,
+      );
+    }
   }
 }
 
@@ -529,6 +719,7 @@ function showMessage(text, seconds = 2.5) {
 
 function showOverlay(title, text, button) {
   overlayTitle.textContent = title;
+  overlayRound.textContent = '';
   overlayText.textContent = text;
   overlayButton.textContent = button;
   overlay.classList.remove('hidden');
@@ -547,7 +738,20 @@ function updateHud(dt) {
     slot.classList.toggle('owned', game.owned[name]);
     slot.classList.toggle('active', name === game.weapon);
   }
-  hud.hounds.textContent = `Hellhounds left: ${game.hounds.filter((h) => h.alive).length}`;
+
+  const alive = (type) => game.enemies.filter((e) => e.type === type && e.alive).length;
+  const parts = [];
+  if (game.enemies.some((e) => e.type === 'hound')) parts.push(`Hellhounds left: ${alive('hound')}`);
+  if (game.enemies.some((e) => e.type === 'elephant')) parts.push(`Ice elephants left: ${alive('elephant')}`);
+  if (alive('devil')) parts.push('The devil lives');
+  hud.enemies.textContent = parts.join(' · ');
+
+  const boss = game.enemies.find((e) => e.type === 'devil' && e.alive && e.awake);
+  hud.boss.classList.toggle('hidden', !boss);
+  if (boss) hud.bossFill.style.width = `${(boss.hp / boss.maxHp) * 100}%`;
+  hud.fuel.classList.toggle('hidden', !game.jetpack);
+  hud.fuelFill.style.width = `${game.fuel * 100}%`;
+
   game.hurt = Math.max(0, game.hurt - dt * 1.5);
   hud.damage.style.opacity = Math.min(0.85, game.hurt);
   messageTimer -= dt;
@@ -569,12 +773,13 @@ function frame() {
     updatePlayer(dt);
     updateFlowField(game.player.x, game.player.z);
     updatePickups(dt, t);
+    updateProjectiles(dt);
     if (game.winTimer > 0) {
       game.winTimer -= dt;
       if (game.winTimer <= 0) win();
     }
   }
-  for (const hound of game.hounds) hound.update(dt, t, playing);
+  for (const enemy of game.enemies) enemy.update(dt, t, playing);
   updateCamera(dt);
   updateViewmodel(dt);
   updateWorld(dt, t);
@@ -589,7 +794,7 @@ function frame() {
 }
 
 // Dev helper: open index.html#preview to start without mouse capture (handy for screenshots).
-// Extra options: #preview&x=50&z=60&yaw=0&god
+// Extra options: #preview&round=2&x=50&z=60&yaw=0&god
 const previewOptions = new URLSearchParams(location.hash.slice(1));
 if (previewOptions.has('preview')) {
   game.state = 'playing';

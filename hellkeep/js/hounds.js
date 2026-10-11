@@ -100,6 +100,8 @@ class Hound {
     this.deathT = 0;
     this.fallSide = Math.random() < 0.5 ? -1 : 1;
     this.flameAcc = 0;
+    this.type = 'hound';
+    this.radius = HOUND_RADIUS;
     Object.assign(this, makeHoundModel());
     this.group.position.set(x, 0, z);
     scene.add(this.group);
@@ -156,7 +158,7 @@ class Hound {
     for (let i = 0; i < 45; i++) {
       game.fire.emit(center.x, center.y, center.z, rand(-3, 3), rand(0, 4), rand(-3, 3), rand(0.4, 0.9), 1);
     }
-    game.onHoundKilled(this);
+    game.onEnemyKilled(this);
   }
 
   turnToward(dx, dz, dt) {
@@ -214,7 +216,8 @@ class Hound {
     }
 
     this.attackCooldown -= dt;
-    if (dist < HOUND_BITE_RANGE && this.attackCooldown <= 0) {
+    // Can't bite you while you're up in the air.
+    if (dist < HOUND_BITE_RANGE && game.player.y < 1.2 && this.attackCooldown <= 0) {
       this.attackCooldown = 0.9;
       this.bite = 0.25;
       Sound.bite();
@@ -222,13 +225,14 @@ class Hound {
     }
 
     // Keep hounds from piling up inside each other.
-    for (const other of game.hounds) {
+    for (const other of game.enemies) {
       if (other === this || !other.alive) continue;
       const ox = this.x - other.x;
       const oz = this.z - other.z;
       const d = Math.hypot(ox, oz);
-      if (d > 0 && d < 1.2) {
-        const push = (1.2 - d) * 0.5;
+      const gap = this.radius + other.radius + 0.3;
+      if (d > 0 && d < gap) {
+        const push = (gap - d) * 0.5;
         moveWithCollision(this, (ox / d) * push, (oz / d) * push, HOUND_RADIUS, true);
       }
     }

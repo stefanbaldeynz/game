@@ -6,46 +6,9 @@ const WALL_H = 7;        // castle wall and ceiling height
 const ROCK_H = 14;       // height of the rock cliffs around the hellscape
 const CASTLE_ROWS = 19;  // map rows 0-18 are inside the castle and get a ceiling
 
-// Map legend:
-//   #  castle wall          R  hell rock cliff
-//   ,  castle floor         .  scorched ground outside
-//   L  lava (hurts!)        T  fire brazier
-//   P  player start         H  hellhound
-//   a  ammo crate           h  health box          f  rifle
+// The map for the current round comes from rounds.js (see the legend there).
 // North is the top. You start outside in the south and walk north through the gate.
-const MAP = [
-  '#########################',
-  '#,,,,#,,,,,,,,,,,,,#,,,,#',
-  '#,a,,#,,T,,,,,,,T,,#,,h,#',
-  '#,,H,,,,,,,,,,,,,,,,,H,,#',
-  '#,,,,#,,,,H,,,H,,,,#,,,,#',
-  '#,,,,#,,T,,,,,,,T,,#,,,,#',
-  '#,h,,#,,,,,,,,,,,,,#,a,,#',
-  '##,#########,#########,##',
-  '#,,,,,a,,,,,,,,,,,H,,,,,#',
-  '####,#######,#######,####',
-  '#,,,,,,,#,,,,,,,#,,,,,,,#',
-  '#,T,,,H,#,T,,,T,#,H,,,T,#',
-  '#,,,,,,,#,,,H,,,#,,,,,,,#',
-  '#,,,,,,,,,,,,,,,,,,,,,,,#',
-  '#,,,a,,,#,,,,,,,#,,,h,,,#',
-  '#,,H,,,,#,,,,,,,#,,,,H,,#',
-  '#,,,,,,,#,,,f,,,#,,,,,,,#',
-  '#,h,,,,,#,,,,,,,#,,,,,a,#',
-  '###########,,,###########',
-  'R.......................R',
-  'R..LL.............LLL...R',
-  'R.LLLL...T.....T...LLL..R',
-  'R..LL......H........LL..R',
-  'R...................H...R',
-  'R....LLL.........LLLL...R',
-  'R...LLLLL.......LLLLLL..R',
-  'R....LLL....a....LLLL...R',
-  'R.......................R',
-  'R.....h.....P...........R',
-  'R.......................R',
-  'RRRRRRRRRRRRRRRRRRRRRRRRR',
-];
+const MAP = ROUND.map;
 
 const MAP_W = MAP[0].length;
 const MAP_H = MAP.length;
@@ -189,7 +152,7 @@ function nextStepToward(x, z) {
 // ---------- Building the 3D world ----------
 
 function buildLevel(scene) {
-  const level = { playerStart: null, hounds: [], pickups: [], fires: [], lavaCells: [], lavaTexture: null };
+  const level = { playerStart: null, enemies: [], pickups: [], fires: [], lavaCells: [], lavaTexture: null };
   const walls = [];
   const rocks = [];
   const lava = [];
@@ -204,7 +167,9 @@ function buildLevel(scene) {
         lava.push([col, row]);
         level.lavaCells.push({ x, z });
       } else if (ch === 'P') level.playerStart = { x, z };
-      else if (ch === 'H') level.hounds.push({ x, z });
+      else if (ch === 'H') level.enemies.push({ type: 'hound', x, z });
+      else if (ch === 'E') level.enemies.push({ type: 'elephant', x, z });
+      else if (ch === 'D') level.enemies.push({ type: 'devil', x, z });
       else if (ch === 'a') level.pickups.push({ type: 'ammo', x, z });
       else if (ch === 'h') level.pickups.push({ type: 'health', x, z });
       else if (ch === 'f') level.pickups.push({ type: 'rifle', x, z });
@@ -225,10 +190,11 @@ function buildLevel(scene) {
   const outsideDepth = (MAP_H - CASTLE_ROWS) * CELL;
   addPlane(scene, Textures.castleFloor(MAP_W, CASTLE_ROWS), width, castleDepth, width / 2, 0, castleDepth / 2, -Math.PI / 2);
   addPlane(scene, Textures.ground(MAP_W / 2, (MAP_H - CASTLE_ROWS) / 2), width, outsideDepth, width / 2, 0, castleDepth + outsideDepth / 2, -Math.PI / 2);
-  addPlane(scene, Textures.ceiling(MAP_W, CASTLE_ROWS), width, castleDepth, width / 2, WALL_H, castleDepth / 2, Math.PI / 2);
+  // Double-sided so it also looks like a roof if you jetpack up over the walls.
+  addPlane(scene, Textures.ceiling(MAP_W, CASTLE_ROWS), width, castleDepth, width / 2, WALL_H, castleDepth / 2, Math.PI / 2, THREE.DoubleSide);
 
   // Lava pools: unlit, so they glow.
-  level.lavaTexture = Textures.lava();
+  level.lavaTexture = Textures.hazard();
   const lavaGeometry = new THREE.PlaneGeometry(CELL, CELL);
   lavaGeometry.rotateX(-Math.PI / 2);
   const lavaMesh = new THREE.InstancedMesh(lavaGeometry, new THREE.MeshBasicMaterial({ map: level.lavaTexture }), lava.length);
@@ -243,7 +209,7 @@ function buildLevel(scene) {
   scene.add(lavaMesh);
 
   addCastleFront(scene, wallTexture, wallMaterial);
-  addThrone(scene, cellCenter(12, 1));
+  if (ROUND.throne) addThrone(scene, cellCenter(...ROUND.throne));
   addBanners(scene);
   addSky(scene);
   return level;
@@ -264,8 +230,8 @@ function addCellBoxes(scene, cells, height, material) {
   return mesh;
 }
 
-function addPlane(scene, texture, width, depth, x, y, z, rotationX) {
-  const material = new THREE.MeshStandardMaterial({ map: texture, bumpMap: texture, bumpScale: 0.4, roughness: 0.95 });
+function addPlane(scene, texture, width, depth, x, y, z, rotationX, side = THREE.FrontSide) {
+  const material = new THREE.MeshStandardMaterial({ map: texture, bumpMap: texture, bumpScale: 0.4, roughness: 0.95, side });
   const plane = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), material);
   plane.rotation.x = rotationX;
   plane.position.set(x, y, z);
@@ -279,13 +245,13 @@ function addBrazier(scene, x, z) {
     brazierMaterials = {
       stone: new THREE.MeshStandardMaterial({ color: 0x3a2a24, roughness: 0.9 }),
       iron: new THREE.MeshStandardMaterial({ color: 0x2a2220, metalness: 0.6, roughness: 0.5 }),
-      coals: new THREE.MeshBasicMaterial({ color: 0xff7a20 }),
+      coals: new THREE.MeshBasicMaterial({ color: THEME.coals }),
     };
   }
   addPart(scene, new THREE.CylinderGeometry(0.28, 0.4, 1.1, 10), brazierMaterials.stone, x, 0.55, z);
   addPart(scene, new THREE.CylinderGeometry(0.6, 0.3, 0.4, 12), brazierMaterials.iron, x, 1.3, z);
   addPart(scene, new THREE.CylinderGeometry(0.52, 0.52, 0.05, 12), brazierMaterials.coals, x, 1.48, z);
-  const light = new THREE.PointLight(0xff7030, 1.6, 22, 1.5);
+  const light = new THREE.PointLight(THEME.brazierLight, 1.6, 22, 1.5);
   light.position.set(x, 2.4, z);
   scene.add(light);
   obstacles.push({ x, z, r: 0.6 });
@@ -294,7 +260,7 @@ function addBrazier(scene, x, z) {
 
 // Towers, battlements and the gate arch, so the castle looks like a castle from outside.
 function addCastleFront(scene, wallTexture, wallMaterial) {
-  const towers = [[10, 18, 12], [14, 18, 12], [0, 18, 11], [24, 18, 11], [8, 9, 15], [16, 9, 15], [12, 0, 20]];
+  const towers = ROUND.towers;
   const merlons = [];
   for (const [col, row, height] of towers) {
     const texture = wallTexture.clone();
@@ -356,7 +322,7 @@ function addBanners(scene) {
   const material = new THREE.MeshStandardMaterial({ map: Textures.banner(), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.9 });
   const geometry = new THREE.PlaneGeometry(1.8, 3.6);
   // [column, first floor row in front of a north-side wall]
-  const spots = [[9, 1], [15, 1], [10, 10], [14, 10], [8, 19], [16, 19]];
+  const spots = ROUND.banners;
   for (const [col, row] of spots) {
     addPart(scene, geometry, material, col * CELL + CELL / 2, WALL_H - 2.3, row * CELL + 0.03);
   }
