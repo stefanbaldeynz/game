@@ -89,6 +89,9 @@ const Sound = (() => {
 
   return {
     init,
+    // The music player (music.js) plays through the same audio system.
+    context: () => ctx,
+    output: () => master,
     resume() {
       if (ctx && ctx.state === 'suspended') ctx.resume();
     },
