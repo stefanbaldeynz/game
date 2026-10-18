@@ -77,13 +77,25 @@ They run in `side.html` and keep the same menus, HUD, sounds and music as the 3D
 | `music.js` | **The soundtrack:** recorded MP3 tracks per round (from the `music` folder), plus the synthesised industrial metal songs played live by code (plucked-string guitars, bass, drums, synth pads). The riffs are written as letter patterns you can edit |
 | `particles.js` | Fire, blue fire, sparks, embers and snow |
 | `level.js` | Builds the round's map in 3D, plus collision and enemy path finding |
-| `hounds.js` | The hellhound model, animation and AI |
+| `hounds.js` | The hellhounds: turns the animated wolf model into a hellhound (charred skin with glowing lava cracks, burning eyes, horns and spine spikes), plays its animations, and runs the AI |
 | `elephants.js` | The ice elephant model, animation and AI (walk, wind-up, charge, stun, gore) |
 | `devil.js` | The devil boss (the metal demon and his Flying V) and his fireballs |
 | `wings.js` | The angel wings: the feathered models, the pickup and the wingbeat animation |
 | `weapons.js` | **Gun stats** (damage, fire rate, spread...) and the gun models, including the Flak Shotgun |
 | `graphics.js` | Modern graphics: bloom, the filmic colour grade, anti-aliasing, reflections and bullet holes |
 | `main.js` | Controls, jumping and flying, shooting, pickups, the on-screen display (HUD) and the game loop |
+
+### The hellhound model
+
+The hellhounds are a real animated 3D model: **'Wolf' by [Quaternius](https://quaternius.com)**, public domain (CC0), from [poly.pizza/m/P1gU3Qkr9r](https://poly.pizza/m/P1gU3Qkr9r). It's `models/hellhound.glb`. The game runs (gallop), lunges (attack), flinches when shot (hit reactions) and dies (death) with the model's own animations. `hounds.js` paints the lava cracks on with a small shader and bolts horns and spikes onto its bones.
+
+Browsers won't load a `.glb` file into a page opened straight from your files, so `models/hellhound.js` holds the same model packed as text. If that file is missing or broken, the game uses the old hound built from boxes.
+
+To swap in a different animated model, replace `models/hellhound.glb`, rebuild `models/hellhound.js` with this PowerShell command (run it in the `hellkeep` folder), and set the animation names in `HOUND_CLIPS` at the top of `hounds.js`:
+
+```powershell
+"window.HELLHOUND_GLB = '" + [Convert]::ToBase64String([IO.File]::ReadAllBytes("$PWD\models\hellhound.glb")) + "';" | Set-Content models\hellhound.js
+```
 
 `side.html` runs rounds 3 and 4. It loads `roundlist.js`, `util.js`, `sound.js` and `music.js` from above, plus its own files in `js/side/`:
 
