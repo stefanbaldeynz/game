@@ -13,7 +13,7 @@ function makeCanvas(width, height, draw, scale = 1) {
 
 function canvasTexture(canvas, repeatX = 1, repeatY = 1) {
   const texture = new THREE.CanvasTexture(canvas);
-  texture.encoding = THREE.sRGBEncoding; // these are colours, not data
+  texture.colorSpace = THREE.SRGBColorSpace; // these are colours, not data
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
   texture.repeat.set(repeatX, repeatY);
   texture.anisotropy = 8;
@@ -23,7 +23,7 @@ function canvasTexture(canvas, repeatX = 1, repeatY = 1) {
 // A plain (non-repeating) colour texture.
 function colorTexture(canvas) {
   const texture = new THREE.CanvasTexture(canvas);
-  texture.encoding = THREE.sRGBEncoding;
+  texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
 }
 

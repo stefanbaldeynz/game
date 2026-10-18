@@ -19,3 +19,7 @@ function addPart(parent, geometry, material, x = 0, y = 0, z = 0) {
   parent.add(mesh);
   return mesh;
 }
+
+// three.js measures light in physical units, which come out about π times dimmer than the
+// old numbers these lights were tuned with. Every light intensity is multiplied by this.
+const LIGHT_UNITS = Math.PI;

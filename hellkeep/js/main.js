@@ -65,7 +65,7 @@ scene.fog = new THREE.FogExp2(THEME.background, THEME.fogDensity);
 // The fill light. Scaled down because the filmic tone curve brightens the mid-tones.
 const AMBIENT_SCALE = 0.8;
 const [skyColor, groundColor, ambient] = THEME.hemi;
-scene.add(new THREE.HemisphereLight(skyColor, groundColor, ambient * AMBIENT_SCALE));
+scene.add(new THREE.HemisphereLight(skyColor, groundColor, ambient * AMBIENT_SCALE * LIGHT_UNITS));
 
 // A wide field of view, like Unreal Tournament, for a fast arena-shooter feel.
 const camera = new THREE.PerspectiveCamera(85, window.innerWidth / window.innerHeight, 0.1, 400);
@@ -78,8 +78,8 @@ scene.add(gunLight);
 // The gun is drawn in its own scene on top of the world, so it never pokes through walls.
 const weaponScene = new THREE.Scene();
 const weaponCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.01, 10);
-weaponScene.add(new THREE.HemisphereLight(0xffc49a, 0x3a1010, 0.5));
-const weaponKeyLight = new THREE.DirectionalLight(THEME.palette === 'frost' ? 0x9ad0ff : 0xff9a60, 0.9);
+weaponScene.add(new THREE.HemisphereLight(0xffc49a, 0x3a1010, 0.5 * LIGHT_UNITS));
+const weaponKeyLight = new THREE.DirectionalLight(THEME.palette === 'frost' ? 0x9ad0ff : 0xff9a60, 0.9 * LIGHT_UNITS);
 weaponKeyLight.position.set(-1, 1, 0.5);
 weaponScene.add(weaponKeyLight);
 const weaponFlashLight = new THREE.PointLight(0xffb060, 0, 3);
@@ -239,7 +239,7 @@ function createShotgunDisplay(x, z) {
   glow.scale.set(2.4, 2.4, 1);
   glow.position.set(x, 1.75, z);
   scene.add(glow);
-  const light = new THREE.PointLight(0x60e8ff, 2.2, 9, 1.5);
+  const light = new THREE.PointLight(0x60e8ff, 2.2 * LIGHT_UNITS, 9, 1.5);
   light.position.set(x, 2.6, z);
   scene.add(light);
   return { type: 'shotgun', x, z, mesh, glow, light, phase: 0, taken: false, display: true };
@@ -726,9 +726,9 @@ function updateViewmodel(dt) {
 
   vm.flash.visible = game.flash > 0;
   if (vm.flash.visible) vm.flash.material.rotation = rand(0, Math.PI * 2);
-  weaponFlashLight.intensity = game.flash > 0 ? 3 : 0;
+  weaponFlashLight.intensity = game.flash > 0 ? 3 * LIGHT_UNITS : 0;
   gunLight.position.copy(camera.position);
-  gunLight.intensity = game.flash > 0 ? 2.5 : 0;
+  gunLight.intensity = game.flash > 0 ? 2.5 * LIGHT_UNITS : 0;
 }
 
 // ---------- World effects ----------
@@ -740,7 +740,7 @@ function updateWorld(dt, t) {
   level.lavaTexture.offset.set(t * 0.02, t * 0.013);
 
   level.fires.forEach((fire, i) => {
-    fire.light.intensity = 1.6 + Math.sin(t * 13 + i * 2) * 0.15 + Math.sin(t * 29 + i) * 0.1;
+    fire.light.intensity = (1.6 + Math.sin(t * 13 + i * 2) * 0.15 + Math.sin(t * 29 + i) * 0.1) * LIGHT_UNITS;
     fire.acc += dt * 45;
     while (fire.acc >= 1) {
       fire.acc -= 1;

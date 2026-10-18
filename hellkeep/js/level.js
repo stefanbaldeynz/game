@@ -255,7 +255,7 @@ function addBrazier(scene, x, z) {
   addPart(scene, new THREE.CylinderGeometry(0.28, 0.4, 1.1, 10), brazierMaterials.stone, x, 0.55, z);
   addPart(scene, new THREE.CylinderGeometry(0.6, 0.3, 0.4, 12), brazierMaterials.iron, x, 1.3, z);
   addPart(scene, new THREE.CylinderGeometry(0.52, 0.52, 0.05, 12), brazierMaterials.coals, x, 1.48, z);
-  const light = new THREE.PointLight(THEME.brazierLight, 1.6, 22, 1.5);
+  const light = new THREE.PointLight(THEME.brazierLight, 1.6 * LIGHT_UNITS, 22, 1.5);
   light.position.set(x, 2.4, z);
   scene.add(light);
   obstacles.push({ x, z, r: 0.6 });

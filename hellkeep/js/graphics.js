@@ -92,7 +92,7 @@ function createGraphics(renderer, scene, camera, weaponScene, weaponCamera) {
   // Plain rendering still gets the filmic tone curve, just no bloom or film effects.
   function applyRendererSettings() {
     renderer.toneMapping = enabled ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping;
-    renderer.outputEncoding = enabled ? THREE.LinearEncoding : THREE.sRGBEncoding;
+    renderer.outputColorSpace = enabled ? THREE.LinearSRGBColorSpace : THREE.SRGBColorSpace;
     renderer.toneMappingExposure = THEME.exposure || 1;
   }
 
