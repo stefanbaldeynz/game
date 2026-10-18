@@ -83,10 +83,28 @@
     import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
     import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
     THREE.ColorManagement.legacyMode = false; // treat colours as sRGB, like the textures
     window.THREE = THREE;
-    window.THREE_ADDONS = { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, RoomEnvironment };
+    window.THREE_ADDONS = { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, RoomEnvironment, SkeletonUtils };
+
+    // Unpack the animated hellhound model (models/hellhound.js) before the game starts.
+    // If it can't be loaded, hounds.js falls back to the old box-built hound.
+    try {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'models/hellhound.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.body.appendChild(script);
+      });
+      const bytes = Uint8Array.from(atob(window.HELLHOUND_GLB), (c) => c.charCodeAt(0));
+      window.HELLHOUND_GLTF = await new Promise((resolve, reject) => new GLTFLoader().parse(bytes.buffer, '', resolve, reject));
+    } catch (error) {
+      console.warn('Hellhound model not loaded, using the box hound instead.', error);
+    }
 
     const scripts = [
       'util', 'rounds', 'textures', 'sound', 'music', 'particles', 'level',

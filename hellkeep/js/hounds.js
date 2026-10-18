@@ -1,11 +1,173 @@
 // Hellhounds: charred dogs with burning cracks in their skin, wrapped in flames.
 // They sleep until they see or hear you, then hunt you down through the castle.
+//
+// The body is a real animated wolf model (models/hellhound.glb, 'Wolf' by Quaternius,
+// public domain), turned into a hellhound here: charred skin with glowing lava
+// cracks, burning eyes, horns and spine spikes. If the model can't be loaded, the
+// old hound built from boxes (makeHoundModel) is used instead.
 
 const HOUND_SPEED = 5.4;
 const HOUND_HP = 60;
 const HOUND_SCALE = 1.25;
 const HOUND_RADIUS = 0.45;
 const HOUND_BITE_RANGE = 1.9;
+
+const WOLF_LENGTH = 2.4;  // nose to tail tip, before HOUND_SCALE
+const RUN_ANIM_SPEED = 1.25; // how fast the gallop plays
+// Which animation in the model is used for what.
+const HOUND_CLIPS = {
+  idle: 'Idle',
+  run: 'Gallop',
+  attack: 'Attack',
+  death: 'Death',
+  hitLeft: 'Idle_HitReact_Left',
+  hitRight: 'Idle_HitReact_Right',
+};
+
+// ---------- The animated model ----------
+
+let houndTemplate = null;
+
+// Glowing lava cracks, worked out from the shape of the body (the model has no
+// texture coordinates to wrap a picture around). A cellular pattern: the edges
+// between the cells are the cracks.
+const CRACK_GLSL = `
+varying vec3 vHellPos;
+vec3 hellHash(vec3 p) {
+  p = vec3(dot(p, vec3(127.1, 311.7, 74.7)), dot(p, vec3(269.5, 183.3, 246.1)), dot(p, vec3(113.5, 271.9, 124.6)));
+  return fract(sin(p) * 43758.5453);
+}
+float hellCracks(vec3 p) {
+  vec3 i = floor(p);
+  vec3 f = fract(p);
+  float d1 = 8.0;
+  float d2 = 8.0;
+  for (int z = -1; z <= 1; z++) for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec3 g = vec3(float(x), float(y), float(z));
+    vec3 r = g + hellHash(i + g) - f;
+    float d = dot(r, r);
+    if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) { d2 = d; }
+  }
+  return 1.0 - smoothstep(0.03, 0.14, sqrt(d2) - sqrt(d1));
+}
+`;
+
+function hellfireSkin(color, crackScale) {
+  const material = new THREE.MeshStandardMaterial({ color, roughness: 0.85, emissive: 0xff5a10, emissiveIntensity: 1 });
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vHellPos;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvHellPos = position;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>\n${CRACK_GLSL}`)
+      .replace(
+        'vec3 totalEmissiveRadiance = emissive;',
+        `vec3 totalEmissiveRadiance = emissive * hellCracks(vHellPos * ${crackScale.toFixed(2)});`,
+      );
+  };
+  material.customProgramCacheKey = () => `hellfire-skin-${crackScale.toFixed(2)}`;
+  return material;
+}
+
+// Measure the model once: its size, where it stands, and its animations.
+function prepareHoundTemplate(gltf) {
+  const model = gltf.scene;
+  model.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(model);
+  let meshSize = 0;
+  model.traverse((o) => {
+    if (!o.isMesh) return;
+    o.geometry.computeBoundingBox();
+    const size = o.geometry.boundingBox.getSize(new THREE.Vector3());
+    meshSize = Math.max(meshSize, size.x, size.y, size.z);
+  });
+  const clips = {};
+  for (const [key, name] of Object.entries(HOUND_CLIPS)) {
+    clips[key] = gltf.animations.find((a) => a.name === name);
+    if (!clips[key]) throw new Error(`Hellhound model has no "${name}" animation`);
+  }
+  return {
+    model,
+    clips,
+    scale: WOLF_LENGTH / (box.max.z - box.min.z),
+    centerZ: (box.min.z + box.max.z) / 2,
+    minY: box.min.y,
+    crackScale: 12 / meshSize, // about a dozen crack cells along the body
+  };
+}
+
+function makeGltfHound() {
+  const tpl = houndTemplate;
+  const inner = THREE_ADDONS.SkeletonUtils.clone(tpl.model);
+  // The model faces +Z; hounds face -Z.
+  inner.rotation.y = Math.PI;
+  inner.scale.setScalar(tpl.scale);
+  inner.position.set(0, -tpl.minY * tpl.scale, tpl.centerZ * tpl.scale);
+
+  // Each hound gets its own materials so it can flash and fade on its own.
+  const skin = hellfireSkin(0x3a2620, tpl.crackScale);
+  const skinLight = hellfireSkin(0x6a3a28, tpl.crackScale);
+  const dark = new THREE.MeshStandardMaterial({ color: 0x1a0a06, roughness: 0.9, emissive: 0x401000 });
+  const eyes = new THREE.MeshBasicMaterial({ color: 0xffee66 });
+  inner.traverse((o) => {
+    if (!o.isMesh) return;
+    o.frustumCulled = false; // the running animation moves it outside its resting bounds
+    const name = o.material.name;
+    o.material = name === 'Main' ? skin : name === 'Main_Light' ? skinLight : name === 'Eyes_Black' ? eyes : dark;
+  });
+
+  const group = new THREE.Group();
+  group.add(inner);
+  group.scale.setScalar(HOUND_SCALE);
+  group.updateMatrixWorld(true);
+
+  // Where a bone sits, in the hound's own coordinates (before HOUND_SCALE).
+  const bone = (name) => inner.getObjectByName(name);
+  const local = (name) => group.worldToLocal(bone(name).getWorldPosition(new THREE.Vector3()));
+
+  // Horns on the head and spikes down the spine, fixed to the bones so they
+  // move with the animation.
+  const head = local('Head');
+  for (const sx of [-0.1, 0.1]) {
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.26, 5), dark);
+    horn.position.set(sx, head.y + 0.2, head.z + 0.08);
+    horn.rotation.set(0.5, 0, -sx * 4);
+    group.add(horn);
+    bone('Head').attach(horn);
+  }
+  for (const name of ['Back', 'Torso', 'Torso2', 'Torso3', 'Neck1']) {
+    const p = local(name);
+    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.17, 4), dark);
+    spike.position.set(0, p.y + 0.17, p.z);
+    group.add(spike);
+    bone(name).attach(spike);
+  }
+
+  const mixer = new THREE.AnimationMixer(inner);
+  const actions = {};
+  for (const [key, clip] of Object.entries(tpl.clips)) actions[key] = mixer.clipAction(clip);
+
+  return {
+    group,
+    skin,
+    skinLight,
+    eyes,
+    mixer,
+    actions,
+    // Body, chest and head, for working out bullet hits.
+    hitPoints: [local('Torso'), local('Neck1'), head],
+  };
+}
+
+if (window.HELLHOUND_GLTF) {
+  try {
+    houndTemplate = prepareHoundTemplate(window.HELLHOUND_GLTF);
+  } catch (error) {
+    console.warn('Hellhound model unusable, using the box hound instead.', error);
+  }
+}
+
+// ---------- The old hound, built from boxes (used if the model is missing) ----------
 
 let houndTextures = null;
 
@@ -102,9 +264,30 @@ class Hound {
     this.flameAcc = 0;
     this.type = 'hound';
     this.radius = HOUND_RADIUS;
-    Object.assign(this, makeHoundModel());
+    this.oneShotT = 0; // time left on an attack, flinch or death animation
+    Object.assign(this, houndTemplate ? makeGltfHound() : makeHoundModel());
     this.group.position.set(x, 0, z);
     scene.add(this.group);
+    if (this.mixer) {
+      this.playAnim('idle');
+      this.mixer.update(rand(0, 2)); // so the pack doesn't breathe in step
+    }
+  }
+
+  // Blend smoothly into another of the model's animations.
+  // once = play it a single time (and hold the last frame).
+  playAnim(name, { fade = 0.2, once = false, speed = 1 } = {}) {
+    const next = this.actions[name];
+    if (next === this.current && !once) return;
+    next.reset();
+    next.setEffectiveTimeScale(speed);
+    next.setEffectiveWeight(1);
+    next.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
+    next.clampWhenFinished = once;
+    if (this.current && this.current !== next) next.crossFadeFrom(this.current, fade, false);
+    next.play();
+    this.current = next;
+    if (once) this.oneShotT = (next.getClip().duration / speed) * 0.8;
   }
 
   get alive() {
@@ -134,6 +317,14 @@ class Hound {
 
   // Spheres covering the body, chest and head, used to check if a bullet hits.
   hitSpheres() {
+    if (this.hitPoints) {
+      const [body, chest, head] = this.hitPoints.map((p) => this.localToWorld(p.x, p.y, p.z));
+      return [
+        { ...body, r: 0.42 * HOUND_SCALE },
+        { ...chest, r: 0.4 * HOUND_SCALE },
+        { ...head, r: 0.3 * HOUND_SCALE },
+      ];
+    }
     return [
       { ...this.localToWorld(0, 0.75, 0.1), r: 0.42 * HOUND_SCALE },
       { ...this.localToWorld(0, 0.85, -0.45), r: 0.42 * HOUND_SCALE },
@@ -148,10 +339,16 @@ class Hound {
     this.alert();
     moveWithCollision(this, direction.x * 0.2, direction.z * 0.2, HOUND_RADIUS, true);
     if (this.hp <= 0) this.die();
+    else if (this.mixer && this.current !== this.actions.attack) {
+      // Flinch away from the side the shot came from.
+      const side = direction.x * Math.cos(this.yaw) - direction.z * Math.sin(this.yaw) > 0 ? 'hitLeft' : 'hitRight';
+      this.playAnim(side, { fade: 0.06, once: true, speed: 1.6 });
+    }
   }
 
   die() {
     this.state = 'dead';
+    if (this.mixer) this.playAnim('death', { fade: 0.1, once: true, speed: 1.2 });
     this.eyes.color.setHex(0x331100);
     Sound.yelp(this.volume());
     const center = this.localToWorld(0, 0.8, -0.2);
@@ -220,6 +417,7 @@ class Hound {
     if (dist < HOUND_BITE_RANGE && game.player.y < 1.2 && this.attackCooldown <= 0) {
       this.attackCooldown = 0.9;
       this.bite = 0.25;
+      if (this.mixer) this.playAnim('attack', { fade: 0.08, once: true, speed: 2 });
       Sound.bite();
       game.damagePlayer(Math.round(rand(8, 13)));
     }
@@ -240,6 +438,10 @@ class Hound {
   }
 
   animate(dt, t, moving) {
+    if (this.mixer) {
+      this.animateModel(dt, t, moving);
+      return;
+    }
     if (moving) this.stepPhase += dt * 15;
     const swing = moving ? Math.sin(this.stepPhase) * 0.9 : 0;
     this.legs[0].rotation.x = swing;
@@ -258,6 +460,23 @@ class Hound {
     this.group.rotation.y = this.yaw;
   }
 
+  // The animated model: gallop while chasing, stand and breathe otherwise.
+  // Attacks and flinches play over the top, then it goes back to running or standing.
+  animateModel(dt, t, moving) {
+    this.oneShotT -= dt;
+    if (this.oneShotT <= 0) {
+      if (moving) this.playAnim('run', { speed: RUN_ANIM_SPEED });
+      else this.playAnim('idle');
+    }
+    this.mixer.update(dt);
+    this.flash = Math.max(0, this.flash - dt);
+    const glow = 0.9 + Math.sin(t * 11 + this.seed) * 0.25 + this.flash * 20;
+    this.skin.emissiveIntensity = glow;
+    this.skinLight.emissiveIntensity = glow;
+    this.group.position.set(this.x, 0, this.z);
+    this.group.rotation.y = this.yaw;
+  }
+
   emitFlames(dt) {
     this.flameAcc += dt * 70;
     while (this.flameAcc >= 1) {
@@ -271,7 +490,11 @@ class Hound {
 
   // Topple onto one side, then smoulder as the fire inside goes out.
   updateDeath(dt) {
-    if (this.deathT < 1) {
+    if (this.mixer) {
+      // The model has its own death animation: it collapses, then smoulders.
+      this.mixer.update(dt);
+      this.skinLight.emissiveIntensity = this.skin.emissiveIntensity;
+    } else if (this.deathT < 1) {
       this.deathT = Math.min(1, this.deathT + dt * 3);
       this.group.rotation.z = this.deathT * (Math.PI / 2) * this.fallSide;
       this.group.position.y = this.deathT * 0.3;
