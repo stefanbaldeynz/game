@@ -82,6 +82,7 @@ const SONGS = {
 // round 4 (the motorbike ride) with the relentless boss riff the whole way.
 SONGS[3] = SONGS[1];
 SONGS[4] = SONGS[1];
+SONGS[5] = SONGS[1]; // the siege: the boss riff kicks in when the devils come
 
 // Catch typos: every bar must be exactly 16 steps.
 for (const [name, song] of Object.entries(SONGS)) {

@@ -863,7 +863,8 @@ function finish(state) {
   }
   const stats = `Time: ${minutes}:${seconds}. Health left: ${Math.ceil(player.health)}. Beasts put down: ${game.kills} of ${total}.`;
   if (ROUND_NUMBER < TOTAL_ROUNDS) {
-    showOverlay(`Round ${ROUND_NUMBER} complete`, `${stats} Beyond the gorge, a sea of lava...`, `Continue to round ${ROUND_NUMBER + 1}`);
+    const tease = ROUND_NUMBER === 3 ? 'Beyond the gorge, a sea of lava...' : 'Behind you, the hellgate opens...';
+    showOverlay(`Round ${ROUND_NUMBER} complete`, `${stats} ${tease}`, `Continue to round ${ROUND_NUMBER + 1}`);
   } else {
     showOverlay('Hellkeep conquered', `You beat every round! ${stats}`, 'Click to play again from round 1');
   }

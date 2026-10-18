@@ -1,11 +1,12 @@
 # Hellkeep
 
-A shooter in hell, in four rounds. The first two are first-person 3D, in the style of Doom and GoldenEye. The last two are side-on platform rounds, built from the levels of Gem Quest.
+A shooter in hell, in five rounds. The first two are first-person 3D, in the style of Doom and GoldenEye. Rounds 3 and 4 are side-on platform rounds (built from the levels of Gem Quest), and round 5 is tower defence with a first-person mode (built from Kiwi Canyon).
 
 - **Round 1: The Burning Keep.** Walk through the lava fields of hell to a burning castle. Flaming hellhounds guard every hall, and the **devil** waits by the throne. Kill them all to finish the round.
 - **Round 2: The Frozen Depths.** A frozen castle with freezing pools and falling snow. **Ice elephants** with huge tusks, burning with blue fire, roam its halls. Bring them all down to finish the round.
 - **Round 3: The Brimstone Gorge** (side-on). Climb down a burning gorge to the **Soul Gem** at the very bottom. Hellhounds fly in loops spitting fire, and **lightning elephants** guard the ledges.
-- **Round 4: Hell Ride** (side-on). Ride a motorbike across a lava sea to the Soul Gem. Blast through the rocks and jump (or fly) the gaps. Grab the gem to beat the game.
+- **Round 4: Hell Ride** (side-on). Ride a motorbike across a lava sea to the Soul Gem. Blast through the rocks and jump (or fly) the gaps.
+- **Round 5: The Hellgate Siege** (tower defence). The beasts of hell march through a burning gorge to the gate of the keep. Build fire towers on the rim, upgrade them, and drop into the gorge with your rifle. Three waves: **hellhounds**, then **ice elephants**, then the **devils** themselves (with the boss riff). Hold the gate to beat the game.
 
 The menu opens with a **round picker**: click a round to play it. Beating a round takes you on to the next one.
 
@@ -55,6 +56,35 @@ Double-click `serve.cmd` in the main game folder, pick Hellkeep, choose a round 
 - **Angel wings:** double jump, then keep holding Space to fly. You see your wings beating at the edges of the screen. The stamina gauge under your health refills while you stand on the ground.
 - **Ice elephants** (320 health) rear up, trumpet, then **charge**. A charge hits hard and throws you back. A single jump isn't high enough to clear one, but a double jump or the wings are. If an elephant charges into a wall, it's stunned for a moment. Up close it gores you with its tusks.
 - Round 2 starts with all three guns and the angel wings.
+
+## Round 5: The Hellgate Siege (defense.html)
+
+Tower defence with a first-person mode, from Kiwi Canyon, in hell and with the same graphics as the other rounds.
+
+| Control | Action |
+| --- | --- |
+| Click the gorge rim | Build a fire tower (10 souls) |
+| Click a tower | Select it, then upgrade it (up to 3 times) with the button or **U** |
+| Click the gorge floor | Choose where you'll drop in for first-person mode |
+| **N** | Open the hellgate: start the next wave |
+| **F** | Drop into the gorge in first person, and back up |
+| WASD / arrows, mouse wheel | Pan and zoom the tower view |
+| In first person: WASD + mouse, click, **R**, Shift | Move, shoot the rifle (hold), reload, sprint |
+| **P** | Pause (tower view) |
+
+- You start with **40 souls** and 20 lives. Killing a beast earns souls (hound 2, elephant 7, devil 20), and beating a wave pays a bonus.
+- **Fire towers** throw homing fireballs. Each upgrade adds damage, fire rate, range and launchers, and changes the colour of their fire: ember orange, crimson, gold, then blue soul-fire. The rifle can be upgraded 3 times too.
+- A hellhound that reaches the keep costs 1 life, an elephant 3, a devil 6.
+- Towers alone won't hold the devils: get down there with the rifle.
+- All the numbers (waves, health, speeds, costs) and the map are in `js/defense/config.js`.
+
+| File | What it does |
+| --- | --- |
+| `defense/config.js` | **Every balance number and the map** (an ASCII grid: `.` rim, `T` brazier, `=` gorge, `S` hellgate, `E` the keep's gate) |
+| `defense/world.js` | Builds the hell gorge, the hellgate and the keep's gate, collision, and the beasts' path |
+| `defense/beasts.js` | Hellhounds, elephants and devils walking the path (the same models as the other rounds), with health bars and deaths |
+| `defense/towers.js` | The fire towers and their fireballs |
+| `defense/main.js` | Waves, building and upgrading, switching views, first-person shooting, the HUD and the game loop |
 
 ## The side-on rounds (3 and 4)
 
@@ -133,5 +163,6 @@ Easy things to try changing:
 Tips:
 
 - Open `index.html#round=2` to jump straight to round 2. `#round=3` or `#round=4` opens the side-on rounds.
+- `defense.html#preview` starts round 5 straight away (add `&wave=3` to skip to the devils with plenty of souls).
 - `side.html#round=3&preview&god` starts a side-on round straight away, with you invincible. Add `&calm` to keep the beasts still, `&x=10&y=20` to start somewhere else (in tiles), or `&zoom=4` to bring the camera in close on you.
 - Open `index.html#preview&god` to start straight away without capturing the mouse, and with you invincible. You can add `&round=2` to that, `&calm` to keep the beasts asleep, or `&noao` / `&nobloom` to compare effects. It's handy for screenshots and testing.

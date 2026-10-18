@@ -1,12 +1,14 @@
 // Every round in Hellkeep, and the round picker on the menu screens.
 // Rounds 1 and 2 are the 3D shooter (index.html). Rounds 3 and 4 are side-on
-// platform rounds (side.html). This file is loaded by both pages.
+// platform rounds (side.html). Round 5 is tower defence with a first-person mode
+// (defense.html). This file is loaded by every page.
 
 const ROUND_LIST = [
   { n: 1, title: 'The Burning Keep', page: 'index.html' },
   { n: 2, title: 'The Frozen Depths', page: 'index.html' },
   { n: 3, title: 'The Brimstone Gorge', page: 'side.html' },
   { n: 4, title: 'Hell Ride', page: 'side.html' },
+  { n: 5, title: 'The Hellgate Siege', page: 'defense.html' },
 ];
 const TOTAL_ROUNDS = ROUND_LIST.length;
 
