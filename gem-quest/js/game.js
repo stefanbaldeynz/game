@@ -14,11 +14,13 @@ view.width = VIEW_W;
 view.height = VIEW_H;
 const vctx = view.getContext('2d');
 
-const COLS = 16;
 const GRAVITY = 0.3;
 const MAX_FALL = 4.5;
 const JUMP_SPEED = 5.4;
 const RUN_SPEED = 1.7;
+const BIKE_SLOW = 1.1;
+const BIKE_CRUISE = 1.9;
+const BIKE_FAST = 2.7;
 const INVULN_FRAMES = 120;
 const START_LIVES = 3;
 const DRAGON_W = 14;
@@ -37,8 +39,12 @@ addEventListener('keydown', (e) => {
   Sound.init();
   if (!e.repeat) pressed[k] = true;
   keys[k] = true;
-  if (k === 'enter' && state.mode === 'clear' && hasNextLevel()) nextLevel();
-  else if (k === 'enter' && state.mode !== 'playing') startGame();
+  if (state.mode === 'title' && (k === 'arrowleft' || k === 'arrowright')) chooseLevel(k === 'arrowright' ? 1 : -1);
+  if (k === 'enter') {
+    if (state.mode === 'title') startGame();
+    else if (state.mode === 'clear' && hasNextLevel()) nextLevel();
+    else if (state.mode !== 'playing') backToTitle();
+  }
   if (k === 'p' && state.mode === 'playing') state.paused = !state.paused;
   if (k === 'm') Sound.toggleMute();
   if (e.key.startsWith('Arrow') || e.key === ' ') e.preventDefault();
@@ -98,7 +104,9 @@ let items = [];
 let particles = [];
 let popups = [];
 let gem = null;
-const cam = { y: 0 };
+let cols = 16;
+let level = LEVELS[0];
+const cam = { x: 0, y: 0 };
 
 const clouds = Array.from({ length: 9 }, (_, i) => ({
   x: rand(-20, VIEW_W),
@@ -112,9 +120,8 @@ const SOLID = new Set(['#', 'B', 'S', 'M']);
 const BREAKABLE = new Set(['B', 'S', 'M']);
 
 function tileAt(c, r) {
-  if (c < 0 || c >= COLS) return '#';
-  if (r < 0) return '.';
-  if (r >= rows) return '#';
+  if (c < 0 || c >= cols) return '#';
+  if (r < 0 || r >= rows) return '.'; // open sky above, a drop below
   return grid[r][c];
 }
 
@@ -161,9 +168,10 @@ function moveBox(b) {
 
 // ---------- Level setup ----------
 function loadLevel(index) {
-  const level = LEVELS[index];
+  level = LEVELS[index];
   grid = level.map.map((row) => row.split(''));
   rows = grid.length;
+  cols = grid[0].length;
   enemies = [];
   fireballs = [];
   bolts = [];
@@ -174,7 +182,7 @@ function loadLevel(index) {
   let start = { x: 32, y: 32 };
 
   for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < COLS; c++) {
+    for (let c = 0; c < cols; c++) {
       const ch = grid[r][c];
       const x = c * TILE;
       const y = r * TILE;
@@ -188,11 +196,17 @@ function loadLevel(index) {
   }
   enemies.filter((e) => e.type === 'dragon').forEach(fitDragonLoop);
 
+  // On the motorbike the kid and bike together make a bigger box.
+  const w = level.bike ? 16 : 10;
+  const h = level.bike ? 20 : 14;
+  start.y += 14 - h;
   player = {
     x: start.x,
     y: start.y,
-    w: 10,
-    h: 14,
+    w,
+    h,
+    bike: !!level.bike,
+    bikeWaiting: !!level.bike,
     vx: 0,
     vy: 0,
     facing: 1,
@@ -209,6 +223,7 @@ function loadLevel(index) {
     safeX: start.x,
     safeY: start.y,
   };
+  cam.x = 0;
   cam.y = 0;
 }
 
@@ -260,11 +275,21 @@ function fitDragonLoop(d) {
   d.ry = 0;
 }
 
+// Title screen level select (handy for testing any level straight away).
+function chooseLevel(step) {
+  state.levelIndex = (state.levelIndex + step + LEVELS.length) % LEVELS.length;
+  loadLevel(state.levelIndex);
+}
+
+function backToTitle() {
+  state.mode = 'title';
+  loadLevel(state.levelIndex);
+}
+
 function startGame() {
   Sound.init();
   state.mode = 'playing';
   state.paused = false;
-  state.levelIndex = 0;
   state.score = 0;
   state.lives = START_LIVES;
   state.time = 0;
@@ -366,29 +391,38 @@ function fistBox(p) {
   return { x: p.facing > 0 ? p.x + p.w - 2 : p.x - 10, y: p.y + 3, w: 12, h: 9 };
 }
 
-function punch(p) {
-  p.punchT = 10;
-  p.punchCooldown = 16;
-  Sound.punch();
-  // Smash the first breakable block the fist touches.
-  const fx = p.facing > 0 ? p.x + p.w + 5 : p.x - 5;
-  for (const fy of [p.y + 6, p.y + 10]) {
-    const c = Math.floor(fx / TILE);
-    const r = Math.floor(fy / TILE);
+// Smashes the first breakable block found at x, at any of the given heights.
+function smashAt(x, heights) {
+  for (const y of heights) {
+    const c = Math.floor(x / TILE);
+    const r = Math.floor(y / TILE);
     if (BREAKABLE.has(tileAt(c, r))) {
       breakTile(c, r);
-      break;
+      return true;
     }
+  }
+  return false;
+}
+
+function punch(p) {
+  p.punchCooldown = 16;
+  // On the motorbike your hands are on the handlebars: magic only.
+  if (!p.bike) {
+    p.punchT = 10;
+    Sound.punch();
+    smashAt(p.facing > 0 ? p.x + p.w + 5 : p.x - 5, [p.y + 6, p.y + 10]);
   }
   if (p.magic && bolts.length < 2) {
     Sound.magic();
-    bolts.push({ x: p.facing > 0 ? p.x + p.w : p.x - 8, y: p.y + 3, w: 8, h: 8, vx: p.facing * 3.5, t: 0 });
+    const y = p.bike ? p.y + 5 : p.y + 3;
+    bolts.push({ x: p.facing > 0 ? p.x + p.w : p.x - 8, y, w: 8, h: 8, vx: p.facing * (3.5 + Math.max(0, p.vx)), t: 0 });
   }
 }
 
-function hurtPlayer() {
+// force: falling in the water still counts while you're blinking.
+function hurtPlayer(force = false) {
   const p = player;
-  if (p.dead || p.invuln > 0) return;
+  if (p.dead || (p.invuln > 0 && !force)) return;
   p.dead = true;
   p.deadT = 0;
   p.deadX = p.x;
@@ -410,8 +444,19 @@ function respawn() {
   p.vx = 0;
   p.vy = 0;
   p.invuln = INVULN_FRAMES;
+  p.bikeWaiting = p.bike; // the bike waits for you to press Right or Jump
   fireballs = [];
   Sound.startMusic();
+}
+
+// The motorbike always rolls forward. Right speeds it up, Left slows it down.
+function rideBike(p) {
+  const left = keys.arrowleft || keys.a;
+  const right = keys.arrowright || keys.d;
+  if (p.bikeWaiting && (right || tapped(JUMP_KEYS))) p.bikeWaiting = false;
+  const target = p.bikeWaiting ? 0 : right ? BIKE_FAST : left ? BIKE_SLOW : BIKE_CRUISE;
+  p.vx += Math.sign(target - p.vx) * Math.min(Math.abs(target - p.vx), p.onGround ? 0.08 : 0.04);
+  p.facing = 1;
 }
 
 function updatePlayer() {
@@ -425,7 +470,8 @@ function updatePlayer() {
   const left = keys.arrowleft || keys.a;
   const right = keys.arrowright || keys.d;
   const accel = p.onGround ? 0.25 : 0.18;
-  if (left && !right) {
+  if (p.bike) rideBike(p);
+  else if (left && !right) {
     p.vx -= accel;
     p.facing = -1;
   } else if (right && !left) {
@@ -435,7 +481,7 @@ function updatePlayer() {
     p.vx *= p.onGround ? 0.7 : 0.94;
     if (Math.abs(p.vx) < 0.05) p.vx = 0;
   }
-  p.vx = Math.max(-RUN_SPEED, Math.min(RUN_SPEED, p.vx));
+  if (!p.bike) p.vx = Math.max(-RUN_SPEED, Math.min(RUN_SPEED, p.vx));
 
   // Jumping forgives slightly early presses and slightly late ones.
   p.jumpBuffer = tapped(JUMP_KEYS) ? 6 : p.jumpBuffer - 1;
@@ -449,9 +495,22 @@ function updatePlayer() {
   if (!held(JUMP_KEYS) && p.vy < -2) p.vy = -2; // let go early for a small hop
   p.vy = Math.min(p.vy + GRAVITY, MAX_FALL);
 
+  const speed = p.vx;
   const hit = moveBox(p);
   p.onGround = hit.ground;
   p.walkT = p.onGround && p.vx !== 0 ? p.walkT + 1 : 0;
+
+  if (p.bike) {
+    // Ride straight through rocks and blocks, and head-butt the ones above.
+    if (hit.x && smashAt(p.x + p.w + 2, [p.y + 4, p.y + p.h / 2, p.y + p.h - 3])) p.vx = speed * 0.85;
+    if (hit.ceiling) smashAt(p.x + p.w / 2, [p.y - 2]);
+  }
+
+  // Fell off the bottom (or into the water).
+  if (p.y + p.h > rows * TILE - (level.water ? 6 : 0)) {
+    hurtPlayer(true);
+    return;
+  }
 
   if (p.punchCooldown > 0) p.punchCooldown--;
   if (p.punchT > 0) p.punchT--;
@@ -465,7 +524,9 @@ function updatePlayer() {
   // Remember a safe spot to come back to after losing a life.
   if (p.onGround) {
     const near = (o) => Math.abs(o.x - p.x) < 48 && Math.abs(o.y - p.y) < 48;
-    if (!enemies.some((e) => e.alive && near(e)) && !fireballs.some(near)) {
+    // On the bike, only somewhere with road ahead (not the edge of a drop).
+    const roadAhead = !p.bike || [0, 1, 2].every((i) => solidAtPixel(p.x + p.w + i * TILE, p.y + p.h + 2));
+    if (roadAhead && !enemies.some((e) => e.alive && near(e)) && !fireballs.some(near)) {
       p.safeX = p.x;
       p.safeY = p.y;
     }
@@ -474,7 +535,10 @@ function updatePlayer() {
 
 // ---------- Enemies ----------
 function onScreen(o, margin = 0) {
-  return o.y + o.h > cam.y - margin && o.y < cam.y + VIEW_H + margin;
+  return (
+    o.y + o.h > cam.y - margin && o.y < cam.y + VIEW_H + margin &&
+    o.x + o.w > cam.x - margin && o.x < cam.x + VIEW_W + margin
+  );
 }
 
 function updateDragon(d) {
@@ -598,7 +662,8 @@ function update() {
     it.t++;
     it.vy = Math.min(it.vy + 0.2, 3);
     moveBox(it);
-    if (!p.dead && overlap(it, p)) {
+    if (it.y > rows * TILE) it.dead = true; // dropped into the water
+    else if (!p.dead && overlap(it, p)) {
       it.dead = true;
       collectItem(it);
     }
@@ -607,6 +672,10 @@ function update() {
   // Getting touched by an enemy or fire costs a life.
   if (!p.dead && p.invuln <= 0) {
     const body = { x: p.x + 1, y: p.y + 2, w: p.w - 2, h: p.h - 2 };
+    // The motorbike runs scorpions over.
+    if (p.bike) {
+      for (const e of enemies) if (e.alive && e.type === 'scorpion' && overlap(body, e)) killEnemy(e);
+    }
     if (enemies.some((e) => e.alive && overlap(body, e)) || fireballs.some((f) => !f.dead && overlap(body, f))) {
       hurtPlayer();
     }
@@ -630,9 +699,17 @@ function update() {
   bolts = bolts.filter((b) => !b.dead);
   items = items.filter((i) => !i.dead);
 
-  // Camera follows the player, keeping more of the way down in view.
-  const target = Math.max(0, Math.min(rows * TILE - VIEW_H, p.y + p.h / 2 - VIEW_H * 0.4));
-  cam.y += (target - cam.y) * (p.dead ? 0 : 0.12);
+  // Camera follows the player, keeping more of the way ahead in view
+  // (below you in a tall level, in front of you on the motorbike).
+  const ease = p.dead ? 0 : 1;
+  const targetY = clampCam(p.y + p.h / 2 - VIEW_H * 0.4, rows * TILE - VIEW_H);
+  const targetX = clampCam(p.x + p.w / 2 - (p.bike ? 80 : VIEW_W / 2), cols * TILE - VIEW_W);
+  cam.y += (targetY - cam.y) * 0.12 * ease;
+  cam.x += (targetX - cam.x) * 0.2 * ease;
+}
+
+function clampCam(v, max) {
+  return Math.max(0, Math.min(max, v));
 }
 
 function endGame(mode) {
@@ -661,16 +738,31 @@ function drawSky() {
   vctx.fillStyle = '#1c58f0';
   vctx.fillRect(0, 0, VIEW_W, VIEW_H);
   const span = VIEW_H + 120;
+  const spanX = VIEW_W + 60;
   for (const cl of clouds) {
     const y = ((((cl.y - cam.y * 0.4) % span) + span) % span) - 40;
-    drawCloud(Math.round(cl.x), Math.round(y), cl.size);
+    const x = ((((cl.x - cam.x * 0.4) % spanX) + spanX) % spanX) - 50;
+    drawCloud(Math.round(x), Math.round(y), cl.size);
   }
 }
 
-function drawTiles(camY) {
+// Water along the bottom of the level, showing through the gaps.
+function drawWater(camX, camY) {
+  const y = rows * TILE - 10 - camY;
+  vctx.fillStyle = '#1040c0';
+  vctx.fillRect(camX, y, VIEW_W, 10);
+  vctx.fillStyle = '#58a8ff';
+  for (let x = camX - (camX % 16); x < camX + VIEW_W; x += 16) {
+    const bob = Math.floor((state.frame / 12 + x / 16) % 2);
+    vctx.fillRect(x + bob * 4, y, 8, 2);
+  }
+}
+
+function drawTiles(camX, camY) {
   const r0 = Math.floor(camY / TILE);
+  const c0 = Math.floor(camX / TILE);
   for (let r = r0; r <= r0 + VIEW_H / TILE + 1; r++) {
-    for (let c = 0; c < COLS; c++) {
+    for (let c = c0; c <= c0 + VIEW_W / TILE + 1 && c < cols; c++) {
       const ch = tileAt(c, r);
       const x = c * TILE;
       const y = r * TILE - camY;
@@ -700,6 +792,14 @@ function drawPlayer(camY) {
     return;
   }
   if (p.invuln > 0 && Math.floor(p.invuln / 4) % 2) return;
+  if (p.bike) {
+    // The kid sits on the bike; the wheels turn as it moves.
+    const by = p.y + p.h - 12 - camY;
+    const turning = p.vx > 0.1 && Math.floor(p.x / 6) % 2;
+    drawSprite(SPRITES.kidJump, p.x + 2, by - 11, 1);
+    drawSprite(turning ? SPRITES.bikeB : SPRITES.bikeA, p.x - 2, by, 1);
+    return;
+  }
   let spr = SPRITES.kidStand;
   if (p.punchT > 0) spr = SPRITES.kidPunch;
   else if (!p.onGround) spr = SPRITES.kidJump;
@@ -711,8 +811,13 @@ function drawPlayer(camY) {
 
 function drawWorld() {
   const camY = Math.round(cam.y);
+  const camX = Math.round(cam.x);
   drawSky();
-  drawTiles(camY);
+  // Everything below is drawn in level coordinates, shifted by the camera.
+  vctx.save();
+  vctx.translate(-camX, 0);
+  if (level.water) drawWater(camX, camY);
+  drawTiles(camX, camY);
 
   if (gem) {
     drawSprite(SPRITES.gem, gem.x, gem.y - camY);
@@ -771,6 +876,7 @@ function drawWorld() {
       vctx.globalAlpha = 1;
     } else vctx.fillRect(x, y, 1, 1);
   }
+  vctx.restore();
 }
 
 function text(str, x, y, size, color = '#fff', align = 'left') {
@@ -792,20 +898,30 @@ function drawHud() {
   const secs = Math.floor(state.time / 60);
   text(`${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, canvas.width - 14, 12, 16, '#fff', 'right');
 
-  // How far down the gorge you are.
-  const total = (rows - 2) * TILE;
-  const frac = Math.max(0, Math.min(1, player.y / total));
-  const bx = canvas.width - 22;
-  const by = 60;
-  const bh = canvas.height - 100;
+  // How far along you are: down the right edge, or along the bottom on the bike.
   ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-  ctx.fillRect(bx, by, 10, bh);
-  ctx.fillStyle = '#40d8ff';
-  ctx.fillRect(bx, by, 10, bh * frac);
-  ctx.drawImage(SPRITES.gem, bx - 9, by + bh + 4, 28, 22);
+  if (player.bike) {
+    const frac = Math.max(0, Math.min(1, player.x / ((cols - 4) * TILE)));
+    const bx = 40;
+    const by = canvas.height - 18;
+    const bw = canvas.width - 100;
+    ctx.fillRect(bx, by, bw, 10);
+    ctx.fillStyle = '#40d8ff';
+    ctx.fillRect(bx, by, bw * frac, 10);
+    ctx.drawImage(SPRITES.gem, bx + bw + 8, by - 8, 28, 22);
+  } else {
+    const frac = Math.max(0, Math.min(1, player.y / ((rows - 2) * TILE)));
+    const bx = canvas.width - 22;
+    const by = 60;
+    const bh = canvas.height - 100;
+    ctx.fillRect(bx, by, 10, bh);
+    ctx.fillStyle = '#40d8ff';
+    ctx.fillRect(bx, by, 10, bh * frac);
+    ctx.drawImage(SPRITES.gem, bx - 9, by + bh + 4, 28, 22);
+  }
 
   for (const pp of popups) {
-    text(pp.text, pp.x * SCALE, (pp.y - cam.y) * SCALE, 12, '#fff8a0', 'center');
+    text(pp.text, (pp.x - cam.x) * SCALE, (pp.y - cam.y) * SCALE, 12, '#fff8a0', 'center');
   }
 }
 
@@ -825,12 +941,13 @@ function draw() {
   if (state.mode === 'title') {
     panel([
       ['GEM QUEST', 90, 52, '#f8d030'],
-      [`Level ${state.levelIndex + 1}: ${name}`, 175, 16, '#90f060'],
-      ['Climb down the gorge and grab', 240, 13],
-      ['the Gem at the very bottom!', 265, 13],
-      ['Arrows / A D ....... move', 320, 12, '#c8d8ff'],
+      [`< Level ${state.levelIndex + 1}: ${name} >`, 175, 16, '#90f060'],
+      ['Left / Right picks the level', 202, 10, '#8090b0'],
+      [level.intro[0], 240, 13],
+      [level.intro[1], 265, 13],
+      [level.bike ? 'Right / Left ....... faster / slower' : 'Arrows / A D ....... move', 320, 12, '#c8d8ff'],
       ['Space / Up / X ..... jump', 345, 12, '#c8d8ff'],
-      ['Z / J .............. punch', 370, 12, '#c8d8ff'],
+      [level.bike ? 'Z / J .............. magic' : 'Z / J .............. punch', 370, 12, '#c8d8ff'],
       ['P pause   M sound', 395, 12, '#c8d8ff'],
       [blink ? 'PRESS ENTER' : '', 460, 20, '#fff'],
       [`HIGH SCORE ${state.highScore}`, 520, 12, '#f8d030'],

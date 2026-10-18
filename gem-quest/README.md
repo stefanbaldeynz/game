@@ -1,6 +1,13 @@
 # Gem Quest
 
-A retro platformer in the style of the old 8-bit console games. Climb down a rocky gorge, punch blocks open for prizes, dodge the fire-breathing dragons and grab the **Gem** at the very bottom to clear the level.
+A retro platformer in the style of the old 8-bit console games. Punch blocks open for prizes, dodge the fire-breathing dragons and grab the **Gem** to clear each level.
+
+## Levels
+
+1. **Rocky Gorge**: climb down the gorge to the Gem at the very bottom.
+2. **Motorbike Mayhem**: ride a motorbike sideways across the water. Smash through rocks, run over scorpions and jump the gaps. Falling in the water costs a life.
+
+Clearing a level takes you on to the next one. On the title screen, **Left / Right** picks which level to start on (handy for testing).
 
 No build tools or installs: open `index.html` in a browser to play.
 
@@ -13,7 +20,10 @@ No build tools or installs: open `index.html` in a browser to play.
 | Z / J | Punch (and shoot magic once you have it) |
 | P | Pause |
 | M | Sound on / off |
+| Left / Right (title screen) | Pick the level |
 | Enter | Start / play again |
+
+On the motorbike, the bike rolls forward on its own: **Right** speeds up and **Left** slows down. After you lose a life, it waits until you press Right or Jump. Z / J fires magic if you have it.
 
 ## How it plays
 
@@ -30,7 +40,7 @@ No build tools or installs: open `index.html` in a browser to play.
 
 - `index.html` is the page that hosts the game
 - `style.css` holds the page styles
-- `js/levels.js` holds the level maps, drawn as text (the key is at the top of the file). Add a new entry to `LEVELS` to make a new level.
+- `js/levels.js` holds the level maps, drawn as text (the key is at the top of the file). Add a new entry to `LEVELS` to make a new level. A level can be tall (scrolls down) or wide (scrolls sideways). The motorbike level is glued together from screen-sized chunks with `joinChunks`.
 - `js/sprites.js` holds the pixel art. Each sprite is written as rows of letters, one letter per pixel.
 - `js/audio.js` makes the sound effects and music with Web Audio
 - `js/game.js` holds the game loop, physics, enemies and drawing
