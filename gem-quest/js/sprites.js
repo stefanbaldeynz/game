@@ -21,6 +21,7 @@ const PALETTE = {
   q: '#c050c0', // scorpion
   c: '#40d8ff', // gem light
   C: '#1870c8', // gem dark
+  e: '#b0b0b8', // wheel hubs
 };
 
 function makeSprite(rows, palette = PALETTE) {
@@ -92,6 +93,27 @@ KID_PUNCH[9] = '..krrrrrrkkkk...';
 KID_PUNCH[10] = '.ksrrrrrrrrrsssk';
 KID_PUNCH[11] = '.ksryyyyrkkksssk';
 KID_PUNCH[12] = '..krrrrrrk..kkk.';
+
+// ---------- The motorbike ----------
+const BIKE_A = [
+  '...............kk...',
+  '..............kyk...',
+  '...kkkkkk....kyk....',
+  '..krrrrrrkkkkrrk....',
+  '.krrrrrrrrrrrrrrk...',
+  '.kryyyyyyyyyyyyrrk..',
+  '..kkkkkrrrrrrrkkkk..',
+  '.kkkk..krrrrk..kkkk.',
+  'kkeekk..kkkk..kkeekk',
+  'keyyek........keyyek',
+  'kkeekk........kkeekk',
+  '.kkkk..........kkkk.',
+];
+// Second frame: the wheel spokes have turned.
+const BIKE_B = BIKE_A.slice();
+BIKE_B[8] = 'kekkek..kkkk..kekkek';
+BIKE_B[9] = 'kkyykk........kkyykk';
+BIKE_B[10] = 'kekkek........kekkek';
 
 // ---------- Enemies ----------
 const DRAGON_UP = [
@@ -291,6 +313,8 @@ const SPRITES = {
   kidWalk: pair(KID_WALK),
   kidJump: pair(KID_JUMP),
   kidPunch: pair(KID_PUNCH),
+  bikeA: pair(BIKE_A),
+  bikeB: pair(BIKE_B),
   dragonUp: pair(DRAGON_UP),
   dragonDown: pair(DRAGON_DOWN),
   scorpA: pair(SCORPION_A),
