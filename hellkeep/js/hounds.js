@@ -48,12 +48,12 @@ float hellCracks(vec3 p) {
     float d = dot(r, r);
     if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) { d2 = d; }
   }
-  return 1.0 - smoothstep(0.03, 0.14, sqrt(d2) - sqrt(d1));
+  return 1.0 - smoothstep(0.02, 0.09, sqrt(d2) - sqrt(d1));
 }
 `;
 
-function hellfireSkin(color, crackScale) {
-  const material = new THREE.MeshStandardMaterial({ color, roughness: 0.85, emissive: 0xff5a10, emissiveIntensity: 1 });
+function hellfireSkin(color, crackScale, glow = 0xff5a10) {
+  const material = new THREE.MeshStandardMaterial({ color, roughness: 0.85, emissive: glow, emissiveIntensity: 1 });
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vHellPos;')

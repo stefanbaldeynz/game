@@ -1,8 +1,15 @@
 // Modern graphics: the "post-processing" chain that runs after the 3D scene is drawn.
 //
-//   1. Draw the world, then the gun on top, into a high-precision (HDR) image with anti-aliasing.
-//   2. Bloom: anything brighter than white (fire, lava, eyes, muzzle flashes) glows and bleeds light.
-//   3. Grade: a filmic tone curve, a touch of colour grading, a dark vignette and fine film grain.
+//   1. Draw the world into a high-precision (HDR) image with anti-aliasing.
+//   2. Ambient occlusion (GTAO): soft contact shadows where things meet, in corners and
+//      under creatures, worked out from the depth of the scene.
+//   3. Draw the gun on top.
+//   4. Bloom: anything brighter than white (fire, lava, eyes, muzzle flashes) glows and bleeds light.
+//   5. Grade: a filmic tone curve, colour grading, a dark vignette, a hint of lens fringing
+//      at the edges and fine film grain.
+//
+// Lighting in the world also gets real-time shadows (main.js) and the hell sky as soft
+// ambient light and reflections (useSkyForLighting below).
 //
 // Press G in the game to switch this off on slower computers (it falls back to plain rendering).
 
@@ -46,7 +53,11 @@ const GRADE_SHADER = {
     }
 
     void main() {
-      vec3 color = acesFilm(texture2D(tDiffuse, vUv).rgb * exposure);
+      // Lens fringing: red and blue split very slightly towards the edges of the screen.
+      vec2 fromMid = vUv - 0.5;
+      vec2 shift = fromMid * dot(fromMid, fromMid) * 0.012;
+      vec3 hdr = vec3(texture2D(tDiffuse, vUv + shift).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - shift).b);
+      vec3 color = acesFilm(hdr * exposure);
       float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
       color = mix(vec3(luma), color, saturation);
       vec2 fromCenter = vUv - 0.5;
@@ -58,7 +69,7 @@ const GRADE_SHADER = {
 };
 
 function createGraphics(renderer, scene, camera, weaponScene, weaponCamera) {
-  const { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, RoomEnvironment } = THREE_ADDONS;
+  const { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, GTAOPass, RoomEnvironment } = THREE_ADDONS;
   let enabled = loadSetting();
 
   // Shiny metal: the guns reflect a soft studio room.
@@ -71,12 +82,35 @@ function createGraphics(renderer, scene, camera, weaponScene, weaponCamera) {
   });
   const composer = new EffectComposer(renderer, target);
   composer.addPass(new RenderPass(scene, camera));
+  // Dev switches for comparing effects: add &noao, &nobloom to the address.
+  const devOff = new URLSearchParams(location.hash.slice(1));
+
+  const ao = new GTAOPass(scene, camera, window.innerWidth, window.innerHeight);
+  ao.updateGtaoMaterial({ radius: 0.9, distanceExponent: 1.5, thickness: 1.5, scale: 1.2, samples: 16 });
+  ao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 16 });
+  ao.blendIntensity = 0.9;
+  // Glows, flames and other see-through effects shouldn't cast contact shadows,
+  // so they're hidden while the occlusion is worked out.
+  const aoRender = ao.render.bind(ao);
+  ao.render = (...args) => {
+    const hidden = [];
+    scene.traverse((o) => {
+      if (o.visible && (o.isPoints || o.isSprite || (o.material && o.material.transparent))) {
+        o.visible = false;
+        hidden.push(o);
+      }
+    });
+    aoRender(...args);
+    for (const o of hidden) o.visible = true;
+  };
+  if (!devOff.has('noao')) composer.addPass(ao);
+
   const gunPass = new RenderPass(weaponScene, weaponCamera);
   gunPass.clear = false;
   gunPass.clearDepth = true; // the gun is always drawn on top
   composer.addPass(gunPass);
-  const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.75, 0.45, 0.82);
-  composer.addPass(bloom);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.6, 0.45, 0.85);
+  if (!devOff.has('nobloom')) composer.addPass(bloom);
   const grade = new ShaderPass(GRADE_SHADER);
   grade.uniforms.exposure.value = THEME.exposure || 1;
   composer.addPass(grade);
@@ -91,6 +125,13 @@ function createGraphics(renderer, scene, camera, weaponScene, weaponCamera) {
 
   // Plain rendering still gets the filmic tone curve, just no bloom or film effects.
   function applyRendererSettings() {
+    // Low graphics also turns off real-time shadows (and the shaders are rebuilt to match).
+    if (renderer.shadowMap.enabled !== enabled) {
+      renderer.shadowMap.enabled = enabled;
+      scene.traverse((o) => {
+        for (const m of [].concat(o.material || [])) m.needsUpdate = true;
+      });
+    }
     renderer.toneMapping = enabled ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping;
     renderer.outputColorSpace = enabled ? THREE.LinearSRGBColorSpace : THREE.SRGBColorSpace;
     renderer.toneMappingExposure = THEME.exposure || 1;
@@ -100,6 +141,7 @@ function createGraphics(renderer, scene, camera, weaponScene, weaponCamera) {
     composer.setPixelRatio(renderer.getPixelRatio());
     composer.setSize(window.innerWidth, window.innerHeight);
     bloom.setSize(window.innerWidth, window.innerHeight);
+    ao.setSize(window.innerWidth, window.innerHeight);
     grade.uniforms.resolution.value.set(window.innerWidth, window.innerHeight);
   }
 
@@ -112,6 +154,18 @@ function createGraphics(renderer, scene, camera, weaponScene, weaponCamera) {
     },
     resize,
     envMap: weaponScene.environment, // for shiny things out in the world, like the shotgun display
+    // The sky picture becomes soft ambient light and reflections for everything in the
+    // world: metal glints red under the hell sky and blue in the frozen depths.
+    useSkyForLighting(skyTexture) {
+      const sky = skyTexture.clone();
+      sky.mapping = THREE.EquirectangularReflectionMapping;
+      sky.needsUpdate = true;
+      scene.environment = pmrem.fromEquirectangular(sky).texture;
+      scene.environmentIntensity = 0.45;
+      // Your guns reflect the same sky, so chrome and steel glint with hellfire.
+      weaponScene.environment = scene.environment;
+      weaponScene.environmentIntensity = 2.2;
+    },
     toggle() {
       enabled = !enabled;
       try {

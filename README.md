@@ -10,6 +10,10 @@ Running through the server gives the full graphics: browsers block a page opened
 
 The server is `serve.ps1`, which uses the PowerShell built into Windows. It only answers this computer, and it never caches files, so after editing a game just refresh the page. Run `serve.cmd -Port 9000` to use another port, or `serve.cmd -Open hellkeep/` to open straight into a game.
 
+## Shared code
+
+`lib/three/` holds the [three.js](https://threejs.org/) 3D engine (version 0.186.1) for the 3D games, so they load it from this computer instead of the internet. See its README for what's in it.
+
 ## The games
 
 | Game | Folder | What it is |

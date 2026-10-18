@@ -57,6 +57,9 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.autoClear = false;
+// Real-time shadows, softened at the edges.
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 document.getElementById('game').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -75,6 +78,39 @@ camera.rotation.order = 'YXZ';
 const gunLight = new THREE.PointLight(0xffb060, 0, 16, 1.5);
 scene.add(gunLight);
 
+// The burning sky (or the cold moon in round 2): a low light from the south that throws
+// long shadows across the ground outside. The castle roof keeps it out of the halls.
+const skyLight = new THREE.DirectionalLight(THEME.palette === 'frost' ? 0x8ab8ff : 0xff6a30, (THEME.palette === 'frost' ? 0.8 : 1.1) * LIGHT_UNITS);
+{
+  const cx = (MAP_W * CELL) / 2;
+  const cz = (MAP_H * CELL) / 2;
+  skyLight.position.set(cx - 50, 45, cz + 90);
+  skyLight.target.position.set(cx, 0, cz);
+  skyLight.castShadow = true;
+  skyLight.shadow.mapSize.set(2048, 2048);
+  Object.assign(skyLight.shadow.camera, { left: -80, right: 80, top: 80, bottom: -80, near: 10, far: 260 });
+  skyLight.shadow.bias = -0.0006;
+  skyLight.shadow.normalBias = 0.04;
+  skyLight.shadow.radius = 2;
+  scene.add(skyLight, skyLight.target);
+}
+
+// Brazier shadows. Shadows from point lights are expensive, so a few shadow-casting
+// lights hop to whichever braziers are nearest you each frame, standing in for them.
+const SHADOW_LIGHTS = 3;
+const shadowLights = Array.from({ length: SHADOW_LIGHTS }, () => {
+  const light = new THREE.PointLight(THEME.brazierLight, 0, 22, 1.5);
+  light.castShadow = true;
+  light.shadow.mapSize.set(512, 512);
+  light.shadow.camera.near = 0.3;
+  light.shadow.camera.far = 22;
+  light.shadow.bias = -0.003;
+  light.shadow.normalBias = 0.03;
+  light.shadow.radius = 3;
+  scene.add(light);
+  return light;
+});
+
 // The gun is drawn in its own scene on top of the world, so it never pokes through walls.
 const weaponScene = new THREE.Scene();
 const weaponCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.01, 10);
@@ -92,6 +128,7 @@ const graphics = createGraphics(renderer, scene, camera, weaponScene, weaponCame
 // ---------- World ----------
 
 const level = buildLevel(scene);
+graphics.useSkyForLighting(level.sky.material.map);
 const bulletHoles = new BulletHoles(scene);
 const glowTexture = Textures.glow();
 const ammoMaterial = new THREE.MeshStandardMaterial({ map: Textures.ammoCrate(), emissive: 0xffffff, emissiveIntensity: 0.25 });
@@ -140,6 +177,8 @@ const game = {
   godMode: false,
   fire: new ParticleSystem(scene, { max: 4000, size: 0.55, texture: glowTexture, damping: 0.96, palette: THEME.palette }),
   sparks: new ParticleSystem(scene, { max: 2000, size: 0.13, texture: glowTexture, damping: 0.97, palette: THEME.palette }),
+  // Smoke above the fires (pale mist in the frozen round): soft, dark and see-through.
+  smoke: new ParticleSystem(scene, { max: 900, size: 1.8, texture: glowTexture, damping: 0.99, palette: THEME.palette === 'frost' ? 'mist' : 'smoke' }),
   enemies: [],
   projectiles: [],
   pickups: [],
@@ -154,6 +193,12 @@ const game = {
 const ENEMY_TYPES = { hound: Hound, elephant: Elephant, devil: Devil };
 game.enemies = level.enemies.map((spot) => new ENEMY_TYPES[spot.type](scene, spot.x, spot.z));
 game.pickups = level.pickups.map((spot) => createPickup(spot.type, spot.x, spot.z));
+// Beasts and pickups cast shadows (glows and other see-through bits don't).
+for (const thing of [...game.enemies.map((e) => e.group), ...game.pickups.map((p) => p.mesh)]) {
+  thing.traverse((part) => {
+    if (part.isMesh && !part.material.transparent) part.castShadow = part.receiveShadow = true;
+  });
+}
 
 const viewmodels = {};
 for (const name of WEAPON_ORDER) {
@@ -739,8 +784,32 @@ let snowAcc = 0;
 function updateWorld(dt, t) {
   level.lavaTexture.offset.set(t * 0.02, t * 0.013);
 
+  // The nearest braziers hand their light to the shadow-casting lights.
+  const p = game.player;
+  const nearest = [...level.fires].sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
+  shadowLights.forEach((light, i) => {
+    light.intensity = 0;
+    if (nearest[i]) nearest[i].shadowLight = light;
+  });
+  for (const fire of nearest.slice(SHADOW_LIGHTS)) fire.shadowLight = null;
+
+  // Lava pools pulse.
+  for (const glow of level.lavaLights) {
+    glow.light.intensity = glow.base * (0.85 + Math.sin(t * 2.3 + glow.seed) * 0.1 + Math.sin(t * 7.1 + glow.seed * 3) * 0.05);
+  }
+
   level.fires.forEach((fire, i) => {
-    fire.light.intensity = (1.6 + Math.sin(t * 13 + i * 2) * 0.15 + Math.sin(t * 29 + i) * 0.1) * LIGHT_UNITS;
+    const flicker = (1.6 + Math.sin(t * 13 + i * 2) * 0.15 + Math.sin(t * 29 + i) * 0.1) * LIGHT_UNITS;
+    if (fire.shadowLight) {
+      fire.shadowLight.position.copy(fire.light.position);
+      fire.shadowLight.intensity = flicker;
+      fire.light.intensity = 0;
+    } else {
+      fire.light.intensity = flicker;
+    }
+    if (Math.random() < dt * 5) {
+      game.smoke.emit(fire.x + rand(-0.3, 0.3), fire.y + 1.3, fire.z + rand(-0.3, 0.3), rand(-0.15, 0.15), rand(0.6, 1.0), rand(-0.15, 0.15), rand(3.5, 5), 0.05);
+    }
     fire.acc += dt * 45;
     while (fire.acc >= 1) {
       fire.acc -= 1;
@@ -762,6 +831,10 @@ function updateWorld(dt, t) {
       rand(-0.3, 0.3), rand(0.8, 2.2), rand(-0.3, 0.3),
       rand(1.5, 3), 0.2,
     );
+    // ...and a haze of smoke (or mist) hanging over them.
+    if (Math.random() < 0.1) {
+      game.smoke.emit(cell.x + rand(-2, 2), 0.4, cell.z + rand(-2, 2), rand(-0.2, 0.2), rand(0.3, 0.7), rand(-0.2, 0.2), rand(4, 6), 0.03);
+    }
   }
 
   // Snow drifting down over the frozen wasteland outside.
@@ -831,12 +904,13 @@ function updateHud(dt) {
 
 // ---------- Main loop ----------
 
-const clock = new THREE.Clock();
+const timer = new THREE.Timer();
 
-function frame() {
+function frame(timestamp) {
   requestAnimationFrame(frame);
-  const dt = Math.min(clock.getDelta(), 0.05);
-  const t = clock.elapsedTime;
+  timer.update(timestamp);
+  const dt = Math.min(timer.getDelta(), 0.05);
+  const t = timer.getElapsed();
   const playing = game.state === 'playing';
 
   if (playing) {
@@ -850,7 +924,7 @@ function frame() {
       if (game.winTimer <= 0) win();
     }
   }
-  for (const enemy of game.enemies) enemy.update(dt, t, playing);
+  for (const enemy of game.enemies) enemy.update(dt, t, playing && !game.calm);
   // The music switches to the heavier boss riff while the devil is fighting.
   const bossFight = game.enemies.some((e) => e.type === 'devil' && e.alive && e.awake);
   Music.setSection(bossFight ? 'boss' : 'main');
@@ -859,18 +933,20 @@ function frame() {
   updateWorld(dt, t);
   game.fire.update(dt);
   game.sparks.update(dt);
+  game.smoke.update(dt);
   updateHud(dt);
 
   graphics.render(t);
 }
 
 // Dev helper: open index.html#preview to start without mouse capture (handy for screenshots).
-// Extra options: #preview&round=2&x=50&z=60&yaw=0&god
+// Extra options: #preview&round=2&x=50&z=60&yaw=0&god&calm (calm keeps the beasts asleep)
 const previewOptions = new URLSearchParams(location.hash.slice(1));
 if (previewOptions.has('preview')) {
   game.state = 'playing';
   overlay.classList.add('hidden');
   game.godMode = previewOptions.has('god');
+  game.calm = previewOptions.has('calm'); // beasts stay asleep: for screenshots
   if (previewOptions.has('x')) game.player.x = Number(previewOptions.get('x'));
   if (previewOptions.has('z')) game.player.z = Number(previewOptions.get('z'));
   if (previewOptions.has('yaw')) game.player.yaw = Number(previewOptions.get('yaw'));

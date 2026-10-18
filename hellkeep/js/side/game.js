@@ -1128,6 +1128,129 @@ function drawWorld() {
     }
   }
   vctx.restore();
+  drawLighting(camX, camY);
+}
+
+// ---------- Light and glow (laid over the finished picture) ----------
+// 1. Darkness, with soft pools of light around you, the lava, fireballs, the Soul Gem
+//    and the burning hounds.
+// 2. Glow: everything that burns or shines is drawn again on its own layer, blurred,
+//    and added on top, so fire, lava, embers and pellets bleed light like the 3D rounds.
+// 3. A dark vignette round the edges.
+const glowCanvas = document.createElement('canvas');
+const gctx = glowCanvas.getContext('2d');
+const shadeCanvas = document.createElement('canvas');
+const sctx = shadeCanvas.getContext('2d');
+let vignette = null;
+
+function drawLighting(camX, camY) {
+  if (glowCanvas.width !== VIEW_W) {
+    for (const c of [glowCanvas, shadeCanvas]) {
+      c.width = VIEW_W;
+      c.height = VIEW_H;
+    }
+    vignette = null;
+  }
+  const centre = (o) => [o.x + o.w / 2 - camX, o.y + o.h / 2 - camY];
+
+  // Darkness and light.
+  sctx.globalCompositeOperation = 'source-over';
+  sctx.clearRect(0, 0, VIEW_W, VIEW_H);
+  sctx.fillStyle = 'rgba(10, 0, 0, 0.42)';
+  sctx.fillRect(0, 0, VIEW_W, VIEW_H);
+  sctx.globalCompositeOperation = 'destination-out';
+  const light = ([x, y], r, strength = 1) => {
+    const g = sctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(0, 0, 0, ${strength})`);
+    g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    sctx.fillStyle = g;
+    sctx.fillRect(x - r, y - r, r * 2, r * 2);
+  };
+  if (player && game.state !== 'menu') light(centre(player), 75, 0.9);
+  if (gem) light(centre(gem), 60);
+  for (const f of fireballs) light(centre(f), 28, 0.8);
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    if (e.type === 'hound') light(centre(e), 32, 0.7);
+    else if (e.mode === 'charge' || e.mode === 'windup') light(centre(e), 34, 0.6);
+  }
+  if (ROUND.lava) {
+    const top = rows * TILE - camY;
+    const g = sctx.createLinearGradient(0, top - 70, 0, top);
+    g.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    g.addColorStop(1, 'rgba(0, 0, 0, 1)');
+    sctx.fillStyle = g;
+    sctx.fillRect(0, top - 70, VIEW_W, 80);
+  }
+  vctx.drawImage(shadeCanvas, 0, 0);
+
+  // Glow.
+  gctx.clearRect(0, 0, VIEW_W, VIEW_H);
+  gctx.save();
+  gctx.translate(-camX, -camY);
+  const dot = (x, y, r, color) => {
+    gctx.fillStyle = color;
+    gctx.beginPath();
+    gctx.arc(x, y, r, 0, Math.PI * 2);
+    gctx.fill();
+  };
+  if (ROUND.lava) {
+    gctx.fillStyle = '#ff4a08';
+    gctx.fillRect(camX, rows * TILE - 10, VIEW_W, 10);
+  }
+  // The ember crust along every ledge.
+  gctx.fillStyle = 'rgba(255, 100, 20, 0.55)';
+  const r0 = Math.floor(camY / TILE);
+  const c0 = Math.floor(camX / TILE);
+  for (let r = r0; r <= r0 + VIEW_H / TILE + 1; r++) {
+    for (let c = c0; c <= c0 + VIEW_W / TILE + 1; c++) {
+      if (r > 0 && r < rows && tileAt(c, r) === '#' && tileAt(c, r - 1) === '.') gctx.fillRect(c * TILE, r * TILE, TILE, 2);
+    }
+  }
+  if (gem) dot(gem.x + 7, gem.y + 5, 9, '#ff3020');
+  for (const f of fireballs) dot(f.x + 3, f.y + 3, 5, '#ff7a10');
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    if (e.type === 'hound') dot(e.x + e.w / 2, e.y + e.h / 2, 6, 'rgba(255, 90, 10, 0.5)');
+    else dot(e.x + e.w / 2, e.y + e.h / 2, e.mode === 'charge' ? 12 : 7, 'rgba(90, 180, 255, 0.35)');
+  }
+  gctx.fillStyle = '#7ff6ff';
+  for (const s of pellets) gctx.fillRect(s.x - 1, s.y - 1, 3, 2);
+  for (const pt of particles) {
+    if (pt.kind === 'chunk') continue;
+    gctx.globalAlpha = Math.min(1, pt.life / Math.min(pt.max, 20));
+    gctx.fillStyle = pt.color;
+    gctx.fillRect(pt.x - 1, pt.y - 1, 3, 3);
+  }
+  gctx.globalAlpha = 1;
+  if (game.flash > 0 && player) {
+    const m = muzzle(player);
+    dot(m.x, m.y, 4 + game.flash, '#ffd070');
+  }
+  gctx.restore();
+  vctx.save();
+  vctx.globalCompositeOperation = 'lighter';
+  vctx.filter = 'blur(4px)';
+  vctx.globalAlpha = 0.85;
+  vctx.drawImage(glowCanvas, 0, 0);
+  vctx.filter = 'none';
+  vctx.globalAlpha = 0.3;
+  vctx.drawImage(glowCanvas, 0, 0);
+  vctx.restore();
+
+  // Vignette.
+  if (!vignette) {
+    vignette = document.createElement('canvas');
+    vignette.width = VIEW_W;
+    vignette.height = VIEW_H;
+    const g = vignette.getContext('2d');
+    const grad = g.createRadialGradient(VIEW_W / 2, VIEW_H / 2, VIEW_H * 0.35, VIEW_W / 2, VIEW_H / 2, VIEW_W * 0.65);
+    grad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, VIEW_W, VIEW_H);
+  }
+  vctx.drawImage(vignette, 0, 0);
 }
 
 // The HUD is the same one as the 3D rounds (see index.html and style.css).

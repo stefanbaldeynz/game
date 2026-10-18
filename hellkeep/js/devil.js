@@ -117,25 +117,35 @@ function makeDevilModel() {
   if (!devilTextures) {
     devilTextures = { skin: Textures.devilSkin(), veins: Textures.devilVeins(), leather: Textures.leather(), patch: Textures.patch() };
   }
-  const skin = new THREE.MeshStandardMaterial({
+  if (!devilTextures.skinNormal) {
+    devilTextures.skinNormal = normalMapFor(devilTextures.skin, 3);
+    devilTextures.leatherNormal = normalMapFor(devilTextures.leather, 4);
+  }
+  // Waxy, scaly demon skin with glowing veins, and creased, sheeny leather.
+  const skin = new THREE.MeshPhysicalMaterial({
     map: devilTextures.skin,
+    normalMap: devilTextures.skinNormal,
     emissive: 0xffffff,
     emissiveMap: devilTextures.veins,
-    roughness: 0.55,
+    roughness: 0.5,
+    sheen: 0.4,
+    sheenColor: new THREE.Color(0xff5a3a),
+    sheenRoughness: 0.6,
   });
-  const leather = new THREE.MeshStandardMaterial({
+  const leather = new THREE.MeshPhysicalMaterial({
     map: devilTextures.leather,
-    bumpMap: devilTextures.leather,
-    bumpScale: 0.5,
-    roughness: 0.35,
-    metalness: 0.15,
+    normalMap: devilTextures.leatherNormal,
+    roughness: 0.38,
+    metalness: 0.1,
+    clearcoat: 0.35,
+    clearcoatRoughness: 0.45,
   });
-  const hair = new THREE.MeshStandardMaterial({ color: 0x0a0808, roughness: 0.45 });
-  const silver = new THREE.MeshStandardMaterial({ color: 0xd8dce2, metalness: 1, roughness: 0.2 });
-  const bone = new THREE.MeshStandardMaterial({ color: 0xd8ccb0, roughness: 0.6 });
+  const hair = new THREE.MeshPhysicalMaterial({ color: 0x0a0808, roughness: 0.4, sheen: 0.8, sheenColor: new THREE.Color(0x553333), sheenRoughness: 0.35 });
+  const silver = new THREE.MeshStandardMaterial({ color: 0xd8dce2, metalness: 1, roughness: 0.18 });
+  const bone = new THREE.MeshStandardMaterial({ color: 0xd8ccb0, roughness: 0.55 });
   const dark = new THREE.MeshStandardMaterial({ color: 0x080606, roughness: 0.6 });
-  const gloss = new THREE.MeshStandardMaterial({ color: 0x0a0a0c, roughness: 0.12, metalness: 0.3 });
-  const eyes = new THREE.MeshBasicMaterial({ color: 0xffd040 });
+  const gloss = new THREE.MeshPhysicalMaterial({ color: 0x0a0a0c, roughness: 0.1, metalness: 0.3, clearcoat: 1, clearcoatRoughness: 0.05 });
+  const eyes = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffd040).multiplyScalar(4) }); // white-hot, so they bloom
   const teeth = new THREE.MeshStandardMaterial({ color: 0xf0e8d8, roughness: 0.4 });
 
   const group = new THREE.Group();
