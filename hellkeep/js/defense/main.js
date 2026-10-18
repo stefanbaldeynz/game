@@ -46,6 +46,7 @@ const ui = {
   ammo: $('ammo'),
   rifleLevel: $('rifle-level'),
   paused: $('paused-label'),
+  menuButton: $('menu-button'),
 };
 ui.overlayRound.textContent = SIEGE.title;
 ui.overlayText.textContent = SIEGE.intro;
@@ -427,6 +428,10 @@ addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'KeyM') showMessage(Music.toggle() ? 'Music on' : 'Music off', 1.5);
   if (e.code === 'KeyG') showMessage(graphics.toggle() ? 'Graphics: high (shadows, glow and film effects)' : 'Graphics: low (faster)', 2);
+  if (e.code === 'Escape' && game.state === 'paused') {
+    overlayAction(); // Esc again closes the menu
+    return;
+  }
   if (game.state !== 'playing') return;
   if (e.code === 'KeyF') toggleView();
   if (e.code === 'KeyN') startWave();
@@ -435,7 +440,10 @@ addEventListener('keydown', (e) => {
   } else {
     if (e.code === 'KeyU') upgradeSelected();
     if (e.code === 'KeyP') game.paused = !game.paused;
-    if (e.code === 'Escape') select(null);
+    if (e.code === 'Escape') {
+      if (game.selected) select(null);
+      else openMenu();
+    }
   }
   if (e.code === 'Space') e.preventDefault();
 });
@@ -477,10 +485,16 @@ ui.fpsButton.addEventListener('click', enterFps);
 ui.rifleButton.addEventListener('click', upgradeRifle);
 ui.upgradeButton.addEventListener('click', upgradeSelected);
 ui.closeTower.addEventListener('click', () => select(null));
+ui.menuButton.addEventListener('click', openMenu);
 ui.overlayButton.addEventListener('click', overlayAction);
 
 // The menu's play button (and this round's button in the round picker).
 function overlayAction() {
+  if (game.state === 'paused') {
+    game.state = 'playing';
+    ui.overlay.classList.add('hidden');
+    return true;
+  }
   if (game.state === 'won') {
     goToRound(1);
     return true;
@@ -727,6 +741,16 @@ function updateWorld(dt, t) {
 }
 
 // ---------- HUD ----------
+
+// The menu, mid-game (Esc or the Menu button in the tower view): pick another round,
+// or carry on where you were.
+function openMenu() {
+  if (game.state !== 'playing') return;
+  if (game.mode === 'fps') document.exitPointerLock();
+  game.state = 'paused';
+  showOverlay('Hellkeep', 'Paused. Choose a round, or carry on with the siege.', 'Carry on [Esc]');
+  ui.overlayRound.textContent = SIEGE.title;
+}
 
 let messageTimer = 0;
 function showMessage(text, seconds = 3) {

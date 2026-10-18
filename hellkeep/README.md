@@ -71,6 +71,7 @@ Tower defence with a first-person mode, from Kiwi Canyon, in hell and with the s
 | WASD / arrows, mouse wheel | Pan and zoom the tower view |
 | In first person: WASD + mouse, click, **R**, Shift | Move, shoot the rifle (hold), reload, sprint |
 | **P** | Pause (tower view) |
+| **Esc** | The menu, to pick another round (from first person, press it twice) |
 
 - You start with **40 souls** and 20 lives. Killing a beast earns souls (hound 2, elephant 7, devil 20), and beating a wave pays a bonus.
 - **Fire towers** throw homing fireballs. Each upgrade adds damage, fire rate, range and launchers, and changes the colour of their fire: ember orange, crimson, gold, then blue soul-fire. The rifle can be upgraded 3 times too.
