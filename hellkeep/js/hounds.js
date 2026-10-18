@@ -1,7 +1,7 @@
 // Hellhounds: charred dogs with burning cracks in their skin, wrapped in flames.
 // They sleep until they see or hear you, then hunt you down through the castle.
 //
-// The body is a real animated wolf model (models/hellhound.glb, 'Wolf' by Quaternius,
+// The body is a real animated wolf model (MODELS.hellhound, from models/hellhound.glb: 'Wolf' by Quaternius,
 // public domain), turned into a hellhound here: charred skin with glowing lava
 // cracks, burning eyes, horns and spine spikes. If the model can't be loaded, the
 // old hound built from boxes (makeHoundModel) is used instead.
@@ -159,9 +159,9 @@ function makeGltfHound() {
   };
 }
 
-if (window.HELLHOUND_GLTF) {
+if (window.MODELS && MODELS.hellhound) {
   try {
-    houndTemplate = prepareHoundTemplate(window.HELLHOUND_GLTF);
+    houndTemplate = prepareHoundTemplate(MODELS.hellhound);
   } catch (error) {
     console.warn('Hellhound model unusable, using the box hound instead.', error);
   }

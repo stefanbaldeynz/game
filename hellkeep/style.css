@@ -304,6 +304,12 @@ body {
   grid-template-columns: repeat(2, auto);
 }
 
+#overlay p.note {
+  margin: 14px 0 0;
+  font-size: 14px;
+  color: #ffcf8a;
+}
+
 /* ---------- Round picker (on the menu screens) ---------- */
 
 #round-picker {
