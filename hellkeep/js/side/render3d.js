@@ -453,14 +453,21 @@ const SideRender = (() => {
       const full = new THREE.Box3().setFromObject(model, true);
       const height = full.max.y - full.min.y;
       hero.bones = {};
-      // The bones worked by hand. Ones the standing animation doesn't move are reset to
-      // their resting pose each frame before the running/jumping bend is added.
-      const animated = new Set((soldier.animations[0] ? soldier.animations[0].tracks : []).map((tr) => tr.name.slice(0, tr.name.lastIndexOf('.'))));
+      // The bones worked by hand. Each frame they go back to their standing pose before the
+      // running, jumping or riding bend is added (so the bends never pile up).
       hero.rest = [];
       for (const name of ['hips', 'spine', 'chest', 'upleg.L', 'upleg.R', 'leg.L', 'leg.R', 'arm.L', 'arm.R', 'hand.R']) {
-        const bone = model.getObjectByName(name);
+        // three.js drops the dots from bone names when it loads a model ('upleg.L' -> 'uplegL').
+        const loaded = THREE.PropertyBinding.sanitizeNodeName(name);
+        const bone = model.getObjectByName(loaded);
         hero.bones[name] = bone;
-        if (bone && !animated.has(name)) hero.rest.push([bone, bone.quaternion.clone()]);
+        if (bone) hero.rest.push([bone, bone.quaternion.clone()]);
+      }
+      // His standing pose is twisted a little at the hips; measure it so he can be turned
+      // to face exactly left or right.
+      if (hero.bones.hips) {
+        const q = hero.bones.hips.getWorldQuaternion(new THREE.Quaternion());
+        hero.poseYaw = new THREE.Euler().setFromQuaternion(q, 'YXZ').y;
       }
 
       const gun = buildShotgun();
@@ -486,6 +493,7 @@ const SideRender = (() => {
       scaled.add(model);
       scaled.scale.setScalar(PLAYER_HEIGHT / height);
       hero.body = scaled;
+      hero.model = model;
       root.add(scaled);
     } else {
       // Without the model: a simple armoured figure.
@@ -559,6 +567,27 @@ const SideRender = (() => {
     return { pivots, base: 1.2, lift: -0.3 };
   }
 
+  // Bend a bone forwards or backwards (around the character's own left-right axis),
+  // whichever way the bone itself happens to be built. Positive tips its top forward.
+  const sideways = new THREE.Vector3(1, 0, 0);
+  const tmpQ = new THREE.Quaternion();
+  const tmpQ2 = new THREE.Quaternion();
+  function bend(model, bone, angle) {
+    if (!angle) return;
+    bone.parent.updateWorldMatrix(true, false);
+    model.getWorldQuaternion(tmpQ).invert();
+    bone.parent.getWorldQuaternion(tmpQ2);
+    const parentInModel = tmpQ.multiply(tmpQ2); // the parent's turn, measured from the model
+    const axis = sideways.clone().applyQuaternion(parentInModel.invert());
+    bone.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(axis, angle));
+  }
+
+  // How far to turn something at this x so it faces the camera the same way it would in
+  // the middle of the screen.
+  function viewYaw(x) {
+    return Math.atan2(camera.position.x - x, camera.position.z);
+  }
+
   function updateHero(dt) {
     const p = player;
     const h = hero;
@@ -570,9 +599,12 @@ const SideRender = (() => {
     const turn = 0.35;
     h.root.position.set(X(p.x + p.w / 2), Y(p.y + p.h), 0);
     const facing = p.bike ? 1 : p.facing;
-    h.body.rotation.y = facing > 0 ? Math.PI / 2 - turn : -Math.PI / 2 + turn;
+    // The camera sees things at the sides of the screen from an angle; turn him to match,
+    // so he looks the same wherever he is on screen instead of seeming to rotate as he runs.
+    const view = viewYaw(h.root.position.x);
+    h.body.rotation.y = (facing > 0 ? Math.PI / 2 - turn : -Math.PI / 2 + turn) - (h.poseYaw || 0) + view;
     if (h.bike) {
-      h.bike.rotation.y = 0.15; // the bike angled slightly towards you too
+      h.bike.rotation.y = 0.15 + view; // the bike angled slightly towards you too
       h.body.position.set(-0.1, h.bikeHeight * 0.45, 0);
     }
 
@@ -584,28 +616,33 @@ const SideRender = (() => {
       h.phase += dt * (running ? Math.abs(p.vx) * 7 : 0);
       const swing = running ? Math.sin(h.phase) : 0;
       if (b['upleg.L'] && b['upleg.R']) {
-        let left = swing * 0.75;
-        let right = -swing * 0.75;
-        let knee = 0;
+        // Thigh angles: negative swings the leg forward. Knees: positive bends the shin back.
+        let left = -swing * 0.7;
+        let right = swing * 0.7;
+        let kneeL = running ? Math.max(0, swing) * 1.1 : 0;
+        let kneeR = running ? Math.max(0, -swing) * 1.1 : 0;
         if (p.bike) {
           left = right = -1.35;
-          knee = 1.5;
+          kneeL = kneeR = 1.5;
         } else if (airborne) {
-          left = flying ? 0.35 : -0.6;
-          right = flying ? 0.15 : -0.2;
-          knee = flying ? 0.5 : 1.0;
+          left = flying ? 0.25 : -0.7;
+          right = flying ? 0.45 : -0.15;
+          kneeL = flying ? 0.5 : 1.1;
+          kneeR = flying ? 0.7 : 0.5;
         }
-        b['upleg.L'].rotation.x += left;
-        b['upleg.R'].rotation.x += right;
-        if (b['leg.L']) b['leg.L'].rotation.x += Math.max(knee, running ? Math.max(0, -swing) * 1.1 : 0);
-        if (b['leg.R']) b['leg.R'].rotation.x += Math.max(knee, running ? Math.max(0, swing) * 1.1 : 0);
+        bend(h.model, b['upleg.L'], left);
+        bend(h.model, b['upleg.R'], right);
+        if (b['leg.L']) bend(h.model, b['leg.L'], kneeL);
+        if (b['leg.R']) bend(h.model, b['leg.R'], kneeR);
       }
-      if (b.spine) b.spine.rotation.x += running ? 0.12 : 0;
+      if (b.spine && running) bend(h.model, b.spine, 0.15); // lean into the run
       h.body.position.y = (h.bike ? h.bikeHeight * 0.45 : 0) + (running ? Math.abs(Math.sin(h.phase)) * 0.05 : 0);
     }
 
-    // Wings: folded on the ground, held out to glide, beating to fly.
+    // Wings: only out while you're in the air. They sprout open as you leave the ground,
+    // are held out to glide, beat to fly, and fold away when you land.
     const w = h.wings;
+    w.show = (w.show || 0) + ((airborne ? 1 : 0) - (w.show || 0)) * Math.min(1, dt * (airborne ? 12 : 9));
     let base = 1.25;
     let lift = -0.25;
     let beat = 0;
@@ -626,6 +663,8 @@ const SideRender = (() => {
     for (const { side, pivot } of w.pivots) {
       pivot.rotation.y = side * w.base;
       pivot.rotation.z = side * (w.lift + Math.sin(h.wingPhase) * beat);
+      pivot.scale.setScalar(Math.max(0.001, w.show));
+      pivot.visible = w.show > 0.02;
     }
     if (flying && Math.random() < dt * 25) {
       const at = h.root.position;
@@ -725,7 +764,7 @@ const SideRender = (() => {
     const flash = e.hitT > 0 ? 8 : 0;
     if (e.type === 'hound') {
       b.container.position.set(X(e.x + e.w / 2), Y(e.y + e.h) - 0.05, 0);
-      b.container.rotation.y = facingYaw(e.facing);
+      b.container.rotation.y = facingYaw(e.facing) + viewYaw(b.container.position.x);
       b.container.rotation.z = Math.sin(t * 3 + b.seed) * 0.08; // banking as it loops
       if (b.mixer) b.mixer.update(dt);
       const glow = 1 + Math.sin(t * 11 + b.seed) * 0.25 + flash;
@@ -741,7 +780,7 @@ const SideRender = (() => {
 
     // Elephants: walk, rear up, charge, stagger.
     b.container.position.set(X(e.x + e.w / 2), Y(e.y + e.h), 0);
-    b.container.rotation.y = facingYaw(e.facing);
+    b.container.rotation.y = facingYaw(e.facing) + viewYaw(b.container.position.x);
     const speed = Math.abs(e.vx) * 60 * PX;
     b.step += dt * speed * 5;
     const swing = speed > 0.1 ? Math.sin(b.step) * (e.mode === 'charge' ? 0.7 : 0.45) : 0;
@@ -1011,7 +1050,8 @@ const SideRender = (() => {
     graphics.render(t);
   }
 
-  return { init, draw };
+  // debugHero is for poking at the character from the browser console while testing.
+  return { init, draw, debugHero: () => hero };
 })();
 
 startSide();
