@@ -4,11 +4,11 @@ My collection of browser games. There are no build tools or installs.
 
 ## How to play
 
-**Double-click `serve.cmd`.** Every game has a **← Game select** button to come back here. It starts a small web server on your computer and opens the collection at `http://localhost:8000/`. Pick a game there. Leave the black window open while you play, and close it (or press Ctrl+C) to stop.
+**Double-click `serve.cmd`.** It starts a small web server on your computer and opens **Hellkeep** at `http://localhost:8000/hellkeep/`, straight onto its round picker. The other games are at `http://localhost:8000/<folder>/` (for example `wacky-wings/`), and the game select is at `http://localhost:8000/`. Leave the black window open while you play, and close it (or press Ctrl+C) to stop.
 
 Running through the server gives the full graphics: browsers block a page opened straight from your files from loading 3D models, so those games fall back to simpler built-in models. You can still open any game's `index.html` directly for a quick look.
 
-The server is `serve.ps1`, which uses the PowerShell built into Windows. It only answers this computer, and it never caches files, so after editing a game just refresh the page. Run `serve.cmd -Port 9000` to use another port, or `serve.cmd -Open hellkeep/` to open straight into a game.
+The server is `serve.ps1`, which uses the PowerShell built into Windows. It only answers this computer, and it never caches files, so after editing a game just refresh the page. Run `serve.cmd -Port 9000` to use another port, or `serve.cmd -Open gem-quest/` to open another game (`-Open ""` for the game select).
 
 ## Shared code
 

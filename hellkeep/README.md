@@ -29,7 +29,7 @@ The side-on rounds (3 and 4) are drawn in 3D too, with the same effects: the roc
 
 ## Play
 
-Double-click `serve.cmd` in the main game folder, pick Hellkeep, choose a round on the menu (or press **Play round 1**). **← Game select** on the menu takes you back to the collection. Use Chrome or Edge. (Opening `index.html` directly also works, but without the 3D models.) Through the server the 3D engine loads from `lib/three` in the main folder; only the fonts come from the web. Opened directly, three.js also comes from the web.
+Double-click `serve.cmd` in the main game folder: it opens Hellkeep on its menu. Choose a round (or press **Play round 1** once it has loaded). **← Game select** on the menu takes you back to the collection. Use Chrome or Edge. (Opening `index.html` directly also works, but without the 3D models.) Through the server the 3D engine loads from `lib/three` in the main folder; only the fonts come from the web. Opened directly, three.js also comes from the web.
 
 | Key | Action |
 | --- | --- |

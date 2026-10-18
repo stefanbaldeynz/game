@@ -3,14 +3,15 @@
 # Browsers block a page opened straight from your files (file://) from loading
 # 3D models and other assets, so run the games through this instead:
 #   double-click serve.cmd, or run:  powershell -ExecutionPolicy Bypass -File serve.ps1
-# Then play at http://localhost:8000/ . Press Ctrl+C (or close the window) to stop.
+# It opens Hellkeep (http://localhost:8000/hellkeep/). The other games are at
+# http://localhost:8000/<folder>/ . Press Ctrl+C (or close the window) to stop.
 #
 # It only listens on this computer (localhost); nobody else on the network can reach it.
 # Every file is sent fresh (no caching), so after editing a file just refresh the page.
 
 param(
   [int]$Port = 8000,       # tries the next port up if this one is taken
-  [string]$Open = '',      # page to open, e.g. "hellkeep/"
+  [string]$Open = 'hellkeep/', # page to open in the browser ("" for the game select)
   [switch]$NoBrowser       # don't open a browser window
 )
 

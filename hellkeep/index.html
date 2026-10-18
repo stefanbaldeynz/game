@@ -108,13 +108,11 @@
       elephant: 'models/elephant.glb',
     };
     window.MODELS = {};
-    const button = document.getElementById('overlay-button');
     if (location.protocol === 'file:') {
       // Browsers block loading models into a page opened straight from your files.
       // The game still runs, with the old models built from code.
       document.getElementById('asset-note').classList.remove('hidden');
     } else {
-      button.textContent = 'Loading models...';
       // The loader also understands compressed models: Draco or Meshopt meshes and
       // KTX2 textures (see the README), so big models stay quick to load.
       const loader = new GLTFLoader();
@@ -132,7 +130,6 @@
           console.warn(`Could not load ${url}; using the built-in model instead.`, error);
         }
       }));
-      button.textContent = 'Click to play';
     }
 
     const scripts = [

@@ -204,6 +204,12 @@ body {
   animation: pulse 1.6s ease-in-out infinite;
 }
 
+#overlay button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+  animation: none;
+}
+
 @keyframes pulse {
   50% {
     box-shadow: 0 0 24px rgba(255, 90, 20, 0.7);

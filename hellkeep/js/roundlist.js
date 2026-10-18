@@ -39,6 +39,9 @@ function goToRound(n) {
 function buildRoundPicker(current, playCurrent) {
   const box = document.getElementById('round-picker');
   if (!box) return;
+  // The game calls this once it's ready, so the play button can be used now.
+  const play = document.getElementById('overlay-button');
+  if (play && playCurrent) play.disabled = false;
   box.innerHTML = '<div class="label">Choose a round</div>';
   const row = document.createElement('div');
   row.className = 'round-buttons';
@@ -49,7 +52,7 @@ function buildRoundPicker(current, playCurrent) {
     if (round.n === current) b.classList.add('current');
     b.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (round.n === current && playCurrent && playCurrent()) return;
+      if (round.n === current && (!playCurrent || playCurrent())) return; // still loading, or started
       goToRound(round.n);
     });
     row.appendChild(b);
@@ -63,4 +66,24 @@ function buildRoundPicker(current, playCurrent) {
   const n = roundFromHash();
   const round = ROUND_LIST.find((r) => r.n === n);
   if (round && round.page !== currentPage()) location.replace(round.page + location.hash);
+})();
+
+// Show the menu straight away while the game builds its level in the background
+// (that takes a few seconds): the round picker works at once, and the play button
+// waits until the round is ready.
+(() => {
+  const page = currentPage();
+  const first = ROUND_LIST.find((r) => r.page === page);
+  const round = ROUND_LIST.find((r) => r.n === roundFromHash() && r.page === page) || first;
+  if (!round) return;
+  buildRoundPicker(round.n, null);
+  const heading = document.getElementById('overlay-round');
+  if (heading) heading.textContent = `Round ${round.n} · ${round.title}`;
+  const text = document.getElementById('overlay-text');
+  if (text && round !== first) text.textContent = ''; // the page's text is for its first round
+  const play = document.getElementById('overlay-button');
+  if (play) {
+    play.textContent = `Loading round ${round.n}...`;
+    play.disabled = true;
+  }
 })();
