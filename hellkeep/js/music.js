@@ -17,15 +17,15 @@
 // Recorded soundtracks (MP3s in the music folder) by round. Rounds without one use the
 // synthesised songs below. To use your own track, drop it in hellkeep/music/ and list it here.
 const TRACKS = {
-  1: 'music/Blood_and_Iron_Rite.mp3',
-  3: 'music/Blood_and_Iron_Rite.mp3', // the side-on gorge
+  2: 'music/Blood_and_Iron_Rite.mp3', // the gorge
+  4: 'music/Blood_and_Iron_Rite.mp3', // the burning keep
 };
 
 const NOTE_OFFSETS = { e: 0, f: 1, g: 3, a: 5, b: 6, h: 7, c: 8, d: 10 };
 
 const SONGS = {
-  // Round 1: a stomping industrial march in drop D. A relentless riff takes over while the devil fights.
-  1: {
+  // The keep: a stomping industrial march in drop D. A relentless riff takes over for bosses.
+  keep: {
     bpm: 118,
     rootHz: 73.42, // D2 (drop D)
     drums: {
@@ -55,16 +55,25 @@ const SONGS = {
       ],
     },
   },
-  // Round 2: slow and crushing, tuned all the way down to C.
-  2: {
+  // The frozen depths: slow and crushing, tuned all the way down to C.
+  frozen: {
     bpm: 100,
     rootHz: 65.41, // C2
     drums: {
       heavy: { kick: 'x.....x.x...x...', snare: '....x.......x...', hat: 'x.x.x.x.x.x.x.x.' },
       heavyFill: { kick: 'x.....x.x.......', snare: '....x.......xxxx', hat: 'x.x.x.x.x.......' },
       chug: { kick: 'x..x..x.x..x..x.', snare: '....x.......x...', hat: 'x.x.x.x.x.x.x.x.' },
+      blast: { kick: 'xxxxxxxxxxxxxxxx', snare: '..x...x...x...x.', hat: 'x.x.x.x.x.x.x.x.' },
+      blastFill: { kick: 'xxxxxxxx........', snare: '..x...x.xxxxxxxx', hat: 'x.x.x.x.........' },
     },
     sections: {
+      // The Balrog: double-kick blasting under a creeping tritone.
+      boss: [
+        { riff: 'eeeeeeeeB---B---', drums: 'blast', pad: 'e' },
+        { riff: 'eeeeeeeeC---B---', drums: 'blast', pad: 'e' },
+        { riff: 'eeeeeeeeB---B---', drums: 'blast', pad: 'e' },
+        { riff: 'G-F-E-B-G-F-E-B-', drums: 'blastFill', pad: 'b' },
+      ],
       main: [
         { riff: 'E-------e.e.e.e.', drums: 'heavy', pad: 'e' },
         { riff: 'E-------g.g.f.f.', drums: 'heavy', pad: 'e' },
@@ -78,11 +87,14 @@ const SONGS = {
     },
   },
 };
-// The side-on rounds borrow round 1's song: round 3 if its MP3 is missing,
-// round 4 (the motorbike ride) with the relentless boss riff the whole way.
-SONGS[3] = SONGS[1];
-SONGS[4] = SONGS[1];
-SONGS[5] = SONGS[1]; // the siege: the boss riff kicks in when the devils come
+// The song for each round (used when it has no MP3, or the MP3 is missing).
+// Round 1, the motorbike ride, plays the keep's relentless boss riff the whole way.
+// Round 3 switches to its boss riff for the Balrog, round 5 for the devils.
+SONGS[1] = SONGS.keep;
+SONGS[2] = SONGS.keep;
+SONGS[3] = SONGS.frozen;
+SONGS[4] = SONGS.keep;
+SONGS[5] = SONGS.keep;
 
 // Catch typos: every bar must be exactly 16 steps.
 for (const [name, song] of Object.entries(SONGS)) {

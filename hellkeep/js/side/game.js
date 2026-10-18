@@ -1,10 +1,10 @@
-// Hellkeep rounds 3 and 4: side-on platform rounds in the burning depths.
-// Round 3 climbs down the Brimstone Gorge; round 4 races a motorbike across
-// the lava sea. Grab the Soul Gem at the end of each to finish the round.
+// Hellkeep rounds 1 and 2: side-on platform rounds on the way down into hell.
+// Round 1 races a motorbike across the lava sea; round 2 climbs down the
+// Brimstone Gorge to the fortress. Grab the Soul Gem at the end of each to finish the round.
 //
-// You keep everything from the 3D rounds: the Flak Shotgun, the double jump
-// and the angel wings (double jump, then hold Space to fly). Hellhounds fly in
-// loops spitting fire, and lightning elephants charge along the ledges.
+// You start with the Flak Shotgun, the double jump and the angel wings (double jump,
+// then hold Space to fly). Hellhounds fly in loops spitting fire, and lightning
+// elephants charge along the ledges.
 //
 // This file is the game itself: the rules, physics and beasts, worked out on a flat
 // map measured in pixels (one tile = 16 pixels; the view is 192 pixels tall). The
@@ -50,7 +50,7 @@ const SIDE_ELEPHANT_WALK = 0.4;
 const SIDE_ELEPHANT_CHARGE = 3.2;
 
 // ---------- The round ----------
-const ROUND_NUMBER = SIDE_ROUNDS[roundFromHash()] ? roundFromHash() : 3;
+const ROUND_NUMBER = SIDE_ROUNDS[roundFromHash()] ? roundFromHash() : 1;
 const ROUND = SIDE_ROUNDS[ROUND_NUMBER];
 
 // ---------- Page elements ----------
@@ -311,6 +311,7 @@ function fitHoundLoop(d) {
 
 // ---------- Menus ----------
 function showOverlay(title, text, button) {
+  hideStory(); // the chapter is only for the start of the round
   overlayTitle.textContent = title;
   overlayRound.textContent = title === 'Paused' ? ROUND.title : '';
   overlayText.textContent = text;
@@ -863,7 +864,7 @@ function finish(state) {
   }
   const stats = `Time: ${minutes}:${seconds}. Health left: ${Math.ceil(player.health)}. Beasts put down: ${game.kills} of ${total}.`;
   if (ROUND_NUMBER < TOTAL_ROUNDS) {
-    const tease = ROUND_NUMBER === 3 ? 'Beyond the gorge, a sea of lava...' : 'Behind you, the hellgate opens...';
+    const tease = ROUND_NUMBER === 1 ? 'The Soul Gem burns open a crack in the rock...' : 'Far below, the fortress gates...';
     showOverlay(`Round ${ROUND_NUMBER} complete`, `${stats} ${tease}`, `Continue to round ${ROUND_NUMBER + 1}`);
   } else {
     showOverlay('Hellkeep conquered', `You beat every round! ${stats}`, 'Click to play again from round 1');

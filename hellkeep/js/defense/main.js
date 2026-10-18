@@ -1,6 +1,7 @@
 // Hellkeep round 5: The Hellgate Siege. Tower defence with a first-person mode, based on
-// Kiwi Canyon. Build fire towers on the rim of the gorge, upgrade them, and drop into the
-// gorge with your rifle. Three waves: hellhounds, ice elephants, then devils.
+// Kiwi Canyon. Hell's armies pour through the fortress gates to take back the keep: build
+// fire towers on the courtyard, upgrade them, and drop onto the sunken road with your rifle.
+// Three waves: hellhounds, ice elephants, then devils.
 
 if (typeof THREE === 'undefined') {
   document.getElementById('overlay-text').textContent =
@@ -168,7 +169,7 @@ const playerStart = siegeCellCenter(8, 6);
 const player = {
   x: playerStart.x,
   z: playerStart.z,
-  yaw: -Math.PI / 2, // facing up the gorge towards the hellgate
+  yaw: -Math.PI / 2, // facing up the road towards the fortress gates
   pitch: -0.05,
   ammo: SIEGE.rifle.magazine,
   reloadTimer: 0,
@@ -220,7 +221,7 @@ function startWave() {
   game.countdown = -1;
   Sound.roar();
   if (wave.type === 'devil') Music.setSection('boss');
-  showMessage(`Wave ${game.wave}: ${wave.count} ${wave.name.toLowerCase()} pour out of the hellgate!`, 4);
+  showMessage(`Wave ${game.wave}: ${wave.count} ${wave.name.toLowerCase()} pour through the fortress gates!`, 4);
 }
 
 function updateWaves(dt) {
@@ -232,7 +233,7 @@ function updateWaves(dt) {
         game.beasts.push(new SiegeBeast(scene, wave, effects));
         game.toSpawn -= 1;
         game.spawnTimer = wave.spacing;
-        // The hellgate flares as each one comes through.
+        // The fires beyond the gates flare as each one comes through.
         const at = world.portal.at;
         for (let i = 0; i < 20; i++) effects.fire.emit(at.x, at.y, at.z, rand(-2, 2), rand(0, 3), rand(-2, 2), rand(0.3, 0.7), 1);
       }
@@ -305,7 +306,7 @@ function endGame(won) {
   game.mode = 'tower';
   Music.stop();
   if (won) {
-    showOverlay('Hellkeep conquered', `The gate held against every hellhound, elephant and devil, with ${game.lives} lives left. You beat every round!`, 'Play again from round 1');
+    showOverlay('Hellkeep conquered', `The keep held against every hellhound, elephant and devil, with ${game.lives} lives left. The souls fly free. You beat every round!`, 'Play again from round 1');
   } else {
     showOverlay('The keep has fallen', `The beasts broke through on wave ${game.wave}. You put down ${game.kills} of them.`, `Retry round ${ROUND_NUMBER}`);
   }
@@ -508,7 +509,7 @@ function overlayAction() {
   Music.start(ROUND_NUMBER);
   game.state = 'playing';
   ui.overlay.classList.add('hidden');
-  showMessage(`Build ${Math.floor(SIEGE.startMoney / SIEGE.tower.buildCost)} fire towers on the rim, then press N to open the hellgate`, 6);
+  showMessage(`Build ${Math.floor(SIEGE.startMoney / SIEGE.tower.buildCost)} fire towers in the courtyard, then press N to let them come`, 6);
   return true;
 }
 
@@ -725,14 +726,14 @@ function updateWorld(dt, t) {
     }
     if (Math.random() < dt * 4) effects.smoke.emit(fire.x, fire.y + 1.3, fire.z, rand(-0.15, 0.15), rand(0.6, 1.0), rand(-0.15, 0.15), rand(3.5, 5), 0.05);
   }
-  // The hellgate swirls and spits embers.
+  // Hell's fire swirls beyond the gates and spits embers.
   world.portal.swirl.rotation.z = t * 0.8;
   world.portal.light.intensity = 60 * (0.85 + Math.sin(t * 5) * 0.15);
   if (Math.random() < dt * 25) {
     const at = world.portal.at;
     effects.sparks.emit(at.x + rand(-1.5, 1.5), at.y + rand(-1.5, 1.5), at.z, rand(-1, 1), rand(0.5, 2), rand(-1, 1), rand(0.6, 1.4), 0.3);
   }
-  // Embers drifting up out of the gorge.
+  // Embers drifting up off the road.
   if (Math.random() < dt * 30) {
     const x = rand(0, WORLD_W);
     const z = rand(0, WORLD_D);
@@ -760,6 +761,7 @@ function showMessage(text, seconds = 3) {
 }
 
 function showOverlay(title, text, button) {
+  hideStory(); // the chapter is only for the start of the round
   ui.overlayTitle.textContent = title;
   ui.overlayRound.textContent = '';
   ui.overlayText.textContent = text;
@@ -807,7 +809,7 @@ function updateHud(dt) {
     const next = waveConfig(game.wave + 1).name;
     waveLabel = game.countdown > 0
       ? `${next} in ${Math.ceil(game.countdown)}s · open the gate now [N]`
-      : `Open the hellgate: ${next.toLowerCase()} [N]`;
+      : `Let them come: ${next.toLowerCase()} [N]`;
   }
   ui.waveButton.textContent = waveLabel;
   ui.waveButton.classList.toggle('hidden', !waveLabel);

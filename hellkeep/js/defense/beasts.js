@@ -1,4 +1,4 @@
-// The beasts that march through the gorge: hellhounds, ice elephants and devils.
+// The beasts that march down the road to the keep: hellhounds, ice elephants and devils.
 // They use the same models as the other rounds (hounds.js, elephants.js, devil.js), but
 // here they just follow the path to the keep, walking, burning and dying in style.
 
@@ -199,7 +199,7 @@ class SiegeBeast {
     if (this.dyingT > 2.6) this.remove();
   }
 
-  // In tower view the bar shows through the gorge walls, so you can always spot them.
+  // In tower view the bar shows through the road walls, so you can always spot them.
   updateBar(camera, xray) {
     if (this.dead) return;
     siegeBars.back.depthTest = !xray;

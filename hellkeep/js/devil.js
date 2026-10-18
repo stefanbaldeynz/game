@@ -1,6 +1,6 @@
-// The devil: round 1's mini boss, a heavy metal demon rocking out by the throne.
+// The devil: the boss of round 4, a heavy metal demon rocking out on his throne in the keep.
 // He blasts fireballs from his Flying V guitar, swings it at you up close,
-// and gets angrier below half health. When he dies he drops a pair of angel wings.
+// and gets angrier below half health.
 
 const DEVIL_HP = 1200;
 const DEVIL_RADIUS = 0.8;
@@ -295,6 +295,8 @@ function makeDevilModel() {
 class Devil {
   constructor(scene, x, z) {
     this.type = 'devil';
+    this.isBoss = true;
+    this.bossName = 'The Devil';
     this.radius = DEVIL_RADIUS;
     this.scene = scene;
     this.x = x;
@@ -371,8 +373,8 @@ class Devil {
     for (let i = 0; i < 160; i++) {
       game.fire.emit(this.x + rand(-0.8, 0.8), rand(0.5, 3.5), this.z + rand(-0.8, 0.8), rand(-5, 5), rand(0, 6), rand(-5, 5), rand(0.6, 1.4), 1);
     }
-    game.dropPickup('wings', this.x, this.z);
-    game.showMessage('The devil is dead! He dropped his stolen ANGEL WINGS', 4);
+    game.dropPickup('health', this.x, this.z);
+    game.showMessage('The devil is dead! The stolen souls are free', 4);
     game.onEnemyKilled(this);
   }
 
@@ -536,10 +538,12 @@ class Devil {
   }
 }
 
-// A fireball the devil throws. Explodes on whatever it hits.
+// A fireball the devil (or the Balrog) throws. Explodes on whatever it hits.
+// flames: the particles it burns with (the Balrog brings his own, so they stay orange on ice).
 class Fireball {
-  constructor(scene, from, velocity) {
+  constructor(scene, from, velocity, flames = game.fire) {
     this.scene = scene;
+    this.flames = flames;
     this.mesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 10), new THREE.MeshBasicMaterial({ color: 0xffb040 }));
     this.mesh.position.set(from.x, from.y, from.z);
     scene.add(this.mesh);
@@ -555,7 +559,7 @@ class Fireball {
     pos.z += this.velocity.z * dt;
     this.life -= dt;
     for (let i = 0; i < 4; i++) {
-      game.fire.emit(pos.x + rand(-0.15, 0.15), pos.y + rand(-0.15, 0.15), pos.z + rand(-0.15, 0.15), rand(-0.5, 0.5), rand(0, 1), rand(-0.5, 0.5), rand(0.2, 0.45), 1);
+      this.flames.emit(pos.x + rand(-0.15, 0.15), pos.y + rand(-0.15, 0.15), pos.z + rand(-0.15, 0.15), rand(-0.5, 0.5), rand(0, 1), rand(-0.5, 0.5), rand(0.2, 0.45), 1);
     }
 
     const p = game.player;
@@ -573,7 +577,7 @@ class Fireball {
       game.damagePlayer(Math.round(FIREBALL_DAMAGE / 2)); // splash
     }
     for (let i = 0; i < 40; i++) {
-      game.fire.emit(pos.x, pos.y, pos.z, rand(-4, 4), rand(-1, 4), rand(-4, 4), rand(0.3, 0.7), 1);
+      this.flames.emit(pos.x, pos.y, pos.z, rand(-4, 4), rand(-1, 4), rand(-4, 4), rand(0.3, 0.7), 1);
     }
     Sound.explosion(0.5);
     this.scene.remove(this.mesh);

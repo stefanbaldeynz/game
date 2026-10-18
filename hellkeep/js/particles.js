@@ -32,6 +32,14 @@ class ParticleSystem {
       depthWrite: false,
       blending: this.smoke ? THREE.NormalBlending : THREE.AdditiveBlending,
     });
+    // Glowing particles add their light, so in the distance they must fade to nothing (black),
+    // not to the fog colour: otherwise hundreds of far-off flames pile up into a glare.
+    if (!this.smoke) {
+      material.onBeforeCompile = (shader) => {
+        shader.fragmentShader = shader.fragmentShader.replace('#include <fog_fragment>', THREE.ShaderChunk.fog_fragment.replace('fogColor', 'vec3(0.0)'));
+      };
+      material.customProgramCacheKey = () => 'glow-particles';
+    }
     this.points = new THREE.Points(geometry, material);
     this.points.frustumCulled = false;
     scene.add(this.points);

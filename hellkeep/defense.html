@@ -28,13 +28,13 @@
     <div id="paused-label" class="hidden">Paused · press P to carry on</div>
 
     <div id="td-panel" class="panel hidden">
-      <div class="hint">Click a spot on the gorge rim to build a fire tower: <b id="build-cost">10 souls</b></div>
+      <div class="hint">Click a spot in the courtyard to build a fire tower: <b id="build-cost">10 souls</b></div>
       <div class="row">
         <button id="fps-button" type="button" class="primary">First-person mode [F]</button>
         <button id="rifle-button" type="button">Upgrade rifle</button>
         <button id="menu-button" type="button">Menu [Esc]</button>
       </div>
-      <div class="hint small">Click a tower to upgrade it · click the gorge floor to choose where you drop in · WASD pan · wheel zoom · P pause</div>
+      <div class="hint small">Click a tower to upgrade it · click the road to choose where you drop in · WASD pan · wheel zoom · P pause</div>
     </div>
 
     <div id="tower-panel" class="panel hidden">
@@ -59,16 +59,17 @@
   <div id="overlay">
     <h1 id="overlay-title">Hellkeep</h1>
     <h2 id="overlay-round"></h2>
+    <div id="story" class="hidden"></div>
     <p id="overlay-text"></p>
     <div id="round-picker"></div>
     <button id="overlay-button" type="button">Loading...</button>
     <p id="asset-note" class="note hidden">Opened straight from your files, so the 3D models are switched off. For the full graphics, start the game with <b>serve.cmd</b> (in the main game folder).</p>
     <a class="back-link" href="../index.html">&larr; Game select</a>
     <div class="controls">
-      <div><b>Click the rim</b> build a fire tower</div>
+      <div><b>Click the courtyard</b> build a fire tower</div>
       <div><b>Click a tower</b> upgrade it [U]</div>
-      <div><b>N</b> open the hellgate (next wave)</div>
-      <div><b>F</b> drop into the gorge / back up</div>
+      <div><b>N</b> let the next wave come</div>
+      <div><b>F</b> drop onto the road / back up</div>
       <div><b>WASD + mouse</b> move and aim</div>
       <div><b>Click / R</b> shoot / reload</div>
       <div><b>M</b> music · <b>G</b> graphics</div>
@@ -78,6 +79,7 @@
 
   <!-- The list of rounds and the round picker. -->
   <script src="js/roundlist.js"></script>
+  <script src="js/story.js"></script>
 
   <script>
     // Where three.js comes from: the copy in ../lib/three when running through serve.cmd,

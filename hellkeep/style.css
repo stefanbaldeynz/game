@@ -539,3 +539,70 @@ body {
   text-shadow: 0 0 8px rgba(255, 120, 0, 0.8), 0 2px 3px #000;
   white-space: nowrap;
 }
+
+/* ---------- The story: a chapter and its picture on the menu at the start of each round ---------- */
+#overlay.with-story {
+  justify-content: flex-start;
+  overflow-y: auto;
+  padding-top: 20px;
+}
+#overlay.with-story h1 {
+  font-size: clamp(44px, 7vw, 84px);
+}
+#overlay.with-story #overlay-round {
+  display: none; /* the chapter heading says it */
+}
+#overlay.with-story #overlay-text {
+  margin: 12px 0 10px;
+  font-size: 16px;
+  color: #ffcf9a;
+}
+#overlay.with-story .controls {
+  margin-top: 16px;
+  font-size: 12px;
+}
+#story {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  max-width: 900px;
+  margin-top: 10px;
+  padding: 14px;
+  text-align: left;
+  background: rgba(10, 2, 1, 0.55);
+  border: 1px solid rgba(255, 106, 42, 0.35);
+  border-radius: 6px;
+  box-shadow: 0 0 40px rgba(255, 60, 0, 0.15);
+}
+#story.hidden {
+  display: none;
+}
+#story svg {
+  flex: 0 0 auto;
+  width: min(400px, 44vw);
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(255, 140, 60, 0.4), 0 6px 24px rgba(0, 0, 0, 0.6);
+}
+#story .chapter {
+  font-family: 'Metal Mania', 'Oswald', serif;
+  font-size: 26px;
+  color: #ff7a2a;
+  text-shadow: 0 0 14px rgba(255, 60, 0, 0.6);
+}
+#overlay #story p {
+  margin: 8px 0 0;
+  max-width: none;
+  font-size: 16px;
+  line-height: 1.55;
+  font-style: italic;
+  color: #e8c2a8;
+}
+@media (max-width: 760px) {
+  #story {
+    flex-direction: column;
+  }
+  #story svg {
+    width: 100%;
+  }
+}

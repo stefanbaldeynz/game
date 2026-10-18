@@ -1,7 +1,8 @@
 // Hellkeep: a small Doom-style shooter. This file runs the two 3D rounds.
-// Round 1: storm a castle in hell, put down every hellhound and the devil on the throne.
-// Round 2: the frozen depths, where ice elephants burning with blue fire roam.
-// Rounds 3 and 4 are side-on platform rounds: see side.html and js/side/.
+// Round 3: the frozen depths, a dead forest and the fortress courtyard, where ice elephants
+// burning with blue fire roam and a Balrog guards the door of the keep.
+// Round 4: inside the keep, put down every hellhound and the devil on the throne.
+// Rounds 1 and 2 are side-on platform rounds (side.html and js/side/), round 5 the siege (defense.html).
 
 if (typeof THREE === 'undefined') { // (index.html also checks this while loading)
   document.getElementById('overlay-text').textContent =
@@ -42,6 +43,7 @@ const hud = {
   damage: document.getElementById('damage'),
   slots: [...document.querySelectorAll('#slots span')],
   boss: document.getElementById('boss'),
+  bossName: document.querySelector('#boss .boss-name'),
   bossFill: document.getElementById('boss-fill'),
   wings: document.getElementById('wings'),
   wingsFill: document.getElementById('wings-fill'),
@@ -65,7 +67,7 @@ document.getElementById('game').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(THEME.background);
-scene.fog = new THREE.FogExp2(THEME.background, THEME.fogDensity);
+scene.fog = new THREE.FogExp2(THEME.background, ROUND.fogDensity || THEME.fogDensity);
 // The fill light. Scaled down because the filmic tone curve brightens the mid-tones.
 const AMBIENT_SCALE = 0.8;
 const [skyColor, groundColor, ambient] = THEME.hemi;
@@ -191,7 +193,7 @@ const game = {
   showMessage,
 };
 
-const ENEMY_TYPES = { hound: Hound, elephant: Elephant, devil: Devil };
+const ENEMY_TYPES = { hound: Hound, elephant: Elephant, devil: Devil, balrog: Balrog };
 game.enemies = level.enemies.map((spot) => new ENEMY_TYPES[spot.type](scene, spot.x, spot.z));
 game.pickups = level.pickups.map((spot) => createPickup(spot.type, spot.x, spot.z));
 // Beasts and pickups cast shadows (glows and other see-through bits don't).
@@ -553,7 +555,7 @@ function onEnemyKilled() {
   game.kills += 1;
   if (game.enemies.every((e) => !e.alive)) {
     game.winTimer = 3;
-    showMessage(THEME.snow ? 'The frozen depths fall silent...' : 'The castle falls silent...', 3);
+    showMessage(ROUND.keep ? 'The courtyard falls silent. The way into the keep is open...' : 'The castle falls silent...', 3);
   }
 }
 
@@ -566,7 +568,7 @@ function win() {
   const seconds = String(Math.floor(game.time % 60)).padStart(2, '0');
   const stats = `Time: ${minutes}:${seconds}. Health left: ${Math.ceil(game.player.health)}.`;
   if (ROUND_NUMBER < TOTAL_ROUNDS) {
-    const tease = ROUND_NUMBER < LAST_ROUND ? 'Something colder waits below...' : 'Below the ice, the gorge burns...';
+    const tease = ROUND_NUMBER === 3 ? 'The great door of the keep stands open...' : 'But the fortress gates are opening...';
     showOverlay(`Round ${ROUND_NUMBER} complete`, `${stats} ${tease}`, `Continue to round ${ROUND_NUMBER + 1}`);
   } else {
     showOverlay('Hellkeep conquered', `You beat every round! ${stats}`, 'Click to play again from round 1');
@@ -663,8 +665,8 @@ function updateVertical(dt) {
   p.vy -= GRAVITY * dt;
   p.y += p.vy * dt;
 
-  // Bump your head on the castle ceiling, or the top of the sky outside.
-  const top = (cellOf(p.z) < CASTLE_ROWS ? WALL_H : ROCK_H - 1) - EYE_HEIGHT - 0.2;
+  // Bump your head on the castle ceiling, or fly only so high outside.
+  const top = flyLimitAt(p.x, p.z) - EYE_HEIGHT - 0.2;
   if (p.y > top) {
     p.y = top;
     p.vy = Math.min(0, p.vy);
@@ -849,7 +851,7 @@ function updateWorld(dt, t) {
     while (snowAcc >= 1) {
       snowAcc -= 1;
       game.sparks.emit(
-        rand(0, MAP_W * CELL), rand(0.5, 13), rand(CASTLE_ROWS * CELL, MAP_H * CELL),
+        rand(0, MAP_W * CELL), rand(0.5, 13), rand(ROOF_ROWS * CELL, MAP_H * CELL),
         rand(0.2, 0.6), -1, rand(-0.2, 0.2),
         rand(3, 6), -0.4,
       );
@@ -868,6 +870,7 @@ function showMessage(text, seconds = 2.5) {
 }
 
 function showOverlay(title, text, button) {
+  hideStory(); // the chapter is only for the start of the round
   overlayTitle.textContent = title;
   overlayRound.textContent = '';
   overlayText.textContent = text;
@@ -894,11 +897,15 @@ function updateHud(dt) {
   if (game.enemies.some((e) => e.type === 'hound')) parts.push(`Hellhounds left: ${alive('hound')}`);
   if (game.enemies.some((e) => e.type === 'elephant')) parts.push(`Ice elephants left: ${alive('elephant')}`);
   if (alive('devil')) parts.push('The devil lives');
+  if (alive('balrog')) parts.push('The Balrog lives');
   hud.enemies.textContent = parts.join(' · ');
 
-  const boss = game.enemies.find((e) => e.type === 'devil' && e.alive && e.awake);
+  const boss = game.enemies.find((e) => e.isBoss && e.alive && e.awake);
   hud.boss.classList.toggle('hidden', !boss);
-  if (boss) hud.bossFill.style.width = `${(boss.hp / boss.maxHp) * 100}%`;
+  if (boss) {
+    hud.bossName.textContent = boss.bossName;
+    hud.bossFill.style.width = `${(boss.hp / boss.maxHp) * 100}%`;
+  }
   hud.wings.classList.toggle('hidden', !game.wings);
   hud.wingsFill.style.width = `${game.stamina * 100}%`;
 
@@ -931,8 +938,8 @@ function frame(timestamp) {
     }
   }
   for (const enemy of game.enemies) enemy.update(dt, t, playing && !game.calm);
-  // The music switches to the heavier boss riff while the devil is fighting.
-  const bossFight = game.enemies.some((e) => e.type === 'devil' && e.alive && e.awake);
+  // The music switches to the heavier boss riff while a boss is fighting.
+  const bossFight = game.enemies.some((e) => e.isBoss && e.alive && e.awake);
   Music.setSection(bossFight ? 'boss' : 'main');
   updateCamera(dt);
   updateViewmodel(dt);

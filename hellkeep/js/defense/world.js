@@ -1,5 +1,6 @@
-// The hell gorge for round 5: the map turned into 3D, collision on the gorge floor, and
-// the path the beasts walk from the hellgate to the gate of the keep.
+// The fortress courtyard for round 5: the map turned into 3D, collision on the sunken road,
+// and the path the beasts walk from the fortress gates to the gate of the keep (yours now).
+// The road is the "gorge" in the code: a trench cut through the flagstones, walled in stone.
 
 const SIEGE_W = SIEGE_MAP[0].length;
 const SIEGE_H = SIEGE_MAP.length;
@@ -111,14 +112,14 @@ function hellSurface(texture, { roughness = 0.9, normal = 3, glow = true, tint =
 
 function buildSiegeWorld(scene) {
   const world = { fires: [], gate: null, portal: null };
-  const wallMaterial = hellSurface(Textures.rock(), { normal: 4, roughness: 0.95 });
-  const rimMaterial = hellSurface(Textures.ground(1, 1), { normal: 3.5, tint: 0x8a7a72 });
+  const wallMaterial = hellSurface(Textures.castleWall(), { normal: 3, glow: false, roughness: 0.85 });
+  const rimMaterial = hellSurface(Textures.castleFloor(1, 1), { normal: 3, glow: false, roughness: 0.75, tint: 0xb0a098 });
 
   const rim = new THREE.Mesh(buildRimGeometry(), [rimMaterial, wallMaterial]);
   rim.castShadow = rim.receiveShadow = true;
   scene.add(rim);
 
-  // The gorge floor: cracked black rock, glowing where the lava shows through.
+  // The sunken road: old worn cobbles.
   const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(WORLD_W, WORLD_D),
     hellSurface(Textures.castleFloor(SIEGE_W, SIEGE_H), { normal: 3, glow: false, tint: 0x5a4a4a, roughness: 0.6 }),
@@ -128,8 +129,10 @@ function buildSiegeWorld(scene) {
   floor.receiveShadow = true;
   scene.add(floor);
 
-  world.portal = addHellgate(scene, wallMaterial);
+  world.portal = addFortressGate(scene, wallMaterial);
   world.gate = addKeepGate(scene, wallMaterial);
+  addKeep(scene);
+  addCurtainWalls(scene);
   addWasteland(scene);
   for (let row = 0; row < SIEGE_H; row++) {
     for (let col = 0; col < SIEGE_W; col++) {
@@ -157,7 +160,7 @@ function buildRimGeometry() {
   for (let row = 0; row < SIEGE_H; row++) {
     for (let col = 0; col < SIEGE_W; col++) if (!isGorgeCell(col, row)) rimCells.push([col, row]);
   }
-  const tile = SIEGE_CELL * 2;
+  const tile = SIEGE_CELL; // one texture tile (2 x 2 flagstones) per cell
   for (const [col, row] of rimCells) {
     const x0 = col * SIEGE_CELL;
     const z0 = row * SIEGE_CELL;
@@ -184,7 +187,7 @@ function buildRimGeometry() {
       if (!isGorgeCell(nc, nr)) continue;
       quad(
         [[a[0], 0, a[1]], [b[0], 0, b[1]], [b[0], SIEGE_RIM, b[1]], [a[0], SIEGE_RIM, a[1]]],
-        [[0, 0], [1, 0], [1, 1.25], [0, 1.25]],
+        [[0, 0], [1, 0], [1, SIEGE_RIM / 7], [0, SIEGE_RIM / 7]], // the brick texture is 4 wide, 7 tall
       );
     }
   }
@@ -198,32 +201,134 @@ function buildRimGeometry() {
   return geometry;
 }
 
-// Where the beasts come from: a burning portal in the rock.
-function addHellgate(scene, wallMaterial) {
+// A material made from the castle brick texture, stretched to fit a big surface.
+function stoneMaterial(repeatX, repeatY) {
+  const texture = Textures.castleWall();
+  texture.repeat.set(repeatX, repeatY);
+  const material = hellSurface(texture, { normal: 3, glow: false, roughness: 0.85 });
+  material.normalMap.repeat.set(repeatX, repeatY);
+  return material;
+}
+
+// Where the beasts come from: the fortress's outer gatehouse, its gates thrown open,
+// with the fires of hell burning beyond. Two towers, an arch over the sunken road,
+// the portcullis hauled up, and the great doors swung wide.
+function addFortressGate(scene, wallMaterial) {
   const [col, row] = SIEGE_PATH.start;
   const [ox, oz] = SIEGE_PATH.startOut;
   const { x, z } = siegeCellCenter(col, row);
-  const facing = Math.atan2(-ox, -oz);
   const group = new THREE.Group();
-  group.position.set(x + ox * (SIEGE_CELL / 2 + 0.5), 0, z + oz * (SIEGE_CELL / 2 + 0.5));
-  group.rotation.y = facing;
+  group.position.set(x + ox * (SIEGE_CELL / 2), 0, z + oz * (SIEGE_CELL / 2));
+  group.rotation.y = Math.atan2(-ox, -oz); // local -z points out of the fortress
   scene.add(group);
-  addPart(group, new THREE.BoxGeometry(SIEGE_CELL + 2, SIEGE_RIM, 1), wallMaterial, 0, SIEGE_RIM / 2, 0).castShadow = true;
-  // The portal: a swirl of fire, brighter than white so it blooms.
+  const top = SIEGE_RIM + 10;
+  const towerStone = stoneMaterial(2, top / 7);
+  const iron = new THREE.MeshStandardMaterial({ color: 0x1a1412, metalness: 0.8, roughness: 0.4 });
+  const wood = new THREE.MeshStandardMaterial({ map: Textures.leather(), color: 0x4a3028, roughness: 0.8 });
+  for (const side of [-1, 1]) {
+    addPart(group, new THREE.BoxGeometry(4.4, top, 5), towerStone, side * 4.4, top / 2, -1.5).castShadow = true;
+    for (const [mx, mz] of [[-1.7, -3.6], [0, -3.6], [1.7, -3.6], [-1.7, 0.6], [0, 0.6], [1.7, 0.6], [-1.7, -1.5], [1.7, -1.5]]) {
+      addPart(group, new THREE.BoxGeometry(0.9, 1, 0.9), wallMaterial, side * 4.4 + mx, top + 0.5, mz);
+    }
+    // The doors, swung open outwards.
+    const door = new THREE.Group();
+    door.position.set(side * 2, 0, -4);
+    door.rotation.y = side * 1.15;
+    group.add(door);
+    addPart(door, new THREE.BoxGeometry(2, SIEGE_RIM + 1.4, 0.3), wood, -side, (SIEGE_RIM + 1.4) / 2, 0);
+    for (const y of [1, 3, 5.4]) addPart(door, new THREE.BoxGeometry(2, 0.16, 0.36), iron, -side, y, 0);
+  }
+  // The arch over the road, with the portcullis hauled up into it.
+  addPart(group, new THREE.BoxGeometry(4.4, top - SIEGE_RIM - 1.4, 5), towerStone, 0, (top + SIEGE_RIM + 1.4) / 2, -1.5).castShadow = true;
+  for (let i = 0; i < 7; i++) {
+    const spike = addPart(group, new THREE.ConeGeometry(0.08, 0.6, 4), iron, -1.65 + i * 0.55, SIEGE_RIM + 1.1, -3.2);
+    spike.rotation.x = Math.PI;
+  }
+  // Hell's fire beyond the gates: a swirl of flame, brighter than white so it blooms.
   const swirl = new THREE.Mesh(
-    new THREE.CircleGeometry(1.9, 40),
+    new THREE.CircleGeometry(5, 40),
     new THREE.MeshBasicMaterial({ map: Textures.hazard(), color: new THREE.Color(2.6, 0.9, 0.3) }),
   );
-  swirl.position.set(0, 2.1, -0.52);
-  swirl.rotation.y = Math.PI;
+  swirl.position.set(0, 3, -9);
   group.add(swirl);
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(2.0, 0.22, 10, 40), new THREE.MeshStandardMaterial({ color: 0x1a0a06, metalness: 0.6, roughness: 0.4, emissive: 0xff3a10, emissiveIntensity: 0.6 }));
-  ring.position.set(0, 2.1, -0.55);
-  group.add(ring);
-  const light = new THREE.PointLight(0xff5a1a, 60, 18, 1.8);
-  light.position.set(0, 2.2, -2);
+  const light = new THREE.PointLight(0xff5a1a, 60, 22, 1.8);
+  light.position.set(0, 2.5, -2);
   group.add(light);
-  return { swirl, light, at: group.localToWorld(new THREE.Vector3(0, 2.1, -0.8)) };
+  return { swirl, light, at: group.localToWorld(new THREE.Vector3(0, 2.1, -3)) };
+}
+
+// The keep, yours now: its great hall rises behind the keep gate, with towers at the
+// corners and your fires burning in the windows.
+function addKeep(scene) {
+  const [col, row] = SIEGE_PATH.end;
+  const [ox, oz] = SIEGE_PATH.endOut;
+  const { x, z } = siegeCellCenter(col, row);
+  const group = new THREE.Group();
+  group.position.set(x + ox * (SIEGE_CELL / 2 + 1.1), 0, z + oz * (SIEGE_CELL / 2 + 1.1));
+  group.rotation.y = Math.atan2(-ox, -oz); // local -z points into the keep
+  scene.add(group);
+  const hall = { w: 30, h: SIEGE_RIM + 24, d: 22 };
+  const slate = new THREE.MeshStandardMaterial({ color: 0x1a0c0a, roughness: 0.7 });
+  const windows = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff8a30).multiplyScalar(3) });
+  const stone = stoneMaterial(hall.w / 6, hall.h / 7);
+  addPart(group, new THREE.BoxGeometry(hall.w, hall.h, hall.d), stone, 0, hall.h / 2, -hall.d / 2).castShadow = true;
+  for (const tx of [-hall.w / 2, hall.w / 2]) {
+    const height = hall.h + 14;
+    addPart(group, new THREE.CylinderGeometry(5, 5.5, height, 16), stoneMaterial(4, height / 7), tx, height / 2, -2).castShadow = true;
+    addPart(group, new THREE.ConeGeometry(6, 12, 16), slate, tx, height + 6, -2);
+    for (let i = 0; i < 4; i++) addPart(group, new THREE.BoxGeometry(0.9, 2.2, 0.4), windows, tx, height * (0.45 + i * 0.13), 3.4);
+  }
+  const spire = hall.h + 26;
+  addPart(group, new THREE.CylinderGeometry(6, 6.5, spire, 16), stoneMaterial(5, spire / 7), 0, spire / 2, -hall.d + 2);
+  addPart(group, new THREE.ConeGeometry(7.5, 16, 16), slate, 0, spire + 8, -hall.d + 2);
+  for (let i = 0; i < 7; i++) {
+    for (const y of [SIEGE_RIM + 9, SIEGE_RIM + 16]) addPart(group, new THREE.BoxGeometry(1.2, 2.8, 0.2), windows, -10.5 + i * 3.5, y, 0.05);
+  }
+  for (let i = 0; i < 13; i++) addPart(group, new THREE.BoxGeometry(1.2, 1.2, 1.2), stone, -hall.w / 2 + 1 + i * ((hall.w - 2) / 12), hall.h + 0.6, -0.6);
+  // Your banner, hung over the gate.
+  addPart(group, new THREE.PlaneGeometry(4, 8), new THREE.MeshStandardMaterial({ map: Textures.banner(), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.9 }), 0, SIEGE_RIM + 12, 0.15);
+}
+
+// The fortress's curtain walls all the way round the courtyard, with towers at the
+// corners. They stop at the gatehouse and the keep.
+function addCurtainWalls(scene) {
+  const height = SIEGE_RIM + 7;
+  const thick = 2;
+  const gateZ = siegeCellCenter(...SIEGE_PATH.start).z;
+  const keepZ = siegeCellCenter(...SIEGE_PATH.end).z;
+  const runs = [
+    // [x0, z0, x1, z1]: the north and south sides, then the west and east (up to the gates).
+    [-thick, -thick, WORLD_W + thick, -thick],
+    [-thick, WORLD_D + thick, WORLD_W + thick, WORLD_D + thick],
+    [-thick, -thick, -thick, gateZ - 6.6],
+    [-thick, gateZ + 6.6, -thick, WORLD_D + thick],
+    [WORLD_W + thick, -thick, WORLD_W + thick, keepZ - 16],
+  ];
+  const merlons = [];
+  for (const [x0, z0, x1, z1] of runs) {
+    const length = Math.hypot(x1 - x0, z1 - z0);
+    if (length < 1) continue;
+    const alongX = x1 !== x0;
+    const wall = addPart(scene, new THREE.BoxGeometry(alongX ? length : thick, height, alongX ? thick : length), stoneMaterial(length / 4, height / 7), (x0 + x1) / 2, height / 2, (z0 + z1) / 2);
+    wall.castShadow = wall.receiveShadow = true;
+    for (let d = 0.8; d < length; d += 1.8) {
+      const k = d / length;
+      merlons.push([x0 + (x1 - x0) * k, height + 0.5, z0 + (z1 - z0) * k]);
+    }
+  }
+  const towerHeight = height + 6;
+  const towerStone = stoneMaterial(4, towerHeight / 7);
+  const slate = new THREE.MeshStandardMaterial({ color: 0x1a0c0a, roughness: 0.7 });
+  for (const [x, z] of [[-thick, -thick], [WORLD_W + thick, -thick], [-thick, WORLD_D + thick]]) {
+    addPart(scene, new THREE.CylinderGeometry(3.4, 3.8, towerHeight, 14), towerStone, x, towerHeight / 2, z).castShadow = true;
+    addPart(scene, new THREE.ConeGeometry(4.2, 7, 14), slate, x, towerHeight + 3.5, z);
+  }
+  const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), hellSurface(Textures.castleWall(), { normal: 3, glow: false, roughness: 0.85 }), merlons.length);
+  const m = new THREE.Matrix4();
+  merlons.forEach(([x, y, z], i) => mesh.setMatrixAt(i, m.makeTranslation(x, y, z)));
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.castShadow = true;
+  scene.add(mesh);
 }
 
 // Where they're heading: the gate of the keep, with an iron portcullis and braziers.
@@ -266,13 +371,13 @@ function addWasteland(scene) {
     scene.add(plane);
   }
   const lava = new THREE.MeshBasicMaterial({ map: Textures.hazard(), color: new THREE.Color(1.6, 1.6, 1.6) });
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 6; i++) {
     let x;
     let z;
     do {
-      x = rand(-60, WORLD_W + 60);
-      z = rand(-60, WORLD_D + 60);
-    } while (x > -6 && x < WORLD_W + 6 && z > -6 && z < WORLD_D + 6);
+      x = rand(-90, WORLD_W + 90);
+      z = rand(-90, WORLD_D + 90);
+    } while (x > -40 && x < WORLD_W + 70 && z > -40 && z < WORLD_D + 40);
     const pool = new THREE.Mesh(new THREE.CircleGeometry(rand(3, 8), 24), lava);
     pool.rotation.x = -Math.PI / 2;
     pool.scale.set(1, rand(0.5, 1), 1);

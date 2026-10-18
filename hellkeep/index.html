@@ -44,6 +44,7 @@
   <div id="overlay">
     <h1 id="overlay-title">Hellkeep</h1>
     <h2 id="overlay-round"></h2>
+    <div id="story" class="hidden"></div>
     <p id="overlay-text">The gates of the castle in hell stand open. Hellhounds wreathed in fire guard every hall. Go in and put them all down.</p>
     <div id="round-picker"></div>
     <button id="overlay-button" type="button">Click to play</button>
@@ -65,6 +66,7 @@
 
   <!-- The list of rounds and the round picker (rounds 3 and 4 live in side.html). -->
   <script src="js/roundlist.js"></script>
+  <script src="js/story.js"></script>
 
   <!--
     three.js and its post-processing add-ons (bloom etc.) are loaded as modules from the web.
@@ -134,7 +136,7 @@
 
     const scripts = [
       'util', 'themes', 'rounds', 'textures', 'sound', 'music', 'particles', 'level',
-      'hounds', 'elephants', 'devil', 'wings', 'weapons', 'graphics', 'main',
+      'hounds', 'elephants', 'devil', 'balrog', 'wings', 'weapons', 'graphics', 'main',
     ];
     for (const name of scripts) {
       await new Promise((resolve, reject) => {

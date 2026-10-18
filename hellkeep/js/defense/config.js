@@ -5,7 +5,7 @@ const THEME = HELL_THEME; // the hell colour theme (themes.js)
 
 const SIEGE = {
   title: 'Round 5 · The Hellgate Siege',
-  intro: 'The beasts of hell are marching through the gorge to the keep. Build fire towers on the rim, then drop in with your rifle. Three waves: hellhounds, ice elephants, then the devils themselves.',
+  intro: 'Hell is coming to take back the keep. Build fire towers in the courtyard, then drop onto the road with your rifle. Three waves: hellhounds, ice elephants, then the devils themselves.',
   startMoney: 40,         // enough for 4 towers
   startLives: 20,
   timeBetweenWaves: 25,   // seconds before the next wave starts by itself
@@ -44,11 +44,11 @@ const SIEGE = {
 };
 
 // ---------- The map ----------
-// One cell is 4 units (about metres). The gorge is 5 deep.
-//   .  scorched rim: you can build towers here
-//   T  a brazier on the rim (no building)
-//   =  gorge floor: the beasts' path, and where you walk in first-person mode
-//   S  the hellgate, where they come out      E  the gate of the keep, where they escape
+// One cell is 4 units (about metres). The sunken road is 5 deep.
+//   .  courtyard: you can build towers here
+//   T  a brazier in the courtyard (no building)
+//   =  the sunken road: the beasts' path, and where you walk in first-person mode
+//   S  the fortress gates, where they come in    E  the gate of the keep, which they're after
 const SIEGE_CELL = 4;
 const SIEGE_RIM = 5;
 const SIEGE_MAP = [

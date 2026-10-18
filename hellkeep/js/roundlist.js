@@ -1,13 +1,15 @@
 // Every round in Hellkeep, and the round picker on the menu screens.
-// Rounds 1 and 2 are the 3D shooter (index.html). Rounds 3 and 4 are side-on
-// platform rounds (side.html). Round 5 is tower defence with a first-person mode
-// (defense.html). This file is loaded by every page.
+// The story runs in order: ride into hell (1), climb down the gorge to the fortress (2),
+// fight through the frozen forest and courtyard (3), storm the keep (4), then hold it (5).
+// Rounds 1 and 2 are side-on platform rounds (side.html), 3 and 4 the 3D shooter
+// (index.html), and 5 is tower defence with a first-person mode (defense.html).
+// This file is loaded by every page.
 
 const ROUND_LIST = [
-  { n: 1, title: 'The Burning Keep', page: 'index.html' },
-  { n: 2, title: 'The Frozen Depths', page: 'index.html' },
-  { n: 3, title: 'The Brimstone Gorge', page: 'side.html' },
-  { n: 4, title: 'Hell Ride', page: 'side.html' },
+  { n: 1, title: 'Hell Ride', page: 'side.html' },
+  { n: 2, title: 'The Brimstone Gorge', page: 'side.html' },
+  { n: 3, title: 'The Frozen Depths', page: 'index.html' },
+  { n: 4, title: 'The Burning Keep', page: 'index.html' },
   { n: 5, title: 'The Hellgate Siege', page: 'defense.html' },
 ];
 const TOTAL_ROUNDS = ROUND_LIST.length;
@@ -61,11 +63,15 @@ function buildRoundPicker(current, playCurrent) {
 }
 
 // A side-on round asked for on the 3D page (or the other way round): send it
-// to the right page.
+// to the right page. Opening the game with no round (hellkeep/) starts at round 1.
 (() => {
   const n = roundFromHash();
-  const round = ROUND_LIST.find((r) => r.n === n);
-  if (round && round.page !== currentPage()) location.replace(round.page + location.hash);
+  const round = ROUND_LIST.find((r) => r.n === n) || (currentPage() === 'index.html' ? ROUND_LIST[0] : null);
+  if (round && round.page !== currentPage()) {
+    const params = new URLSearchParams(location.hash.slice(1)); // keeps dev options like &preview
+    params.set('round', round.n);
+    location.replace(`${round.page}#${params.toString().replace(/=(&|$)/g, '$1')}`);
+  }
 })();
 
 // Show the menu straight away while the game builds its level in the background
