@@ -531,6 +531,13 @@ const SideRender = (() => {
       headlight.position.set(BIKE_LENGTH * 0.45, hero.bikeHeight * 0.6, 0);
       headlight.target.position.set(BIKE_LENGTH * 4, 0, 0);
       hero.bike.add(headlight, headlight.target);
+      // Where he sits: the saddle, just behind the middle of the bike. He is placed so his
+      // hips rest on it (his hips are this high above his feet when he stands).
+      hero.seat = { x: -BIKE_LENGTH * 0.15, y: hero.bikeHeight * 0.6 };
+      root.updateMatrixWorld(true);
+      hero.hipHeight = hero.bones && hero.bones.hips
+        ? hero.bones.hips.getWorldPosition(new THREE.Vector3()).y - root.getWorldPosition(new THREE.Vector3()).y
+        : 0.6;
     }
     return hero;
   }
@@ -604,8 +611,9 @@ const SideRender = (() => {
     const view = viewYaw(h.root.position.x);
     h.body.rotation.y = (facing > 0 ? Math.PI / 2 - turn : -Math.PI / 2 + turn) - (h.poseYaw || 0) + view;
     if (h.bike) {
-      h.bike.rotation.y = 0.15 + view; // the bike angled slightly towards you too
-      h.body.position.set(-0.1, h.bikeHeight * 0.45, 0);
+      const yaw = 0.15 + view; // the bike angled slightly towards you too
+      h.bike.rotation.y = yaw;
+      h.body.position.set(h.seat.x * Math.cos(yaw), h.seat.y - h.hipHeight, -h.seat.x * Math.sin(yaw));
     }
 
     // The pose: the model's standing animation, with the legs worked by hand on top.
@@ -636,7 +644,7 @@ const SideRender = (() => {
         if (b['leg.R']) bend(h.model, b['leg.R'], kneeR);
       }
       if (b.spine && running) bend(h.model, b.spine, 0.15); // lean into the run
-      h.body.position.y = (h.bike ? h.bikeHeight * 0.45 : 0) + (running ? Math.abs(Math.sin(h.phase)) * 0.05 : 0);
+      h.body.position.y = (h.bike ? h.seat.y - h.hipHeight : 0) + (running ? Math.abs(Math.sin(h.phase)) * 0.05 : 0);
     }
 
     // Wings: only out while you're in the air. They sprout open as you leave the ground,
