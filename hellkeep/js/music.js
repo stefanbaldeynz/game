@@ -18,6 +18,7 @@
 // synthesised songs below. To use your own track, drop it in hellkeep/music/ and list it here.
 const TRACKS = {
   1: 'music/Blood_and_Iron_Rite.mp3',
+  3: 'music/Blood_and_Iron_Rite.mp3', // the side-on gorge
 };
 
 const NOTE_OFFSETS = { e: 0, f: 1, g: 3, a: 5, b: 6, h: 7, c: 8, d: 10 };
@@ -77,6 +78,10 @@ const SONGS = {
     },
   },
 };
+// The side-on rounds borrow round 1's song: round 3 if its MP3 is missing,
+// round 4 (the motorbike ride) with the relentless boss riff the whole way.
+SONGS[3] = SONGS[1];
+SONGS[4] = SONGS[1];
 
 // Catch typos: every bar must be exactly 16 steps.
 for (const [name, song] of Object.entries(SONGS)) {

@@ -1,9 +1,13 @@
 # Hellkeep
 
-A first-person shooter in the style of Doom and GoldenEye, in two rounds.
+A shooter in hell, in four rounds. The first two are first-person 3D, in the style of Doom and GoldenEye. The last two are side-on platform rounds, built from the levels of Gem Quest.
 
 - **Round 1: The Burning Keep.** Walk through the lava fields of hell to a burning castle. Flaming hellhounds guard every hall, and the **devil** waits by the throne. Kill them all to finish the round.
-- **Round 2: The Frozen Depths.** A frozen castle with freezing pools and falling snow. **Ice elephants** with huge tusks, burning with blue fire, roam its halls. Bring them all down to beat the game.
+- **Round 2: The Frozen Depths.** A frozen castle with freezing pools and falling snow. **Ice elephants** with huge tusks, burning with blue fire, roam its halls. Bring them all down to finish the round.
+- **Round 3: The Brimstone Gorge** (side-on). Climb down a burning gorge to the **Soul Gem** at the very bottom. Hellhounds fly in loops spitting fire, and **lightning elephants** guard the ledges.
+- **Round 4: Hell Ride** (side-on). Ride a motorbike across a lava sea to the Soul Gem. Blast through the rocks and jump (or fly) the gaps. Grab the gem to beat the game.
+
+Every menu screen has a **round picker**, so you can start any round straight away. Beating a round takes you on to the next one.
 
 Round 1 plays the recorded track `music/Blood_and_Iron_Rite.mp3` on a loop. Round 2 has an industrial metal soundtrack in a Rammstein style that the game plays live: plucked-string guitar synthesis, double-tracked high-gain guitars, a stomping kick and synth pads, crawling along in low C. If the MP3 is missing, round 1 falls back to its own synthesised song, which marches in drop D and switches to a relentless boss riff while the devil fights. Press **M** to turn the music off or on.
 
@@ -39,14 +43,35 @@ Open `index.html` in Chrome or Edge, then click to start. The game needs an inte
 - **Ice elephants** (320 health) rear up, trumpet, then **charge**. A charge hits hard and throws you back. A single jump isn't high enough to clear one, but a double jump or the wings are. If an elephant charges into a wall, it's stunned for a moment. Up close it gores you with its tusks.
 - Round 2 starts with all three guns and the angel wings.
 
+## The side-on rounds (3 and 4)
+
+They run in `side.html` and keep the same menus, HUD, sounds and music as the 3D rounds. You keep the **Flak Shotgun** and the **angel wings**.
+
+| Key | Action |
+| --- | --- |
+| A D / arrow keys | Move (on the motorbike: Right speeds up, Left slows down) |
+| Space / W / Up | Jump. Press again in mid-air to **double jump** |
+| Hold Space (after a double jump) | **Fly with the angel wings**. The stamina bar refills on the ground |
+| J / Z / X / Ctrl / left click | Fire the Flak Shotgun |
+| M | Music on/off |
+| Esc / P | Pause |
+
+- The **Flak Shotgun** sprays seven pellets. It blasts beasts, smashes blocks and even knocks fireballs out of the air. You start with 30 shells. Out of shells, you club things with it instead.
+- **Rune blocks** (a flame on dark iron) hold shells or a health box. The **skull chest** holds both. **Brimstone blocks** just break.
+- **Hellhounds** fly in loops and spit fire the way they're flying (3 pellets kill one).
+- **Lightning elephants** plod along the ledges, crackling with lightning. If you're on their level and in front of them, they rear up, trumpet and **charge**. A charge into a wall stuns them. Jump or fly over them, or give them two good blasts.
+- Health works like the 3D rounds: there are no lives. In round 4, falling into the lava sea burns you (34 health) and puts you back on the road.
+- On the motorbike you smash straight through blocks, and you can still fire forwards.
+
 ## How the code is organised
 
 `index.html` loads three.js and its add-ons (bloom etc.) as modules from the web, then every file in `js/` in this order:
 
 | File | What it does |
 | --- | --- |
+| `roundlist.js` | The list of all four rounds, which page each one is on, and the round picker. Loaded by both pages |
 | `util.js` | Small shared helpers |
-| `rounds.js` | **The rounds:** each round's map (an ASCII grid you can edit), colour theme and starting gear |
+| `rounds.js` | **The 3D rounds:** each round's map (an ASCII grid you can edit), colour theme and starting gear |
 | `textures.js` | Draws every texture (bricks, lava, ice, the creatures' skins, the Delft porcelain, leather...) with code, so there are no image files |
 | `sound.js` | Makes every sound effect with the Web Audio API, so there are no audio files |
 | `music.js` | **The soundtrack:** recorded MP3 tracks per round (from the `music` folder), plus the synthesised industrial metal songs played live by code (plucked-string guitars, bass, drums, synth pads). The riffs are written as letter patterns you can edit |
@@ -60,6 +85,14 @@ Open `index.html` in Chrome or Edge, then click to start. The game needs an inte
 | `graphics.js` | Modern graphics: bloom, the filmic colour grade, anti-aliasing, reflections and bullet holes |
 | `main.js` | Controls, jumping and flying, shooting, pickups, the on-screen display (HUD) and the game loop |
 
+`side.html` runs rounds 3 and 4. It loads `roundlist.js`, `util.js`, `sound.js` and `music.js` from above, plus its own files in `js/side/`:
+
+| File | What it does |
+| --- | --- |
+| `side/levels.js` | **The side-on rounds:** maps drawn as text (the key is at the top). Round 4 is glued together from screen-sized chunks |
+| `side/sprites.js` | The pixel art: you, the wings, the Flak Shotgun, the motorbike, hellhounds, lightning elephants and the tiles |
+| `side/game.js` | Running, jumping and flying, the shotgun, the beasts, the camera and drawing. The numbers at the top tune it all |
+
 Easy things to try changing:
 
 - **The levels:** edit a `map` in `rounds.js`. The legend is at the top.
@@ -71,5 +104,6 @@ Easy things to try changing:
 
 Tips:
 
-- Open `index.html#round=2` to jump straight to round 2.
+- Open `index.html#round=2` to jump straight to round 2. `#round=3` or `#round=4` opens the side-on rounds.
+- `side.html#round=3&preview&god` starts a side-on round straight away, with you invincible.
 - Open `index.html#preview&god` to start straight away without capturing the mouse, and with you invincible. You can add `&round=2` to that. It's handy for screenshots and testing.
