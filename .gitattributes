@@ -1,0 +1,6 @@
+# Keep Windows line endings in the double-click launcher, and never touch binary assets.
+*.cmd text eol=crlf
+*.glb binary
+*.mp3 binary
+*.png binary
+*.jpg binary

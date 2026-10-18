@@ -15,7 +15,7 @@ The graphics use modern effects: bloom (fire, lava and eyes glow), a filmic colo
 
 ## Play
 
-Open `index.html` in Chrome or Edge, then click to start. The game needs an internet connection the first time it loads, because the 3D engine ([three.js](https://threejs.org/)) and the fonts come from the web.
+Double-click `serve.cmd` in the main game folder, pick Hellkeep, then click to start. Use Chrome or Edge. (Opening `index.html` directly also works, but without the 3D models.) The game needs an internet connection the first time it loads, because the 3D engine ([three.js](https://threejs.org/)) and the fonts come from the web.
 
 | Key | Action |
 | --- | --- |
@@ -89,13 +89,9 @@ They run in `side.html` and keep the same menus, HUD, sounds and music as the 3D
 
 The hellhounds are a real animated 3D model: **'Wolf' by [Quaternius](https://quaternius.com)**, public domain (CC0), from [poly.pizza/m/P1gU3Qkr9r](https://poly.pizza/m/P1gU3Qkr9r). It's `models/hellhound.glb`. The game runs (gallop), lunges (attack), flinches when shot (hit reactions) and dies (death) with the model's own animations. `hounds.js` paints the lava cracks on with a small shader and bolts horns and spikes onto its bones.
 
-Browsers won't load a `.glb` file into a page opened straight from your files, so `models/hellhound.js` holds the same model packed as text. If that file is missing or broken, the game uses the old hound built from boxes.
+Models load only when the game runs through the local server (`serve.cmd` in the main folder; see the main README). Opened straight from your files, the game shows a tip and uses the old hound built from boxes.
 
-To swap in a different animated model, replace `models/hellhound.glb`, rebuild `models/hellhound.js` with this PowerShell command (run it in the `hellkeep` folder), and set the animation names in `HOUND_CLIPS` at the top of `hounds.js`:
-
-```powershell
-"window.HELLHOUND_GLB = '" + [Convert]::ToBase64String([IO.File]::ReadAllBytes("$PWD\models\hellhound.glb")) + "';" | Set-Content models\hellhound.js
-```
+**Adding or swapping models:** every model is listed in `MODEL_FILES` in `index.html` and loaded before the game starts, so the game can use it as `MODELS.<name>`. To swap the hound, replace `models/hellhound.glb` and set its animation names in `HOUND_CLIPS` at the top of `hounds.js`. To add a model, put the `.glb` in `models/`, add a line to `MODEL_FILES`, and use `MODELS.<name>` in the code (`hounds.js` shows how: cloning, recolouring, attaching parts to bones, and playing animations).
 
 `side.html` runs rounds 3 and 4. It loads `roundlist.js`, `util.js`, `sound.js` and `music.js` from above, plus its own files in `js/side/`:
 
