@@ -30,6 +30,9 @@ function joinChunks(height, chunks) {
   return rows;
 }
 
+// The side-on rounds use the hell colour theme (see themes.js).
+const THEME = HELL_THEME;
+
 const SIDE_ROUNDS = {
   3: {
     title: 'Round 3 · The Brimstone Gorge',

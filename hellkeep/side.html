@@ -10,8 +10,8 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Rounds 3 and 4: Hellkeep's side-on platform rounds. -->
-  <div id="game" class="side"><canvas id="view"></canvas></div>
+  <!-- Rounds 3 and 4: Hellkeep's side-on rounds, drawn in 3D. -->
+  <div id="game"></div>
 
   <div id="hud">
     <div id="damage"></div>
@@ -39,7 +39,8 @@
     <h1 id="overlay-title">Hellkeep</h1>
     <h2 id="overlay-round"></h2>
     <p id="overlay-text"></p>
-    <button id="overlay-button" type="button">Click to play</button>
+    <button id="overlay-button" type="button">Loading...</button>
+    <p id="asset-note" class="note hidden">Opened straight from your files, so the 3D models are switched off. For the full graphics, start the game with <b>serve.cmd</b> (in the main game folder).</p>
     <div id="round-picker"></div>
     <div class="controls">
       <div><b>A D / arrows</b> move</div>
@@ -51,12 +52,86 @@
     </div>
   </div>
 
+  <!-- The list of rounds and the round picker. -->
   <script src="js/roundlist.js"></script>
-  <script src="js/util.js"></script>
-  <script src="js/sound.js"></script>
-  <script src="js/music.js"></script>
-  <script src="js/side/levels.js"></script>
-  <script src="js/side/sprites.js"></script>
-  <script src="js/side/game.js"></script>
+
+  <script>
+    // Where three.js comes from: the copy in ../lib/three when running through serve.cmd,
+    // or the same version from the internet when this page is opened straight from the files.
+    (() => {
+      const base = location.protocol === 'file:' ? 'https://cdn.jsdelivr.net/npm/three@0.186.1/' : '../lib/three/';
+      window.THREE_BASE = base;
+      const map = document.createElement('script');
+      map.type = 'importmap';
+      map.textContent = JSON.stringify({
+        imports: { three: `${base}build/three.module.js`, 'three/addons/': `${base}examples/jsm/` },
+      });
+      document.currentScript.after(map);
+    })();
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+    import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+    import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+    import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+    import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+
+    window.THREE = THREE;
+    window.THREE_ADDONS = { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, GTAOPass, RoomEnvironment, RoundedBoxGeometry, SkeletonUtils };
+
+    // The 3D models, loaded before the round starts (see index.html for the full story).
+    const MODEL_FILES = {
+      hellhound: 'models/hellhound.glb',
+      elephant: 'models/elephant.glb',
+      soldier: 'models/soldier.glb',
+      motorcycle: 'models/motorcycle.glb',
+    };
+    window.MODELS = {};
+    if (location.protocol === 'file:') {
+      document.getElementById('asset-note').classList.remove('hidden');
+    } else {
+      const loader = new GLTFLoader();
+      loader.setDRACOLoader(new DRACOLoader().setDecoderPath(`${THREE_BASE}examples/jsm/libs/draco/gltf/`));
+      loader.setMeshoptDecoder(MeshoptDecoder);
+      await Promise.all(Object.entries(MODEL_FILES).map(async ([name, url]) => {
+        try {
+          window.MODELS[name] = await loader.loadAsync(url);
+        } catch (error) {
+          console.warn(`Could not load ${url}; using a built-in model instead.`, error);
+        }
+      }));
+    }
+
+    const scripts = [
+      'util', 'themes', 'textures', 'sound', 'music', 'particles', 'hounds', 'elephants',
+      'wings', 'weapons', 'graphics', 'side/levels', 'side/game', 'side/render3d',
+    ];
+    for (const name of scripts) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = `js/${name}.js`;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error(`Could not load js/${name}.js`));
+        document.body.appendChild(script);
+      });
+    }
+    document.getElementById('overlay-button').textContent = 'Click to play';
+  </script>
+  <script>
+    // If the 3D engine can't be downloaded, say so instead of showing a blank screen.
+    setTimeout(() => {
+      if (!window.THREE) {
+        document.getElementById('overlay-text').textContent =
+          'Could not load the 3D engine (three.js). Check your internet connection and reload the page.';
+      }
+    }, 8000);
+  </script>
 </body>
 </html>

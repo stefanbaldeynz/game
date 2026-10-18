@@ -24,7 +24,7 @@ The graphics run on [three.js](https://threejs.org/) 0.186 with modern effects:
 
 Press **G** to switch to plain rendering on slower computers (no shadows, occlusion, bloom or film effects).
 
-The side-on rounds (3 and 4) have their own lighting: darkness with pools of light around you, the lava, fireballs and the Soul Gem, a glow on everything that burns, and a vignette.
+The side-on rounds (3 and 4) are drawn in 3D too, with the same effects: the rock is traced from the map and carved into smooth cliffs with glowing ember lips, the hellhounds and elephants are the same animated models, and you play a soldier in red armour holding the 3D Flak Shotgun, with feathered angel wings that fold, glide and beat. Round 4 adds a motorcycle, a lava sea under a red heat haze, and the keep's spires on the horizon.
 
 ## Play
 
@@ -58,7 +58,7 @@ Double-click `serve.cmd` in the main game folder, pick Hellkeep, then click to s
 
 ## The side-on rounds (3 and 4)
 
-They run in `side.html` and keep the same menus, HUD, sounds and music as the 3D rounds. You keep the **Flak Shotgun** and the **angel wings**.
+They run in `side.html` and keep the same menus, HUD, sounds and music as the 3D rounds. You keep the **Flak Shotgun** and the **angel wings**. The game itself runs on a flat map, and `render3d.js` draws it in 3D, seen side-on with a little perspective.
 
 | Key | Action |
 | --- | --- |
@@ -84,7 +84,8 @@ They run in `side.html` and keep the same menus, HUD, sounds and music as the 3D
 | --- | --- |
 | `roundlist.js` | The list of all four rounds, which page each one is on, and the round picker. Loaded by both pages |
 | `util.js` | Small shared helpers |
-| `rounds.js` | **The 3D rounds:** each round's map (an ASCII grid you can edit), colour theme and starting gear |
+| `themes.js` | The colour themes (hell and ice), shared by every round |
+| `rounds.js` | **The 3D rounds:** each round's map (an ASCII grid you can edit), theme and starting gear |
 | `textures.js` | Draws every texture (bricks, lava, ice, the creatures' skins, the Delft porcelain, leather...) with code, so there are no image files |
 | `sound.js` | Makes every sound effect with the Web Audio API, so there are no audio files |
 | `music.js` | **The soundtrack:** recorded MP3 tracks per round (from the `music` folder), plus the synthesised industrial metal songs played live by code (plucked-string guitars, bass, drums, synth pads). The riffs are written as letter patterns you can edit |
@@ -103,19 +104,22 @@ They run in `side.html` and keep the same menus, HUD, sounds and music as the 3D
 - **Hellhounds:** 'Wolf' by [Quaternius](https://quaternius.com), public domain (CC0), from [poly.pizza/m/P1gU3Qkr9r](https://poly.pizza/m/P1gU3Qkr9r). It's `models/hellhound.glb`. The game runs (gallop), lunges (attack), flinches when shot (hit reactions) and dies (death) with the model's own animations. `hounds.js` paints the lava cracks on with a small shader and bolts horns and spikes onto its bones.
 - **Ice elephants:** 'Elephant' by [elkiotbear](https://poly.pizza/u/elkiotbear), licensed [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/), from [poly.pizza/m/3AfO8NwcxD](https://poly.pizza/m/3AfO8NwcxD). It's `models/elephant.glb`. The model has no skeleton or animations, so `elephants.js` gives it one when the game loads (legs, a six-part trunk, ears, head, tail and body) and animates it by hand: walking, rearing up, charging, goring and swaying its trunk. It gets the same lava-crack skin as the hounds, in icy blue fire, plus icicles on its back.
 
+- **You, in rounds 3 and 4:** 'Soldier' by [KolosStudios](https://poly.pizza/u/KolosStudios), licensed [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/), from [poly.pizza/m/XT8jgwSesV](https://poly.pizza/m/XT8jgwSesV). It's `models/soldier.glb`. His M4 is swapped for the Flak Shotgun, his kit is dyed Hellkeep red, angel wings are fixed to his chest, and running, jumping, flying and riding are animated by turning his bones on top of his standing pose.
+- **The motorcycle in round 4:** 'Motorcycle' by [Poly by Google](https://poly.pizza/u/Poly), licensed [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/), from [poly.pizza/m/5_MTCnqfUTr](https://poly.pizza/m/5_MTCnqfUTr). It's `models/motorcycle.glb`, with a headlight and exhaust flames added.
+
 Models load only when the game runs through the local server (`serve.cmd` in the main folder; see the main README). Opened straight from your files, the game shows a tip and uses the old beasts built from simple shapes.
 
 **Adding or swapping models:** every model is listed in `MODEL_FILES` in `index.html` and loaded before the game starts, so the game can use it as `MODELS.<name>`. To swap the hound, replace `models/hellhound.glb` and set its animation names in `HOUND_CLIPS` at the top of `hounds.js`. To add a model, put the `.glb` in `models/`, add a line to `MODEL_FILES`, and use `MODELS.<name>` in the code (`hounds.js` shows how: cloning, recolouring, attaching parts to bones, and playing animations; `elephants.js` shows how to rig a model that came without a skeleton).
 
 **Big models:** the loader also reads compressed models, with Draco or Meshopt meshes and KTX2 textures, which can make files many times smaller. To compress a `.glb`, drop it on [gltf.report](https://gltf.report) in a browser and export it with Draco or Meshopt compression. No install is needed. Or, if you install Node.js later, run `npx @gltf-transform/cli optimize in.glb out.glb`. Keep a credit for every model you add here.
 
-`side.html` runs rounds 3 and 4. It loads `roundlist.js`, `util.js`, `sound.js` and `music.js` from above, plus its own files in `js/side/`:
+`side.html` runs rounds 3 and 4. It loads three.js and the models the same way as `index.html`, then `roundlist.js`, `util.js`, `themes.js`, `textures.js`, `sound.js`, `music.js`, `particles.js`, `hounds.js`, `elephants.js`, `wings.js`, `weapons.js` and `graphics.js` from above (so the beasts, wings, gun and effects are shared with the 3D rounds), plus its own files in `js/side/`:
 
 | File | What it does |
 | --- | --- |
 | `side/levels.js` | **The side-on rounds:** maps drawn as text (the key is at the top). Round 4 is glued together from screen-sized chunks |
-| `side/sprites.js` | The pixel art: you, the wings, the Flak Shotgun, the motorbike, hellhounds, lightning elephants and the tiles |
-| `side/game.js` | Running, jumping and flying, the shotgun, the beasts, the camera and drawing. The numbers at the top tune it all |
+| `side/game.js` | The game itself: running, jumping and flying, the shotgun, the beasts, the camera. Worked out on a flat map in pixels (one tile = 16). The numbers at the top tune it all |
+| `side/render3d.js` | **Draws it in 3D:** turns the map into smooth rock cliffs and rounded blocks, and moves the 3D models (you, the gun and wings, the motorcycle, hellhounds, elephants, pickups, the Soul Gem, fireballs and sparks) to match the game every frame. Also the lights, the lava sea and the camera |
 
 Easy things to try changing:
 
@@ -129,5 +133,5 @@ Easy things to try changing:
 Tips:
 
 - Open `index.html#round=2` to jump straight to round 2. `#round=3` or `#round=4` opens the side-on rounds.
-- `side.html#round=3&preview&god` starts a side-on round straight away, with you invincible.
+- `side.html#round=3&preview&god` starts a side-on round straight away, with you invincible. Add `&calm` to keep the beasts still, `&x=10&y=20` to start somewhere else (in tiles), or `&zoom=4` to bring the camera in close on you.
 - Open `index.html#preview&god` to start straight away without capturing the mouse, and with you invincible. You can add `&round=2` to that, `&calm` to keep the beasts asleep, or `&noao` / `&nobloom` to compare effects. It's handy for screenshots and testing.
