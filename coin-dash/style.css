@@ -23,3 +23,22 @@ canvas {
 .help {
   opacity: 0.7;
 }
+
+/* Back to the game collection, in the top-left corner. */
+.back-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  padding: 6px 12px;
+  font: 14px system-ui, sans-serif;
+  color: #e8e8f0;
+  text-decoration: none;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  opacity: 0.7;
+}
+
+.back-link:hover {
+  opacity: 1;
+}

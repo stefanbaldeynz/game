@@ -32,8 +32,9 @@ function goToRound(n) {
   }
 }
 
-// A row of buttons, one per round, for the menu screen.
-function buildRoundPicker(current) {
+// A row of buttons, one per round, for the menu screen. Clicking the round that's
+// already loaded calls playCurrent (to start it straight away); any other round loads.
+function buildRoundPicker(current, playCurrent) {
   const box = document.getElementById('round-picker');
   if (!box) return;
   box.innerHTML = '<div class="label">Choose a round</div>';
@@ -45,7 +46,8 @@ function buildRoundPicker(current) {
     b.innerHTML = `<b>${round.n}</b> ${round.title}`;
     if (round.n === current) b.classList.add('current');
     b.addEventListener('click', (e) => {
-      e.stopPropagation(); // don't also "click to play" on the overlay behind it
+      e.stopPropagation();
+      if (round.n === current && playCurrent && playCurrent()) return;
       goToRound(round.n);
     });
     row.appendChild(b);

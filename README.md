@@ -4,7 +4,7 @@ My collection of browser games. There are no build tools or installs.
 
 ## How to play
 
-**Double-click `serve.cmd`.** It starts a small web server on your computer and opens the collection at `http://localhost:8000/`. Pick a game there. Leave the black window open while you play, and close it (or press Ctrl+C) to stop.
+**Double-click `serve.cmd`.** Every game has a **← Game select** button to come back here. It starts a small web server on your computer and opens the collection at `http://localhost:8000/`. Pick a game there. Leave the black window open while you play, and close it (or press Ctrl+C) to stop.
 
 Running through the server gives the full graphics: browsers block a page opened straight from your files from loading 3D models, so those games fall back to simpler built-in models. You can still open any game's `index.html` directly for a quick look.
 

@@ -39,9 +39,10 @@
     <h1 id="overlay-title">Hellkeep</h1>
     <h2 id="overlay-round"></h2>
     <p id="overlay-text"></p>
+    <div id="round-picker"></div>
     <button id="overlay-button" type="button">Loading...</button>
     <p id="asset-note" class="note hidden">Opened straight from your files, so the 3D models are switched off. For the full graphics, start the game with <b>serve.cmd</b> (in the main game folder).</p>
-    <div id="round-picker"></div>
+    <a class="back-link" href="../index.html">&larr; Game select</a>
     <div class="controls">
       <div><b>A D / arrows</b> move</div>
       <div><b>Space / W</b> jump · twice: double jump</div>
@@ -122,7 +123,7 @@
         document.body.appendChild(script);
       });
     }
-    document.getElementById('overlay-button').textContent = 'Click to play';
+    document.getElementById('overlay-button').textContent = `Play round ${ROUND_NUMBER}`;
   </script>
   <script>
     // If the 3D engine can't be downloaded, say so instead of showing a blank screen.

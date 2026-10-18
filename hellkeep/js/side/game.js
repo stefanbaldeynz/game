@@ -71,7 +71,7 @@ const hud = {
 overlayRound.textContent = ROUND.title;
 overlayText.textContent = ROUND.intro;
 hud.round.textContent = ROUND.title;
-buildRoundPicker(ROUND_NUMBER);
+buildRoundPicker(ROUND_NUMBER, () => overlayAction());
 
 function resize() {
   // Show more of the world on wide screens; the height stays the same.
@@ -323,7 +323,11 @@ function pause() {
   showOverlay('Paused', 'The depths are waiting.', 'Click to resume');
 }
 
-overlay.addEventListener('click', () => {
+// The menu's play button (and the round picker's button for this round) start, resume,
+// retry or continue, depending on where you are.
+overlayButton.addEventListener('click', overlayAction);
+
+function overlayAction() {
   Sound.init();
   Sound.resume();
   if (game.state === 'won') {
@@ -342,7 +346,8 @@ overlay.addEventListener('click', () => {
   game.state = 'playing';
   overlay.classList.add('hidden');
   for (const k in keys) keys[k] = false;
-});
+  return true;
+}
 
 let messageTimer = 0;
 function showMessage(text, seconds = 2.5) {

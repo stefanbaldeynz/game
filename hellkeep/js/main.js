@@ -49,7 +49,8 @@ const hud = {
 overlayRound.textContent = ROUND.title;
 overlayText.textContent = ROUND.intro;
 hud.round.textContent = ROUND.title;
-buildRoundPicker(ROUND_NUMBER);
+buildRoundPicker(ROUND_NUMBER, () => overlayAction());
+overlayButton.textContent = `Play round ${ROUND_NUMBER}`;
 
 // ---------- Renderer, scenes and cameras ----------
 
@@ -338,7 +339,11 @@ document.addEventListener('wheel', (e) => {
   cycleWeapon(e.deltaY > 0 ? 1 : -1);
 });
 
-overlay.addEventListener('click', () => {
+// The menu's play button (and the round picker's button for this round) start, resume,
+// retry or continue, depending on where you are.
+overlayButton.addEventListener('click', overlayAction);
+
+function overlayAction() {
   if (game.state === 'won' && ROUND_NUMBER < TOTAL_ROUNDS) {
     goToRound(ROUND_NUMBER + 1); // after round 2 this opens the side-on rounds
     return;
@@ -353,7 +358,8 @@ overlay.addEventListener('click', () => {
   Music.start(ROUND_NUMBER);
   const request = renderer.domElement.requestPointerLock();
   if (request && request.catch) request.catch(() => {});
-});
+  return true;
+}
 
 document.addEventListener('pointerlockchange', () => {
   const locked = document.pointerLockElement === renderer.domElement;

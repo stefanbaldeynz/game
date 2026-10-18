@@ -7,7 +7,7 @@ A shooter in hell, in four rounds. The first two are first-person 3D, in the sty
 - **Round 3: The Brimstone Gorge** (side-on). Climb down a burning gorge to the **Soul Gem** at the very bottom. Hellhounds fly in loops spitting fire, and **lightning elephants** guard the ledges.
 - **Round 4: Hell Ride** (side-on). Ride a motorbike across a lava sea to the Soul Gem. Blast through the rocks and jump (or fly) the gaps. Grab the gem to beat the game.
 
-Every menu screen has a **round picker**, so you can start any round straight away. Beating a round takes you on to the next one.
+The menu opens with a **round picker**: click a round to play it. Beating a round takes you on to the next one.
 
 Round 1 plays the recorded track `music/Blood_and_Iron_Rite.mp3` on a loop. Round 2 has an industrial metal soundtrack in a Rammstein style that the game plays live: plucked-string guitar synthesis, double-tracked high-gain guitars, a stomping kick and synth pads, crawling along in low C. If the MP3 is missing, round 1 falls back to its own synthesised song, which marches in drop D and switches to a relentless boss riff while the devil fights. Press **M** to turn the music off or on.
 
@@ -28,7 +28,7 @@ The side-on rounds (3 and 4) are drawn in 3D too, with the same effects: the roc
 
 ## Play
 
-Double-click `serve.cmd` in the main game folder, pick Hellkeep, then click to start. Use Chrome or Edge. (Opening `index.html` directly also works, but without the 3D models.) Through the server the 3D engine loads from `lib/three` in the main folder; only the fonts come from the web. Opened directly, three.js also comes from the web.
+Double-click `serve.cmd` in the main game folder, pick Hellkeep, choose a round on the menu (or press **Play round 1**). **← Game select** on the menu takes you back to the collection. Use Chrome or Edge. (Opening `index.html` directly also works, but without the 3D models.) Through the server the 3D engine loads from `lib/three` in the main folder; only the fonts come from the web. Opened directly, three.js also comes from the web.
 
 | Key | Action |
 | --- | --- |

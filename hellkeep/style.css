@@ -166,7 +166,7 @@ body {
   padding: 16px;
   text-align: center;
   background: radial-gradient(ellipse at center, rgba(40, 4, 2, 0.5), rgba(5, 0, 0, 0.92));
-  cursor: pointer;
+  cursor: default;
 }
 
 #overlay.hidden {
@@ -313,7 +313,7 @@ body {
 /* ---------- Round picker (on the menu screens) ---------- */
 
 #round-picker {
-  margin-top: 22px;
+  margin: 6px 0 22px;
 }
 
 .round-buttons {
@@ -354,4 +354,23 @@ body {
   object-fit: contain;
   image-rendering: pixelated;
   background: #050000;
+}
+
+/* ---------- Back to the game collection ---------- */
+
+.back-link {
+  margin-top: 18px;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #c98b6a;
+  text-decoration: none;
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 120, 60, 0.3);
+  border-radius: 4px;
+}
+
+.back-link:hover {
+  color: #ffcf8a;
+  border-color: rgba(255, 160, 90, 0.7);
 }
