@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hellkeep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Metal+Mania&family=Oswald:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Rounds 3 and 4: Hellkeep's side-on platform rounds. -->
+  <div id="game" class="side"><canvas id="view"></canvas></div>
+
+  <div id="hud">
+    <div id="damage"></div>
+    <div id="message"></div>
+    <div id="round"></div>
+    <div id="hounds"></div>
+    <div id="health-box" class="panel">
+      <div class="label">Health</div>
+      <div id="health" class="value">100</div>
+      <div id="wings">
+        <div class="label">Angel wings</div>
+        <div class="bar"><div id="wings-fill"></div></div>
+      </div>
+    </div>
+    <div id="weapon-box" class="panel">
+      <div id="slots">
+        <span data-weapon="shotgun" class="owned active">Flak Shotgun</span>
+      </div>
+      <div id="ammo-label" class="label">Shells</div>
+      <div id="ammo" class="value">30</div>
+    </div>
+  </div>
+
+  <div id="overlay">
+    <h1 id="overlay-title">Hellkeep</h1>
+    <h2 id="overlay-round"></h2>
+    <p id="overlay-text"></p>
+    <button id="overlay-button" type="button">Click to play</button>
+    <div id="round-picker"></div>
+    <div class="controls">
+      <div><b>A D / arrows</b> move</div>
+      <div><b>Space / W</b> jump · twice: double jump</div>
+      <div><b>Hold Space</b> fly with angel wings</div>
+      <div><b>J / Z / Ctrl / click</b> fire the Flak Shotgun</div>
+      <div><b>M</b> music on/off</div>
+      <div><b>Esc / P</b> pause</div>
+    </div>
+  </div>
+
+  <script src="js/roundlist.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/music.js"></script>
+  <script src="js/side/levels.js"></script>
+  <script src="js/side/sprites.js"></script>
+  <script src="js/side/game.js"></script>
+</body>
+</html>

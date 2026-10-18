@@ -303,3 +303,49 @@ body {
 .controls {
   grid-template-columns: repeat(2, auto);
 }
+
+/* ---------- Round picker (on the menu screens) ---------- */
+
+#round-picker {
+  margin-top: 22px;
+}
+
+.round-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+#overlay .round-buttons button {
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  padding: 7px 14px;
+  background: rgba(40, 6, 3, 0.7);
+  border-color: rgba(255, 120, 60, 0.45);
+  animation: none;
+}
+
+#overlay .round-buttons button:hover {
+  background: rgba(120, 20, 5, 0.7);
+}
+
+#overlay .round-buttons button.current {
+  border-color: #ffb060;
+  color: #ffcf8a;
+  box-shadow: 0 0 12px rgba(255, 120, 0, 0.5);
+}
+
+.round-buttons b {
+  color: #ff7a3a;
+  margin-right: 4px;
+}
+
+/* ---------- Side-on rounds (side.html) ---------- */
+
+#game.side canvas {
+  object-fit: contain;
+  image-rendering: pixelated;
+  background: #050000;
+}

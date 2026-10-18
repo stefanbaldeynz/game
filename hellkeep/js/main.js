@@ -1,6 +1,7 @@
-// Hellkeep: a small Doom-style shooter in two rounds.
+// Hellkeep: a small Doom-style shooter. This file runs the two 3D rounds.
 // Round 1: storm a castle in hell, put down every hellhound and the devil on the throne.
 // Round 2: the frozen depths, where ice elephants burning with blue fire roam.
+// Rounds 3 and 4 are side-on platform rounds: see side.html and js/side/.
 
 if (typeof THREE === 'undefined') { // (index.html also checks this while loading)
   document.getElementById('overlay-text').textContent =
@@ -48,6 +49,7 @@ const hud = {
 overlayRound.textContent = ROUND.title;
 overlayText.textContent = ROUND.intro;
 hud.round.textContent = ROUND.title;
+buildRoundPicker(ROUND_NUMBER);
 
 // ---------- Renderer, scenes and cameras ----------
 
@@ -292,9 +294,8 @@ document.addEventListener('wheel', (e) => {
 });
 
 overlay.addEventListener('click', () => {
-  if (game.state === 'won' && ROUND_NUMBER < LAST_ROUND) {
-    location.hash = `round=${ROUND_NUMBER + 1}`;
-    location.reload();
+  if (game.state === 'won' && ROUND_NUMBER < TOTAL_ROUNDS) {
+    goToRound(ROUND_NUMBER + 1); // after round 2 this opens the side-on rounds
     return;
   }
   if (game.state === 'dead' || game.state === 'won') {
@@ -501,7 +502,7 @@ function onEnemyKilled() {
   game.kills += 1;
   if (game.enemies.every((e) => !e.alive)) {
     game.winTimer = 3;
-    showMessage(ROUND_NUMBER < LAST_ROUND ? 'The castle falls silent...' : 'The frozen depths fall silent...', 3);
+    showMessage(THEME.snow ? 'The frozen depths fall silent...' : 'The castle falls silent...', 3);
   }
 }
 
@@ -513,8 +514,9 @@ function win() {
   const minutes = Math.floor(game.time / 60);
   const seconds = String(Math.floor(game.time % 60)).padStart(2, '0');
   const stats = `Time: ${minutes}:${seconds}. Health left: ${Math.ceil(game.player.health)}.`;
-  if (ROUND_NUMBER < LAST_ROUND) {
-    showOverlay(`Round ${ROUND_NUMBER} complete`, `${stats} Something colder waits below...`, `Continue to round ${ROUND_NUMBER + 1}`);
+  if (ROUND_NUMBER < TOTAL_ROUNDS) {
+    const tease = ROUND_NUMBER < LAST_ROUND ? 'Something colder waits below...' : 'Below the ice, the gorge burns...';
+    showOverlay(`Round ${ROUND_NUMBER} complete`, `${stats} ${tease}`, `Continue to round ${ROUND_NUMBER + 1}`);
   } else {
     showOverlay('Hellkeep conquered', `You beat every round! ${stats}`, 'Click to play again from round 1');
   }
