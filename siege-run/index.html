@@ -69,7 +69,6 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:'Luck
 .tOnly{display:none}
 body.touch .tOnly{display:block}
 body.touch span.tOnly{display:inline}
-body.touch .tbtns.tOnly{display:flex}
 body.touch .thelp.tOnly{display:inline-block}
 body.touch .kOnly{display:none}
 body.touch #hud .row{left:calc(max(3vw,env(safe-area-inset-left)) + 52px);right:max(3vw,env(safe-area-inset-right))}
@@ -95,6 +94,26 @@ body.touch #touch.on{display:block}
 #rotate .ph{width:56px;height:96px;border:5px solid #fff;border-radius:12px;animation:turn 2s ease-in-out infinite}
 @keyframes turn{0%,25%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
 @media (orientation:portrait){body.touch #rotate{display:flex}}
+/* world map */
+#mapUI{position:absolute;inset:0;pointer-events:none;display:none}
+#mapUI.on{display:block}
+#sign{position:absolute;left:max(4vw,env(safe-area-inset-left));top:0;transform-origin:50% 0;animation:sway 3.2s ease-in-out infinite}
+#sign.shake{animation:shake .4s}
+@keyframes sway{0%,100%{transform:rotate(-1.2deg)}50%{transform:rotate(1.2deg)}}
+@keyframes shake{20%{transform:translateX(-9px) rotate(-3deg)}40%{transform:translateX(9px) rotate(3deg)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+#sign .rope{position:absolute;top:0;width:6px;height:4vh;background:repeating-linear-gradient(45deg,#d8b070 0 4px,#8a6a30 4px 8px);border:1px solid #3a2410}
+#sign .rope.l{left:16%}#sign .rope.r{right:16%}
+#sign .plank{margin-top:4vh;min-width:min(380px,40vw);padding:.45em 1em .55em;background:repeating-linear-gradient(90deg,rgba(0,0,0,.07) 0 3px,transparent 3px 13px),linear-gradient(#b0702e,#7a4518);border:3px solid #2a1406;border-radius:8px;box-shadow:inset 0 2px 0 rgba(255,220,160,.35),inset 0 -3px 0 rgba(0,0,0,.3),4px 5px 0 rgba(0,0,0,.5)}
+#sign b{display:block;font-weight:normal;font-size:clamp(20px,5.4vh,42px);color:var(--gold);-webkit-text-stroke:1.5px var(--ink);text-shadow:2px 3px 0 #2a1406;letter-spacing:.03em}
+#sign i{display:block;font:700 clamp(11px,2.4vh,15px) system-ui,sans-serif;font-style:normal;color:#ffe8c0;letter-spacing:.06em}
+#sign.locked b{color:#d8c8b0}
+#mapLogo{position:absolute;right:max(4vw,env(safe-area-inset-right));top:max(2.5vh,env(safe-area-inset-top));text-align:right;transform:rotate(-3deg)}
+#mapLogo span{display:block;font-size:clamp(26px,7vh,56px);line-height:.95;background:linear-gradient(#fff7b0 0%,#ffc21a 38%,#ff6a00 72%,#b82400);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;-webkit-text-stroke:2px var(--ink);filter:drop-shadow(0 4px 0 #6a1e00)}
+#mapLogo i{display:block;font-style:normal;font-size:clamp(13px,3vh,22px);color:#fff;-webkit-text-stroke:1px var(--ink);text-shadow:2px 2px 0 #000;letter-spacing:.14em}
+#mapPrompt{position:absolute;left:0;right:0;bottom:max(3vh,env(safe-area-inset-bottom));text-align:center;font-size:clamp(14px,3.6vh,26px);color:#fff;-webkit-text-stroke:1.5px var(--ink);text-shadow:2px 2px 0 #000}
+.back{position:absolute;left:max(3vw,env(safe-area-inset-left));top:max(2.5vh,env(safe-area-inset-top));font-size:clamp(16px,4vh,28px);color:var(--gold);-webkit-text-stroke:1.5px var(--ink);background:rgba(14,4,36,.8);border:3px solid #000;box-shadow:3px 3px 0 #000;border-radius:10px;padding:.3em .7em}
+.back small{font:600 12px system-ui,sans-serif;color:#cfc4ee;-webkit-text-stroke:0;margin-left:.4em}
+.tbtns div.on{background:linear-gradient(90deg,rgba(255,170,30,.6),rgba(120,40,0,.6));color:#fff}
 /* short screens (phones held sideways): squeeze the menus so they fit */
 @media (max-height:540px){
   .big{font-size:clamp(34px,13vh,96px);-webkit-text-stroke:3px var(--ink)}
@@ -132,8 +151,14 @@ body.touch #touch.on{display:block}
 </div>
 <div id="rotate"><div class="ph"></div>TURN YOUR PHONE SIDEWAYS</div>
 <div id="bossbar"><span id="bossName">SAURON</span><div class="bar"><i id="bossfill"></i></div></div>
+<div id="mapUI">
+  <div id="sign"><div class="rope l"></div><div class="rope r"></div><div class="plank"><b id="signName">MINAS TIRITH</b><i id="signSub"></i></div></div>
+  <div id="mapLogo"><span>SIEGE RUN</span><i>MIDDLE-EARTH</i></div>
+  <div id="mapPrompt"><span class="kOnly">← → TRAVEL &nbsp;·&nbsp; ENTER TO SELECT</span><span class="tOnly">TAP A PLACE TO TRAVEL &nbsp;·&nbsp; TAP IT AGAIN TO ENTER</span></div>
+</div>
 <div id="ov" class="dim">
-  <div class="scr on" id="sTitle">
+  <div class="scr" id="sTitle">
+    <div class="back" data-key="Escape">◀ MAP<small class="kOnly">ESC</small></div>
     <div class="logo"><span class="big">MINAS TIRITH</span><span class="sub">SIEGE RUN</span></div>
     <div class="menu" id="menu">
       <div class="mi on" data-l="0"><b>1</b><span>THE FIRST CIRCLE</span><i>Ride Shadowfax through the burning city</i></div>
@@ -155,8 +180,9 @@ body.touch #touch.on{display:block}
   <div class="scr" id="sPause">
     <span class="big">PAUSED</span>
     <div class="press kOnly" style="animation:none">ENTER — RESUME</div>
-    <div class="ctl kOnly"><b>R</b><span>Restart from the beginning</span><b>Q</b><span>Quit to title</span><b>M</b><span>Mute music</span></div>
-    <div class="tbtns tOnly"><div data-key="Enter">RESUME</div><div data-key="KeyR">RESTART</div><div data-key="KeyQ">QUIT</div><div data-key="KeyM" id="tMute">MUSIC ON</div></div>
+    <div class="tbtns"><div data-key="Enter">RESUME</div><div data-key="KeyR">RESTART</div><div data-key="KeyQ">QUIT</div><div data-key="KeyM" id="tMute">MUSIC ON</div></div>
+    <div class="tbtns"><div data-key="KeyZ" id="tGod">INVINCIBLE: OFF</div><div data-key="KeyX" id="tAmmo">UNLIMITED ROCKETS: OFF</div></div>
+    <div class="ctl kOnly"><b>R</b><span>Restart from the beginning</span><b>Q</b><span>Quit to the Minas Tirith menu</span><b>M</b><span>Mute music</span><b>Z / X</b><span>Invincible / unlimited rockets</span></div>
   </div>
   <div class="scr" id="sOver">
     <span class="big">GAME OVER</span>
@@ -241,6 +267,7 @@ function resize() {
   SNAP.value.set(RW / 2, RH / 2);
   post.uniforms.uRes.value.set(RW, RH);
   camera.aspect = RW / RH; camera.updateProjectionMatrix();
+  mapCam.aspect = RW / RH; mapCam.updateProjectionMatrix();
   PSCALE.value = RH / (2 * Math.tan(camera.fov * Math.PI / 360));
   const sc = Math.min(innerWidth / RW, innerHeight / RH);
   canvas.style.width = Math.round(RW * sc) + 'px'; canvas.style.height = Math.round(RH * sc) + 'px';
@@ -1449,7 +1476,7 @@ function newGame(li) {
   loadLevel(li); respawn(true); levelCard();
 }
 function nextLevel() {
-  if (LI + 1 >= LEVELS.length) { newGame(0); state = 'title'; iris.mode = 'none'; showScreen('sTitle'); return; }
+  if (LI + 1 >= LEVELS.length) { newGame(0); enterCity(true); return; }
   showScreen(null); loadLevel(LI + 1); respawn(true); levelCard(); hudT = 4;
 }
 function levelCard() { banner(LV.name, 2.4); }
@@ -1499,10 +1526,12 @@ addEventListener('keyup', e => { keys[e.code] = false; });
 addEventListener('mousedown', e => {
   initAudio();
   if (e.button === 0) {
-    const mi = e.target.closest && e.target.closest('.mi');
+    const mi = e.target.closest && e.target.closest('.mi'), dk = e.target.closest && e.target.closest('[data-key]');
     if (state === 'play') hit.Mouse0 = true;
+    else if (dk) onKey(dk.dataset.key);
+    else if (state === 'map') mapClick(e.clientX, e.clientY);
     else if (state === 'title' && !mi && !e.target.closest('.logo')) return;   // only the level buttons start a game
-    else { if (mi) setMenu(+mi.dataset.l); const dk = e.target.closest && e.target.closest('[data-key]'); onKey(dk ? dk.dataset.key : 'Enter'); }
+    else { if (mi) setMenu(+mi.dataset.l); onKey('Enter'); }
   }
   if (e.button === 2) hit.Mouse2 = true;
 });
@@ -1510,10 +1539,18 @@ addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; touchReset(); if (state === 'play') pause(true); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(true); });
 function onKey(code) {
-  if (code === 'KeyM') { musicOn = !musicOn; document.getElementById('tMute').textContent = musicOn ? 'MUSIC ON' : 'MUSIC OFF'; return; }
-  if (code === 'KeyZ') { cheats.god = !cheats.god; banner(cheats.god ? 'INVINCIBLE ON' : 'INVINCIBLE OFF', 1); return; }
-  if (code === 'KeyX') { cheats.ammo = !cheats.ammo; banner(cheats.ammo ? 'UNLIMITED ROCKETS' : 'ROCKETS NORMAL', 1); return; }
+  if (code === 'KeyM') { musicOn = !musicOn; syncPauseBtns(); return; }
+  if (code === 'KeyZ') { cheats.god = !cheats.god; if (state !== 'paused') banner(cheats.god ? 'INVINCIBLE ON' : 'INVINCIBLE OFF', 1); syncPauseBtns(); return; }
+  if (code === 'KeyX') { cheats.ammo = !cheats.ammo; if (state !== 'paused') banner(cheats.ammo ? 'UNLIMITED ROCKETS' : 'ROCKETS NORMAL', 1); syncPauseBtns(); return; }
+  if (state === 'map') {
+    if (code === 'ArrowLeft' || code === 'KeyA' || code === 'ArrowDown' || code === 'KeyS') mapGo(-1);
+    else if (code === 'ArrowRight' || code === 'KeyD' || code === 'ArrowUp' || code === 'KeyW') mapGo(1);
+    else if (code === 'Enter' || code === 'Space') mapSelect();
+    else if (/^(Digit|Numpad)[123]$/.test(code)) startGame(+code.slice(-1) - 1);
+    return;
+  }
   if (state === 'title') {
+    if (code === 'Escape' || code === 'Backspace' || code === 'KeyB') { toMap(); return; }
     if (code === 'Enter' || code === 'Space') startGame(menuSel);
     else if (/^(Digit|Numpad)[123]$/.test(code)) startGame(+code.slice(-1) - 1);
     else if (code === 'ArrowUp' || code === 'KeyW') setMenu(menuSel + 2);
@@ -1526,8 +1563,14 @@ function onKey(code) {
   if (state === 'paused') {
     if (code === 'Escape' || code === 'KeyP' || code === 'Enter') pause(false);
     else if (code === 'KeyR') startGame(LI);
-    else if (code === 'KeyQ') { newGame(0); state = 'title'; iris.mode = 'none'; showScreen('sTitle'); }
+    else if (code === 'KeyQ') { newGame(0); enterCity(true); }
   }
+}
+function syncPauseBtns() {
+  const set = (id, txt, on) => { const e = document.getElementById(id); e.textContent = txt; e.classList.toggle('on', on); };
+  set('tMute', musicOn ? 'MUSIC ON' : 'MUSIC OFF', false);
+  set('tGod', 'INVINCIBLE: ' + (cheats.god ? 'ON' : 'OFF'), cheats.god);
+  set('tAmmo', 'UNLIMITED ROCKETS: ' + (cheats.ammo ? 'ON' : 'OFF'), cheats.ammo);
 }
 // level select on the title screen
 let menuSel = 0;
@@ -1536,7 +1579,7 @@ function setMenu(i) { menuSel = (i + menuItems.length) % menuItems.length; menuI
 menuItems.forEach((m, k) => m.addEventListener('mouseenter', () => setMenu(k)));
 let pausedFrom = 'play';
 function pause(on) { if (on) { if (state !== 'play') return; pausedFrom = state; state = 'paused'; showScreen('sPause'); } else { state = pausedFrom; showScreen(null); } }
-const pad = { prev: [], x: 0, z: 0, jump: false, jumpP: false, spinP: false, fireP: false };
+const pad = { prev: [], sx: 0, x: 0, z: 0, jump: false, jumpP: false, spinP: false, fireP: false };
 function pollPad() {
   pad.x = pad.z = 0; pad.jump = pad.jumpP = pad.spinP = pad.fireP = false;
   const gps = navigator.getGamepads ? navigator.getGamepads() : []; let gp = null;
@@ -1547,9 +1590,15 @@ function pollPad() {
   pad.x = clamp(dz(gp.axes[0] || 0) + (b(15) ? 1 : 0) - (b(14) ? 1 : 0), -1, 1);
   pad.z = clamp(-dz(gp.axes[1] || 0) + (b(12) ? 1 : 0) - (b(13) ? 1 : 0), -1, 1);
   pad.jump = b(0); pad.jumpP = pr(0); pad.spinP = pr(2) || pr(4); pad.fireP = pr(1) || pr(5) || pr(7);
-  if (state === 'title') { if (pr(12)) onKey('ArrowUp'); if (pr(13)) onKey('ArrowDown'); }
+  if (state === 'title') { if (pr(12)) onKey('ArrowUp'); if (pr(13)) onKey('ArrowDown'); if (pr(1)) onKey('Escape'); }
+  if (state === 'map') {
+    const ax = gp.axes[0] || 0, sx = ax > .5 ? 1 : ax < -.5 ? -1 : 0;
+    if (pr(14) || pr(13) || (sx < 0 && pad.sx >= 0)) onKey('ArrowLeft');
+    if (pr(15) || pr(12) || (sx > 0 && pad.sx <= 0)) onKey('ArrowRight');
+    pad.sx = sx;
+  }
   if (pr(9)) onKey(state === 'paused' ? 'Escape' : 'Enter');
-  else if (pr(0) && (state === 'title' || state === 'gameover' || state === 'complete')) onKey('Enter');
+  else if (pr(0) && (state === 'title' || state === 'map' || state === 'gameover' || state === 'complete')) onKey('Enter');
   for (let i = 0; i < gp.buttons.length; i++) pad.prev[i] = b(i);
 }
 const inp = { x: 0, z: 0, jump: false, jumpP: false, spinP: false, fireP: false };
@@ -1621,7 +1670,7 @@ touchEl.addEventListener('touchend', touchEnd, { passive: false });
 touchEl.addEventListener('touchcancel', touchEnd, { passive: false });
 // any touch switches the game to touch mode; a real key press switches it back
 addEventListener('touchstart', () => setTouch(true), { passive: true, capture: true });
-addEventListener('touchend', e => { initAudio(); if (IS_TOUCH && e.target.closest && e.target.closest('.mi')) goFullscreen(); }, { passive: true });
+addEventListener('touchend', e => { initAudio(); if (IS_TOUCH && (state === 'map' || (e.target.closest && e.target.closest('.mi')))) goFullscreen(); }, { passive: true });
 addEventListener('keydown', e => { if (!e.code.startsWith('Audio') && !e.code.startsWith('Media')) setTouch(false); }, true);
 setTouch(matchMedia('(pointer: coarse)').matches);
 stickHome();
@@ -2914,7 +2963,7 @@ function animHorse(dt) {
 }
 function animHobbit(dt) {
   const H = hob, r = H.root, riding = LV && LV.ride;
-  if (state === 'title') { P.s = START_S + 1; P.x = 0; P.y = 0; P.heading = 0; P.ground = true; P.vs = P.vx = 0; }
+  if (state === 'title' || state === 'map') { P.s = START_S + 1; P.x = 0; P.y = 0; P.heading = 0; P.ground = true; P.vs = P.vx = 0; }
   const rotY = -(P.s / R + P.heading);
   horse.root.visible = riding; horse.shadow.visible = false;
   if (riding) {
@@ -2972,7 +3021,7 @@ function animHobbit(dt) {
   if (gy > -50) { sh.visible = true; tw(P.s, P.x, gy + .03, sh.position); sh.scale.setScalar(clamp(1 - (P.y - gy) * .12, .4, 1) * (riding ? .95 : 1)); }
 }
 function updateCamera(dt) {
-  if (state === 'title') {
+  if (state === 'title' || state === 'map') {
     const s = START_S + 1;
     camera.position.copy(tw(s + 7.5 + Math.sin(T * .2) * 1.5, -1.2 + Math.sin(T * .13) * 1.6, 2.4 + Math.sin(T * .17) * .5));
     camera.lookAt(tw(s, 0, LV.ride ? 1.9 : 1.6)); return;
@@ -3014,13 +3063,13 @@ const hudEls = ['hApple', 'hRocket', 'hCrate', 'hLives'].map(id => document.getE
 let hudShown = false;
 function updateHUD(dt) {
   hudT -= dt;
-  const on = (hudT > 0 && state !== 'title') || state === 'paused';
+  const on = (hudT > 0 && state !== 'title' && state !== 'map') || state === 'paused';
   if (on !== hudShown) { hudShown = on; hudEls.forEach(e => e.classList.toggle('on', on)); }
   document.getElementById('nApple').textContent = gs.apples;
   document.getElementById('nRocket').textContent = cheats.ammo ? '∞' : gs.rockets;
   const qa = (cheats.god ? 'INVINCIBLE' : '') + (cheats.god && cheats.ammo ? ' · ' : '') + (cheats.ammo ? 'UNLIMITED ROCKETS' : '');
-  const qe = document.getElementById('qa'); qe.textContent = qa ? 'QA: ' + qa : ''; qe.style.display = qa && state !== 'title' ? 'block' : 'none';
-  const bb = document.getElementById('bossbar'), showB = LV && LV.boss && (bossLive() || boss.state === 'intro' || boss.state === 'transform' || boss.state === 'dying') && state !== 'title';
+  const qe = document.getElementById('qa'); qe.textContent = qa ? 'QA: ' + qa : ''; qe.style.display = qa && state !== 'title' && state !== 'map' ? 'block' : 'none';
+  const bb = document.getElementById('bossbar'), showB = LV && LV.boss && (bossLive() || boss.state === 'intro' || boss.state === 'transform' || boss.state === 'dying') && state !== 'title' && state !== 'map';
   bb.style.display = showB ? 'flex' : 'none';
   if (showB) {
     document.getElementById('bossfill').style.width = (boss.hp / 9 * 100) + '%';
@@ -3078,6 +3127,291 @@ function updateIris(dt) {
 }
 
 // =====================================================================
+//  WORLD MAP — a little diorama of Middle-earth; Gandalf hops between places, and Minas Tirith opens the level select
+// =====================================================================
+const mapScene = new THREE.Scene();
+mapScene.background = new THREE.Color(0x9ab8d4);
+mapScene.fog = new THREE.Fog(0x9ab8d4, 80, 190);
+const mapCam = new THREE.PerspectiveCamera(50, 4 / 3, .5, 600);
+mapScene.add(new THREE.HemisphereLight(0xe4ecff, 0x5a4a30, .75));
+const mapSun = new THREE.DirectionalLight(0xffe6bc, .8); mapSun.position.set(-40, 80, 50); mapScene.add(mapSun);
+
+// mountain ranges and rivers as polylines on the ground plane (x = east, z = south)
+const RANGES = [
+  { p: [[-6, -50], [-9, -32], [-7, -17], [-10, -3], [-8, 8]], h: 7.5, w: 5 },     // the Misty Mountains
+  { p: [[-4, 25], [10, 23], [22, 24], [30, 26]], h: 5.5, w: 4.5 },               // the White Mountains
+  { p: [[51, -15], [50.5, 0], [51.5, 14], [54, 28]], h: 4.5, w: 3 },             // the Mountains of Shadow
+  { p: [[51, -15], [62, -18], [76, -16]], h: 4, w: 3 },                          // the Ashen Mountains
+];
+const RIVERS = [[[41, -60], [43, -30], [41, -14], [45, 0], [46, 12], [47.6, 26], [46, 45]]];   // the Great River
+const DOOM = [60, 5];
+const SITES = [{ x: -50, z: -8, r: 6, y: 1.2 }, { x: -20, z: -29, r: 4, y: 1.3 }, { x: 10, z: 12, r: 3.5, y: 1.1 }, { x: 37, z: 21, r: 4.6, y: 1 }, { x: 66, z: -6, r: 3.5, y: 1 }];
+function polyDist(px, pz, pts) {
+  let best = 1e9;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [ax, az] = pts[i], [bx, bz] = pts[i + 1], dx = bx - ax, dz = bz - az;
+    const t = clamp(((px - ax) * dx + (pz - az) * dz) / (dx * dx + dz * dz), 0, 1);
+    best = Math.min(best, Math.hypot(px - ax - dx * t, pz - az - dz * t));
+  }
+  return best;
+}
+function coastAt(x, z) { return Math.min(x + 64 + Math.sin(z * .13) * 4 + Math.sin(z * .31) * 1.5, 38 + Math.sin(x * .09) * 3 + Math.sin(x * .27) * 1.2 - z, z + 54 + Math.sin(x * .1) * 3, 84 + Math.sin(z * .2) * 3 - x); }
+function landH(x, z) {
+  const coast = coastAt(x, z);
+  let h = coast < 0 ? coast * .6 - .3 : Math.min(1, coast * .25) * (1 + .3 * Math.sin(x * .21 + z * .17) * Math.sin(z * .23 - x * .11));
+  for (const m of RANGES) { const d = polyDist(x, z, m.p); if (d < m.w) { const k = 1 - d / m.w; h += m.h * k * k * (.75 + .5 * hsh(Math.round(x * 1.3), Math.round(z * 1.3), 3)); } }
+  const dd = Math.hypot(x - DOOM[0], z - DOOM[1]); h += Math.max(0, 6.5 - dd * 1.25) - (dd < 1 ? (1 - dd) * 1.6 : 0);
+  for (const s of SITES) { const d = Math.hypot(x - s.x, z - s.z); if (d < s.r + 3) h = lerp(s.y, h, smooth((d - s.r) / 3)); }
+  for (const r of RIVERS) { const d = polyDist(x, z, r); if (d < 1.5 && coast > 0) h = Math.min(h, lerp(-.45, h, smooth((d - .5) / 1))); }
+  return h;
+}
+const groundY = (x, z) => Math.max(landH(x, z), .12);
+
+// --- land: one low-poly sheet, coloured by region and height ---
+{
+  const geo = new THREE.PlaneGeometry(180, 120, 180, 120); geo.rotateX(-Math.PI / 2); geo.translate(5, 0, -3);
+  const pos = geo.attributes.position, col = new Float32Array(pos.count * 3), c = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), z = pos.getZ(i), h = landH(x, z), j = hsh(x, z, 9) * .08 - .04;
+    pos.setY(i, h);
+    const wob = Math.sin(x * .4 + z * .7) * 1.6 + Math.sin(z * .23 - x * .5) * 1.2;
+    const mordor = x > 48.5 + wob * .5 && z < 32 && coastAt(x, z) > 0, rohan = x > -2 + wob && x < 31 + wob && z > 1 + wob && z < 20.5 + wob * .5, mirk = x > 12 + wob && x < 36 + wob && z < -20 + wob;
+    if (h < .1) c.setHex(0xc8b888);
+    else if (mordor) c.setHex(h > 2.2 ? 0x2c2422 : 0x4a3530);
+    else if (h > 6) c.setHex(0xf2f2fa);
+    else if (h > 2.6) c.setHex(0x7e786c);
+    else if (h < .35) c.setHex(0xd8c890);
+    else if (rohan) c.setHex(0xb8aa52);
+    else if (mirk) c.setHex(0x3e6030);
+    else c.setHex(0x5f9440);
+    if (mordor && Math.hypot(x - DOOM[0], z - DOOM[1]) < 1.6) c.setHex(0xff6a10);
+    col[i * 3] = clamp(c.r + j, 0, 1); col[i * 3 + 1] = clamp(c.g + j, 0, 1); col[i * 3 + 2] = clamp(c.b + j, 0, 1);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.computeVertexNormals();
+  mapScene.add(new THREE.Mesh(geo, ps1(new THREE.MeshPhongMaterial({ vertexColors: true, flatShading: true, shininess: 0, specular: 0 }))));
+  TX.sea = worldTex(mkTex(64, 64, g => {
+    g.fillStyle = '#2f6aa8'; g.fillRect(0, 0, 64, 64);
+    for (let i = 0; i < 46; i++) { const x = sr() * 64 | 0, y = sr() * 64 | 0, w = 4 + sr() * 8 | 0; g.fillStyle = sr() < .6 ? '#4a88c4' : '#a4d0f0'; g.fillRect(x, y, w, 1); if (x + w > 64) g.fillRect(x - 64, y, w, 1); }
+  }));
+  TX.sea.repeat.set(60, 60);
+  const sea = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), ps1(new THREE.MeshBasicMaterial({ map: TX.sea })));
+  sea.rotation.x = -Math.PI / 2; mapScene.add(sea);
+}
+
+// --- forests ---
+{
+  const spots = { g: [], o: [] };
+  const woods = [[-60, -40, -16, 2, 60, 'g'], [-30, -24, -36, -20, 18, 'g'], [-3, 6, -17, -8, 26, 'o'], [-6, 4, 3, 14, 40, 'g'], [12, 36, -50, -20, 150, 'g'], [44, 49, 0, 32, 22, 'g'], [16, 30, 15, 20, 14, 'g']];
+  for (const [x0, x1, z0, z1, n, k] of woods) for (let i = 0; i < n; i++) {
+    const x = rand(x0, x1), z = rand(z0, z1), h = landH(x, z);
+    if (h < .4 || h > 2.4 || coastAt(x, z) < 1) continue;
+    spots[k].push([x, h, z, rand(.7, 1.3)]);
+  }
+  const m4 = new THREE.Matrix4();
+  for (const [k, colr] of [['g', 0x2e6a2c], ['o', 0xd8a830]]) {
+    const im = new THREE.InstancedMesh(new THREE.ConeGeometry(.6, 1.7, 6), lam(colr), spots[k].length);
+    spots[k].forEach(([x, y, z, s], i) => im.setMatrixAt(i, m4.makeScale(s, s, s).setPosition(x, y + .8 * s, z)));
+    mapScene.add(im);
+  }
+}
+
+// --- places ---
+const mapFx = { fires: [], eye: null, doom: null, clouds: [], ring: null };
+function mbox(w, h, d, colr, x, y, z, p, o) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), lam(colr, o)); m.position.set(x, y, z); p.add(m); return m; }
+function mcyl(rt, rb, h, seg, colr, x, y, z, p, o) { const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), lam(colr, o)); m.position.set(x, y, z); p.add(m); return m; }
+function mcone(r, h, seg, colr, x, y, z, p) { const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, seg), lam(colr)); m.position.set(x, y, z); p.add(m); return m; }
+function mfire(x, y, z, s, p) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.fire, color: 0xffc080, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); sp.position.set(x, y + s * .35, z); sp.scale.setScalar(s); p.add(sp); mapFx.fires.push({ sp, s, ph: rand(0, 6) }); }
+function site(x, z, y) { const g = new THREE.Group(); g.position.set(x, y === undefined ? landH(x, z) : y, z); mapScene.add(g); return g; }
+// the Shire: round green hills with bright round doors, and the party tree
+{
+  const g = site(-50, -8);
+  [[-3, 1, 1.9], [1.5, 2, 1.6], [3.6, -1.5, 1.5], [-1, -3, 2.1], [-4.5, -2.5, 1.3]].forEach(([x, z, r], i) => {
+    const hill = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 5, 0, TAU, 0, Math.PI / 2), lam(0x6aa444)); hill.position.set(x, -.05, z); g.add(hill);
+    const door = new THREE.Mesh(new THREE.CircleGeometry(.32, 10), lam([0xf0c030, 0x3a8a3a, 0xc83a2a][i % 3])); const dy = .4; door.position.set(x, dy, z + Math.sqrt(r * r - dy * dy) - .02); g.add(door);
+  });
+  mcyl(.22, .3, 1.6, 6, 0x6a4420, 0, .8, -.5, g); const crown = new THREE.Mesh(new THREE.SphereGeometry(1.5, 7, 5), lam(0x3e8a2a)); crown.position.set(0, 2.3, -.5); g.add(crown);
+}
+// Rivendell: pale houses in a cliff-sided valley with falling water
+{
+  const g = site(-20, -29);
+  mbox(10, 6, 2, 0x8a8478, 0, 2.2, -3.2, g); mbox(2, 4.5, 6, 0x8a8478, -4.6, 1.6, -.5, g); mbox(2, 4.5, 6, 0x8a8478, 4.6, 1.6, -.5, g);
+  for (const x of [-2.2, 1.6]) { const f = new THREE.Mesh(new THREE.PlaneGeometry(.9, 5), bas(0xdff4ff, { op: .85 })); f.position.set(x, 2.5, -2.15); g.add(f); }
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(1.4, 12), bas(0x5aa8e0)); pool.rotation.x = -Math.PI / 2; pool.position.set(0, .03, -1.4); g.add(pool);
+  [[-2.4, .4], [0, 1.2], [2.4, .2], [-.8, 2.4], [1.6, 2.2]].forEach(([x, z]) => { mbox(.9, .7, .8, 0xece4cc, x, .35, z, g); const r = mcone(.75, .7, 4, 0x6a8a5a, x, 1.05, z, g); r.rotation.y = Math.PI / 4; });
+  [[-3.2, 2.6], [3.4, 1.8]].forEach(([x, z]) => { const t = new THREE.Mesh(new THREE.SphereGeometry(.6, 6, 4), lam(0xd89030)); t.position.set(x, .8, z); g.add(t); });
+}
+// Moria: the great doors in the mountainside, traced in silver
+{
+  const g = site(-12.5, -7); g.rotation.y = -.7;
+  mbox(4.2, 4.4, 1, 0x6e6a62, 0, 1.4, 0, g);
+  mbox(1.6, 2.4, .2, 0x0a0a10, 0, 1.2, .45, g); mcyl(.8, .8, .2, 12, 0x0a0a10, 0, 2.4, .45, g).rotation.x = Math.PI / 2;
+  for (const x of [-1.1, 1.1]) mbox(.24, 2.6, .3, 0xd0e4ff, x, 1.3, .5, g, { emissive: 0x6080c0 });
+  const arch = new THREE.Mesh(new THREE.TorusGeometry(1.1, .1, 4, 12, Math.PI), lam(0xd0e4ff, { emissive: 0x6080c0 })); arch.position.set(0, 2.5, .52); g.add(arch);
+  mbox(2.6, .16, 1.4, 0x8a8478, 0, .02, 1, g);
+}
+// Edoras: the golden hall on its green hill
+{
+  const g = site(10, 12);
+  mcyl(1.3, 2.8, 1.4, 10, 0x7a9a40, 0, .7, 0, g);
+  mbox(1.6, .75, .9, 0x8a5428, 0, 1.75, 0, g);
+  const roof = mcyl(.6, .6, 1.9, 3, 0xe8b830, 0, 2.3, 0, g); roof.rotation.z = Math.PI / 2; roof.rotation.y = 0; roof.scale.set(1, 1, .9);
+  mcyl(.04, .04, 1.6, 4, 0x4a3018, 1.1, 2.1, .6, g); mbox(.6, .35, .04, 0x2a7a2a, 1.4, 2.7, .6, g);
+  for (let k = 0; k < 16; k++) { const a = k / 16 * TAU; mbox(.12, .5, .12, 0x6a4420, Math.cos(a) * 2.4, .55, Math.sin(a) * 2.4, g); }
+}
+// Minas Tirith: seven white tiers against the mountain, the prow of rock and the Tower of Ecthelion, all under siege
+const MT = new V3(37, 1, 21);
+{
+  const g = site(MT.x, MT.z, MT.y);
+  const mt = mcone(5.5, 9, 7, 0x8a8478, -5.5, 4.5, -1.5, g); mcone(1.7, 2.6, 7, 0xf2f2fa, -5.5, 7.8, -1.5, g); mt.rotation.y = .3;
+  const houses = [], m4 = new THREE.Matrix4();
+  for (let i = 0; i < 7; i++) {
+    const r = 3.6 - i * .45, top = (i + 1) * .6;
+    mcyl(r, r * 1.03, top, 32, 0xeceaf2, 0, top / 2, 0, g);
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(r + .02, r + .02, .1, 32, 1, true), lam(0x8a8698)); rim.position.y = top - .06; g.add(rim);
+    if (i < 6) for (let k = 0, n = 14 * (6 - i) + 6; k < n; k++) { const a = rand(0, TAU), rr = rand(r - .4, r - .55) - .05, s = rand(.8, 1.4); houses.push(m4.clone().makeScale(1, s, 1).setPosition(Math.cos(a) * rr, top + .1 * s, Math.sin(a) * rr)); }
+  }
+  const hm = new THREE.InstancedMesh(new THREE.BoxGeometry(.22, .2, .22), lam(0xd4d0dc), houses.length); houses.forEach((m, i) => hm.setMatrixAt(i, m)); g.add(hm);
+  mbox(3.4, 3.6, .35, 0xf4f2f8, 1.8, 1.8, 0, g);
+  mbox(.12, .45, .6, 0x1a1a22, 3.6, .25, 0, g);
+  mcyl(.18, .24, 3.2, 8, 0xf4f2f8, 0, 4.2 + 1.6, 0, g); mcone(.24, .6, 8, 0xc8ccdc, 0, 7.7, 0, g);
+  const tip = glowSprite(0xdfe8ff, 1.2, .8); tip.position.set(0, 8.1, 0); g.add(tip);
+  [[4.5, -2], [5, 1.5], [3.8, 3.2], [6, -.5], [4.2, -3.6], [6.5, 2.6], [2.6, 1.2], [1.4, -2.6]].forEach(([x, z], i) => mfire(x, i > 5 ? (i - 4) * .6 : .05, z, i > 5 ? .9 : 1.3, g));
+  const army = []; for (let i = 0; i < 320; i++) { const x = rand(39.5, 46), z = rand(7, 17.5); if (Math.hypot(x - MT.x, z - MT.z) < 4.6) continue; army.push(x, landH(x, z) + .12, z); }
+  const ag = new THREE.BufferGeometry(); ag.setAttribute('position', new THREE.Float32BufferAttribute(army, 3));
+  mapScene.add(new THREE.Points(ag, new THREE.PointsMaterial({ color: 0x2a0806, size: 2, sizeAttenuation: false })));
+}
+// Mordor: the Dark Tower and its Eye, and the fire of the Mountain
+{
+  const g = site(66, -6);
+  let y = 0; for (const [rt, rb, h] of [[2.2, 2.8, 1.6], [1.4, 1.9, 4.2], [.95, 1.3, 3.2], [.65, .85, 2]]) { mcyl(rt, rb, h, 6, 0x1c1618, 0, y + h / 2, 0, g); y += h; }
+  for (const s of [-1, 1]) { const h = mcone(.28, 2.4, 5, 0x1c1618, s * .45, y + 1, 0, g); h.rotation.z = -s * .25; }
+  for (let k = 0; k < 6; k++) { const a = k / 6 * TAU; mcone(.18, 1.2, 4, 0x1c1618, Math.cos(a) * 1.5, 5.6, Math.sin(a) * 1.5, g); }
+  const eg = glowSprite(0xff3a08, 7, .7); eg.position.set(0, y + 1.3, 0); g.add(eg);
+  mapFx.eye = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.eye, transparent: true, depthWrite: false, fog: false })); mapFx.eye.position.set(0, y + 1.3, 0); mapFx.eye.scale.set(1.6, 2.2, 1); g.add(mapFx.eye);
+  mapFx.doom = glowSprite(0xff5010, 7, .9); mapFx.doom.position.set(DOOM[0], landH(DOOM[0], DOOM[1]) + 1.2, DOOM[1]); mapScene.add(mapFx.doom);
+  const dl = new THREE.PointLight(0xff4a10, 1.4, 26); dl.position.set(DOOM[0], 9, DOOM[1]); mapScene.add(dl);
+}
+for (let i = 0; i < 12; i++) {
+  const c = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.glow, color: 0xffffff, transparent: true, opacity: .4, depthWrite: false }));
+  c.scale.set(rand(14, 22), rand(4, 6), 1); c.position.set(rand(-80, 90), rand(13, 17), rand(-55, 40)); mapScene.add(c); mapFx.clouds.push(c);
+}
+
+// --- the road: stepping stones from the Shire to Mordor, with a marker at every stop ---
+const NODES = [
+  { name: 'THE SHIRE', x: -50, z: -2.5 },
+  { name: 'RIVENDELL', x: -20, z: -23.5 },
+  { name: 'MORIA', x: -14.5, z: -3.5 },
+  { name: 'EDORAS', x: 10, z: 16.8 },
+  { name: 'MINAS TIRITH', x: 42.2, z: 21, open: true, sub: 'THE SIEGE OF GONDOR · 3 LEVELS' },
+  { name: 'MORDOR', x: 57, z: -3 },
+];
+const ROAD = (() => {
+  const way = [NODES[0], [-40, -6], [-30, -17], NODES[1], [-18.5, -13], NODES[2], [-5, 3], [1, 11], NODES[3], [21, 17], [31, 14.5], [40, 15.5], NODES[4], [46, 15], [51, 7], NODES[5]];
+  const curve = new THREE.CatmullRomCurve3(way.map(w => w.x !== undefined ? new V3(w.x, 0, w.z) : new V3(w[0], 0, w[1])), false, 'centripetal');
+  const N = 1600, pts = curve.getSpacedPoints(N), len = curve.getLength();
+  pts.forEach(p => p.y = groundY(p.x, p.z));
+  const at = NODES.map(n => { let b = 0, bd = 1e9; pts.forEach((p, i) => { const d = Math.hypot(p.x - n.x, p.z - n.z); if (d < bd) { bd = d; b = i; } }); return b; });
+  return { pts, N, len, at };
+})();
+{
+  const step = Math.round(1.6 * ROAD.N / ROAD.len), stones = [];
+  for (let i = 0; i <= ROAD.N; i += step) { const p = ROAD.pts[i]; if (NODES.some(n => Math.hypot(p.x - n.x, p.z - n.z) < 1.5)) continue; stones.push(p); }
+  const im = new THREE.InstancedMesh(new THREE.CylinderGeometry(.32, .38, .14, 8), lam(0xf2dca0, { emissive: 0x3a2a08 }), stones.length), m4 = new THREE.Matrix4();
+  stones.forEach((p, i) => im.setMatrixAt(i, m4.makeTranslation(p.x, p.y + .04, p.z))); mapScene.add(im);
+  TX.lock = mkTex(32, 32, g => {
+    g.beginPath(); g.arc(16, 14, 7, Math.PI, 0); g.strokeStyle = '#1a0800'; g.lineWidth = 7; g.stroke(); g.strokeStyle = '#c8ccd8'; g.lineWidth = 3.5; g.stroke();
+    g.fillStyle = '#1a0800'; g.fillRect(6, 13, 20, 17); g.fillStyle = '#e8b830'; g.fillRect(8, 15, 16, 13); g.fillStyle = '#1a0800'; g.fillRect(15, 18, 3, 6);
+  }, false);
+  for (const n of NODES) {
+    const y = groundY(n.x, n.z);
+    mcyl(1, 1.15, .3, 16, n.open ? 0xffc21a : 0x8a3a2a, n.x, y + .08, n.z, mapScene, { emissive: n.open ? 0x6a4000 : 0x200800 });
+    if (!n.open) { n.lock = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.lock, transparent: true, depthWrite: false })); n.lock.position.set(n.x, y + 2.1, n.z); n.lock.scale.setScalar(1.3); mapScene.add(n.lock); }
+  }
+  mapFx.ring = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.55, 24), bas(0xffe070, { add: true, side: THREE.DoubleSide })); mapFx.ring.rotation.x = -Math.PI / 2; mapScene.add(mapFx.ring);
+}
+
+// --- Gandalf's map token ---
+const tok = { g: new THREE.Group(), s: ROAD.at[4], target: 4, face: 0, hop: 0 };
+{
+  const g = tok.g, b = new THREE.Group(); g.add(b); tok.body = b;
+  mcone(.55, 1.5, 8, 0xf4f4fa, 0, .75, 0, b);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(.3, 8, 6), lam(0xf0c8a0)); head.position.y = 1.62; b.add(head);
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(.33, 8, 6, 0, TAU, 0, Math.PI * .55), lam(0xffffff)); hair.position.set(0, 1.66, -.03); b.add(hair);
+  const beard = mcone(.22, .6, 6, 0xffffff, 0, 1.3, .2, b); beard.rotation.x = Math.PI + .3;
+  mcyl(.04, .04, 2, 5, 0xe8e8f0, .45, 1, .1, b);
+  const gl = glowSprite(0xcfe0ff, 1, .9); gl.position.set(.45, 2.05, .1); b.add(gl);
+  const sh = new THREE.Mesh(new THREE.CircleGeometry(.6, 12), bas(0x000000, { op: .35 })); sh.rotation.x = -Math.PI / 2; sh.position.y = .03; g.add(sh);
+  g.scale.setScalar(1.35); mapScene.add(g);
+}
+
+// --- map state, controls and camera ---
+const mc = { zoom: 0, zt: 0, p: new V3(), l: new V3(), snap: true };
+const mapUI = document.getElementById('mapUI'), signEl = document.getElementById('sign');
+let signShown = -1, mapUIOn = null;
+const tokArrived = () => Math.abs(tok.s - ROAD.at[tok.target]) < .5;
+function mapGo(d) { const t = clamp(tok.target + d, 0, NODES.length - 1); if (t === tok.target) { S.click(); return; } tok.target = t; S.jump(); }
+function mapSelect() {
+  if (!tokArrived()) return;
+  const n = NODES[tok.target];
+  if (!n.open) { S.click(); signEl.classList.remove('shake'); void signEl.offsetWidth; signEl.classList.add('shake'); return; }
+  S.dbl(); enterCity(false);
+}
+function enterCity(instant) {
+  state = 'title'; mc.zt = 1; tok.target = 4; iris.mode = 'none';
+  if (instant) { mc.zoom = 1; tok.s = ROAD.at[4]; mc.snap = true; showScreen('sTitle'); } else showScreen(null);
+}
+function toMap() { state = 'map'; mc.zt = 0; showScreen(null); S.click(); }
+function mapClick(cx, cy) {
+  const r = canvas.getBoundingClientRect(); let best = -1, bd = Math.max(46, r.height * .11);
+  NODES.forEach((n, i) => {
+    _a.set(n.x, groundY(n.x, n.z) + 1, n.z).project(mapCam);
+    const d = Math.hypot(r.left + (_a.x * .5 + .5) * r.width - cx, r.top + (-_a.y * .5 + .5) * r.height - cy);
+    if (d < bd) { bd = d; best = i; }
+  });
+  if (best < 0) return;
+  if (best === tok.target && tokArrived()) mapSelect(); else { tok.target = best; S.jump(); }
+}
+function updateMap(dt) {
+  TX.sea.offset.x += dt * .012; TX.sea.offset.y += dt * .005;
+  for (const f of mapFx.fires) { const k = 1 + Math.sin(T * 9 + f.ph) * .15; f.sp.scale.set(f.s * k, f.s * (2 - k), 1); }
+  for (const c of mapFx.clouds) { c.position.x += dt * .8; if (c.position.x > 100) c.position.x = -90; }
+  mapFx.eye.material.opacity = .85 + Math.sin(T * 3) * .15; mapFx.doom.material.opacity = .7 + Math.sin(T * 2.3) * .2;
+  for (const n of NODES) if (n.lock) n.lock.position.y += Math.sin(T * 2.5 + n.x) * .004;
+  // Gandalf hops along the road at a steady pace
+  const goal = ROAD.at[tok.target], spd = 15 * ROAD.N / ROAD.len, prev = tok.s;
+  tok.s = approach(tok.s, goal, spd * dt);
+  const i0 = Math.min(ROAD.N - 1, Math.floor(tok.s)), f = tok.s - i0, a = ROAD.pts[i0], b = ROAD.pts[i0 + 1];
+  const moving = tok.s !== prev;
+  if (moving) { tok.hop += dt * 9; tok.face = Math.atan2((b.x - a.x) * Math.sign(tok.s - prev), (b.z - a.z) * Math.sign(tok.s - prev)); }
+  else { tok.hop = 0; tok.face = 0; }
+  tok.g.position.set(lerp(a.x, b.x, f), lerp(a.y, b.y, f) + .05, lerp(a.z, b.z, f));
+  tok.body.position.y = moving ? Math.abs(Math.sin(tok.hop)) * .45 : Math.sin(T * 2.5) * .03;
+  tok.g.rotation.y = damp(tok.g.rotation.y, tok.g.rotation.y + angDiff(tok.g.rotation.y, tok.face), 12, dt);
+  const sel = NODES[tok.target];
+  mapFx.ring.position.set(sel.x, groundY(sel.x, sel.z) + .3, sel.z); mapFx.ring.scale.setScalar(1 + Math.sin(T * 5) * .08); mapFx.ring.visible = tokArrived();
+  // the sign names the place Gandalf is heading for
+  if (signShown !== tok.target) {
+    signShown = tok.target;
+    document.getElementById('signName').textContent = sel.name;
+    document.getElementById('signSub').textContent = sel.open ? sel.sub : 'LOCKED · COMING SOON';
+    signEl.classList.toggle('locked', !sel.open);
+  }
+  // camera: high over the road following Gandalf, then down into the city for the level select
+  mc.zoom = approach(mc.zoom, mc.zt, dt * 1.1);
+  if (state === 'title' && mc.zoom > .78 && !document.getElementById('sTitle').classList.contains('on')) showScreen('sTitle');
+  const e = smooth(mc.zoom), tp = tok.g.position;
+  _b.set(tp.x, 33, tp.z + 30); _c.set(tp.x, 1, tp.z - 4);
+  const oa = .95 + Math.sin(T * .15) * .25;
+  _d.set(MT.x + Math.sin(oa) * 11, MT.y + 6.5, MT.z + Math.cos(oa) * 11); _g.set(MT.x, MT.y + 3.6, MT.z);
+  _b.lerp(_d, e); _b.y += Math.sin(e * Math.PI) * 5; _c.lerp(_g, e);
+  if (mc.snap) { mc.p.copy(_b); mc.l.copy(_c); mc.snap = false; }
+  const k = 1 - Math.exp(-6 * dt); mc.p.lerp(_b, k); mc.l.lerp(_c, k);
+  mapCam.position.copy(mc.p); mapCam.lookAt(mc.l);
+  const on = state === 'map' && mc.zoom < .25;
+  if (on !== mapUIOn) { mapUIOn = on; mapUI.classList.toggle('on', on); }
+}
+
+// =====================================================================
 //  MAIN LOOP
 // =====================================================================
 function step(dt, noRender) {
@@ -3088,16 +3422,17 @@ function step(dt, noRender) {
   else if (state === 'dying') updateDying(dt);
   else if (state === 'win') updateWin(dt);
   if (state !== 'paused') {
-    if (state !== 'title' && state !== 'gameover' && state !== 'complete') {
+    if (state !== 'title' && state !== 'map' && state !== 'gameover' && state !== 'complete') {
       updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt);
     }
     updateDragons(dt); updateApples(); updatePhial(dt); updateLightning(dt); updateAmbient(dt); updateTree(dt);
     fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt);
   }
-  updateCamera(state === 'paused' ? 0 : dt); updateLights(); updateHUD(dt); updateTouchUI(); updateIris(dt); musicTick();
+  updateCamera(state === 'paused' ? 0 : dt); updateLights(); updateHUD(dt); updateTouchUI();
+  const onMap = state === 'map' || state === 'title'; if (onMap) updateMap(dt); updateIris(dt); musicTick();
   for (const k in hit) hit[k] = false;
   if (!noRender) {
-    renderer.setRenderTarget(rt); renderer.render(scene, camera);
+    renderer.setRenderTarget(rt); renderer.render(onMap ? mapScene : scene, onMap ? mapCam : camera);
     renderer.setRenderTarget(null); renderer.render(postScene, postCam);
   }
 }
@@ -3111,8 +3446,8 @@ function frame(now) {
 resize();
 buildStatic();
 setupEntities();
-newGame(0); state = 'title'; iris.mode = 'none';
-showScreen('sTitle');
+newGame(0); state = 'map'; iris.mode = 'none';
+showScreen(null); syncPauseBtns();
 requestAnimationFrame(frame);
 </script>
 </body>
