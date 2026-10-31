@@ -23,4 +23,6 @@ The server is `serve.ps1`, which uses the PowerShell built into Windows. It only
 | Wacky Wings | [`wacky-wings/`](wacky-wings/) | Retro kart racer with NZ birds. Throw possums at the other racers and win a Speight's. |
 | Coin Dash | [`coin-dash/`](coin-dash/) | The very first game: grab coins and dodge the red blocks. |
 
+Every game works on phones and tablets too: touch controls appear by themselves when you play on a touch screen (an on-screen stick under your left thumb, buttons under your right). Most games share the touch controls in [`shared/touch-controls.js`](shared/touch-controls.js); Siege Run and Iyla's Game have their own built in.
+
 Each folder is a complete game with its own README explaining how to play and how the code is organised. The 3D games load the three.js engine from the internet, so they need a connection the first time.

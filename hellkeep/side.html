@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Hellkeep</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Metal+Mania&family=Oswald:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="../shared/touch-controls.js"></script>
 </head>
 <body>
   <!-- Rounds 3 and 4: Hellkeep's side-on platform rounds. -->
@@ -41,13 +42,20 @@
     <p id="overlay-text"></p>
     <button id="overlay-button" type="button">Click to play</button>
     <div id="round-picker"></div>
-    <div class="controls">
+    <div class="controls keys-only">
       <div><b>A D / arrows</b> move</div>
       <div><b>Space / W</b> jump · twice: double jump</div>
       <div><b>Hold Space</b> fly with angel wings</div>
       <div><b>J / Z / Ctrl / click</b> fire the Flak Shotgun</div>
       <div><b>M</b> music on/off</div>
       <div><b>Esc / P</b> pause</div>
+    </div>
+    <div class="controls touch-only">
+      <div><b>Left thumb</b> move</div>
+      <div><b>JUMP</b> twice: double jump</div>
+      <div><b>Hold JUMP</b> fly with angel wings</div>
+      <div><b>FIRE</b> the Flak Shotgun</div>
+      <div><b>II</b> pause · <b>♪</b> music</div>
     </div>
   </div>
 

@@ -108,7 +108,7 @@ function draw() {
     ctx.font = 'bold 40px system-ui, sans-serif';
     ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2 - 10);
     ctx.font = '20px system-ui, sans-serif';
-    ctx.fillText(`Score: ${state.score}  ·  Press Space to play again`, canvas.width / 2, canvas.height / 2 + 30);
+    ctx.fillText(`Score: ${state.score}  ·  ${window.TouchControls && TouchControls.isTouch ? 'Tap' : 'Press Space'} to play again`, canvas.width / 2, canvas.height / 2 + 30);
   }
 }
 
