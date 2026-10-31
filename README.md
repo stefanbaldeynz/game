@@ -15,7 +15,7 @@ The server is `serve.ps1`, which uses the PowerShell built into Windows. It only
 | Game | Folder | What it is |
 | --- | --- | --- |
 | Isla's Game | [`islas-game/`](islas-game/) | 3D runner for phones. Isla rides a giraffe, hippo or lion through the Serengeti and Candyland. |
-| Siege Run | [`siege-run/`](siege-run/) | 3D platformer in three levels along the walls of Minas Tirith. Works on phones with touch controls. |
+| Siege Run | [`siege-run/`](siege-run/) | 3D platformer across a map of Middle-earth: eight levels from the Shire to Mordor, with a Balrog boss in Moria. Works on phones with touch controls. |
 | Astro Blaster | [`astro-blaster/`](astro-blaster/) | 2D arcade space shooter. Fly The Chow Hauler and blast asteroids. |
 | Hellkeep | [`hellkeep/`](hellkeep/) | Shooter in hell, in four rounds: two in 3D first-person, then two side-on platform rounds (built from Gem Quest's levels). |
 | Kiwi Canyon | [`kiwi-canyon/`](kiwi-canyon/) | 3D tower defense with a first-person mode. Stop 10 waves of kiwis in a New Zealand canyon. |

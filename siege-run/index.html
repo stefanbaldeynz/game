@@ -69,7 +69,6 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:'Luck
 .tOnly{display:none}
 body.touch .tOnly{display:block}
 body.touch span.tOnly{display:inline}
-body.touch .tbtns.tOnly{display:flex}
 body.touch .thelp.tOnly{display:inline-block}
 body.touch .kOnly{display:none}
 body.touch #hud .row{left:calc(max(3vw,env(safe-area-inset-left)) + 52px);right:max(3vw,env(safe-area-inset-right))}
@@ -95,6 +94,30 @@ body.touch #touch.on{display:block}
 #rotate .ph{width:56px;height:96px;border:5px solid #fff;border-radius:12px;animation:turn 2s ease-in-out infinite}
 @keyframes turn{0%,25%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
 @media (orientation:portrait){body.touch #rotate{display:flex}}
+/* world map */
+#mapUI{position:absolute;inset:0;pointer-events:none;display:none}
+#mapUI.on{display:block}
+#sign{position:absolute;left:max(4vw,env(safe-area-inset-left));top:0;transform-origin:50% 0;animation:sway 3.2s ease-in-out infinite}
+#sign.shake{animation:shake .4s}
+@keyframes sway{0%,100%{transform:rotate(-1.2deg)}50%{transform:rotate(1.2deg)}}
+@keyframes shake{20%{transform:translateX(-9px) rotate(-3deg)}40%{transform:translateX(9px) rotate(3deg)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+#sign .rope{position:absolute;top:0;width:6px;height:4vh;background:repeating-linear-gradient(45deg,#d8b070 0 4px,#8a6a30 4px 8px);border:1px solid #3a2410}
+#sign .rope.l{left:16%}#sign .rope.r{right:16%}
+#sign .plank{margin-top:4vh;min-width:min(380px,40vw);padding:.45em 1em .55em;background:repeating-linear-gradient(90deg,rgba(0,0,0,.07) 0 3px,transparent 3px 13px),linear-gradient(#b0702e,#7a4518);border:3px solid #2a1406;border-radius:8px;box-shadow:inset 0 2px 0 rgba(255,220,160,.35),inset 0 -3px 0 rgba(0,0,0,.3),4px 5px 0 rgba(0,0,0,.5)}
+#sign b{display:block;font-weight:normal;font-size:clamp(20px,5.4vh,42px);color:var(--gold);-webkit-text-stroke:1.5px var(--ink);text-shadow:2px 3px 0 #2a1406;letter-spacing:.03em}
+#sign i{display:block;font:700 clamp(11px,2.4vh,15px) system-ui,sans-serif;font-style:normal;color:#ffe8c0;letter-spacing:.06em}
+#sign.locked b{color:#d8c8b0}
+#mapLogo{position:absolute;right:max(4vw,env(safe-area-inset-right));top:max(2.5vh,env(safe-area-inset-top));text-align:right;transform:rotate(-3deg)}
+#mapLogo span{display:block;font-size:clamp(26px,7vh,56px);line-height:.95;background:linear-gradient(#fff7b0 0%,#ffc21a 38%,#ff6a00 72%,#b82400);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;-webkit-text-stroke:2px var(--ink);filter:drop-shadow(0 4px 0 #6a1e00)}
+#mapLogo i{display:block;font-style:normal;font-size:clamp(13px,3vh,22px);color:#fff;-webkit-text-stroke:1px var(--ink);text-shadow:2px 2px 0 #000;letter-spacing:.14em}
+.marrow{position:absolute;bottom:max(4vh,env(safe-area-inset-bottom));width:clamp(56px,17vh,84px);height:clamp(56px,17vh,84px);border-radius:50%;border:3px solid #000;box-shadow:3px 4px 0 rgba(0,0,0,.6);background:radial-gradient(circle at 35% 30%,#fff7b0,#ffc21a 45%,#b85a00);display:flex;align-items:center;justify-content:center;font-size:clamp(24px,7vh,38px);color:#1a0800;pointer-events:auto;cursor:pointer}
+.marrow.l{left:max(4vw,env(safe-area-inset-left))}.marrow.r{right:max(4vw,env(safe-area-inset-right))}
+.marrow:active{transform:scale(.9)}
+#mapGo{position:absolute;left:50%;bottom:calc(max(3vh,env(safe-area-inset-bottom)) + clamp(22px,5vh,34px));transform:translateX(-50%);font-size:clamp(20px,5.5vh,36px);color:#fff;-webkit-text-stroke:1.5px var(--ink);text-shadow:2px 3px 0 #000;background:radial-gradient(circle at 35% 30%,#7af07a,#1e8a2a 70%);border:3px solid #000;box-shadow:3px 4px 0 rgba(0,0,0,.6);border-radius:14px;padding:.2em .9em;pointer-events:auto;cursor:pointer}
+#mapPrompt{position:absolute;left:0;right:0;bottom:max(3vh,env(safe-area-inset-bottom));text-align:center;font-size:clamp(14px,3.6vh,26px);color:#fff;-webkit-text-stroke:1.5px var(--ink);text-shadow:2px 2px 0 #000}
+.back{position:absolute;left:max(3vw,env(safe-area-inset-left));top:max(2.5vh,env(safe-area-inset-top));font-size:clamp(16px,4vh,28px);color:var(--gold);-webkit-text-stroke:1.5px var(--ink);background:rgba(14,4,36,.8);border:3px solid #000;box-shadow:3px 3px 0 #000;border-radius:10px;padding:.3em .7em}
+.back small{font:600 12px system-ui,sans-serif;color:#cfc4ee;-webkit-text-stroke:0;margin-left:.4em}
+.tbtns div.on{background:linear-gradient(90deg,rgba(255,170,30,.6),rgba(120,40,0,.6));color:#fff}
 /* short screens (phones held sideways): squeeze the menus so they fit */
 @media (max-height:540px){
   .big{font-size:clamp(34px,13vh,96px);-webkit-text-stroke:3px var(--ink)}
@@ -132,8 +155,16 @@ body.touch #touch.on{display:block}
 </div>
 <div id="rotate"><div class="ph"></div>TURN YOUR PHONE SIDEWAYS</div>
 <div id="bossbar"><span id="bossName">SAURON</span><div class="bar"><i id="bossfill"></i></div></div>
+<div id="mapUI">
+  <div id="sign"><div class="rope l"></div><div class="rope r"></div><div class="plank"><b id="signName">MINAS TIRITH</b><i id="signSub"></i></div></div>
+  <div id="mapLogo"><span>SIEGE RUN</span><i>MIDDLE-EARTH</i></div>
+  <div class="marrow l" data-key="ArrowLeft">◀</div><div class="marrow r" data-key="ArrowRight">▶</div>
+  <div id="mapGo" data-key="Enter">ENTER</div>
+  <div id="mapPrompt"><span class="kOnly">← → TRAVEL &nbsp;·&nbsp; ENTER TO PLAY</span><span class="tOnly">◀ ▶ OR TAP A PLACE TO TRAVEL</span></div>
+</div>
 <div id="ov" class="dim">
-  <div class="scr on" id="sTitle">
+  <div class="scr" id="sTitle">
+    <div class="back" data-key="Escape">◀ MAP<small class="kOnly">ESC</small></div>
     <div class="logo"><span class="big">MINAS TIRITH</span><span class="sub">SIEGE RUN</span></div>
     <div class="menu" id="menu">
       <div class="mi on" data-l="0"><b>1</b><span>THE FIRST CIRCLE</span><i>Ride Shadowfax through the burning city</i></div>
@@ -155,8 +186,9 @@ body.touch #touch.on{display:block}
   <div class="scr" id="sPause">
     <span class="big">PAUSED</span>
     <div class="press kOnly" style="animation:none">ENTER — RESUME</div>
-    <div class="ctl kOnly"><b>R</b><span>Restart from the beginning</span><b>Q</b><span>Quit to title</span><b>M</b><span>Mute music</span></div>
-    <div class="tbtns tOnly"><div data-key="Enter">RESUME</div><div data-key="KeyR">RESTART</div><div data-key="KeyQ">QUIT</div><div data-key="KeyM" id="tMute">MUSIC ON</div></div>
+    <div class="tbtns"><div data-key="Enter">RESUME</div><div data-key="KeyR">RESTART</div><div data-key="KeyQ">QUIT</div><div data-key="KeyM" id="tMute">MUSIC ON</div></div>
+    <div class="tbtns"><div data-key="KeyZ" id="tGod">INVINCIBLE: OFF</div><div data-key="KeyX" id="tAmmo">UNLIMITED ROCKETS: OFF</div></div>
+    <div class="ctl kOnly"><b>R</b><span>Restart from the beginning</span><b>Q</b><span>Quit to the Minas Tirith menu</span><b>M</b><span>Mute music</span><b>Z / X</b><span>Invincible / unlimited rockets</span></div>
   </div>
   <div class="scr" id="sOver">
     <span class="big">GAME OVER</span>
@@ -241,6 +273,7 @@ function resize() {
   SNAP.value.set(RW / 2, RH / 2);
   post.uniforms.uRes.value.set(RW, RH);
   camera.aspect = RW / RH; camera.updateProjectionMatrix();
+  mapCam.aspect = RW / RH; mapCam.updateProjectionMatrix();
   PSCALE.value = RH / (2 * Math.tan(camera.fov * Math.PI / 360));
   const sc = Math.min(innerWidth / RW, innerHeight / RH);
   canvas.style.width = Math.round(RW * sc) + 'px'; canvas.style.height = Math.round(RH * sc) + 'px';
@@ -420,7 +453,11 @@ TX.armor = mkTex(64, 64, g => {
 });
 TX.grass = mkTex(32, 32, g => { g.fillStyle = '#3c5a32'; g.fillRect(0, 0, 32, 32); for (let i = 0; i < 160; i++) { g.fillStyle = sr() < .5 ? '#4e7040' : '#2c4426'; g.fillRect(sr() * 32 | 0, sr() * 32 | 0, 1, 2); } });
 TX.grass.repeat.set(5, 5);
-[TX.marble, TX.floor, TX.dark, TX.roof, TX.plains, TX.wood, TX.lavaRock, TX.lavaGlow, TX.scales, TX.belly, TX.armor, TX.grass, TX.horn, TX.mosaic].forEach(worldTex);
+TX.path = mkTex(64, 64, g => { g.fillStyle = '#8a6a44'; g.fillRect(0, 0, 64, 64); for (let i = 0; i < 520; i++) { const v = sr(); g.fillStyle = v < .4 ? '#7a5a38' : v < .75 ? '#9a7a52' : v < .9 ? '#b89a70' : '#5a8a3a'; g.fillRect(sr() * 64 | 0, sr() * 64 | 0, 1 + sr() * 2 | 0, 1 + sr() * 2 | 0); } });
+TX.turf = mkTex(64, 64, g => { g.fillStyle = '#6a5034'; g.fillRect(0, 0, 64, 64); for (let i = 0; i < 520; i++) { const v = sr(); g.fillStyle = v < .45 ? '#5a4028' : v < .75 ? '#7a5e3e' : '#4e7a2e'; g.fillRect(sr() * 64 | 0, sr() * 64 | 0, 2, 1 + sr() * 2 | 0); } });
+TX.falls = mkTex(16, 64, g => { g.fillStyle = '#9ccbe8'; g.fillRect(0, 0, 16, 64); for (let i = 0; i < 70; i++) { g.fillStyle = sr() < .5 ? '#ffffff' : '#d4ecfa'; g.fillRect(sr() * 16 | 0, sr() * 64 | 0, 1, 4 + sr() * 14 | 0); } });
+TX.rock = mkTex(64, 64, g => { g.fillStyle = '#6a6460'; g.fillRect(0, 0, 64, 64); for (let i = 0; i < 40; i++) { const x = sr() * 64, y = sr() * 64, w = 6 + sr() * 14, h = 4 + sr() * 8, b = 80 + sr() * 50 | 0; g.fillStyle = `rgb(${b},${b - 4},${b - 8})`; for (const dx of [-64, 0, 64]) for (const dy of [-64, 0, 64]) g.fillRect(x + dx, y + dy, w, h); } speckle(g, 64, 64, 300, .25); });
+[TX.marble, TX.floor, TX.dark, TX.roof, TX.plains, TX.wood, TX.lavaRock, TX.lavaGlow, TX.scales, TX.belly, TX.armor, TX.grass, TX.horn, TX.mosaic, TX.path, TX.turf, TX.rock].forEach(worldTex);
 
 // --- crate textures ---
 function woodBase(g) {
@@ -638,30 +675,32 @@ const mordorL = new THREE.DirectionalLight(0xff8a50, .38); mordorL.position.set(
 const plights = []; for (let i = 0; i < 4; i++) { const l = new THREE.PointLight(0xff9a40, 0, 15, 1.4); scene.add(l); plights.push(l); }
 const tempLights = [];
 
-// sky dome with vertex colours (Mordor glows in the east, +x)
-{
-  const g = new THREE.SphereGeometry(900, 18, 12), p = g.attributes.position, col = [];
-  const top = new THREE.Color(0x0e0828), mid = new THREE.Color(0x3c1c62), hz = new THREE.Color(0x6a2c66), hot = new THREE.Color(0xff5a1a), c = new THREE.Color();
+// sky dome with vertex colours (a hot glow in the east, +x); each place repaints it, and it travels with the camera
+const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(900, 18, 12), new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false }));
+skyMesh.geometry.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(skyMesh.geometry.attributes.position.count * 3), 3));
+skyMesh.renderOrder = -10; scene.add(skyMesh);
+function paintSky(cTop, cMid, cHz, cHot) {
+  const p = skyMesh.geometry.attributes.position, col = skyMesh.geometry.attributes.color;
+  const top = new THREE.Color(cTop), mid = new THREE.Color(cMid), hz = new THREE.Color(cHz), hot = new THREE.Color(cHot), c = new THREE.Color();
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i) / 900, y = p.getY(i) / 900, z = p.getZ(i) / 900;
     const east = Math.pow(Math.max(0, x / Math.max(.001, Math.hypot(x, z))), 3);
     if (y > .25) c.copy(mid).lerp(top, clamp((y - .25) / .6, 0, 1));
     else c.copy(hz).lerp(hot, east * clamp(1 - y * 4, 0, 1)).lerp(mid, clamp(y * 4, 0, 1));
     if (y < 0) c.multiplyScalar(.6);
-    col.push(c.r, c.g, c.b);
+    col.setXYZ(i, c.r, c.g, c.b);
   }
-  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  const sky = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false }));
-  sky.renderOrder = -10; scene.add(sky);
+  col.needsUpdate = true;
 }
+paintSky(0x0e0828, 0x3c1c62, 0x6a2c66, 0xff5a1a);
 const cloudMat = new THREE.MeshBasicMaterial({ map: TX.cloud, transparent: true, side: THREE.BackSide, fog: false, depthWrite: false, color: 0xb0a0d0 });
 TX.cloud.repeat.set(4, 1);
-const clouds = new THREE.Mesh(new THREE.SphereGeometry(800, 18, 8, 0, TAU, 0, Math.PI * .48), cloudMat); clouds.renderOrder = -9; scene.add(clouds);
+let starPts; const clouds = new THREE.Mesh(new THREE.SphereGeometry(800, 18, 8, 0, TAU, 0, Math.PI * .48), cloudMat); clouds.renderOrder = -9; scene.add(clouds);
 {
   const n = 500, pos = [];
   for (let i = 0; i < n; i++) { const a = rand(0, TAU), e = rand(.2, 1.4); pos.push(Math.cos(a) * Math.cos(e) * 850, Math.sin(e) * 850, Math.sin(a) * Math.cos(e) * 850); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xc8c0ff, size: 1, sizeAttenuation: false, fog: false })));
+  starPts = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xc8c0ff, size: 1, sizeAttenuation: false, fog: false })); scene.add(starPts);
 }
 // mountains: Ephel Duath + Mount Doom to the east, Mindolluin to the west
 function vcMat() { return new THREE.MeshBasicMaterial({ vertexColors: true, fog: false }); }
@@ -734,6 +773,7 @@ function rubble(s, x, y) { rubbleList.push({ p: tw(s, x, y), sz: rand(.3, .8) })
 const wallShFor = base => (s, x, y) => clamp(.5 + (y - base) / (12 - base) * .5, .45, 1);
 function buildRing(L, vis) {
   const B = L.base, ws = wallShFor(B), H = L.wallH, E = END_S;
+  const TH = THEMES[L.theme || 'mt'], GM = TH.gm, GF = TH.gf, MARBLE_T = TH.tint;
   if (L.arena) {
     // the Court of the Fountain: a round mosaic courtyard in front of the Tower, the White Tree on its lawn in the middle
     const LAWN = R - L.lawnX;
@@ -756,19 +796,21 @@ function buildRing(L, vis) {
     solid(-1e6, 1e6, 0, L.lawnX, -30, 0, 'floor'); solid(-1e6, 1e6, -7, 0, -30, 6, 'wall'); solid(-1e6, 1e6, L.lawnX, R + 10, -30, 40, 'wall');
     return;
   }
-  for (const [s0, s1r, x0] of L.floors) {
-    const s1 = Math.min(s1r, E), full = x0 < -3;
+  for (const fl of L.floors) {
+    // an optional fourth number narrows the floor on the inner side too, for a bridge across open space
+    const [s0, s1r, x0] = fl, x1 = fl[3] ?? 3.5, s1 = Math.min(s1r, E), full = x0 < -3, bridge = x1 < 3.5;
     if (vis) {
-      cbox(GF, s0, s1, x0, 3.5, -1, 0, { f: 'taz' + (full ? '' : 'o'), sh: floorSh, seg: 2, vo: .875 });
-      cbox(GM, s0, s1, x0, 3.5, B, -1, { f: 'az' + (full ? '' : 'o'), sh: ws, tint: MARBLE_T });
-      if (full) {
+      cbox(GF, s0, s1, x0, x1, -1, 0, { f: 'taz' + (full ? '' : 'o') + (bridge ? 'i' : ''), sh: floorSh, seg: 2, vo: .875 });
+      cbox(GM, s0, s1, x0, x1, bridge ? -2.6 : B, -1, { f: 'abz' + (full ? '' : 'o') + (bridge ? 'i' : ''), sh: ws, tint: MARBLE_T });
+      if (full && TH.edge) { cbox(GM, s0, s1, -4.3, -3.5, B, 0, { f: 'oiaz', sh: ws, tint: MARBLE_T }); TH.edge(s0, s1); }
+      else if (full) {
         cbox(GM, s0, s1, -4.3, -3.5, B, 1.05, { f: 'oitaz', sh: ws, tint: MARBLE_T });
         for (let s = s0 + .8; s < s1 - .5; s += 1.7) cbox(GM, s - .45, s + .45, -4.3, -3.5, 1.05, 1.8, { seg: 5, ys: 5, tint: MARBLE_T });
       } else for (let i = 0; i < 6; i++) rubble(rand(s0, s1), x0 - rand(0, .4), rand(-2.5, -.6));
       if (s0 > -10) for (let i = 0; i < 5; i++) rubble(s0 + rand(-.3, .3), rand(-4, 3), rand(-3, -.4));
       if (s1 < E - 1) for (let i = 0; i < 5; i++) rubble(s1 + rand(-.3, .3), rand(-4, 3), rand(-3, -.4));
     }
-    solid(s0, s1, x0, 3.5, -30, 0, 'floor');
+    solid(s0, s1, x0, x1, -30, 0, 'floor');
     if (full) solid(s0, s1, -7, -3.5, -30, 6, 'wall');
   }
   for (const [s0, s1, x0, x1, top] of L.pillars) {
@@ -790,14 +832,19 @@ function buildRing(L, vis) {
     spikes.push({ s, x0, x1 });
   }
   const TS0 = -16.6, TS1 = -1.6;
-  // inner wall (the next circle of the city) runs all the way round
-  if (vis) {
+  // inner wall (the next circle of the city, or the hillside, cliff or cave wall) runs all the way round, except where L.open leaves a gap
+  const runs = []; { let a = TS0; for (const [g0, g1] of L.open || []) { runs.push([a, g0]); a = g1; } runs.push([a, E]); }
+  const walled = s => runs.some(([a, b]) => s > a + 1 && s < b - 1);
+  if (vis && TH.pil) {
+    for (const [a, b] of runs) { cbox(GM, a, b, 3.5, 4.6, B, H, { f: 'ot' + (L.open ? 'az' : ''), sh: ws, tint: MARBLE_T, seg: 2.5, ys: 3 }); if (TH.innerTop) TH.innerTop(a, b, H); }
+    for (let s = 14; s < E - 3; s += 14) if (walled(s)) TH.pil(s, H);
+  } else if (vis) {
     cbox(GM, TS0, E, 3.5, 4.6, B, H, { f: 'ot', sh: ws, tint: MARBLE_T, seg: 2.5, ys: 3 });
     for (let s = -15; s < E - 1; s += 2.2) cbox(GM, s - .55, s + .55, 3.5, 4.2, H, H + .9, { seg: 5, ys: 5, tint: MARBLE_T });
   }
-  solid(-20, CIRC + 20, 3.5, 9, -30, 40, 'wall');
+  for (const [a, b] of runs) solid(a === TS0 ? -20 : a, b === E ? CIRC + 20 : b, 3.5, 9, -30, 40, 'wall');
   // pilasters with torches, banners between
-  for (let s = 14; s < E - 3; s += 14) {
+  if (!TH.pil) for (let s = 14; s < E - 3; s += 14) {
     if (vis) {
       cbox(GM, s - .6, s + .6, 3.15, 3.5, 0, H - 1, { f: 'toaz', seg: 3, tint: MARBLE_T });
       addTorch(s, 3.0, 2.7);
@@ -816,7 +863,7 @@ function buildRing(L, vis) {
     addTorch(-6, 3.1, 2.8); addTorch(-12, -3.1, 2.8); addTorch(-12, 3.1, 2.8, true); addTorch(-6, -3.1, 2.8, true);
     addTorch(E - 1.2, -3.0, 3.4); addTorch(E - 1.2, 3.0, 3.4);
     const door = L.door = {}, dg = new THREE.Group(); place(dg, TS0 - .05, 0, 0); scene.add(dg);
-    const dmat = ps1(new THREE.MeshLambertMaterial({ map: TX.door, side: THREE.DoubleSide, emissive: 0x101820 }));
+    const dmat = ps1(new THREE.MeshLambertMaterial({ map: TX.door, color: TH.door || 0xffffff, side: THREE.DoubleSide, emissive: 0x101820 }));
     for (const side of [-1, 1]) {
       const geo = new THREE.PlaneGeometry(3.5, 5.6); geo.translate(-side * 1.75, 2.8, 0);
       const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setX(i, side < 0 ? uv.getX(i) * .5 : .5 + uv.getX(i) * .5);
@@ -829,6 +876,11 @@ function buildRing(L, vis) {
   solid(TS0, TS1, -9, -3.5, -30, 30, 'wall');
   solid(TS0, TS0 + .7, -4, 4, -30, 30, 'wall');
   L.door.endBlock = solid(E - .55, E + 3, -9, 9, -30, 30, 'wall');
+  // a wall of fire across the road that only dies with the boss
+  if (L.gateS) {
+    if (vis) { L.fireGate = []; for (let x = -1.8; x <= 1.8; x += .6) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.fire, color: 0xffa060, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); tw(L.gateS, x, 1.3, sp.position); sp.scale.set(1.2, 2.9, 1); scene.add(sp); L.fireGate.push(sp); } }
+    L.gate = solid(L.gateS - .3, L.gateS + .3, -9, 9, -30, 30, 'wall');
+  }
 }
 
 // --- the city around the rings: lower city, the circles' houses, the Tower of Ecthelion, the plain and the orc host ---
@@ -872,10 +924,182 @@ function buildCity() {
   }
   for (let i = 0; i < 9; i++) { const a = rand(-1.2, 1.2), m = new THREE.Mesh(new THREE.BoxGeometry(5, 26, 5), lam(0x2a201c)); m.position.set(Math.cos(a) * 98, -50, Math.sin(a) * 98); m.rotation.y = -a; scene.add(m); cityFires.push(m.position.clone().setY(-36)); }
 }
+// =====================================================================
+//  LOCATION THEMES — every place on the map is its own ring, far out in the world, with its own stone, sky and scenery.
+//  Minas Tirith ('mt') uses the shared marble geometry above; the others get their own textured geometry.
+// =====================================================================
+const MT_ENV = { sky: [0x0e0828, 0x3c1c62, 0x6a2c66, 0xff5a1a], fog: [40, 290], amb: [0x6a5a92, .6], hemi: [0xa094e8, 0x6a2a14, .55], sun: [0xd4ccff, .55], east: [0xff8a50, .38], stars: true, cloud: 0xb0a0d0, bolts: true, embers: true };
+const MT_ORC = { sk: 0x627338, ska: 0x86924c, ar: 0x3a3440, le: 0x5a3a20, met: 0x2a262e, sc: 1 };
+let ORC_PAL = MT_ORC, ENV = MT_ENV;
+const THEMES_FALLS = [];   // waterfall textures that scroll every frame
+function natTheme(o) { return Object.assign({ gm: new Geo(), gf: new Geo(), gw: new Geo(), tint: [1, 1, 1] }, o); }
+// a point in the world at a ring angle and radius, measured from the ring's centre
+const ringPt = (th, r, y, out) => (out || new V3()).set(CX + Math.cos(th) * r, Y0 + y, CZ + Math.sin(th) * r);
+function wideFloor(tex, color, rep, y, rad = 900, basic) {
+  const t = tex.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep);
+  const m = new THREE.Mesh(new THREE.CircleGeometry(rad, 48), ps1(basic ? new THREE.MeshBasicMaterial({ map: t, color }) : new THREE.MeshLambertMaterial({ map: t, color })));
+  m.rotation.x = -Math.PI / 2; m.position.set(CX, Y0 + y, CZ); scene.add(m); return t;
+}
+function instanced(geo, mat, list) {   // list of [x, y, z, sx, sy, sz, rotY]
+  const im = new THREE.InstancedMesh(geo, mat, list.length), Q = new THREE.Quaternion(), S3 = new V3(), P3 = new V3();
+  list.forEach((d, i) => { Q.setFromAxisAngle(UPV, d[6] || 0); _m4.compose(P3.set(d[0], d[1], d[2]), Q, S3.set(d[3], d[4] ?? d[3], d[5] ?? d[3])); im.setMatrixAt(i, _m4); });
+  im.frustumCulled = false; scene.add(im); return im;
+}
+function wallPlane(w, h, mat, s, y) { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); place(m, s, 3.44, y, -Math.PI / 2); scene.add(m); return m; }
+function flag(s, x, colr, h = 4) { const g = new THREE.Group(); place(g, s, x, 0); part(GEO.cyl, lam(0x4a3018), g, 0, h / 2, 0, .06, h, .06); const f = part(new THREE.PlaneGeometry(1.2, .8), lam(colr, { side: THREE.DoubleSide }), g, .6, h - .5, 0); f.rotation.y = Math.PI / 2; scene.add(g); return g; }
+const THEMES = {
+  mt: { gm: GM, gf: GF, tint: MARBLE_T, env: MT_ENV, orc: MT_ORC },
+
+  // the Shire: a dirt lane along a grassy bank, hedges, round doors, the Party Tree on the hill
+  shire: natTheme({
+    wallTex: TX.turf, floorTex: TX.path, door: 0x5aa04a,
+    env: { sky: [0x3a78d8, 0x78a8e8, 0xcfe4f4, 0xfff0c0], fog: [50, 320], fogC: 0xb8d4ec, amb: [0x8a8a7a, .55], hemi: [0xdfeeff, 0x4a6a2a, .7], sun: [0xfff0d0, .9], east: [0xffd8a0, .2], cloud: 0xffffff },
+    orc: MT_ORC,
+    edge(s0, s1) { cbox(this.gm, s0, s1, -4.3, -3.5, 0, .9, { tint: [.42, .8, .34], seg: 1.5 }); },
+    innerTop(a, b, H) { cbox(this.gm, a, b, 3.5, 6, H, H + .3, { f: 't', tint: [.5, .95, .4] }); },
+    pil(s) {
+      const i = Math.round(s / 14) % 3;
+      const fr = new THREE.Mesh(new THREE.CircleGeometry(1.35, 16), lam(0x6a4a2a)); place(fr, s, 3.44, 1.25, -Math.PI / 2); scene.add(fr);
+      const d = new THREE.Mesh(new THREE.CircleGeometry(1.12, 16), lam([0x2e7a34, 0xd8a020, 0xb83a2a][i])); place(d, s, 3.42, 1.25, -Math.PI / 2); scene.add(d);
+      const k = new THREE.Mesh(GEO.sph, lam(0xf0d040, { emissive: 0x403000 })); place(k, s, 3.36, 1.25); k.scale.setScalar(.1); scene.add(k);
+      const w = new THREE.Mesh(new THREE.CircleGeometry(.45, 12), bas(0xffe8a0)); place(w, s + 2.6, 3.42, 1.9, -Math.PI / 2); scene.add(w);
+      const sh = new THREE.Mesh(new THREE.CircleGeometry(.45, 12), lam(0x3a2a18)); place(sh, s - 2.6, 3.42, 1.9, -Math.PI / 2); scene.add(sh);
+    },
+    scenery(L) {
+      wideFloor(TX.grass, 0xb8e090, 180, L.base);
+      const hill = new THREE.Mesh(new THREE.SphereGeometry(R - 3.6, 28, 10, 0, TAU, 0, Math.PI / 2), ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.grass.clone(); t.needsUpdate = true; t.repeat.set(30, 30); return t; })(), color: 0xb0e088 })));
+      hill.scale.y = (L.wallH + 7 - L.base) / (R - 3.6); hill.position.set(CX, Y0 + L.base, CZ); scene.add(hill);
+      const top = Y0 + L.wallH + 7;
+      part(GEO.cyl, lam(0x6a4420), scene, CX, top + 3, CZ, 1.1, 7, 1.1);
+      for (const [x, y, z, r] of [[0, 9, 0, 5], [3, 8, 1, 3.6], [-3, 8.4, -1, 3.8], [0, 11, 1, 3.4]]) part(GEO.sph, lam(0x3e8a2a), scene, CX + x, top + y, CZ + z, r, r * .85, r);
+      const trunks = [], crowns = [], holes = [];
+      for (let i = 0; i < 260; i++) { const th = rand(0, TAU), r = R + rand(8, 160), p = ringPt(th, r, L.base); const s = rand(1.6, 3.4); trunks.push([p.x, p.y + s, p.z, .3 * s, 2 * s, .3 * s]); crowns.push([p.x, p.y + 2.4 * s, p.z, 1.3 * s, 1.15 * s, 1.3 * s]); }
+      for (let i = 0; i < 26; i++) { const th = rand(0, TAU), r = R + rand(12, 70); holes.push({ p: ringPt(th, r, L.base), r: rand(4, 7), th }); }
+      instanced(GEO.cyl, lam(0x6a4420), trunks); instanced(GEO.sph, lam(0x3e8a2a), crowns);
+      instanced(new THREE.SphereGeometry(1, 12, 6, 0, TAU, 0, Math.PI / 2), lam(0x6aa444), holes.map(h => [h.p.x, h.p.y, h.p.z, h.r, h.r * .6, h.r]));
+      for (const h of holes) { const d = new THREE.Mesh(new THREE.CircleGeometry(.9, 12), lam([0x2e7a34, 0xd8a020, 0xb83a2a][Math.random() * 3 | 0])); d.position.copy(h.p).add(_a.set(Math.cos(h.th + Math.PI), 0, Math.sin(h.th + Math.PI)).multiplyScalar(h.r * .93)); d.position.y += .9; d.lookAt(CX, d.position.y, CZ); scene.add(d); }
+      for (let i = 0; i < 14; i++) { const th = rand(0, TAU), r = R + rand(180, 380), p = ringPt(th, r, L.base), s = rand(30, 70); const m = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 6, 0, TAU, 0, Math.PI / 2), lam(0x5a9a40)); m.position.copy(p); m.scale.set(s, s * .45, s); scene.add(m); }
+    },
+  }),
+
+  // Rivendell: pale elven stone on a cliff path over the river, waterfalls all round, golden houses on the heights
+  riv: natTheme({
+    wallTex: TX.rock, floorTex: TX.floor, tint: [1, .97, .9], door: 0xd8c890,
+    fallMat: ps1(new THREE.MeshBasicMaterial({ map: (() => { const t = TX.falls.clone(); t.needsUpdate = true; t.repeat.set(1, 2); THEMES_FALLS.push(t); return t; })(), transparent: true, opacity: .85 })),
+    env: { sky: [0x3a4a90, 0x8a7ab8, 0xf0b070, 0xffd890], fog: [50, 300], fogC: 0xc8a888, amb: [0x7a6a6a, .55], hemi: [0xffe0c0, 0x4a3a2a, .65], sun: [0xffd0a0, .8], east: [0xff9a60, .3], cloud: 0xffd8c0 },
+    orc: MT_ORC,
+    edge(s0, s1) {
+      cbox(this.gm, s0, s1, -4.2, -3.6, .85, 1.05, { tint: [1.15, 1.12, 1.02], seg: 2 });
+      for (let s = s0 + .6; s < s1 - .3; s += 1.4) cbox(this.gm, s - .12, s + .12, -4.1, -3.7, 0, .85, { seg: 5, ys: 5, tint: [1.1, 1.08, 1] });
+    },
+    innerTop(a, b, H) { cbox(this.gm, a, b, 3.5, 6, H, H + .3, { f: 't', tint: [.6, .85, .45] }); },
+    pil(s, H) {
+      const f = wallPlane(1.6, H, this.fallMat, s, H / 2); f.renderOrder = 1;
+      const pool = new THREE.Mesh(new THREE.CircleGeometry(1.2, 10), bas(0x9ad0f0, { op: .7 })); place(pool, s, 2.8, .03); pool.rotation.x = -Math.PI / 2; scene.add(pool);
+      addTorch(s + 7, 3.0, 2.7);
+    },
+    scenery(L) {
+      const sea = wideFloor(TX.sea, 0xffffff, 120, L.base + 3, 700, true); this.water = sea;
+      const ft = TX.falls.clone(); ft.needsUpdate = true; ft.repeat.set(1, 6); this.bigFall = ft;
+      this.bigFallMat = ps1(new THREE.MeshBasicMaterial({ map: ft, transparent: true, opacity: .85 }));
+      const cliff = new THREE.Mesh(new THREE.CylinderGeometry(R + 42, R + 50, 110, 48, 2, true), ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.rock.clone(); t.needsUpdate = true; t.repeat.set(40, 8); return t; })(), color: 0xd8c0a8, side: THREE.DoubleSide })));
+      cliff.position.set(CX, Y0 + L.base + 50, CZ); scene.add(cliff);
+      for (let k = 0; k < 14; k++) {
+        const th = k / 14 * TAU + .1, p = ringPt(th, R + 41.5, L.base + 40);
+        const w = new THREE.Mesh(new THREE.PlaneGeometry(rand(3, 5), 90), this.bigFallMat); w.position.copy(p); w.lookAt(CX, p.y, CZ); scene.add(w);
+        const g = glowSprite(0xffffff, 14, .5); g.position.copy(ringPt(th, R + 39, L.base + 4)); scene.add(g);
+      }
+      const plat = new THREE.Mesh(new THREE.CircleGeometry(R - 3.5, 40), lam(0x6a8a4a)); plat.rotation.x = -Math.PI / 2; plat.position.set(CX, Y0 + L.wallH + .02, CZ); scene.add(plat);
+      const houses = [], roofs = [], trees = [];
+      for (let i = 0; i < 26; i++) { const th = rand(0, TAU), r = rand(4, R - 9), p = ringPt(th, r, L.wallH); const w = rand(2, 4); houses.push([p.x, p.y + w * .6, p.z, w, w * 1.2, w * .8, -th]); roofs.push([p.x, p.y + w * 1.2 + w * .3, p.z, w * .85, w * .7, w * .85, -th + Math.PI / 4]); }
+      for (let i = 0; i < 50; i++) { const th = rand(0, TAU), r = rand(2, R - 7), p = ringPt(th, r, L.wallH), s = rand(1.2, 2.4); trees.push([p.x, p.y + s * 1.6, p.z, s]); }
+      instanced(GEO.box, lam(0xf0e6cc), houses); instanced(new THREE.ConeGeometry(1, 1, 4), lam(0x5a7a4a), roofs); instanced(GEO.sph, lam(0xe0a030), trees);
+      const tw2 = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.6, 22, 8), lam(0xf0e6cc)); tw2.position.set(CX, Y0 + L.wallH + 11, CZ); scene.add(tw2);
+      part(new THREE.ConeGeometry(2, 4, 8), lam(0x5a7a4a), scene, CX, Y0 + L.wallH + 24, CZ);
+    },
+  }),
+
+  // Moria: dark dwarf-halls, columns rising out of the abyss, torches, and the Bridge of Khazad-dûm
+  moria: natTheme({
+    wallTex: TX.rock, floorTex: TX.dark, tint: [.62, .6, .66], door: 0x9aa0b8,
+    env: { sky: [0x020204, 0x050508, 0x0a0808, 0x200a04], fog: [14, 120], fogC: 0x0c0806, amb: [0x4a4058, .6], hemi: [0x5a5070, 0x3a1408, .35], sun: [0x8080a0, .15], east: [0xff6a30, .3], embers: true },
+    orc: { sk: 0x8a907a, ska: 0xa0a488, ar: 0x2a2630, le: 0x3a2a1a, met: 0x1e1c22, sc: .85 },
+    edge(s0, s1) { cbox(this.gm, s0, s1, -4.3, -3.5, 0, .45, { tint: [.55, .53, .6], seg: 2 }); },
+    pil(s, H) { addTorch(s, 3.0, 2.7); cbox(this.gm, s - .9, s + .9, 3.2, 3.5, 0, H, { f: 'oaz', tint: [.5, .48, .55], seg: 3 }); },
+    scenery(L) {
+      wideFloor(TX.lavaRock, 0x6a3020, 120, L.base, 700);
+      for (let i = 0; i < 30; i++) { const g = glowSprite(0xff4a10, rand(20, 50), .55); g.material.fog = false; g.position.copy(ringPt(rand(0, TAU), R + rand(-25, 60), L.base + 2)); scene.add(g); }
+      const ceil = new THREE.Mesh(new THREE.RingGeometry(1, R + 140, 48, 2), ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.rock.clone(); t.needsUpdate = true; t.repeat.set(40, 40); return t; })(), color: 0x403a40, side: THREE.DoubleSide })));
+      ceil.rotation.x = Math.PI / 2; ceil.position.set(CX, Y0 + L.wallH, CZ); scene.add(ceil);
+      const cols = [], caps = [];
+      for (const [rr, n] of [[R + 17, 30], [R + 31, 38], [R + 47, 48]]) for (let k = 0; k < n; k++) { const p = ringPt(k / n * TAU, rr, 0); const h = L.wallH - L.base; cols.push([p.x, Y0 + L.base + h / 2, p.z, 2.2, h, 2.2]); caps.push([p.x, Y0 + L.wallH - 1, p.z, 3.4, 2, 3.4, k]); }
+      instanced(GEO.cyl, lam(0x5a5660), cols); instanced(GEO.box, lam(0x4a4650), caps);
+    },
+  }),
+
+  // Edoras: a gallop over the golden plains of Rohan, palisades, the Golden Hall on its hill
+  rohan: natTheme({
+    wallTex: TX.turf, floorTex: TX.path, door: 0xc89a40,
+    env: { sky: [0x4a7ac8, 0x8ab0dc, 0xe8e0c0, 0xffe8b0], fog: [60, 360], fogC: 0xc8d4dc, amb: [0x8a8070, .55], hemi: [0xe8f0ff, 0x6a5a2a, .7], sun: [0xfff0d0, .9], east: [0xffe0a0, .2], cloud: 0xffffff },
+    orc: { sk: 0x3a3028, ska: 0x4a3c30, ar: 0x1a1a1e, le: 0x2a2018, met: 0x141418, sc: 1.1 },
+    edge(s0, s1) { for (let s = s0 + .3; s < s1 - .2; s += .55) cbox(this.gw, s - .18, s + .18, -4.15, -3.8, 0, 1.3 + hsh(s, 1, 2) * .4, { seg: 5, ys: 5 }); },
+    innerTop(a, b, H) { cbox(this.gm, a, b, 3.5, 6, H, H + .3, { f: 't', tint: [.85, .8, .4] }); },
+    pil(s) { flag(s, 2.9, 0x2a7a2a); },
+    scenery(L) {
+      wideFloor(TX.grass, 0xe0c870, 180, L.base);
+      const hill = new THREE.Mesh(new THREE.CylinderGeometry(8, R - 4, L.wallH + 10 - L.base, 24), lam(0x8aa048)); hill.position.set(CX, Y0 + L.base + (L.wallH + 10 - L.base) / 2, CZ); scene.add(hill);
+      const top = Y0 + L.wallH + 10;
+      part(GEO.box, lam(0x8a5428), scene, CX, top + 2, CZ, 12, 4, 6);
+      const roof = part(new THREE.CylinderGeometry(4, 4, 13, 3), lam(0xe8b830, { emissive: 0x3a2800 }), scene, CX, top + 5.3, CZ, 1, 1, .9); roof.rotation.z = Math.PI / 2;
+      for (let k = 0; k < 40; k++) { const p = ringPt(k / 40 * TAU, 7.6, L.wallH + 10.6); part(GEO.box, lam(0x6a4420), scene, p.x, p.y, p.z, .4, 1.4, .4); }
+      const grass = [];
+      for (let i = 0; i < 160; i++) { const p = ringPt(rand(0, TAU), R + rand(8, 200), L.base); grass.push([p.x, p.y + .5, p.z, rand(1, 2.5), rand(.6, 1.4), rand(1, 2.5)]); }
+      instanced(GEO.sph, lam(0xb8a040), grass);
+      for (let i = 0; i < 18; i++) { const a = rand(-2.4, -.7), r = rand(420, 620), h = rand(120, 220); const m = gradCone(rand(70, 120), h, 6, 0xf4f4fa, 0x5a5a6a); m.position.set(CX + Math.cos(a) * r, Y0 + L.base + h / 2 - 10, CZ + Math.sin(a) * r); scene.add(m); }
+    },
+  }),
+
+  // Mordor: black rock over a sea of lava, Barad-dûr in the middle with the Eye on top, fell beasts overhead
+  mordor: natTheme({
+    wallTex: TX.lavaRock, floorTex: TX.dark, tint: [.8, .7, .68], door: 0x8a5a4a,
+    env: { sky: [0x100404, 0x3a0c08, 0x7a1c0a, 0xff5a10], fog: [30, 230], fogC: 0x3a120a, amb: [0x6a3a3a, .6], hemi: [0xff9a70, 0x3a0a04, .5], sun: [0xffa080, .35], east: [0xff5a20, .6], cloud: 0x803020, bolts: true, embers: true },
+    orc: { sk: 0x5a4a3a, ska: 0x6a5844, ar: 0x4a2420, le: 0x2a1a12, met: 0x1a1414, sc: 1 },
+    edge(s0, s1) { for (let s = s0 + .4; s < s1 - .4; s += 1.2) cbox(this.gm, s - .45, s + .45, -4.3, -3.5, 0, .5 + hsh(s, 2, 3) * 1.3, { seg: 5, ys: 5, tint: [.6, .5, .5] }); },
+    pil(s) { addTorch(s, 3.0, 2.7); for (const d of [-1, 1]) { const sp = new THREE.Mesh(GEO.cone, lam(0x1a1414)); place(sp, s + d * 1.4, 3.3, 3.5); sp.scale.set(.18, 1.6, .18); scene.add(sp); } },
+    scenery(L) {
+      this.lava = wideFloor(TX.lavaGlow, 0xff7a30, 90, L.base, 700, true);
+      const rocks = [];
+      for (let i = 0; i < 70; i++) { const p = ringPt(rand(0, TAU), R + rand(8, 160), L.base), s = rand(2, 9); rocks.push([p.x, p.y + s * .3, p.z, s, s * rand(.6, 1.8), s, rand(0, 3)]); }
+      instanced(GEO.ico, lam(0x241a18), rocks);
+      let y = Y0 + L.base;
+      for (const [rt, rb, h] of [[11, 15, 20], [8, 11, 40], [6, 8, 34], [4, 5.5, 22]]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 8), lam(0x1a1416)); m.position.set(CX, y + h / 2, CZ); scene.add(m); y += h; }
+      for (const d of [-1, 1]) { const h = new THREE.Mesh(GEO.cone, lam(0x1a1416)); h.position.set(CX + d * 2.6, y + 6, CZ); h.scale.set(1.3, 14, 1.3); h.rotation.z = -d * .2; scene.add(h); }
+      const eye = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.eye, transparent: true, depthWrite: false, fog: false })); eye.position.set(CX, y + 6, CZ); eye.scale.set(9, 13, 1); scene.add(eye);
+      const eg = glowSprite(0xff3a08, 40, .7); eg.material.fog = false; eg.position.copy(eye.position); scene.add(eg);
+      const dm = gradCone(150, 230, 7, 0x3a1a1a, 0x140808); dm.position.set(CX + 520, Y0 + L.base + 100, CZ + 120); scene.add(dm);
+      const dg = glowSprite(0xff4a10, 160, .9); dg.material.fog = false; dg.position.set(CX + 520, Y0 + L.base + 220, CZ + 120); scene.add(dg);
+    },
+  }),
+};
+function applyEnv(e) {
+  ENV = e;
+  paintSky(...e.sky);
+  scene.fog.near = e.fog[0]; scene.fog.far = e.fog[1];
+  amb.color.setHex(e.amb[0]); amb.intensity = e.amb[1];
+  hemi.color.setHex(e.hemi[0]); hemi.groundColor.setHex(e.hemi[1]); hemi.intensity = e.hemi[2];
+  moon.color.setHex(e.sun[0]); moon.intensity = e.sun[1];
+  mordorL.color.setHex(e.east[0]); mordorL.intensity = e.east[1];
+  starPts.visible = !!e.stars; clouds.visible = e.cloud !== undefined;
+}
 function buildStatic() {
   initCrateMats(); buildCity();
-  for (const L of LEVELS) { setFrame(L); buildL = L; L.torches = []; END_S = CIRC - 16; buildRing(L, true); }
+  for (const L of LEVELS) { setFrame(L); buildL = L; L.torches = []; END_S = CIRC - 16; buildRing(L, true); if (L.theme) THEMES[L.theme].scenery(L); }
   solids.length = 0; spikes.length = 0;
+  for (const k in THEMES) {
+    const TH = THEMES[k]; if (k === 'mt') continue;
+    const mk = (geo, map) => { if (geo.p.length) geo.build(ps1(new THREE.MeshLambertMaterial({ map, vertexColors: true, side: THREE.DoubleSide }))); };
+    mk(TH.gm, TH.wallTex); mk(TH.gf, TH.floorTex); mk(TH.gw, TX.wood);
+  }
   GM.build(ps1(new THREE.MeshLambertMaterial({ map: TX.marble, vertexColors: true, side: THREE.DoubleSide })));
   GF.build(ps1(new THREE.MeshLambertMaterial({ map: TX.floor, vertexColors: true, side: THREE.DoubleSide })));
   const rg = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), ps1(new THREE.MeshLambertMaterial({ map: TX.marble, color: 0xc8c0cc })), rubbleList.length);
@@ -989,7 +1213,8 @@ const CHAR = lam(0x1a1414);
 
 function makeOrc(type) {
   const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
-  const SK = lam(type === 'archer' ? 0x86924c : 0x627338), AR = lam(0x3a3440), LE = lam(0x5a3a20), MET = lam(0x2a262e);
+  const pal = ORC_PAL, SK = lam(type === 'archer' ? pal.ska : pal.sk), AR = lam(pal.ar), LE = lam(pal.le), MET = lam(pal.met);
+  body.scale.setScalar(pal.sc);
   const mkLeg = sx => { const g = new THREE.Group(); g.position.set(sx * .17, .5, 0); body.add(g); part(GEO.cylT, LE, g, 0, 0, 0, .12, .44, .12); part(GEO.box, MET, g, 0, -.47, .06, .16, .1, .28); return g; };
   const legL = mkLeg(1), legR = mkLeg(-1);
   part(GEO.sph, AR, body, 0, .86, -.02, .38, .36, .3);
@@ -1281,7 +1506,7 @@ function addPlat(s, x, y, o = {}) {
 const crateList = list => { for (const [t, s, x, st] of list) addCrate(t, s, x, st || 0); };
 const LEVELS = [
   {
-    name: 'THE FIRST CIRCLE', sub: 'RIDE OF SHADOWFAX', next: 'CLIMB TO THE SECOND CIRCLE', R: 50, Y0: 0, base: -26, wallH: 12, fog: 0x2c1a48, ride: true,
+    name: 'THE FIRST CIRCLE', sub: 'RIDE OF SHADOWFAX', loc: 'mt', next: 'CLIMB TO THE SECOND CIRCLE', R: 50, Y0: 0, base: -26, wallH: 12, fog: 0x2c1a48, ride: true,
     floors: [[-16.6, 46, -3.5], [50.5, 80, -3.5], [80, 98, .4], [98, 124, -3.5], [128.5, 140, -3.5], [144.5, 205, -3.5], [205, 222, -.4], [227, 258, -3.5], [262.5, 1e9, -3.5]],
     pillars: [],
     bars: [[18, -3.5, .3], [26, -.3, 3.5], [34, -3.5, 3.5], [40, .8, 3.5], [58, -3.5, -.5], [64, .5, 3.5], [72, -3.5, 3.5], [104, -3.5, .2], [110, -.2, 3.5], [117, -3.5, 3.5], [133, -3.5, 3.5],
@@ -1317,7 +1542,7 @@ const LEVELS = [
     },
   },
   {
-    name: 'THE SECOND CIRCLE', next: 'CLIMB TO THE CITADEL', R: 33, Y0: 22, base: -10, wallH: 12, fog: 0x34183e,
+    name: 'THE SECOND CIRCLE', loc: 'mt', next: 'CLIMB TO THE CITADEL', R: 33, Y0: 22, base: -10, wallH: 12, fog: 0x34183e,
     floors: [[-16.6, 40, -3.5], [50, 92, -3.5], [104, 128, -3.5], [128, 140, .6], [140, 158, -3.5], [161.5, 1e9, -3.5]],
     pillars: [[42.6, 44.4, -1.6, 1.2, 0], [46.4, 48.2, .2, 3.0, .8]],
     dz: [{ s0: 15, s1: 50, int: 2.6 }, { s0: 88, s1: 140, int: 2.2, multi: 112 }, { s0: 142, s1: 180, int: 2.8 }], d3: 80,
@@ -1366,13 +1591,116 @@ const LEVELS = [
     },
   },
   {
-    name: 'THE CITADEL', sub: 'BEWARE THE DARK LORD', R: 14, Y0: 44, CX: 0, CZ: 21, base: -10, wallH: 0, loop: true, arena: true, boss: true, lawnX: 10.6, fog: 0x3a1424,
+    name: 'THE CITADEL', sub: 'BEWARE THE DARK LORD', loc: 'mt', next: 'RETURN TO THE MAP', R: 14, Y0: 44, CX: 0, CZ: 21, base: -10, wallH: 0, loop: true, arena: true, boss: true, lawnX: 10.6, fog: 0x3a1424,
     floors: [], pillars: [], dz: [], balrogs: [],
     content() {
       // crates and apples placed by compass angle (degrees, 90 = south towards the camera) and distance from the tree
       const at = (t, deg, r) => addCrate(t, deg / 180 * Math.PI * R, R - r);
       at('r', 125, 9); at('r', 55, 9); at('p', 200, 8.5); at('b', 300, 10); at('q', 340, 8.5);
       for (let i = 0; i < 16; i++) addApple(i / 16 * CIRC, R - 6.5, .7);
+    },
+  },
+  // ---- one level for each of the other places on the map; each ring sits far out on its own so they never see each other ----
+  {
+    name: 'THE SHIRE', sub: 'ORCS IN HOBBITON', loc: 'shire', theme: 'shire', next: 'RETURN TO THE MAP', R: 34, Y0: 0, CX: 5000, CZ: 0, base: -6, wallH: 7,
+    floors: [[-16.6, 38, -3.5], [42, 70, -3.5], [70, 84, .2], [88.5, 118, -3.5], [128, 150, -3.5], [150, 162, -.6], [166, 1e9, -3.5]],
+    pillars: [], bars: [[30, -3.5, .2], [56, -.4, 3.5], [100, -3.5, 3.5], [142, -3.5, .4], [176, .4, 3.5]],
+    dz: [], balrogs: [],
+    content() {
+      addPlat(121.5, 0, 0, { ax: 1.6, sp: 1.2 }); addPlat(125.2, 0, .3, { ay: .7, sp: 1.5 });
+      crateList([
+        ['b', 8, -1.5], ['b', 8, 1.5], ['q', 14, 0], ['b', 20, 2.4], ['b', 21, 2.4], ['bo', 26, -2], ['r', 34, 2.2], ['b', 46, -2], ['b', 47, -2], ['c', 52, 0], ['t', 60, 2], ['b', 64, -2.4], ['q', 64, -2.4, 1], ['l', 68, 2.6],
+        ['b', 74, 2], ['b', 78, 2.4], ['n', 81, 1.5], ['b', 92, 0], ['p', 96, -2], ['b', 104, 2], ['b', 105, 2], ['bo', 110, -1.5], ['r', 114, 2.4],
+        ['c', 131, 0], ['b', 136, -2], ['b', 136, 2], ['t', 146, 2], ['q', 154, 1.8], ['b', 158, 2.6], ['b', 170, -2], ['b', 170, 0], ['b', 170, 2], ['q', 180, -2.2], ['n', 186, 1], ['b', 190, 2.4], ['b', 191, 2.4],
+      ]);
+      aLine(3, 7, 0, .8, 5); aLine(26, 26, -2, 3.6, 1); aLine(26, 26, -2, 4.5, 1); aArc(36.5, 43.5, 0, .8, 2.6, 6); aLine(44, 50, 0, .8, 6); aArc(82.5, 90, 1.5, .8, 2.8, 6); aLine(92, 100, 1, .8, 7);
+      aArc(117, 121, 0, .8, 2, 4); aArc(123, 128.5, 0, .8, 2, 4); aLine(132, 140, -1, .8, 7); aArc(160.5, 167.5, 1, .8, 2.6, 6); aLine(172, 185, 0, .8, 9);
+      addOrc('grunt', 18, 0, { patrol: { ax: 'x', amp: 2, sp: 1.5 } }); addOrc('archer', 48, 2.6); addOrc('grunt', 58, -1); addOrc('grunt', 66, -3, { ladder: true });
+      addOrc('grunt', 76, 1.6, { patrol: { ax: 's', amp: 1.2, sp: 1.4 } }); addOrc('archer', 94, 2.6); addOrc('grunt', 108, 0, { patrol: { ax: 'x', amp: 2, sp: 2 } }); addOrc('grunt', 112, -3, { ladder: true });
+      addOrc('archer', 134, -2.4); addOrc('grunt', 140, 0, { patrol: { ax: 'x', amp: 2, sp: 2.2 } }); addOrc('grunt', 156, 1.8); addOrc('archer', 174, 2.6);
+      addOrc('grunt', 184, 0, { patrol: { ax: 'x', amp: 2, sp: 2.4 } }); addOrc('grunt', 192, -3, { ladder: true });
+    },
+  },
+  {
+    name: 'RIVENDELL', sub: 'THE HIDDEN VALLEY', loc: 'riv', theme: 'riv', next: 'RETURN TO THE MAP', R: 34, Y0: 0, CX: 10000, CZ: 0, base: -30, wallH: 14,
+    floors: [[-16.6, 30, -3.5], [34.5, 60, -3.5], [72, 96, -3.5], [96, 110, .4], [114, 140, -3.5], [152, 175, -3.5], [178.5, 1e9, -3.5]],
+    pillars: [[63, 64.8, -1.4, 1.4, .4], [67, 69, -.4, 2.4, 1.2]], bars: [[24, -3.5, .3], [84, -.3, 3.5], [126, -3.5, 3.5], [186, -3.5, .4]],
+    dz: [], balrogs: [],
+    content() {
+      addPlat(143.5, 0, 0, { ax: 1.6, sp: 1.3 }); addPlat(147, .2, 0, { crumble: true }); addPlat(150, 0, -.3, { ay: .8, sp: 1.6, ph: .5 });
+      crateList([
+        ['b', 6, -1.5], ['b', 6, 1.5], ['q', 12, 2.4], ['bo', 18, 0], ['t', 22, -2], ['r', 28, 2.4], ['b', 38, -2], ['b', 38, -2, 1], ['c', 44, 0], ['n', 50, 1.5], ['b', 54, 2.4], ['q', 58, -2],
+        ['b', 63.9, 0], ['q', 68, 1], ['b', 76, 2], ['b', 77, 2], ['p', 82, -2], ['l', 90, 2.6], ['b', 100, 2.4], ['bo', 104, 2], ['b', 108, 2.6],
+        ['c', 118, 0], ['b', 122, -2], ['i', 130, 2], ['i', 130, 2, 1], ['ib', 134, -2], ['q', 134, -2, 4], ['r', 138, 0], ['b', 156, 2], ['t', 160, -2], ['b', 164, 2.4], ['n', 168, 0], ['q', 172, -2],
+        ['b', 182, 2], ['b', 190, -2], ['b', 190, 2],
+      ]);
+      aLine(2, 5, 0, .7, 4); aLine(18, 18, 0, 3.6, 1); aLine(18, 18, 0, 4.5, 1); aArc(29, 36, 0, .7, 2.6, 6); aLine(40, 48, 0, .7, 7); aArc(60, 63, 0, .7, 2, 4); aArc(64.8, 67, .5, 1.1, 2, 3); aArc(69, 72, 1, 1.9, 2, 4);
+      aLine(98, 108, 2, .7, 8); aArc(109, 115, 1.5, .7, 2.6, 5); aArc(141, 152, 0, .7, 2.4, 9); aLine(154, 170, 0, .7, 10); aArc(174, 179.5, 0, .7, 2.6, 5);
+      addOrc('grunt', 10, 0, { patrol: { ax: 'x', amp: 2, sp: 1.5 } }); addOrc('archer', 26, 2.6); addOrc('grunt', 40, 1, { patrol: { ax: 'x', amp: 1.8, sp: 1.8 } }); addOrc('grunt', 52, -3, { ladder: true });
+      addOrc('archer', 56, 2.4); addOrc('grunt', 78, 0, { patrol: { ax: 's', amp: 1.6, sp: 1.4 } }); addOrc('archer', 88, -2.4); addOrc('grunt', 92, -3, { ladder: true }); addOrc('grunt', 102, 2.4, { patrol: { ax: 's', amp: 1.2, sp: 1.6 } });
+      addOrc('archer', 120, 2.6); addOrc('grunt', 124, 0, { patrol: { ax: 'x', amp: 2, sp: 2.2 } }); addOrc('grunt', 136, -3, { ladder: true }); addOrc('grunt', 158, 0, { patrol: { ax: 'x', amp: 2, sp: 2.4 } });
+      addOrc('archer', 166, 2.6); addOrc('grunt', 184, 0, { patrol: { ax: 'x', amp: 2, sp: 2.4 } }); addOrc('archer', 192, -2.4);
+    },
+  },
+  {
+    name: 'THE MINES OF MORIA', sub: "DURIN'S BANE AWAKES", loc: 'moria', theme: 'moria', next: 'RETURN TO THE MAP', R: 36, Y0: 0, CX: 15000, CZ: 0, base: -40, wallH: 16,
+    floors: [[-16.6, 26, -3.5], [30, 52, -3.5], [52, 66, .2], [70, 96, -3.5], [108, 128, -3.5], [131.5, 152, -3.5], [152, 202, -1.4, 1.4], [202, 1e9, -3.5]],
+    pillars: [[99, 100.8, -1.4, 1.4, 0], [103, 104.8, -.6, 2.2, .6]], bars: [],
+    open: [[152, 202]], gateS: 200.5,   // the Bridge of Khazad-dûm, and a wall of fire at its far end until the Balrog falls
+    dz: [], balrogs: [{ boss: true, r0: 156, r1: 210, hp: 9, seq: ['smash', 'crack', 'smash', 'sweep', 'smash', 'crack'] }],
+    content() {
+      crateList([
+        ['b', 6, -1.5], ['b', 6, 1.5], ['q', 12, 0], ['t', 18, 2], ['b', 22, -2], ['r', 24, 2.4], ['b', 34, 2], ['b', 35, 2], ['bo', 40, -2], ['c', 46, 0], ['n', 50, -1], ['b', 56, 2], ['b', 60, 2.6], ['q', 64, 1.5],
+        ['b', 74, -2], ['b', 74, 0], ['b', 74, 2], ['l', 82, 2.6], ['t', 88, 0], ['b', 92, -2.4], ['b', 99.9, 0], ['q', 104, .8], ['b', 112, 2], ['bo', 118, 0], ['b', 122, -2.4], ['n', 126, 1],
+        ['c', 136, 0], ['r', 140, -2], ['r', 140, 2], ['p', 146, 0], ['r', 170, 0], ['r', 186, 0], ['l', 196, 0],
+      ]);
+      aLine(2, 5, 0, .7, 4); aArc(25, 31, 0, .7, 2.6, 5); aLine(36, 44, 0, .7, 6); aLine(40, 40, -2, 3.6, 1); aLine(40, 40, -2, 4.5, 1); aLine(54, 64, 1.8, .7, 8); aArc(65, 71, 1.5, .7, 2.6, 5); aLine(76, 86, 0, .7, 8);
+      aArc(96, 99, 0, .7, 2, 4); aArc(100.8, 103, .4, 1.1, 2, 3); aArc(104.8, 108, .8, 1.7, 2, 4); aLine(110, 126, 0, .7, 10); aArc(127, 132.5, 0, .7, 2.6, 5); aLine(134, 150, 0, .7, 10); aLine(154, 166, 0, .7, 8);
+      addOrc('grunt', 10, 0, { patrol: { ax: 'x', amp: 2, sp: 1.8 } }); addOrc('archer', 20, 2.6); addOrc('grunt', 32, -3, { ladder: true }); addOrc('grunt', 38, 1, { patrol: { ax: 'x', amp: 1.8, sp: 2 } });
+      addOrc('archer', 48, 2.6); addOrc('grunt', 58, 2, { patrol: { ax: 's', amp: 1.4, sp: 1.6 } }); addOrc('grunt', 80, 0, { patrol: { ax: 'x', amp: 2.2, sp: 2.2 } }); addOrc('grunt', 86, -3, { ladder: true });
+      addOrc('archer', 94, -2.4); addOrc('grunt', 112, 0, { patrol: { ax: 'x', amp: 2, sp: 2.4 } }); addOrc('grunt', 116, -3, { ladder: true }); addOrc('archer', 124, 2.6);
+      addOrc('grunt', 138, 0, { patrol: { ax: 'x', amp: 2, sp: 2.6 } }); addOrc('grunt', 144, -3, { ladder: true });
+    },
+  },
+  {
+    name: 'THE RIDE TO EDORAS', sub: 'URUK-HAI ON THE PLAINS', loc: 'rohan', theme: 'rohan', next: 'RETURN TO THE MAP', R: 44, Y0: 0, CX: 20000, CZ: 0, base: -8, wallH: 6, ride: true,
+    floors: [[-16.6, 40, -3.5], [45, 75, -3.5], [75, 92, .4], [92, 118, -3.5], [123, 150, -3.5], [150, 166, -.4], [171, 205, -3.5], [210, 1e9, -3.5]],
+    pillars: [],
+    bars: [[16, -3.5, .3], [24, -.3, 3.5], [32, -3.5, 3.5], [52, -3.5, -.5], [58, .5, 3.5], [66, -3.5, 3.5], [98, -3.5, .2], [104, -.2, 3.5], [112, -3.5, 3.5], [130, -1.5, 3.5], [138, -3.5, .8], [144, -3.5, 3.5],
+      [178, -.5, 3.5], [186, -3.5, -.3], [194, -3.5, 3.5], [216, -3.5, .5], [224, -.5, 3.5], [232, -3.5, 3.5], [244, .4, 3.5]],
+    dz: [], balrogs: [],
+    content() {
+      crateList([
+        ['b', 8, 0], ['b', 10, 0], ['q', 20, 2.2], ['r', 28, -2.4], ['p', 38, 0], ['b', 48, -2], ['b', 50, -2], ['c', 62, 0], ['t', 70, 1.5], ['b', 70, -1.5], ['b', 80, 2.4], ['q', 86, 2.4], ['l', 90, 2.8],
+        ['n', 108, -2], ['b', 108, 2], ['r', 116, 0], ['c', 126, 0], ['b', 134, 2], ['q', 148, 0], ['b', 156, 2.4], ['q', 162, 1.6], ['c', 176, 0], ['t', 190, -2], ['b', 190, 2], ['b', 200, 0],
+        ['n', 220, 2], ['r', 228, -2], ['q', 238, 0], ['b', 250, -2], ['b', 250, 2],
+      ]);
+      aLine(3, 6.5, 0, .8, 5); aArc(38.5, 46.5, 0, .8, 3, 7); aLine(52, 60, 0, .8, 7); aLine(78, 90, 1.6, .8, 9); aArc(116.5, 124.5, 0, .8, 3, 7); aLine(150, 164, 1.4, .8, 10); aArc(164.5, 172.5, 1, .8, 3, 7);
+      aArc(203.5, 211.5, 0, .8, 3, 7); aLine(236, 256, 0, .8, 12);
+      addOrc('grunt', 22, -2); addOrc('archer', 54, 2.8); addOrc('grunt', 60, -1.4, { patrol: { ax: 'x', amp: 1.4, sp: 1.6 } }); addOrc('grunt', 96, -3, { ladder: true }); addOrc('archer', 102, 2.8);
+      addOrc('grunt', 114, -3, { ladder: true }); addOrc('grunt', 140, 2, { patrol: { ax: 'x', amp: 1.2, sp: 1.8 } }); addOrc('grunt', 158, 1.5); addOrc('archer', 182, 2.8); addOrc('grunt', 198, -3, { ladder: true });
+      addOrc('grunt', 220, -2.6); addOrc('archer', 236, 2.8); addOrc('grunt', 248, 0, { patrol: { ax: 'x', amp: 2, sp: 1.8 } });
+    },
+  },
+  {
+    name: 'MORDOR', sub: 'IN THE SHADOW OF THE EYE', loc: 'mordor', theme: 'mordor', next: 'RETURN TO THE MAP', R: 36, Y0: 0, CX: 25000, CZ: 0, base: -14, wallH: 12,
+    floors: [[-16.6, 32, -3.5], [36, 60, -3.5], [60, 78, .3], [82.5, 104, -3.5], [116, 140, -3.5], [140, 156, -.5], [160, 1e9, -3.5]],
+    pillars: [], bars: [[26, -3.5, .3], [48, -.3, 3.5], [92, -3.5, 3.5], [130, -3.5, .2], [170, .3, 3.5], [190, -3.5, 3.5]],
+    dz: [{ s0: 36, s1: 82, int: 2.6 }, { s0: 118, s1: 204, int: 2.3, multi: 170 }], d3: 160, balrogs: [],
+    content() {
+      addPlat(107.5, 0, 0, { ax: 1.8, sp: 1.5 }); addPlat(111, .2, 0, { crumble: true }); addPlat(114, 0, -.3, { ay: .8, sp: 1.8, ph: .5 });
+      crateList([
+        ['b', 6, -1.5], ['b', 6, 0], ['b', 6, 1.5], ['t', 12, 0], ['q', 16, 2.4], ['n', 20, -1], ['r', 24, 2.4], ['b', 40, -2], ['b', 41, -2], ['c', 44, 0], ['t', 52, 2], ['b', 56, -2.4], ['r', 58, 2.4],
+        ['b', 64, 2], ['n', 68, 1.5], ['q', 72, 2.6], ['l', 76, 2.6], ['b', 86, -2], ['b', 86, 2], ['t', 90, 0], ['p', 96, 0], ['i', 100, 2], ['i', 100, 2, 1],
+        ['c', 120, 0], ['b', 124, -2], ['t', 128, 2], ['r', 134, -2], ['b', 144, 2.4], ['n', 148, 1], ['q', 152, 2.4], ['b', 164, -2], ['b', 164, 2], ['t', 172, -2], ['n', 176, 0], ['q', 180, 2],
+        ['r', 184, -2], ['b', 194, -2], ['b', 198, 2], ['t', 202, 0],
+      ]);
+      aLine(2, 5, 0, .7, 4); aArc(31, 37, 0, .7, 2.6, 5); aLine(38, 46, 0, .7, 7); aLine(62, 76, 2, .7, 10); aArc(77, 84, 1.5, .7, 2.6, 6); aLine(88, 98, 0, .7, 7);
+      aArc(105.5, 109.5, 0, .7, 2, 3); aArc(112, 116, 0, .7, 2, 3); aLine(118, 128, 0, .7, 8); aLine(142, 154, 1.5, .7, 9); aArc(155, 161, 1, .7, 2.6, 5); aLine(166, 190, 0, .7, 14);
+      addOrc('grunt', 10, 0, { patrol: { ax: 'x', amp: 2, sp: 1.8 } }); addOrc('archer', 18, 2.6); addOrc('grunt', 30, -3, { ladder: true }); addOrc('grunt', 46, 0, { patrol: { ax: 'x', amp: 2, sp: 2 } });
+      addOrc('archer', 54, 2.6); addOrc('grunt', 66, 2, { patrol: { ax: 's', amp: 1.4, sp: 1.6 } }); addOrc('grunt', 88, -3, { ladder: true }); addOrc('archer', 98, 2.6);
+      addOrc('grunt', 122, 0, { patrol: { ax: 'x', amp: 2.2, sp: 2.2 } }); addOrc('grunt', 132, -3, { ladder: true }); addOrc('archer', 146, 2.6); addOrc('grunt', 168, 0, { patrol: { ax: 'x', amp: 2, sp: 2.4 } });
+      addOrc('grunt', 178, -3, { ladder: true }); addOrc('archer', 186, -2.4); addOrc('grunt', 196, 0, { patrol: { ax: 'x', amp: 2, sp: 2.6 } });
     },
   },
 ];
@@ -1428,10 +1756,11 @@ function loadLevel(li) {
   clearLevel();
   LI = li; LV = LEVELS[li]; setFrame(LV);
   START_S = LV.loop ? 0 : 1.2; END_S = LV.loop ? 1e9 : CIRC - 16;
+  ORC_PAL = THEMES[LV.theme || 'mt'].orc; applyEnv(THEMES[LV.theme || 'mt'].env);
   buildRing(LV, false);
   LV.content();
   torches = LV.torches;
-  balrogs = LV.balrogs.map((d, i) => ({ def: d, m: BALROG_POOL[i], s: d.r0, y: -40, state: 'hidden', t: 0, atk: null, atkT: 2, seqI: 0, hits: 0, stun: 0, done: false, ct: 0, hand: 0 }));
+  balrogs = LV.balrogs.map((d, i) => ({ def: d, m: BALROG_POOL[i], s: d.r0, y: -40, state: 'hidden', t: 0, atk: null, atkT: 2, seqI: 0, hits: 0, stun: 0, done: false, ct: 0, hand: 0, hp: d.hp || 0, won: false }));
   Object.assign(gs, { crates: 0, time: 0, kills: 0, appleTotal: 0 });
   gs.crateTotal = crates.filter(c => c.type !== 'i' && c.type !== 'ib').length;
   // in the courtyard you start on the south side, facing the tree
@@ -1440,7 +1769,7 @@ function loadLevel(li) {
   if (LV.door) { LV.door.endBlock.on = true; LV.door.L.rotation.y = LV.door.Rr.rotation.y = 0; LV.door.light.visible = LV.door.glow.visible = false; }
   dragons.forEach((d, i) => { d.active = i < 2 && LV.dz.length > 0; d.away = 0; d.hits = 0; d.spitT = 0; d.s = START_S + rand(30, 60); d.x = -70; d.y = 45; });
   dzTimer = 2;
-  scene.fog.color.setHex(LV.fog);
+  scene.fog.color.setHex(LV.fog ?? ENV.fogC);
   if (LV.tree) { LV.tree.userData.bloom.visible = false; LV.tree.userData.bloomT = -1; }
   boss.ckpt = false; resetBoss();
 }
@@ -1449,7 +1778,7 @@ function newGame(li) {
   loadLevel(li); respawn(true); levelCard();
 }
 function nextLevel() {
-  if (LI + 1 >= LEVELS.length) { newGame(0); state = 'title'; iris.mode = 'none'; showScreen('sTitle'); return; }
+  if (!LEVELS[LI + 1] || LEVELS[LI + 1].loc !== LV.loc) { backToMap(LV.loc); return; }
   showScreen(null); loadLevel(LI + 1); respawn(true); levelCard(); hudT = 4;
 }
 function levelCard() { banner(LV.name, 2.4); }
@@ -1476,7 +1805,8 @@ function respawn(fresh) {
   for (const a of arrows) scene.remove(a.mesh); arrows = [];
   for (const r of rockets) scene.remove(r.mesh); rockets = [];
   patches = [];
-  for (const b of balrogs) { if (b.atk) endAttack(b); b.state = 'hidden'; b.y = -40; b.stun = 0; b.hits = 0; hideBalrog(b); if (cp.s < b.def.r1) b.done = false; }
+  for (const b of balrogs) { if (b.atk) endAttack(b); b.state = 'hidden'; b.y = -40; b.stun = 0; b.hits = 0; b.hp = b.def.hp || 0; hideBalrog(b); if (cp.s < b.def.r1 && !b.won) b.done = false; }
+  if (LV.gate) { const won = balrogs.some(b => b.won); LV.gate.on = !won; (LV.fireGate || []).forEach(sp => sp.visible = !won); }
   const ch = balrogs.find(b => b.def.chase);
   if (!ch || cp.s < ch.def.r1) { chase.active = false; chase.done = false; }
   if (LV.boss) resetBoss();
@@ -1499,10 +1829,12 @@ addEventListener('keyup', e => { keys[e.code] = false; });
 addEventListener('mousedown', e => {
   initAudio();
   if (e.button === 0) {
-    const mi = e.target.closest && e.target.closest('.mi');
+    const mi = e.target.closest && e.target.closest('.mi'), dk = e.target.closest && e.target.closest('[data-key]');
     if (state === 'play') hit.Mouse0 = true;
+    else if (dk) onKey(dk.dataset.key);
+    else if (state === 'map') mapClick(e.clientX, e.clientY);
     else if (state === 'title' && !mi && !e.target.closest('.logo')) return;   // only the level buttons start a game
-    else { if (mi) setMenu(+mi.dataset.l); const dk = e.target.closest && e.target.closest('[data-key]'); onKey(dk ? dk.dataset.key : 'Enter'); }
+    else { if (mi) setMenu(+mi.dataset.l); onKey('Enter'); }
   }
   if (e.button === 2) hit.Mouse2 = true;
 });
@@ -1510,10 +1842,18 @@ addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; touchReset(); if (state === 'play') pause(true); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(true); });
 function onKey(code) {
-  if (code === 'KeyM') { musicOn = !musicOn; document.getElementById('tMute').textContent = musicOn ? 'MUSIC ON' : 'MUSIC OFF'; return; }
-  if (code === 'KeyZ') { cheats.god = !cheats.god; banner(cheats.god ? 'INVINCIBLE ON' : 'INVINCIBLE OFF', 1); return; }
-  if (code === 'KeyX') { cheats.ammo = !cheats.ammo; banner(cheats.ammo ? 'UNLIMITED ROCKETS' : 'ROCKETS NORMAL', 1); return; }
+  if (code === 'KeyM') { musicOn = !musicOn; syncPauseBtns(); return; }
+  if (code === 'KeyZ') { cheats.god = !cheats.god; if (state !== 'paused') banner(cheats.god ? 'INVINCIBLE ON' : 'INVINCIBLE OFF', 1); syncPauseBtns(); return; }
+  if (code === 'KeyX') { cheats.ammo = !cheats.ammo; if (state !== 'paused') banner(cheats.ammo ? 'UNLIMITED ROCKETS' : 'ROCKETS NORMAL', 1); syncPauseBtns(); return; }
+  if (state === 'map') {
+    if (code === 'ArrowLeft' || code === 'KeyA' || code === 'ArrowDown' || code === 'KeyS') mapGo(-1);
+    else if (code === 'ArrowRight' || code === 'KeyD' || code === 'ArrowUp' || code === 'KeyW') mapGo(1);
+    else if (code === 'Enter' || code === 'Space') mapSelect();
+    else if (/^(Digit|Numpad)[123]$/.test(code)) startGame(+code.slice(-1) - 1);
+    return;
+  }
   if (state === 'title') {
+    if (code === 'Escape' || code === 'Backspace' || code === 'KeyB') { toMap(); return; }
     if (code === 'Enter' || code === 'Space') startGame(menuSel);
     else if (/^(Digit|Numpad)[123]$/.test(code)) startGame(+code.slice(-1) - 1);
     else if (code === 'ArrowUp' || code === 'KeyW') setMenu(menuSel + 2);
@@ -1526,8 +1866,14 @@ function onKey(code) {
   if (state === 'paused') {
     if (code === 'Escape' || code === 'KeyP' || code === 'Enter') pause(false);
     else if (code === 'KeyR') startGame(LI);
-    else if (code === 'KeyQ') { newGame(0); state = 'title'; iris.mode = 'none'; showScreen('sTitle'); }
+    else if (code === 'KeyQ') { if (LV.loc === 'mt') { newGame(0); enterCity(true); } else backToMap(LV.loc); }
   }
+}
+function syncPauseBtns() {
+  const set = (id, txt, on) => { const e = document.getElementById(id); e.textContent = txt; e.classList.toggle('on', on); };
+  set('tMute', musicOn ? 'MUSIC ON' : 'MUSIC OFF', false);
+  set('tGod', 'INVINCIBLE: ' + (cheats.god ? 'ON' : 'OFF'), cheats.god);
+  set('tAmmo', 'UNLIMITED ROCKETS: ' + (cheats.ammo ? 'ON' : 'OFF'), cheats.ammo);
 }
 // level select on the title screen
 let menuSel = 0;
@@ -1536,7 +1882,7 @@ function setMenu(i) { menuSel = (i + menuItems.length) % menuItems.length; menuI
 menuItems.forEach((m, k) => m.addEventListener('mouseenter', () => setMenu(k)));
 let pausedFrom = 'play';
 function pause(on) { if (on) { if (state !== 'play') return; pausedFrom = state; state = 'paused'; showScreen('sPause'); } else { state = pausedFrom; showScreen(null); } }
-const pad = { prev: [], x: 0, z: 0, jump: false, jumpP: false, spinP: false, fireP: false };
+const pad = { prev: [], sx: 0, x: 0, z: 0, jump: false, jumpP: false, spinP: false, fireP: false };
 function pollPad() {
   pad.x = pad.z = 0; pad.jump = pad.jumpP = pad.spinP = pad.fireP = false;
   const gps = navigator.getGamepads ? navigator.getGamepads() : []; let gp = null;
@@ -1547,9 +1893,15 @@ function pollPad() {
   pad.x = clamp(dz(gp.axes[0] || 0) + (b(15) ? 1 : 0) - (b(14) ? 1 : 0), -1, 1);
   pad.z = clamp(-dz(gp.axes[1] || 0) + (b(12) ? 1 : 0) - (b(13) ? 1 : 0), -1, 1);
   pad.jump = b(0); pad.jumpP = pr(0); pad.spinP = pr(2) || pr(4); pad.fireP = pr(1) || pr(5) || pr(7);
-  if (state === 'title') { if (pr(12)) onKey('ArrowUp'); if (pr(13)) onKey('ArrowDown'); }
+  if (state === 'title') { if (pr(12)) onKey('ArrowUp'); if (pr(13)) onKey('ArrowDown'); if (pr(1)) onKey('Escape'); }
+  if (state === 'map') {
+    const ax = gp.axes[0] || 0, sx = ax > .5 ? 1 : ax < -.5 ? -1 : 0;
+    if (pr(14) || pr(13) || (sx < 0 && pad.sx >= 0)) onKey('ArrowLeft');
+    if (pr(15) || pr(12) || (sx > 0 && pad.sx <= 0)) onKey('ArrowRight');
+    pad.sx = sx;
+  }
   if (pr(9)) onKey(state === 'paused' ? 'Escape' : 'Enter');
-  else if (pr(0) && (state === 'title' || state === 'gameover' || state === 'complete')) onKey('Enter');
+  else if (pr(0) && (state === 'title' || state === 'map' || state === 'gameover' || state === 'complete')) onKey('Enter');
   for (let i = 0; i < gp.buttons.length; i++) pad.prev[i] = b(i);
 }
 const inp = { x: 0, z: 0, jump: false, jumpP: false, spinP: false, fireP: false };
@@ -1621,7 +1973,7 @@ touchEl.addEventListener('touchend', touchEnd, { passive: false });
 touchEl.addEventListener('touchcancel', touchEnd, { passive: false });
 // any touch switches the game to touch mode; a real key press switches it back
 addEventListener('touchstart', () => setTouch(true), { passive: true, capture: true });
-addEventListener('touchend', e => { initAudio(); if (IS_TOUCH && e.target.closest && e.target.closest('.mi')) goFullscreen(); }, { passive: true });
+addEventListener('touchend', e => { initAudio(); if (IS_TOUCH && (state === 'map' || (e.target.closest && e.target.closest('.mi')))) goFullscreen(); }, { passive: true });
 addEventListener('keydown', e => { if (!e.code.startsWith('Audio') && !e.code.startsWith('Media')) setTouch(false); }, true);
 setTouch(matchMedia('(pointer: coarse)').matches);
 stickHome();
@@ -2122,8 +2474,23 @@ function updateFireballs(dt) {
 // =====================================================================
 const BX = -10.5;
 function stunBalrog(b) {
+  if (b.def.boss) {
+    // the boss Balrog: every hit hurts, every third leaves it reeling (and drops more fireworks), the ninth sends it into the abyss
+    if (b.state !== 'active' || b.hp <= 0) return;
+    sparks(b.m.head.getWorldPosition(_a), 22, 7); b.hp--; S.orcHit(); cam.shake = Math.max(cam.shake, .4);
+    if (b.hp <= 0) { defeatBalrog(b); return; }
+    if (b.hp % 3 === 0) { b.stun = 3.5; if (b.atk) endAttack(b); S.roar(); banner('STUNNED!'); gs.rockets += 3; hudT = 3; bumpHud('nRocket'); }
+    return;
+  }
   b.hits++; sparks(b.m.head.getWorldPosition(_a), 16, 6);
   if (b.hits >= 3 && b.state === 'active') { b.hits = 0; b.stun = 3.5; if (b.atk) endAttack(b); S.roar(); banner('STUNNED!'); }
+}
+function defeatBalrog(b) {
+  if (b.atk) endAttack(b);
+  b.state = 'fall'; b.t = 0; b.vy = 0; b.done = b.won = true; b.stun = 0;
+  boltAt(b.m.head.getWorldPosition(new V3())); S.roar(); S.thunder(); cam.shake = 1.4; Music.mode = 0;
+  banner('YOU SHALL NOT PASS!', 2.8);
+  if (LV.gate) LV.gate.on = false; (LV.fireGate || []).forEach(sp => sp.visible = false);
 }
 function endAttack(b) { if (b.atk) { killWarn(b.atk.warn); b.atk = null; } b.atkT = rand(1.6, 2.4); b.whipMode = 'idle'; }
 function startAttack(b) {
@@ -2165,8 +2532,12 @@ function updateAttack(b, dt) {
       }
     } else if (a.ph === 'hold') {
       if (Math.random() < .5) flame(arm.pos, 1.4);
-      if (state === 'play' && Math.hypot(P.s - a.ts, P.x - a.tx) < 1.3 && P.y < a.ty + 1.6) hurt('burn');
-      if (a.t > (b.def.chase ? .2 : .5)) { a.ph = 'back'; a.t = 0; a.from = arm.pos.clone(); }
+      const fd = Math.hypot(P.s - a.ts, P.x - a.tx), spinning = b.def.boss && P.spinT > 0;
+      // the boss leaves its fist on the bridge for a moment: spin into it to hurt it
+      if (spinning && fd < 2.4 && !a.spun && state === 'play') { a.spun = true; sparks(arm.pos, 24, 8); stunBalrog(b); if (b.atk !== a) return; a.t = 99; }
+      else if (state === 'play' && fd < 1.3 && P.y < a.ty + 1.6 && !spinning) hurt('burn');
+      if (b.def.boss && !b.hint && state === 'play') { b.hint = true; banner('SPIN THE FIST!', 1.4); }
+      if (a.t > (b.def.chase ? .2 : b.def.boss ? 1.1 : .5)) { a.ph = 'back'; a.t = 0; a.from = arm.pos.clone(); }
     } else { arm.pos.lerpVectors(a.from, arm.rest, smooth(a.t / (b.def.chase ? .3 : .6))); if (a.t >= (b.def.chase ? .3 : .6)) endAttack(b); }
   } else if (a.type === 'crack') {
     const raise = tw(b.s, BX + 3, 13);
@@ -2228,8 +2599,16 @@ function updateBalrogs(dt) {
     if (d.chase) { updateChase(b, dt); continue; }
     b.t += dt;
     if (b.state === 'hidden') {
-      if (state === 'play' && !b.done && P.s > d.r0 && P.s < d.r1 - 10) { b.state = 'rise'; b.t = 0; b.s = clamp(P.s + 10, d.r0 + 4, d.r1 - 4); showBalrog(b); S.roar(); cam.shake = .6; b.atkT = 1.4; }
+      if (state === 'play' && !b.done && P.s > d.r0 && P.s < d.r1 - 10) {
+        b.state = 'rise'; b.t = 0; b.s = clamp(P.s + 10, d.r0 + 4, d.r1 - 4); showBalrog(b); S.roar(); cam.shake = .6; b.atkT = 1.4;
+        if (d.boss) { b.hp = d.hp; Music.mode = 1; banner("DURIN'S BANE!", 2.2); b.atkT = 2.6; }
+      }
       else continue;
+    }
+    if (b.state === 'fall') {
+      b.vy += 22 * dt; b.y -= b.vy * dt;
+      if (b.y < -60) { b.state = 'hidden'; hideBalrog(b); continue; }
+      poseBalrog(b, dt); b.m.root.rotation.x = -Math.min(1.2, b.t * .6); continue;
     }
     if (b.state === 'rise') { b.y = lerp(-36, 0, easeOut(b.t / 2.6)); if (b.t >= 2.6) b.state = 'active'; }
     else if (b.state === 'active') {
@@ -2243,6 +2622,7 @@ function updateBalrogs(dt) {
     poseBalrog(b, dt);
   }
 }
+function edgeX(s) { for (const f of LV.floors) if (s >= f[0] && s <= f[1]) return f[2]; return -3.5; }
 function poseBalrog(b, dt) {
   const r = b.m.root, M = balrogMats();
   place(r, b.s, BX, b.y + Math.sin(T * 1.3) * .25, Math.PI / 2);
@@ -2259,7 +2639,7 @@ function poseBalrog(b, dt) {
   b.m.fires.forEach(f => { const k = .8 + .25 * Math.sin(T * 9 + f.ph) + .1 * Math.sin(T * 23 + f.ph * 2); f.sp.scale.set(f.s * .6 * k, f.s * (.85 + .3 * Math.sin(T * 7 + f.ph)), 1); });
   b.m.arms.forEach((arm, i) => {
     const side = i ? -1 : 1, busy = b.atk && b.atk.hi === i;
-    arm.rest.copy(tw(b.s + side * 3.2, -4.4, Math.min(1.5, b.y + 2 + Math.sin(T * 6 + i * Math.PI) * (b.state === 'rise' ? 1.5 : .1))));
+    arm.rest.copy(tw(b.s + side * 3.2, edgeX(b.s + side * 3.2) - .9, Math.min(1.5, b.y + 2 + Math.sin(T * 6 + i * Math.PI) * (b.state === 'rise' ? 1.5 : .1))));
     if (!busy) arm.pos.lerp(arm.rest, 1 - Math.exp(-8 * dt));
     const sh = _a.set(side * 2.8, 5.45, .5).applyMatrix4(r.matrixWorld);
     const L = 6.8; _b.subVectors(arm.pos, sh); const dd = _b.length(), dir = _b.clone().divideScalar(dd || 1);
@@ -2859,20 +3239,24 @@ function boltAt(target) {
 }
 function updateLightning(dt) {
   nextBolt -= dt;
-  if (nextBolt <= 0) { nextBolt = LV && LV.boss ? rand(1.2, 3.5) : rand(2.5, 7); const a = rand(0, TAU), r = rand(70, 260); boltAt(new V3(camera.position.x + Math.cos(a) * r, rand(-60, -20), camera.position.z + Math.sin(a) * r)); }
+  if (nextBolt <= 0 && ENV.bolts) { nextBolt = LV && LV.boss ? rand(1.2, 3.5) : rand(2.5, 7); const a = rand(0, TAU), r = rand(70, 260); boltAt(new V3(camera.position.x + Math.cos(a) * r, rand(-60, -20), camera.position.z + Math.sin(a) * r)); }
   for (let i = bolts.length - 1; i >= 0; i--) { const b = bolts[i]; b.t -= dt; b.g.visible = (b.t * 30 | 0) % 3 !== 1; if (b.t <= 0) { scene.remove(b.g); b.g.children.forEach(c => c.geometry.dispose()); bolts.splice(i, 1); } }
   flashV = Math.max(0, flashV - dt * 2.2);
   post.uniforms.uFlash.value = flashV * .2;
-  hemi.intensity = .55 + flashV * .9; cloudMat.color.setHex(0xb0a0d0).multiplyScalar(1 + flashV * 2.5);
+  hemi.intensity = ENV.hemi[2] + flashV * .9; cloudMat.color.setHex(ENV.cloud || 0).multiplyScalar(1 + flashV * 2.5);
 }
 let fireFrame = 0;
 function updateAmbient(dt) {
   fireFrame += dt * 10; TX.fire.offset.x = (fireFrame | 0) % 4 * .25;
+  if (THEMES.riv.water) THEMES.riv.water.offset.y += dt * .06;
+  for (const t of THEMES_FALLS) t.offset.y += dt * 1.2;
+  if (THEMES.riv.bigFall) THEMES.riv.bigFall.offset.y += dt * .6;
+  if (THEMES.mordor.lava) THEMES.mordor.lava.offset.x += dt * .01;
   torchSprites.forEach((s, i) => s.scale.set(.7 + Math.sin(T * 13 + i) * .06, 1.15 + Math.sin(T * 11 + i * 2) * .1, 1));
   clouds.rotation.y += dt * .004;
   doomGlow.material.opacity = .8 + Math.sin(T * 1.7) * .2;
   // embers rising from the burning city below
-  for (let k = 0; k < 2; k++) { tw(P.s + rand(-6, 26), rand(-14, -4), rand(-8, 0), _a); fx.spawn(_a.x, _a.y, _a.z, rand(-.5, .5), rand(1.5, 3), rand(-.5, .5), rand(2, 3.5), .12, .05, [1, .7, .3], [1, .2, .05]); }
+  if (ENV.embers) for (let k = 0; k < 2; k++) { tw(P.s + rand(-6, 26), rand(-14, -4), rand(-8, 0), _a); fx.spawn(_a.x, _a.y, _a.z, rand(-.5, .5), rand(1.5, 3), rand(-.5, .5), rand(2, 3.5), .12, .05, [1, .7, .3], [1, .2, .05]); }
   for (const p of cityFires) { if (camera.position.distanceTo(p) > 140 || Math.random() > .6) continue; flame(p, 3, 1.4); if (Math.random() < .15) smoke.spawn(p.x, p.y + 2, p.z, rand(-.5, .5), rand(2, 3), rand(-.5, .5), 3, 2, 6, CSM, CSM2, -.3, .3); }
 }
 function updateLights() {
@@ -2914,7 +3298,7 @@ function animHorse(dt) {
 }
 function animHobbit(dt) {
   const H = hob, r = H.root, riding = LV && LV.ride;
-  if (state === 'title') { P.s = START_S + 1; P.x = 0; P.y = 0; P.heading = 0; P.ground = true; P.vs = P.vx = 0; }
+  if (state === 'title' || state === 'map') { P.s = START_S + 1; P.x = 0; P.y = 0; P.heading = 0; P.ground = true; P.vs = P.vx = 0; }
   const rotY = -(P.s / R + P.heading);
   horse.root.visible = riding; horse.shadow.visible = false;
   if (riding) {
@@ -2972,7 +3356,7 @@ function animHobbit(dt) {
   if (gy > -50) { sh.visible = true; tw(P.s, P.x, gy + .03, sh.position); sh.scale.setScalar(clamp(1 - (P.y - gy) * .12, .4, 1) * (riding ? .95 : 1)); }
 }
 function updateCamera(dt) {
-  if (state === 'title') {
+  if (state === 'title' || state === 'map') {
     const s = START_S + 1;
     camera.position.copy(tw(s + 7.5 + Math.sin(T * .2) * 1.5, -1.2 + Math.sin(T * .13) * 1.6, 2.4 + Math.sin(T * .17) * .5));
     camera.lookAt(tw(s, 0, LV.ride ? 1.9 : 1.6)); return;
@@ -3014,17 +3398,18 @@ const hudEls = ['hApple', 'hRocket', 'hCrate', 'hLives'].map(id => document.getE
 let hudShown = false;
 function updateHUD(dt) {
   hudT -= dt;
-  const on = (hudT > 0 && state !== 'title') || state === 'paused';
+  const on = (hudT > 0 && state !== 'title' && state !== 'map') || state === 'paused';
   if (on !== hudShown) { hudShown = on; hudEls.forEach(e => e.classList.toggle('on', on)); }
   document.getElementById('nApple').textContent = gs.apples;
   document.getElementById('nRocket').textContent = cheats.ammo ? '∞' : gs.rockets;
   const qa = (cheats.god ? 'INVINCIBLE' : '') + (cheats.god && cheats.ammo ? ' · ' : '') + (cheats.ammo ? 'UNLIMITED ROCKETS' : '');
-  const qe = document.getElementById('qa'); qe.textContent = qa ? 'QA: ' + qa : ''; qe.style.display = qa && state !== 'title' ? 'block' : 'none';
-  const bb = document.getElementById('bossbar'), showB = LV && LV.boss && (bossLive() || boss.state === 'intro' || boss.state === 'transform' || boss.state === 'dying') && state !== 'title';
+  const qe = document.getElementById('qa'); qe.textContent = qa ? 'QA: ' + qa : ''; qe.style.display = qa && state !== 'title' && state !== 'map' ? 'block' : 'none';
+  const bal = balrogs.find(b => b.def.boss && !b.won && (b.state === 'active' || b.state === 'rise'));
+  const bb = document.getElementById('bossbar'), showB = LV && ((LV.boss && (bossLive() || boss.state === 'intro' || boss.state === 'transform' || boss.state === 'dying')) || bal) && state !== 'title' && state !== 'map';
   bb.style.display = showB ? 'flex' : 'none';
   if (showB) {
-    document.getElementById('bossfill').style.width = (boss.hp / 9 * 100) + '%';
-    const nm = boss.state === 'eye' || boss.state === 'dying' ? 'THE EYE' : 'SAURON', ne = document.getElementById('bossName'); if (ne.textContent !== nm) ne.textContent = nm;
+    document.getElementById('bossfill').style.width = (bal ? bal.hp / bal.def.hp * 100 : boss.hp / 9 * 100) + '%';
+    const nm = bal ? "DURIN'S BANE" : boss.state === 'eye' || boss.state === 'dying' ? 'THE EYE' : 'SAURON', ne = document.getElementById('bossName'); if (ne.textContent !== nm) ne.textContent = nm;
   }
   document.getElementById('nCrate').textContent = gs.crates + '/' + gs.crateTotal;
   document.getElementById('nLives').textContent = Math.max(0, gs.lives);
@@ -3078,6 +3463,303 @@ function updateIris(dt) {
 }
 
 // =====================================================================
+//  WORLD MAP — a little diorama of Middle-earth; Gandalf hops between places, and Minas Tirith opens the level select
+// =====================================================================
+const mapScene = new THREE.Scene();
+mapScene.background = new THREE.Color(0x9ab8d4);
+mapScene.fog = new THREE.Fog(0x9ab8d4, 80, 190);
+const mapCam = new THREE.PerspectiveCamera(50, 4 / 3, .5, 600);
+mapScene.add(new THREE.HemisphereLight(0xe4ecff, 0x5a4a30, .75));
+const mapSun = new THREE.DirectionalLight(0xffe6bc, .8); mapSun.position.set(-40, 80, 50); mapScene.add(mapSun);
+
+// mountain ranges and rivers as polylines on the ground plane (x = east, z = south)
+const RANGES = [
+  { p: [[-6, -50], [-9, -32], [-7, -17], [-10, -3], [-8, 8]], h: 7.5, w: 5 },     // the Misty Mountains
+  { p: [[-4, 25], [10, 23], [22, 24], [30, 26]], h: 5.5, w: 4.5 },               // the White Mountains
+  { p: [[51, -15], [50.5, 0], [51.5, 14], [54, 28]], h: 4.5, w: 3 },             // the Mountains of Shadow
+  { p: [[51, -15], [62, -18], [76, -16]], h: 4, w: 3 },                          // the Ashen Mountains
+];
+const RIVERS = [[[41, -60], [43, -30], [41, -14], [45, 0], [46, 12], [47.6, 26], [46, 45]]];   // the Great River
+const DOOM = [60, 5];
+const SITES = [{ x: -50, z: -8, r: 6, y: 1.2 }, { x: -20, z: -29, r: 4, y: 1.3 }, { x: 10, z: 12, r: 3.5, y: 1.1 }, { x: 37, z: 21, r: 4.6, y: 1 }, { x: 66, z: -6, r: 3.5, y: 1 }];
+function polyDist(px, pz, pts) {
+  let best = 1e9;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [ax, az] = pts[i], [bx, bz] = pts[i + 1], dx = bx - ax, dz = bz - az;
+    const t = clamp(((px - ax) * dx + (pz - az) * dz) / (dx * dx + dz * dz), 0, 1);
+    best = Math.min(best, Math.hypot(px - ax - dx * t, pz - az - dz * t));
+  }
+  return best;
+}
+function coastAt(x, z) { return Math.min(x + 64 + Math.sin(z * .13) * 4 + Math.sin(z * .31) * 1.5, 38 + Math.sin(x * .09) * 3 + Math.sin(x * .27) * 1.2 - z, z + 54 + Math.sin(x * .1) * 3, 84 + Math.sin(z * .2) * 3 - x); }
+function landH(x, z) {
+  const coast = coastAt(x, z);
+  let h = coast < 0 ? coast * .6 - .3 : Math.min(1, coast * .25) * (1 + .3 * Math.sin(x * .21 + z * .17) * Math.sin(z * .23 - x * .11));
+  for (const m of RANGES) { const d = polyDist(x, z, m.p); if (d < m.w) { const k = 1 - d / m.w; h += m.h * k * k * (.75 + .5 * hsh(Math.round(x * 1.3), Math.round(z * 1.3), 3)); } }
+  const dd = Math.hypot(x - DOOM[0], z - DOOM[1]); h += Math.max(0, 6.5 - dd * 1.25) - (dd < 1 ? (1 - dd) * 1.6 : 0);
+  for (const s of SITES) { const d = Math.hypot(x - s.x, z - s.z); if (d < s.r + 3) h = lerp(s.y, h, smooth((d - s.r) / 3)); }
+  for (const r of RIVERS) { const d = polyDist(x, z, r); if (d < 1.5 && coast > 0) h = Math.min(h, lerp(-.45, h, smooth((d - .5) / 1))); }
+  return h;
+}
+const groundY = (x, z) => Math.max(landH(x, z), .12);
+
+// --- land: one low-poly sheet, coloured by region and height ---
+{
+  const geo = new THREE.PlaneGeometry(180, 120, 180, 120); geo.rotateX(-Math.PI / 2); geo.translate(5, 0, -3);
+  const pos = geo.attributes.position, col = new Float32Array(pos.count * 3), c = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), z = pos.getZ(i), h = landH(x, z), j = hsh(x, z, 9) * .08 - .04;
+    pos.setY(i, h);
+    const wob = Math.sin(x * .4 + z * .7) * 1.6 + Math.sin(z * .23 - x * .5) * 1.2;
+    const mordor = x > 48.5 + wob * .5 && z < 32 && coastAt(x, z) > 0, rohan = x > -2 + wob && x < 31 + wob && z > 1 + wob && z < 20.5 + wob * .5, mirk = x > 12 + wob && x < 36 + wob && z < -20 + wob;
+    if (h < .1) c.setHex(0xc8b888);
+    else if (mordor) c.setHex(h > 2.2 ? 0x2c2422 : 0x4a3530);
+    else if (h > 6) c.setHex(0xf2f2fa);
+    else if (h > 2.6) c.setHex(0x7e786c);
+    else if (h < .35) c.setHex(0xd8c890);
+    else if (rohan) c.setHex(0xb8aa52);
+    else if (mirk) c.setHex(0x3e6030);
+    else c.setHex(0x5f9440);
+    if (mordor && Math.hypot(x - DOOM[0], z - DOOM[1]) < 1.6) c.setHex(0xff6a10);
+    col[i * 3] = clamp(c.r + j, 0, 1); col[i * 3 + 1] = clamp(c.g + j, 0, 1); col[i * 3 + 2] = clamp(c.b + j, 0, 1);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.computeVertexNormals();
+  mapScene.add(new THREE.Mesh(geo, ps1(new THREE.MeshPhongMaterial({ vertexColors: true, flatShading: true, shininess: 0, specular: 0 }))));
+  TX.sea = worldTex(mkTex(64, 64, g => {
+    g.fillStyle = '#2f6aa8'; g.fillRect(0, 0, 64, 64);
+    for (let i = 0; i < 46; i++) { const x = sr() * 64 | 0, y = sr() * 64 | 0, w = 4 + sr() * 8 | 0; g.fillStyle = sr() < .6 ? '#4a88c4' : '#a4d0f0'; g.fillRect(x, y, w, 1); if (x + w > 64) g.fillRect(x - 64, y, w, 1); }
+  }));
+  TX.sea.repeat.set(60, 60);
+  const sea = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), ps1(new THREE.MeshBasicMaterial({ map: TX.sea })));
+  sea.rotation.x = -Math.PI / 2; mapScene.add(sea);
+}
+
+// --- forests ---
+{
+  const spots = { g: [], o: [] };
+  const woods = [[-60, -40, -16, 2, 60, 'g'], [-30, -24, -36, -20, 18, 'g'], [-3, 6, -17, -8, 26, 'o'], [-6, 4, 3, 14, 40, 'g'], [12, 36, -50, -20, 150, 'g'], [44, 49, 0, 32, 22, 'g'], [16, 30, 15, 20, 14, 'g']];
+  for (const [x0, x1, z0, z1, n, k] of woods) for (let i = 0; i < n; i++) {
+    const x = rand(x0, x1), z = rand(z0, z1), h = landH(x, z);
+    if (h < .4 || h > 2.4 || coastAt(x, z) < 1) continue;
+    spots[k].push([x, h, z, rand(.7, 1.3)]);
+  }
+  const m4 = new THREE.Matrix4();
+  for (const [k, colr] of [['g', 0x2e6a2c], ['o', 0xd8a830]]) {
+    const im = new THREE.InstancedMesh(new THREE.ConeGeometry(.6, 1.7, 6), lam(colr), spots[k].length);
+    spots[k].forEach(([x, y, z, s], i) => im.setMatrixAt(i, m4.makeScale(s, s, s).setPosition(x, y + .8 * s, z)));
+    mapScene.add(im);
+  }
+}
+
+// --- places ---
+const mapFx = { fires: [], eye: null, doom: null, clouds: [], ring: null };
+function mbox(w, h, d, colr, x, y, z, p, o) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), lam(colr, o)); m.position.set(x, y, z); p.add(m); return m; }
+function mcyl(rt, rb, h, seg, colr, x, y, z, p, o) { const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), lam(colr, o)); m.position.set(x, y, z); p.add(m); return m; }
+function mcone(r, h, seg, colr, x, y, z, p) { const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, seg), lam(colr)); m.position.set(x, y, z); p.add(m); return m; }
+function mfire(x, y, z, s, p) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.fire, color: 0xffc080, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); sp.position.set(x, y + s * .35, z); sp.scale.setScalar(s); p.add(sp); mapFx.fires.push({ sp, s, ph: rand(0, 6) }); }
+function site(x, z, y) { const g = new THREE.Group(); g.position.set(x, y === undefined ? landH(x, z) : y, z); mapScene.add(g); return g; }
+// the Shire: round green hills with bright round doors, and the party tree
+{
+  const g = site(-50, -8);
+  [[-3, 1, 1.9], [1.5, 2, 1.6], [3.6, -1.5, 1.5], [-1, -3, 2.1], [-4.5, -2.5, 1.3]].forEach(([x, z, r], i) => {
+    const hill = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 5, 0, TAU, 0, Math.PI / 2), lam(0x6aa444)); hill.position.set(x, -.05, z); g.add(hill);
+    const door = new THREE.Mesh(new THREE.CircleGeometry(.32, 10), lam([0xf0c030, 0x3a8a3a, 0xc83a2a][i % 3])); const dy = .4; door.position.set(x, dy, z + Math.sqrt(r * r - dy * dy) - .02); g.add(door);
+  });
+  mcyl(.22, .3, 1.6, 6, 0x6a4420, 0, .8, -.5, g); const crown = new THREE.Mesh(new THREE.SphereGeometry(1.5, 7, 5), lam(0x3e8a2a)); crown.position.set(0, 2.3, -.5); g.add(crown);
+}
+// Rivendell: pale houses in a cliff-sided valley with falling water
+{
+  const g = site(-20, -29);
+  mbox(10, 6, 2, 0x8a8478, 0, 2.2, -3.2, g); mbox(2, 4.5, 6, 0x8a8478, -4.6, 1.6, -.5, g); mbox(2, 4.5, 6, 0x8a8478, 4.6, 1.6, -.5, g);
+  for (const x of [-2.2, 1.6]) { const f = new THREE.Mesh(new THREE.PlaneGeometry(.9, 5), bas(0xdff4ff, { op: .85 })); f.position.set(x, 2.5, -2.15); g.add(f); }
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(1.4, 12), bas(0x5aa8e0)); pool.rotation.x = -Math.PI / 2; pool.position.set(0, .03, -1.4); g.add(pool);
+  [[-2.4, .4], [0, 1.2], [2.4, .2], [-.8, 2.4], [1.6, 2.2]].forEach(([x, z]) => { mbox(.9, .7, .8, 0xece4cc, x, .35, z, g); const r = mcone(.75, .7, 4, 0x6a8a5a, x, 1.05, z, g); r.rotation.y = Math.PI / 4; });
+  [[-3.2, 2.6], [3.4, 1.8]].forEach(([x, z]) => { const t = new THREE.Mesh(new THREE.SphereGeometry(.6, 6, 4), lam(0xd89030)); t.position.set(x, .8, z); g.add(t); });
+}
+// Moria: the great doors in the mountainside, traced in silver
+{
+  const g = site(-12.5, -7); g.rotation.y = -.7;
+  mbox(4.2, 4.4, 1, 0x6e6a62, 0, 1.4, 0, g);
+  mbox(1.6, 2.4, .2, 0x0a0a10, 0, 1.2, .45, g); mcyl(.8, .8, .2, 12, 0x0a0a10, 0, 2.4, .45, g).rotation.x = Math.PI / 2;
+  for (const x of [-1.1, 1.1]) mbox(.24, 2.6, .3, 0xd0e4ff, x, 1.3, .5, g, { emissive: 0x6080c0 });
+  const arch = new THREE.Mesh(new THREE.TorusGeometry(1.1, .1, 4, 12, Math.PI), lam(0xd0e4ff, { emissive: 0x6080c0 })); arch.position.set(0, 2.5, .52); g.add(arch);
+  mbox(2.6, .16, 1.4, 0x8a8478, 0, .02, 1, g);
+}
+// Edoras: the golden hall on its green hill
+{
+  const g = site(10, 12);
+  mcyl(1.3, 2.8, 1.4, 10, 0x7a9a40, 0, .7, 0, g);
+  mbox(1.6, .75, .9, 0x8a5428, 0, 1.75, 0, g);
+  const roof = mcyl(.6, .6, 1.9, 3, 0xe8b830, 0, 2.3, 0, g); roof.rotation.z = Math.PI / 2; roof.rotation.y = 0; roof.scale.set(1, 1, .9);
+  mcyl(.04, .04, 1.6, 4, 0x4a3018, 1.1, 2.1, .6, g); mbox(.6, .35, .04, 0x2a7a2a, 1.4, 2.7, .6, g);
+  for (let k = 0; k < 16; k++) { const a = k / 16 * TAU; mbox(.12, .5, .12, 0x6a4420, Math.cos(a) * 2.4, .55, Math.sin(a) * 2.4, g); }
+}
+// Minas Tirith: seven white tiers against the mountain, the prow of rock and the Tower of Ecthelion, all under siege
+const MT = new V3(37, 1, 21);
+{
+  const g = site(MT.x, MT.z, MT.y);
+  const mt = mcone(5.5, 9, 7, 0x8a8478, -5.5, 4.5, -1.5, g); mcone(1.7, 2.6, 7, 0xf2f2fa, -5.5, 7.8, -1.5, g); mt.rotation.y = .3;
+  const houses = [], m4 = new THREE.Matrix4();
+  for (let i = 0; i < 7; i++) {
+    const r = 3.6 - i * .45, top = (i + 1) * .6;
+    mcyl(r, r * 1.03, top, 32, 0xeceaf2, 0, top / 2, 0, g);
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(r + .02, r + .02, .1, 32, 1, true), lam(0x8a8698)); rim.position.y = top - .06; g.add(rim);
+    if (i < 6) for (let k = 0, n = 14 * (6 - i) + 6; k < n; k++) { const a = rand(0, TAU), rr = rand(r - .4, r - .55) - .05, s = rand(.8, 1.4); houses.push(m4.clone().makeScale(1, s, 1).setPosition(Math.cos(a) * rr, top + .1 * s, Math.sin(a) * rr)); }
+  }
+  const hm = new THREE.InstancedMesh(new THREE.BoxGeometry(.22, .2, .22), lam(0xd4d0dc), houses.length); houses.forEach((m, i) => hm.setMatrixAt(i, m)); g.add(hm);
+  mbox(3.4, 3.6, .35, 0xf4f2f8, 1.8, 1.8, 0, g);
+  mbox(.12, .45, .6, 0x1a1a22, 3.6, .25, 0, g);
+  mcyl(.18, .24, 3.2, 8, 0xf4f2f8, 0, 4.2 + 1.6, 0, g); mcone(.24, .6, 8, 0xc8ccdc, 0, 7.7, 0, g);
+  const tip = glowSprite(0xdfe8ff, 1.2, .8); tip.position.set(0, 8.1, 0); g.add(tip);
+  [[4.5, -2], [5, 1.5], [3.8, 3.2], [6, -.5], [4.2, -3.6], [6.5, 2.6], [2.6, 1.2], [1.4, -2.6]].forEach(([x, z], i) => mfire(x, i > 5 ? (i - 4) * .6 : .05, z, i > 5 ? .9 : 1.3, g));
+  const army = []; for (let i = 0; i < 320; i++) { const x = rand(39.5, 46), z = rand(7, 17.5); if (Math.hypot(x - MT.x, z - MT.z) < 4.6) continue; army.push(x, landH(x, z) + .12, z); }
+  const ag = new THREE.BufferGeometry(); ag.setAttribute('position', new THREE.Float32BufferAttribute(army, 3));
+  mapScene.add(new THREE.Points(ag, new THREE.PointsMaterial({ color: 0x2a0806, size: 2, sizeAttenuation: false })));
+}
+// Mordor: the Dark Tower and its Eye, and the fire of the Mountain
+{
+  const g = site(66, -6);
+  let y = 0; for (const [rt, rb, h] of [[2.2, 2.8, 1.6], [1.4, 1.9, 4.2], [.95, 1.3, 3.2], [.65, .85, 2]]) { mcyl(rt, rb, h, 6, 0x1c1618, 0, y + h / 2, 0, g); y += h; }
+  for (const s of [-1, 1]) { const h = mcone(.28, 2.4, 5, 0x1c1618, s * .45, y + 1, 0, g); h.rotation.z = -s * .25; }
+  for (let k = 0; k < 6; k++) { const a = k / 6 * TAU; mcone(.18, 1.2, 4, 0x1c1618, Math.cos(a) * 1.5, 5.6, Math.sin(a) * 1.5, g); }
+  const eg = glowSprite(0xff3a08, 7, .7); eg.position.set(0, y + 1.3, 0); g.add(eg);
+  mapFx.eye = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.eye, transparent: true, depthWrite: false, fog: false })); mapFx.eye.position.set(0, y + 1.3, 0); mapFx.eye.scale.set(1.6, 2.2, 1); g.add(mapFx.eye);
+  mapFx.doom = glowSprite(0xff5010, 7, .9); mapFx.doom.position.set(DOOM[0], landH(DOOM[0], DOOM[1]) + 1.2, DOOM[1]); mapScene.add(mapFx.doom);
+  const dl = new THREE.PointLight(0xff4a10, 1.4, 26); dl.position.set(DOOM[0], 9, DOOM[1]); mapScene.add(dl);
+}
+for (let i = 0; i < 12; i++) {
+  const c = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.glow, color: 0xffffff, transparent: true, opacity: .4, depthWrite: false }));
+  c.scale.set(rand(14, 22), rand(4, 6), 1); c.position.set(rand(-80, 90), rand(13, 17), rand(-55, 40)); mapScene.add(c); mapFx.clouds.push(c);
+}
+
+// --- the road: stepping stones from the Shire to Mordor, with a marker at every stop ---
+// loc ties each stop to its levels in LEVELS; Minas Tirith opens its own three-level menu instead
+const NODES = [
+  { name: 'THE SHIRE', x: -50, z: -2.5, open: true, loc: 'shire', sub: 'ORCS IN HOBBITON · 1 LEVEL' },
+  { name: 'RIVENDELL', x: -20, z: -23.5, open: true, loc: 'riv', sub: 'THE HIDDEN VALLEY · 1 LEVEL' },
+  { name: 'MORIA', x: -14.5, z: -3.5, open: true, loc: 'moria', sub: "THE MINES · BALROG BOSS" },
+  { name: 'EDORAS', x: 10, z: 16.8, open: true, loc: 'rohan', sub: 'RIDE ACROSS ROHAN · 1 LEVEL' },
+  { name: 'MINAS TIRITH', x: 42.2, z: 21, open: true, loc: 'mt', sub: 'THE SIEGE OF GONDOR · 3 LEVELS' },
+  { name: 'MORDOR', x: 57, z: -3, open: true, loc: 'mordor', sub: 'IN THE SHADOW OF THE EYE · 1 LEVEL' },
+];
+const ROAD = (() => {
+  const way = [NODES[0], [-40, -6], [-30, -17], NODES[1], [-18.5, -13], NODES[2], [-5, 3], [1, 11], NODES[3], [21, 17], [31, 14.5], [40, 15.5], NODES[4], [46, 15], [51, 7], NODES[5]];
+  const curve = new THREE.CatmullRomCurve3(way.map(w => w.x !== undefined ? new V3(w.x, 0, w.z) : new V3(w[0], 0, w[1])), false, 'centripetal');
+  const N = 1600, pts = curve.getSpacedPoints(N), len = curve.getLength();
+  pts.forEach(p => p.y = groundY(p.x, p.z));
+  const at = NODES.map(n => { let b = 0, bd = 1e9; pts.forEach((p, i) => { const d = Math.hypot(p.x - n.x, p.z - n.z); if (d < bd) { bd = d; b = i; } }); return b; });
+  return { pts, N, len, at };
+})();
+{
+  const step = Math.round(1.6 * ROAD.N / ROAD.len), stones = [];
+  for (let i = 0; i <= ROAD.N; i += step) { const p = ROAD.pts[i]; if (NODES.some(n => Math.hypot(p.x - n.x, p.z - n.z) < 1.5)) continue; stones.push(p); }
+  const im = new THREE.InstancedMesh(new THREE.CylinderGeometry(.32, .38, .14, 8), lam(0xf2dca0, { emissive: 0x3a2a08 }), stones.length), m4 = new THREE.Matrix4();
+  stones.forEach((p, i) => im.setMatrixAt(i, m4.makeTranslation(p.x, p.y + .04, p.z))); mapScene.add(im);
+  TX.lock = mkTex(32, 32, g => {
+    g.beginPath(); g.arc(16, 14, 7, Math.PI, 0); g.strokeStyle = '#1a0800'; g.lineWidth = 7; g.stroke(); g.strokeStyle = '#c8ccd8'; g.lineWidth = 3.5; g.stroke();
+    g.fillStyle = '#1a0800'; g.fillRect(6, 13, 20, 17); g.fillStyle = '#e8b830'; g.fillRect(8, 15, 16, 13); g.fillStyle = '#1a0800'; g.fillRect(15, 18, 3, 6);
+  }, false);
+  for (const n of NODES) {
+    const y = groundY(n.x, n.z);
+    mcyl(1, 1.15, .3, 16, n.open ? 0xffc21a : 0x8a3a2a, n.x, y + .08, n.z, mapScene, { emissive: n.open ? 0x6a4000 : 0x200800 });
+    if (!n.open) { n.lock = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.lock, transparent: true, depthWrite: false })); n.lock.position.set(n.x, y + 2.1, n.z); n.lock.scale.setScalar(1.3); mapScene.add(n.lock); }
+  }
+  mapFx.ring = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.55, 24), bas(0xffe070, { add: true, side: THREE.DoubleSide })); mapFx.ring.rotation.x = -Math.PI / 2; mapScene.add(mapFx.ring);
+}
+
+// --- Gandalf's map token ---
+const tok = { g: new THREE.Group(), s: ROAD.at[4], target: 4, face: 0, hop: 0 };
+{
+  const g = tok.g, b = new THREE.Group(); g.add(b); tok.body = b;
+  mcone(.55, 1.5, 8, 0xf4f4fa, 0, .75, 0, b);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(.3, 8, 6), lam(0xf0c8a0)); head.position.y = 1.62; b.add(head);
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(.33, 8, 6, 0, TAU, 0, Math.PI * .55), lam(0xffffff)); hair.position.set(0, 1.66, -.03); b.add(hair);
+  const beard = mcone(.22, .6, 6, 0xffffff, 0, 1.3, .2, b); beard.rotation.x = Math.PI + .3;
+  mcyl(.04, .04, 2, 5, 0xe8e8f0, .45, 1, .1, b);
+  const gl = glowSprite(0xcfe0ff, 1, .9); gl.position.set(.45, 2.05, .1); b.add(gl);
+  const sh = new THREE.Mesh(new THREE.CircleGeometry(.6, 12), bas(0x000000, { op: .35 })); sh.rotation.x = -Math.PI / 2; sh.position.y = .03; g.add(sh);
+  g.scale.setScalar(1.35); mapScene.add(g);
+}
+
+// --- map state, controls and camera ---
+const mc = { zoom: 0, zt: 0, p: new V3(), l: new V3(), snap: true };
+const mapUI = document.getElementById('mapUI'), signEl = document.getElementById('sign');
+let signShown = -1, mapUIOn = null;
+const tokArrived = () => Math.abs(tok.s - ROAD.at[tok.target]) < .5;
+function mapGo(d) { const t = clamp(tok.target + d, 0, NODES.length - 1); if (t === tok.target) { S.click(); return; } tok.target = t; S.jump(); }
+function mapSelect() {
+  if (!tokArrived()) return;
+  const n = NODES[tok.target];
+  if (!n.open) { S.click(); signEl.classList.remove('shake'); void signEl.offsetWidth; signEl.classList.add('shake'); return; }
+  S.dbl();
+  if (n.loc === 'mt') enterCity(false); else startGame(LEVELS.findIndex(L => L.loc === n.loc));
+}
+// after a place is finished (or quit), come back out onto the map with Gandalf standing on it
+function backToMap(loc) {
+  newGame(0); state = 'map'; iris.mode = 'none'; showScreen(null);
+  const i = Math.max(0, NODES.findIndex(n => n.loc === loc)); tok.target = i; tok.s = ROAD.at[i];
+  mc.zoom = mc.zt = 0; mc.snap = true; signShown = -1;
+}
+function enterCity(instant) {
+  state = 'title'; mc.zt = 1; tok.target = 4; iris.mode = 'none';
+  if (instant) { mc.zoom = 1; tok.s = ROAD.at[4]; mc.snap = true; showScreen('sTitle'); } else showScreen(null);
+}
+function toMap() { state = 'map'; mc.zt = 0; showScreen(null); S.click(); }
+function mapClick(cx, cy) {
+  const r = canvas.getBoundingClientRect(); let best = -1, bd = Math.max(46, r.height * .11);
+  NODES.forEach((n, i) => {
+    _a.set(n.x, groundY(n.x, n.z) + 1, n.z).project(mapCam);
+    const d = Math.hypot(r.left + (_a.x * .5 + .5) * r.width - cx, r.top + (-_a.y * .5 + .5) * r.height - cy);
+    if (d < bd) { bd = d; best = i; }
+  });
+  if (best < 0) return;
+  if (best === tok.target && tokArrived()) mapSelect(); else { tok.target = best; S.jump(); }
+}
+function updateMap(dt) {
+  TX.sea.offset.x += dt * .012; TX.sea.offset.y += dt * .005;
+  for (const f of mapFx.fires) { const k = 1 + Math.sin(T * 9 + f.ph) * .15; f.sp.scale.set(f.s * k, f.s * (2 - k), 1); }
+  for (const c of mapFx.clouds) { c.position.x += dt * .8; if (c.position.x > 100) c.position.x = -90; }
+  mapFx.eye.material.opacity = .85 + Math.sin(T * 3) * .15; mapFx.doom.material.opacity = .7 + Math.sin(T * 2.3) * .2;
+  for (const n of NODES) if (n.lock) n.lock.position.y += Math.sin(T * 2.5 + n.x) * .004;
+  // Gandalf hops along the road at a steady pace
+  const goal = ROAD.at[tok.target], spd = 15 * ROAD.N / ROAD.len, prev = tok.s;
+  tok.s = approach(tok.s, goal, spd * dt);
+  const i0 = Math.min(ROAD.N - 1, Math.floor(tok.s)), f = tok.s - i0, a = ROAD.pts[i0], b = ROAD.pts[i0 + 1];
+  const moving = tok.s !== prev;
+  if (moving) { tok.hop += dt * 9; tok.face = Math.atan2((b.x - a.x) * Math.sign(tok.s - prev), (b.z - a.z) * Math.sign(tok.s - prev)); }
+  else { tok.hop = 0; tok.face = 0; }
+  tok.g.position.set(lerp(a.x, b.x, f), lerp(a.y, b.y, f) + .05, lerp(a.z, b.z, f));
+  tok.body.position.y = moving ? Math.abs(Math.sin(tok.hop)) * .45 : Math.sin(T * 2.5) * .03;
+  tok.g.rotation.y = damp(tok.g.rotation.y, tok.g.rotation.y + angDiff(tok.g.rotation.y, tok.face), 12, dt);
+  const sel = NODES[tok.target];
+  mapFx.ring.position.set(sel.x, groundY(sel.x, sel.z) + .3, sel.z); mapFx.ring.scale.setScalar(1 + Math.sin(T * 5) * .08); mapFx.ring.visible = tokArrived();
+  // the sign names the place Gandalf is heading for
+  if (signShown !== tok.target) {
+    signShown = tok.target;
+    document.getElementById('signName').textContent = sel.name;
+    document.getElementById('signSub').textContent = sel.open ? sel.sub : 'LOCKED · COMING SOON';
+    signEl.classList.toggle('locked', !sel.open);
+  }
+  // camera: high over the road following Gandalf, then down into the city for the level select
+  mc.zoom = approach(mc.zoom, mc.zt, dt * 1.1);
+  if (state === 'title' && mc.zoom > .78 && !document.getElementById('sTitle').classList.contains('on')) showScreen('sTitle');
+  const e = smooth(mc.zoom), tp = tok.g.position;
+  // frame Gandalf together with the stops either side of him, so the next place is always on screen
+  let x0 = tp.x, x1 = tp.x, z0 = tp.z, z1 = tp.z;
+  for (const n of [NODES[tok.target - 1], NODES[tok.target], NODES[tok.target + 1]]) if (n) { x0 = Math.min(x0, n.x); x1 = Math.max(x1, n.x); z0 = Math.min(z0, n.z); z1 = Math.max(z1, n.z); }
+  const fx = (x0 + x1) / 2, fz = (z0 + z1) / 2, fk = clamp(Math.max((x1 - x0) / 46, (z1 - z0) / 26), .9, 1.7);
+  _b.set(fx, 33 * fk, fz + 30 * fk); _c.set(fx, 1, fz - 4 * fk);
+  const oa = .95 + Math.sin(T * .15) * .25;
+  _d.set(MT.x + Math.sin(oa) * 11, MT.y + 6.5, MT.z + Math.cos(oa) * 11); _g.set(MT.x, MT.y + 3.6, MT.z);
+  _b.lerp(_d, e); _b.y += Math.sin(e * Math.PI) * 5; _c.lerp(_g, e);
+  if (mc.snap) { mc.p.copy(_b); mc.l.copy(_c); mc.snap = false; }
+  const k = 1 - Math.exp(-6 * dt); mc.p.lerp(_b, k); mc.l.lerp(_c, k);
+  mapCam.position.copy(mc.p); mapCam.lookAt(mc.l);
+  const on = state === 'map' && mc.zoom < .25;
+  if (on !== mapUIOn) { mapUIOn = on; mapUI.classList.toggle('on', on); }
+}
+
+// =====================================================================
 //  MAIN LOOP
 // =====================================================================
 function step(dt, noRender) {
@@ -3088,16 +3770,18 @@ function step(dt, noRender) {
   else if (state === 'dying') updateDying(dt);
   else if (state === 'win') updateWin(dt);
   if (state !== 'paused') {
-    if (state !== 'title' && state !== 'gameover' && state !== 'complete') {
+    if (state !== 'title' && state !== 'map' && state !== 'gameover' && state !== 'complete') {
       updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt);
     }
     updateDragons(dt); updateApples(); updatePhial(dt); updateLightning(dt); updateAmbient(dt); updateTree(dt);
     fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt);
   }
-  updateCamera(state === 'paused' ? 0 : dt); updateLights(); updateHUD(dt); updateTouchUI(); updateIris(dt); musicTick();
+  updateCamera(state === 'paused' ? 0 : dt); updateLights(); updateHUD(dt); updateTouchUI();
+  const onMap = state === 'map' || state === 'title'; if (onMap) updateMap(dt); else if (mapUIOn) { mapUIOn = false; mapUI.classList.remove('on'); } updateIris(dt); musicTick();
   for (const k in hit) hit[k] = false;
   if (!noRender) {
-    renderer.setRenderTarget(rt); renderer.render(scene, camera);
+    skyMesh.position.copy(camera.position); clouds.position.copy(camera.position); starPts.position.copy(camera.position);
+    renderer.setRenderTarget(rt); renderer.render(onMap ? mapScene : scene, onMap ? mapCam : camera);
     renderer.setRenderTarget(null); renderer.render(postScene, postCam);
   }
 }
@@ -3111,8 +3795,8 @@ function frame(now) {
 resize();
 buildStatic();
 setupEntities();
-newGame(0); state = 'title'; iris.mode = 'none';
-showScreen('sTitle');
+newGame(0); state = 'map'; iris.mode = 'none';
+showScreen(null); syncPauseBtns();
 requestAnimationFrame(frame);
 </script>
 </body>
