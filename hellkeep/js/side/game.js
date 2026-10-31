@@ -115,6 +115,16 @@ addEventListener('mouseup', () => {
   keys.mouse = false;
 });
 
+// Touch controls (phones and tablets): they press the same keys as the keyboard.
+TouchControls.setup({
+  stick: { left: 'ArrowLeft', right: 'ArrowRight' },
+  buttons: [{ label: 'JUMP', key: ' ' }, { label: 'FIRE', key: 'j' }],
+  top: [{ label: 'II', key: 'p', tap: true }, { label: '♪', key: 'm', tap: true }],
+  topSide: 'right',
+  hidden: () => game.state === 'menu' || game.state === 'paused' || game.state === 'dead' || game.state === 'won',
+});
+if (TouchControls.isTouch) overlayButton.textContent = 'Tap to play';
+
 const held = (list) => list.some((k) => keys[k]);
 const tapped = (list) => list.some((k) => pressed[k]);
 
@@ -316,6 +326,7 @@ function fitHoundLoop(d) {
 
 // ---------- Menus ----------
 function showOverlay(title, text, button) {
+  if (TouchControls.isTouch) button = button.replace(/^Click/, 'Tap');
   overlayTitle.textContent = title;
   overlayRound.textContent = title === 'Paused' ? ROUND.title : '';
   overlayText.textContent = text;
@@ -342,7 +353,8 @@ overlay.addEventListener('click', () => {
   if (game.state === 'menu') {
     Music.start(ROUND_NUMBER);
     if (ROUND.bike) Music.setSection('boss'); // the relentless riff for the ride
-    showMessage(ROUND.bike ? 'Right to ride! Double jump, then hold Space to fly' : 'Double jump, then hold Space to fly', 4);
+    const jumpName = TouchControls.isTouch ? 'JUMP' : 'Space';
+    showMessage(ROUND.bike ? `Right to ride! Double jump, then hold ${jumpName} to fly` : `Double jump, then hold ${jumpName} to fly`, 4);
   }
   game.state = 'playing';
   overlay.classList.add('hidden');

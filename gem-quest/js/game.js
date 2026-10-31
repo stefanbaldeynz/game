@@ -29,6 +29,7 @@ const HIGH_SCORE_KEY = 'gemQuestHighScore';
 const FONT = "'Press Start 2P', monospace";
 
 // ---------- Input ----------
+const TOUCH = window.TouchControls && TouchControls.isTouch;
 const keys = {};
 const pressed = {};
 const JUMP_KEYS = [' ', 'arrowup', 'w', 'x', 'k'];
@@ -942,14 +943,22 @@ function draw() {
     panel([
       ['GEM QUEST', 90, 52, '#f8d030'],
       [`< Level ${state.levelIndex + 1}: ${name} >`, 175, 16, '#90f060'],
-      ['Left / Right picks the level', 202, 10, '#8090b0'],
+      [TOUCH ? 'The side arrows pick the level' : 'Left / Right picks the level', 202, 10, '#8090b0'],
       [level.intro[0], 240, 13],
       [level.intro[1], 265, 13],
-      [level.bike ? 'Right / Left ....... faster / slower' : 'Arrows / A D ....... move', 320, 12, '#c8d8ff'],
-      ['Space / Up / X ..... jump', 345, 12, '#c8d8ff'],
-      [level.bike ? 'Z / J .............. magic' : 'Z / J .............. punch', 370, 12, '#c8d8ff'],
-      ['P pause   M sound', 395, 12, '#c8d8ff'],
-      [blink ? 'PRESS ENTER' : '', 460, 20, '#fff'],
+      ...(TOUCH
+        ? [
+            [level.bike ? 'Left stick ...... faster / slower' : 'Left stick ...... move', 320, 12, '#c8d8ff'],
+            [level.bike ? 'JUMP / MAGIC .... buttons on the right' : 'JUMP / PUNCH .... buttons on the right', 345, 12, '#c8d8ff'],
+            ['II pause   \u266a sound', 370, 12, '#c8d8ff'],
+          ]
+        : [
+            [level.bike ? 'Right / Left ....... faster / slower' : 'Arrows / A D ....... move', 320, 12, '#c8d8ff'],
+            ['Space / Up / X ..... jump', 345, 12, '#c8d8ff'],
+            [level.bike ? 'Z / J .............. magic' : 'Z / J .............. punch', 370, 12, '#c8d8ff'],
+            ['P pause   M sound', 395, 12, '#c8d8ff'],
+          ]),
+      [blink ? (TOUCH ? 'TAP TO START' : 'PRESS ENTER') : '', 460, 20, '#fff'],
       [`HIGH SCORE ${state.highScore}`, 520, 12, '#f8d030'],
     ]);
     ctx.drawImage(SPRITES.gem, canvas.width / 2 - 28, 18, 56, 44);
@@ -957,7 +966,7 @@ function draw() {
   }
 
   drawHud();
-  if (state.paused) panel([['PAUSED', 250, 32], ['Press P to carry on', 310, 14]]);
+  if (state.paused) panel([['PAUSED', 250, 32], [TOUCH ? 'Tap to carry on' : 'Press P to carry on', 310, 14]]);
   if (state.mode === 'clear') {
     panel([
       ['YOU FOUND THE GEM!', 130, 26, '#40d8ff'],
@@ -966,7 +975,7 @@ function draw() {
       [`Score  ${state.score}`, 300, 16],
       [`High score  ${state.highScore}`, 340, 14, '#f8d030'],
       [hasNextLevel() ? '' : 'More levels coming soon...', 400, 12, '#c8d8ff'],
-      [blink ? (hasNextLevel() ? 'PRESS ENTER FOR THE NEXT LEVEL' : 'PRESS ENTER TO PLAY AGAIN') : '', 470, 16],
+      [blink ? (hasNextLevel() ? `${TOUCH ? 'TAP' : 'PRESS ENTER'} FOR THE NEXT LEVEL` : `${TOUCH ? 'TAP' : 'PRESS ENTER'} TO PLAY AGAIN`) : '', 470, 16],
     ]);
     ctx.drawImage(SPRITES.gem, canvas.width / 2 - 42, 40, 84, 66);
   } else if (state.mode === 'gameover') {
@@ -974,7 +983,7 @@ function draw() {
       ['GAME OVER', 180, 40, '#e82020'],
       [`Score  ${state.score}`, 280, 16],
       [`High score  ${state.highScore}`, 320, 14, '#f8d030'],
-      [blink ? 'PRESS ENTER TO TRY AGAIN' : '', 420, 16],
+      [blink ? (TOUCH ? 'TAP TO TRY AGAIN' : 'PRESS ENTER TO TRY AGAIN') : '', 420, 16],
     ]);
   }
 }

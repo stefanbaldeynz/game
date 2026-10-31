@@ -13,6 +13,10 @@ No build tools or installs: open `index.html` in a browser to play.
 | P | Pause |
 | Enter | Start / play again |
 
+## On a phone or tablet
+
+Touch controls appear by themselves: the left thumb steers the ship (the stick appears wherever you put your thumb), hold **FIRE** on the right to shoot, and **II** at the top pauses. Tap the screen to start, resume or play again.
+
 ## How it plays
 
 - You have 3 lives. You get a short moment of safety (your ship blinks) after each hit.

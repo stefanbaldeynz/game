@@ -2,13 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Astro Blaster</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <canvas id="game" width="480" height="640"></canvas>
   <p class="help">Move: arrow keys / WASD &nbsp;·&nbsp; Fire: Space &nbsp;·&nbsp; Pause: P &nbsp;·&nbsp; Start: Enter</p>
+  <script src="../shared/touch-controls.js"></script>
   <script src="game.js"></script>
+  <script>
+    TouchControls.setup({
+      stick: { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' },
+      buttons: [{ label: 'FIRE', key: ' ' }],
+      top: [{ label: 'II', key: 'p', tap: true }],
+      menu: () => state.mode !== 'playing' || state.paused,
+      menuKey: () => (state.paused ? 'p' : 'Enter'),
+      menuHint: false,
+    });
+  </script>
 </body>
 </html>
