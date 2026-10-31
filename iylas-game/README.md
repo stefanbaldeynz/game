@@ -8,7 +8,8 @@ Everything (models, textures, music and sound) is in the one file, `index.html`.
 
 1. **Get ready.** The menu has four tabs:
    - **Ride**: the animal for the land levels.
-   - **Sea ride**: the animal for the underwater level.
+   - **Sea**: the animal for the underwater level.
+   - **Sky**: the bird for the mountain level.
    - **Outfit**: what Iyla wears. New outfits unlock as you collect stars.
    - **Friend**: bring Milo along once he's unlocked.
 2. **Explore the map.** Tap the ground to ride there. Ride into a glowing gate to open its level.
@@ -28,6 +29,9 @@ Everything (models, textures, music and sound) is in the one file, `index.html`.
 | 🐬 Dolphin (sea) | Fast, with a double jump |
 | 🦈 Shark (sea) | Chomps straight through coral |
 | 🐋 Whale (sea) | 5 hearts |
+| 🦅 Eagle (sky) | Super high jump and a double jump |
+| 🦉 Owl (sky) | Double jump and 4 hearts |
+| 🦜 Parrot (sky) | Fast, double jump, and grabs treats from further away |
 
 ### The levels
 
@@ -37,6 +41,7 @@ Everything (models, textures, music and sound) is in the one file, `index.html`.
 | 🏜️ Desert Dash | The desert with the pyramids (west) | Quicksand, cactus, fallen pillars, camels. **Boss: the Rhino** | Serengeti |
 | 🍭 Candyland | The pink plateau at the top | Hot fudge, gumdrops, candy canes, giant lollies | Serengeti |
 | 🐠 Under the Sea | The gate by the pier (south-east) | Coral, spiky urchins, an old mast, fish and a sunken ship. **Boss: the Giant Shark** | Serengeti |
+| 🏔️ Eagle Mountains | The snowy mountain (top right) | Fly a bird over canyons, snowy rocks and logs, dodge pine trees and falling snowballs. Collect golden feathers | Serengeti |
 | 🌋 Volcano Run | At the foot of the volcano | Lots of lava, obsidian spikes, and fireballs falling from the sky (red circles show where) | Desert |
 
 Grown-up trick: tap the 🔒 in a locked level's pop-up 5 times to open it early.
@@ -60,7 +65,7 @@ Milo unlocks at 2 stars. Turn him on in the Friend tab and he runs beside you (w
 | 🧜 Mermaid | 12 |
 | 🌈 Rainbow Star | 15 |
 
-There are 15 stars in the game (3 per level). Stars, unlocks and choices are saved on the device.
+There are 18 stars in the game (3 per level). Stars, unlocks and choices are saved on the device.
 
 ## Controls
 
