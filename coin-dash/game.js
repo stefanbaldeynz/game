@@ -13,6 +13,33 @@ addEventListener('keyup', (e) => {
 
 let state;
 
+// On phones and tablets the arena takes the shape of the screen, so it fills it either way up.
+function fitArena() {
+  if (!(window.TouchControls && TouchControls.isTouch)) return;
+  const shortSide = 480;
+  if (innerHeight > innerWidth) {
+    canvas.width = shortSide;
+    canvas.height = Math.round((shortSide * innerHeight) / innerWidth);
+  } else {
+    canvas.height = shortSide;
+    canvas.width = Math.round((shortSide * innerWidth) / innerHeight);
+  }
+  if (!state) return;
+  // Keep everything inside the new edges.
+  const p = state.player;
+  p.x = Math.min(canvas.width - p.r, p.x);
+  p.y = Math.min(canvas.height - p.r, p.y);
+  const c = state.coin;
+  c.x = Math.min(canvas.width - 20, c.x);
+  c.y = Math.min(canvas.height - 20, c.y);
+  for (const e of state.enemies) {
+    e.x = Math.min(canvas.width - e.size, e.x);
+    e.y = Math.min(canvas.height - e.size, e.y);
+  }
+}
+fitArena();
+addEventListener('resize', fitArena);
+
 function rand(min, max) {
   return Math.random() * (max - min) + min;
 }

@@ -13,6 +13,7 @@
 //     menuButtons: [{ label: '◀', key: 'ArrowLeft' }, { label: '▶', key: 'ArrowRight' }],
 //     look: (dx, dy) => { ... },              // drags on the right half of the screen (first-person games)
 //     hidden: () => false,                    // while true nothing is drawn and touches go to the page
+//     fullscreen: false,                      // turn off going full screen on the first tap
 //   });
 //
 // A button can also use onDown/onUp functions instead of a key, tap: true to send a quick
@@ -311,7 +312,6 @@
         continue;
       }
       if (inMenu()) {
-        goFullscreen();
         const k = typeof opts.menuKey === 'function' ? opts.menuKey() : opts.menuKey;
         if (k !== null) tap(k || 'Enter');
         continue;
@@ -382,11 +382,22 @@
     releaseAll();
   }
 
+  // Full screen hides the browser's address bar, sideways or upright. Browsers only allow it
+  // straight after a tap, so every tap that ends tries again (after the player leaves full
+  // screen with the back gesture, the next tap brings it back).
   function goFullscreen() {
-    if (!opts.fullscreen || document.fullscreenElement) return;
+    if (opts.fullscreen === false || document.fullscreenElement || document.webkitFullscreenElement) return;
     const el = document.documentElement;
-    if (el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+    const request = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!request) return; // iPhone Safari: add the game to the home screen instead
+    try {
+      const p = request.call(el, { navigationUI: 'hide' });
+      if (p && p.catch) p.catch(() => {});
+    } catch (e) {
+      // not allowed right now; the next tap tries again
+    }
   }
+  document.addEventListener('touchend', goFullscreen, { passive: true, capture: true });
 
   function tick() {
     requestAnimationFrame(tick);
@@ -415,7 +426,7 @@
   }
 
   function setup(options) {
-    opts = Object.assign({ fullscreen: true }, options);
+    opts = Object.assign({}, options);
     const start = () => {
       if (!root) build();
       setButtons(opts.buttons);

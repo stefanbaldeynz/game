@@ -25,4 +25,6 @@ The server is `serve.ps1`, which uses the PowerShell built into Windows. It only
 
 Every game works on phones and tablets too: touch controls appear by themselves when you play on a touch screen (an on-screen stick under your left thumb, buttons under your right). Most games share the touch controls in [`shared/touch-controls.js`](shared/touch-controls.js); Siege Run and Iyla's Game have their own built in.
 
+On a phone, every game goes full screen (no address bar) as soon as you tap, held sideways or upright. iPhone Safari doesn't let web pages go full screen, so on an iPhone open the game, tap Share, then **Add to Home Screen**: started from that icon, the game fills the whole screen.
+
 Each folder is a complete game with its own README explaining how to play and how the code is organised. The 3D games load the three.js engine from the internet, so they need a connection the first time.
