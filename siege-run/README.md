@@ -68,7 +68,7 @@ Everything (graphics, textures, music and sound) is in the one file, `index.html
 
 ## Play on a phone
 
-Open the game in the phone's browser and turn the phone sideways. Tap a level to start (on Android it goes full screen).
+Open the game in the phone's browser. It plays sideways or upright, and goes full screen as soon as you tap (on iPhone, add it to the home screen for full screen).
 
 - **Left thumb:** touch anywhere on the left side and drag to move. The stick appears where you put your thumb.
 - **Right thumb:** **JUMP** (green; hold for a higher jump, tap again in mid-air to double jump), **SPIN** (purple) and **FIRE** (red, with your rocket count).

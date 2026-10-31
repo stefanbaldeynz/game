@@ -90,10 +90,6 @@ body.touch #touch.on{display:block}
 .thelp{margin-top:2vh;font:600 13px/1.4 system-ui,sans-serif;color:#efe6ff;background:rgba(14,4,36,.72);border:2px solid #000;box-shadow:4px 4px 0 #000;padding:8px 14px;border-radius:10px;display:inline-block}
 .tbtns{margin-top:2.5vh;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 .tbtns div{font-size:clamp(16px,4vh,26px);color:var(--gold);-webkit-text-stroke:1.5px var(--ink);background:rgba(14,4,36,.8);border:3px solid #000;box-shadow:3px 3px 0 #000;border-radius:10px;padding:.35em .8em}
-#rotate{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:3vh;background:#0b0418;z-index:20;text-align:center;font-size:28px;color:var(--gold);-webkit-text-stroke:1.5px var(--ink);padding:0 24px}
-#rotate .ph{width:56px;height:96px;border:5px solid #fff;border-radius:12px;animation:turn 2s ease-in-out infinite}
-@keyframes turn{0%,25%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
-@media (orientation:portrait){body.touch #rotate{display:flex}}
 /* world map */
 #mapUI{position:absolute;inset:0;pointer-events:none;display:none}
 #mapUI.on{display:block}
@@ -118,6 +114,21 @@ body.touch #touch.on{display:block}
 .back{position:absolute;left:max(3vw,env(safe-area-inset-left));top:max(2.5vh,env(safe-area-inset-top));font-size:clamp(16px,4vh,28px);color:var(--gold);-webkit-text-stroke:1.5px var(--ink);background:rgba(14,4,36,.8);border:3px solid #000;box-shadow:3px 3px 0 #000;border-radius:10px;padding:.3em .7em}
 .back small{font:600 12px system-ui,sans-serif;color:#cfc4ee;-webkit-text-stroke:0;margin-left:.4em}
 .tbtns div.on{background:linear-gradient(90deg,rgba(255,170,30,.6),rgba(120,40,0,.6));color:#fff}
+/* upright phones: the logo goes on top, the sign under it, and the map buttons get room */
+@media (orientation:portrait){
+  #mapLogo{left:0;right:0;text-align:center;top:max(1.5vh,env(safe-area-inset-top));transform:rotate(-2deg)}
+  #mapLogo span{font-size:11vw}
+  #mapLogo i{font-size:4vw}
+  #sign{left:0;right:0;margin:0 auto;width:max-content;top:calc(max(1.5vh,env(safe-area-inset-top)) + 15vw)}
+  #sign .rope{height:2.5vh}
+  #sign .plank{margin-top:2.5vh;min-width:min(380px,78vw)}
+  #sign b{font-size:min(8vw,42px)}
+  #mapGo{font-size:min(7vw,34px)}
+  #mapPrompt{bottom:calc(max(4vh,env(safe-area-inset-bottom)) + clamp(56px,17vh,84px) + 14px);font-size:min(4.6vw,22px)}
+  .hb{font-size:min(5.6vw,40px)}
+  .hb canvas{width:1.3em;height:1.3em}
+  #hud .grp{gap:2.5vw}
+}
 /* short screens (phones held sideways): squeeze the menus so they fit */
 @media (max-height:540px){
   .big{font-size:clamp(34px,13vh,96px);-webkit-text-stroke:3px var(--ink)}
@@ -153,7 +164,6 @@ body.touch #touch.on{display:block}
   <div class="tb" id="tSpin" data-k="TSpin">SPIN</div>
   <div class="tb" id="tJump" data-k="TJump">JUMP</div>
 </div>
-<div id="rotate"><div class="ph"></div>TURN YOUR PHONE SIDEWAYS</div>
 <div id="bossbar"><span id="bossName">SAURON</span><div class="bar"><i id="bossfill"></i></div></div>
 <div id="mapUI">
   <div id="sign"><div class="rope l"></div><div class="rope r"></div><div class="plank"><b id="signName">MINAS TIRITH</b><i id="signSub"></i></div></div>
@@ -268,17 +278,21 @@ postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), post));
 
 function resize() {
   const a = innerWidth / innerHeight;
-  RH = 360; RW = Math.round(clamp(360 * a, 360, 840) / 2) * 2;
+  if (a >= 1) { RH = 360; RW = Math.round(clamp(360 * a, 360, 840) / 2) * 2; }
+  else { RW = 360; RH = Math.round(clamp(360 / a, 360, 840) / 2) * 2; } // upright phone: a tall picture
   renderer.setSize(RW, RH, false); rt.setSize(RW, RH);
   SNAP.value.set(RW / 2, RH / 2);
   post.uniforms.uRes.value.set(RW, RH);
+  // Upright, widen the view upwards and downwards so the sides don't get too narrow.
+  const tallFov = (fov) => a >= 1 ? fov : 2 * Math.atan(Math.tan(fov * Math.PI / 360) / Math.sqrt(a)) * 180 / Math.PI;
+  camera.fov = tallFov(64); mapCam.fov = tallFov(50);
   camera.aspect = RW / RH; camera.updateProjectionMatrix();
   mapCam.aspect = RW / RH; mapCam.updateProjectionMatrix();
   PSCALE.value = RH / (2 * Math.tan(camera.fov * Math.PI / 360));
   const sc = Math.min(innerWidth / RW, innerHeight / RH);
   canvas.style.width = Math.round(RW * sc) + 'px'; canvas.style.height = Math.round(RH * sc) + 'px';
 }
-addEventListener('resize', () => { resize(); if (IS_TOUCH && innerHeight > innerWidth && state === 'play') pause(true); });
+addEventListener('resize', resize);
 
 // PS1 look on any built-in material: snap vertices to the pixel grid (textures stay perspective-correct so stonework reads cleanly)
 function ps1Compile(sh) {
@@ -1943,7 +1957,7 @@ function touchReset() {
 function goFullscreen() {
   const d = document.documentElement, rq = d.requestFullscreen || d.webkitRequestFullscreen;
   if (!rq || document.fullscreenElement || document.webkitFullscreenElement) return;
-  try { const p = rq.call(d); if (p && p.then) p.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {}); } catch (e) { }
+  try { const p = rq.call(d, { navigationUI: 'hide' }); if (p && p.catch) p.catch(() => {}); } catch (e) { } // either way up
 }
 touchEl.addEventListener('touchstart', e => {
   e.preventDefault(); initAudio();
@@ -1973,7 +1987,7 @@ touchEl.addEventListener('touchend', touchEnd, { passive: false });
 touchEl.addEventListener('touchcancel', touchEnd, { passive: false });
 // any touch switches the game to touch mode; a real key press switches it back
 addEventListener('touchstart', () => setTouch(true), { passive: true, capture: true });
-addEventListener('touchend', e => { initAudio(); if (IS_TOUCH && (state === 'map' || (e.target.closest && e.target.closest('.mi')))) goFullscreen(); }, { passive: true });
+addEventListener('touchend', () => { initAudio(); if (IS_TOUCH) goFullscreen(); }, { passive: true });
 addEventListener('keydown', e => { if (!e.code.startsWith('Audio') && !e.code.startsWith('Media')) setTouch(false); }, true);
 setTouch(matchMedia('(pointer: coarse)').matches);
 stickHome();

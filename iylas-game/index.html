@@ -2033,11 +2033,16 @@ function goSelect() {
 }
 $('title').addEventListener('pointerdown', () => {
   audioInit();
-  const el = document.documentElement;
-  if (matchMedia('(pointer:coarse)').matches && el.requestFullscreen) el.requestFullscreen().catch(() => { });
   goSelect();
 });
 $('title').style.pointerEvents = 'auto';
+// Full screen (no address bar) on phones, sideways or upright. Browsers only allow it right after
+// a tap, so every tap tries again, which also brings it back after leaving with the back gesture.
+addEventListener('touchend', () => {
+  const el = document.documentElement, rq = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!rq || document.fullscreenElement || document.webkitFullscreenElement) return;
+  try { const p = rq.call(el, { navigationUI: 'hide' }); if (p && p.catch) p.catch(() => { }); } catch (e) { }
+}, { passive: true, capture: true });
 $('goBtn').addEventListener('click', () => { W.face = 0; selTab = 'ride'; goMap(); });
 $('rideBtn').addEventListener('click', goSelect);
 $('muteBtn').addEventListener('click', () => { audioInit(); setMuted(!save.muted); });
