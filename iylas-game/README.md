@@ -41,7 +41,7 @@ Everything (models, textures, music and sound) is in the one file, `index.html`.
 | 🏜️ Desert Dash | The desert with the pyramids (west) | Quicksand, cactus, fallen pillars, camels. **Boss: the Rhino** | Serengeti |
 | 🍭 Candyland | The pink plateau at the top | Hot fudge, gumdrops, candy canes, giant lollies | Serengeti |
 | 🐠 Under the Sea | The gate by the pier (south-east) | Coral, spiky urchins, an old mast, fish and a sunken ship. **Boss: the Giant Shark** | Serengeti |
-| 🏔️ Eagle Mountains | The snowy mountain (top right) | Fly a bird over canyons, snowy rocks and logs, dodge pine trees and falling snowballs. Collect golden feathers | Serengeti |
+| 🏔️ Eagle Mountains | The snowy mountain (top right) | Fly a bird over canyons, snowy rocks and logs, dodge pine trees and falling snowballs. Collect golden feathers | Open from the start |
 | 🌋 Volcano Run | At the foot of the volcano | Lots of lava, obsidian spikes, and fireballs falling from the sky (red circles show where) | Desert |
 
 Grown-up trick: tap the 🔒 in a locked level's pop-up 5 times to open it early.
