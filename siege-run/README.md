@@ -13,8 +13,8 @@ The game opens on a map of Middle-earth. Gandalf walks freely across it. Walk hi
 | Place | Level | What's there |
 | --- | --- | --- |
 | The Shire | **The Shire** | A dirt lane along grassy banks with round hobbit doors and hedges. Orc raiders, moving platforms over a gap, the Party Tree on the hill. |
-| Rivendell | **Rivendell** | Pale elven paths on a cliff over the river, waterfalls everywhere, golden houses on the heights. Orc scouts, stepping-stone pillars, moving and crumbling platforms. |
-| Moria | **The Mines of Moria** | Dark dwarf-halls with columns rising out of a fiery abyss. Goblins climbing out of the chasm, then the **Balrog boss** on the Bridge of Khazad-dûm. |
+| Rivendell | **Rivendell** | Mossy elven paths just above a green pool, turquoise waterfalls pouring past the gaps, carved ruins wound with vines standing in the water, big leafy plants, golden houses on the heights. Orc scouts, mossy rock islands to jump across, moving and crumbling platforms. |
+| Moria | **The Mines of Moria** | Dark dwarf-halls with columns rising out of a fiery abyss, chains and lanterns hanging from the roof, stalactites. Goblins climbing out of the chasm, then the **Balrog boss** on the Bridge of Khazad-dûm: a plank bridge with rope rails over a sea of mist and rock spires. |
 | Edoras | **The Ride to Edoras** | Gallop on Shadowfax across the golden plains of Rohan past palisades and the Golden Hall. Uruk-hai and stake barricades to jump. |
 | Minas Tirith | Three levels | Flies down into the city and opens its own menu: The First Circle, The Second Circle and The Citadel (Sauron). |
 | Cirith Ungol | **The Pass of Cirith Ungol** | A chase. A narrow pass full of webs, and **Shelob** drops out of them behind you. The camera turns round and you run towards it with the spider at your heels. Jump the webs and the gaps, and don't stop until the end of the pass. |

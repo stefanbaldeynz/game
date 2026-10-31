@@ -472,6 +472,33 @@ TX.path = mkTex(64, 64, g => { g.fillStyle = '#8a6a44'; g.fillRect(0, 0, 64, 64)
 TX.turf = mkTex(64, 64, g => { g.fillStyle = '#6a5034'; g.fillRect(0, 0, 64, 64); for (let i = 0; i < 520; i++) { const v = sr(); g.fillStyle = v < .45 ? '#5a4028' : v < .75 ? '#7a5e3e' : '#4e7a2e'; g.fillRect(sr() * 64 | 0, sr() * 64 | 0, 2, 1 + sr() * 2 | 0); } });
 TX.falls = mkTex(16, 64, g => { g.fillStyle = '#9ccbe8'; g.fillRect(0, 0, 16, 64); for (let i = 0; i < 70; i++) { g.fillStyle = sr() < .5 ? '#ffffff' : '#d4ecfa'; g.fillRect(sr() * 16 | 0, sr() * 64 | 0, 1, 4 + sr() * 14 | 0); } });
 TX.rock = mkTex(64, 64, g => { g.fillStyle = '#6a6460'; g.fillRect(0, 0, 64, 64); for (let i = 0; i < 40; i++) { const x = sr() * 64, y = sr() * 64, w = 6 + sr() * 14, h = 4 + sr() * 8, b = 80 + sr() * 50 | 0; g.fillStyle = `rgb(${b},${b - 4},${b - 8})`; for (const dx of [-64, 0, 64]) for (const dy of [-64, 0, 64]) g.fillRect(x + dx, y + dy, w, h); } speckle(g, 64, 64, 300, .25); });
+TX.moss = mkTex(64, 64, g => {   // old elven paving with moss growing in the joints
+  g.fillStyle = '#4a6a34'; g.fillRect(0, 0, 64, 64);
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 2; c++) { const x = c * 32 + (r % 2) * 16, v = 150 + sr() * 30 | 0; g.fillStyle = `rgb(${v},${v - 6},${v - 22})`; g.fillRect(x + 1.5, r * 16 + 1.5, 29, 13); g.fillRect(x - 32 + 1.5, r * 16 + 1.5, 29, 13); }
+  for (let i = 0; i < 90; i++) { g.fillStyle = sr() < .5 ? 'rgba(70,120,40,.55)' : 'rgba(110,160,60,.45)'; const x = sr() * 64, y = (sr() * 4 | 0) * 16 + (sr() < .5 ? 0 : 15); g.beginPath(); g.arc(x, y, 1 + sr() * 3, 0, TAU); g.fill(); }
+  speckle(g, 64, 64, 120, .12);
+});
+TX.leaf = mkTex(32, 64, g => {   // one big jungle leaf, cut out
+  g.clearRect(0, 0, 32, 64); const gr = g.createLinearGradient(0, 64, 0, 0); gr.addColorStop(0, '#2a6a22'); gr.addColorStop(1, '#7ac850'); g.fillStyle = gr;
+  g.beginPath(); g.moveTo(16, 63); g.bezierCurveTo(-4, 44, 2, 12, 16, 1); g.bezierCurveTo(30, 12, 36, 44, 16, 63); g.fill();
+  g.strokeStyle = 'rgba(200,240,150,.7)'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(16, 62); g.lineTo(16, 4); g.stroke();
+  g.lineWidth = .8; for (let y = 12; y < 58; y += 6) { g.beginPath(); g.moveTo(16, y + 4); g.lineTo(5, y); g.moveTo(16, y + 4); g.lineTo(27, y); g.stroke(); }
+}, false);
+TX.puff = mkTex(64, 64, g => {   // a soft ball of mist
+  g.clearRect(0, 0, 64, 64);
+  for (let k = 0; k < 9; k++) { const x = 18 + sr() * 28, y = 22 + sr() * 20, r = 12 + sr() * 10, gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); }
+}, false);
+// a tuft of big leaves, all in one geometry so hundreds can be drawn at once
+function fernGeo(n = 6, w = .55, h = 1.7, tilt = .7) {
+  const pos = [], uv = [], ix = [];
+  for (let k = 0; k < n; k++) {
+    const pl = new THREE.PlaneGeometry(w, h).translate(0, h / 2, 0).rotateX(-tilt - (k % 2) * .25).rotateY(k / n * TAU + (k % 2) * .4);
+    const b = pos.length / 3, P = pl.attributes.position, U = pl.attributes.uv;
+    for (let i = 0; i < P.count; i++) { pos.push(P.getX(i), P.getY(i), P.getZ(i)); uv.push(U.getX(i), U.getY(i)); }
+    for (const v of pl.index.array) ix.push(b + v);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(ix); g.computeVertexNormals(); return g;
+}
 TX.web = mkTex(64, 64, g => {   // a spider web: spokes and a spiral, pale on clear
   g.clearRect(0, 0, 64, 64); g.strokeStyle = 'rgba(235,235,225,.85)'; g.lineWidth = 1;
   for (let k = 0; k < 12; k++) { const a = k / 12 * TAU; g.beginPath(); g.moveTo(32, 32); g.lineTo(32 + Math.cos(a) * 46, 32 + Math.sin(a) * 46); g.stroke(); }
@@ -834,7 +861,8 @@ function buildRing(L, vis) {
     if (full) solid(s0, s1, -7, -3.5, -30, 6, 'wall');
   }
   for (const [s0, s1, x0, x1, top] of L.pillars) {
-    if (vis) {
+    if (vis && TH.island) TH.island(s0, s1, x0, x1, top);
+    else if (vis) {
       cbox(GF, s0, s1, x0, x1, top - .6, top, { f: 'toiaz', sh: () => .95, seg: 2, vo: .875 });
       cbox(GM, s0, s1, x0 + .15, x1 - .15, B, top - .6, { f: 'oiaz', sh: ws, tint: MARBLE_T });
     }
@@ -1031,10 +1059,18 @@ const THEMES = {
 
   // Rivendell: pale elven stone on a cliff path over the river, waterfalls all round, golden houses on the heights
   riv: natTheme({
-    wallTex: TX.rock, floorTex: TX.floor, tint: [1, .97, .9], door: 0xd8c890,
+    wallTex: TX.rock, floorTex: TX.moss, tint: [.82, .9, .78], door: 0xd8c890,
     fallMat: ps1(new THREE.MeshBasicMaterial({ map: (() => { const t = TX.falls.clone(); t.needsUpdate = true; t.repeat.set(1, 2); THEMES_FALLS.push(t); return t; })(), transparent: true, opacity: .85 })),
-    env: { sky: [0x3a4a90, 0x8a7ab8, 0xf0b070, 0xffd890], fog: [50, 300], fogC: 0xc8a888, amb: [0x7a6a6a, .55], hemi: [0xffe0c0, 0x4a3a2a, .65], sun: [0xffd0a0, .8], east: [0xff9a60, .3], cloud: 0xffd8c0 },
+    env: { sky: [0x2a6a8a, 0x6aa8b0, 0xd8eac0, 0xfff0b0], fog: [40, 260], fogC: 0x9cc8b0, amb: [0x6a8a70, .6], hemi: [0xf4ffe0, 0x2a4a22, .75], sun: [0xfff0c8, .85], east: [0xffd890, .3], cloud: 0xffffff },
     orc: MT_ORC,
+    island(s0, s1, x0, x1, top) {   // a mossy rock floating over the water, roots hanging underneath
+      cbox(this.gf, s0, s1, x0, x1, top - .5, top, { f: 'toiaz', sh: () => 1, seg: 2, vo: .875 });
+      const w = Math.max(s1 - s0, x1 - x0), c = tw((s0 + s1) / 2, (x0 + x1) / 2, top - .5);
+      const rk = new THREE.Mesh(new THREE.ConeGeometry(w * .62, w * 1.4, 7), ps1(new THREE.MeshLambertMaterial({ map: TX.rock, color: 0x7a6a50 })));
+      rk.rotation.x = Math.PI; rk.position.set(c.x, c.y - w * .7, c.z); scene.add(rk);
+      const moss = new THREE.Mesh(new THREE.CylinderGeometry(w * .66, w * .6, .35, 7), lam(0x4a8a30)); moss.position.set(c.x, c.y - .1, c.z); scene.add(moss);
+      for (let k = 0; k < 4; k++) { const a = k / 4 * TAU + .4, r = new THREE.Mesh(GEO.cyl, lam(0x5a4028)); const l = rand(.8, 2); r.position.set(c.x + Math.cos(a) * w * .4, c.y - .3 - l / 2, c.z + Math.sin(a) * w * .4); r.scale.set(.05, l, .05); scene.add(r); }
+    },
     edge(s0, s1) {
       cbox(this.gm, s0, s1, -4.2, -3.6, .85, 1.05, { tint: [1.15, 1.12, 1.02], seg: 2 });
       for (let s = s0 + .6; s < s1 - .3; s += 1.4) cbox(this.gm, s - .12, s + .12, -4.1, -3.7, 0, .85, { seg: 5, ys: 5, tint: [1.1, 1.08, 1] });
@@ -1046,7 +1082,7 @@ const THEMES = {
       addTorch(s + 7, 3.0, 2.7);
     },
     scenery(L) {
-      const sea = wideFloor(TX.sea, 0xffffff, 120, L.base + 3, 700, true); this.water = sea;
+      const sea = wideFloor(TX.sea, 0x9ae8d8, 120, STRAIGHT ? -3.2 : L.base + 3, 700, true); this.water = sea;   // a green pool just under the paths
       const ft = TX.falls.clone(); ft.needsUpdate = true; ft.repeat.set(1, 6); this.bigFall = ft;
       this.bigFallMat = ps1(new THREE.MeshBasicMaterial({ map: ft, transparent: true, opacity: .85 }));
       const cliff = new THREE.Mesh(new THREE.CylinderGeometry(R + 42, R + 50, 110, 48, 2, true), ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.rock.clone(); t.needsUpdate = true; t.repeat.set(40, 8); return t; })(), color: 0xd8c0a8, side: THREE.DoubleSide })));
@@ -1066,13 +1102,41 @@ const THEMES = {
       const tp = STRAIGHT ? tw(CIRC + 10, 14, 0) : new V3(CX, Y0, CZ);
       const tw2 = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.6, 22, 8), lam(0xf0e6cc)); tw2.position.set(tp.x, Y0 + L.wallH + 11, tp.z); scene.add(tw2);
       part(new THREE.ConeGeometry(2, 4, 8), lam(0x5a7a4a), scene, tp.x, Y0 + L.wallH + 24, tp.z);
+      if (!STRAIGHT) return;
+      // turquoise waterfalls pouring past the gaps between the paths, with spray where they hit the pool
+      const fallT = TX.falls.clone(); fallT.needsUpdate = true; fallT.repeat.set(1, 3); THEMES_FALLS.push(fallT);
+      const fallM = ps1(new THREE.MeshBasicMaterial({ map: fallT, color: 0x9af0e8, transparent: true, opacity: .9, side: THREE.DoubleSide }));
+      for (const [fs, fx, fw] of [[32, -7, 4], [66, -8, 6], [146, -7.5, 5], [100, -10, 3], [20, -12, 3], [124, -13, 4], [186, -9, 4]]) {
+        const f = new THREE.Mesh(new THREE.PlaneGeometry(fw, 26), fallM); tw(fs, fx, 9.8, f.position); f.rotation.y = Math.PI / 2; scene.add(f);
+        const lip = new THREE.Mesh(GEO_BOX, ps1(new THREE.MeshLambertMaterial({ map: TX.rock, color: 0x8a8070 }))); tw(fs, fx - 1, 22.8, lip.position); lip.scale.set(3, 1.4, fw + 1.5); scene.add(lip);
+        for (let k = 0; k < 3; k++) { const g = glowSprite(0xe8fff8, rand(3, 5), .5); tw(fs + rand(-fw / 2, fw / 2), fx + rand(-.5, .5), -2.6, g.position); scene.add(g); }
+      }
+      // ruins of carved elven columns standing in the water, wound with vines; some still hold up a lintel
+      const stone = ps1(new THREE.MeshLambertMaterial({ map: TX.marble, color: 0xb0b89a })), vineM = lam(0x3a7a2a);
+      for (let s = 4; s < CIRC + 40; s += rand(9, 15)) {
+        const x = -rand(7, 14), h = rand(5, 12), broken = Math.random() < .4, c = tw(s, x, -3.2 + h / 2);
+        const col = new THREE.Mesh(GEO_BOX, stone); col.position.copy(c); col.scale.set(1.3, h, 1.3); if (broken) col.rotation.z = rand(-.25, .25); scene.add(col);
+        const band = new THREE.Mesh(GEO_BOX, lam(0x8a9070)); band.position.set(c.x, c.y + h * .3, c.z); band.scale.set(1.45, .35, 1.45); band.rotation.z = col.rotation.z; scene.add(band);
+        for (let k = 0; k < 2; k++) { const v = new THREE.Mesh(GEO.cyl, vineM); v.position.set(c.x + (k ? .66 : -.66), c.y, c.z + rand(-.4, .4)); v.scale.set(.07, h * .9, .07); v.rotation.x = rand(-.5, .5); scene.add(v); }
+        if (!broken && Math.random() < .5) { const l = new THREE.Mesh(GEO_BOX, stone); tw(s + 2, x, -3.2 + h + .4, l.position); l.scale.set(1.4, .8, 5.4); scene.add(l); const c2 = new THREE.Mesh(GEO_BOX, stone); tw(s + 4, x, -3.2 + h / 2, c2.position); c2.scale.set(1.3, h, 1.3); scene.add(c2); }
+      }
+      // big leafy plants along the edges and on the heights, and vines hanging down the cliff
+      const fern = fernGeo(), fernM = ps1(new THREE.MeshLambertMaterial({ map: TX.leaf, alphaTest: .5, side: THREE.DoubleSide })), ferns = [], vines = [];
+      const onPath = s => L.floors.some(f => s > f[0] + .5 && s < Math.min(f[1], CIRC - 16) - .5 && f[2] < -3);
+      for (let s = -14; s < CIRC - 16; s += rand(.8, 1.8)) {
+        if (onPath(s)) { const p = tw(s, -4.1, 1.05); ferns.push([p.x, p.y, p.z, rand(.6, 1.1), rand(.6, 1.2), rand(.6, 1.1), rand(0, TAU)]); }
+        const q = tw(s, 3.35, 0); ferns.push([q.x, q.y, q.z, rand(.7, 1.3), rand(.7, 1.4), rand(.7, 1.3), rand(0, TAU)]);
+        const t = tw(s, rand(4.8, 14), L.wallH); ferns.push([t.x, t.y, t.z, rand(1, 2), rand(1, 2.2), rand(1, 2), rand(0, TAU)]);
+        if (Math.random() < .5) { const l = rand(2, 8), v = tw(s, 3.45, L.wallH - l / 2); vines.push([v.x, v.y, v.z, .05, l, .05]); }
+      }
+      instanced(fern, fernM, ferns); instanced(GEO.cyl, vineM, vines);
     },
   }),
 
   // Moria: dark dwarf-halls, columns rising out of the abyss, torches, and the Bridge of Khazad-dûm
   moria: natTheme({
     wallTex: TX.rock, floorTex: TX.dark, tint: [.62, .6, .66], door: 0x9aa0b8,
-    env: { sky: [0x020204, 0x050508, 0x0a0808, 0x200a04], fog: [14, 120], fogC: 0x0c0806, amb: [0x4a4058, .6], hemi: [0x5a5070, 0x3a1408, .35], sun: [0x8080a0, .15], east: [0xff6a30, .3], embers: true },
+    env: { sky: [0x020406, 0x04080a, 0x081010, 0x200a04], fog: [16, 130], fogC: 0x08121a, amb: [0x3a5a6a, .7], hemi: [0x6aa0b8, 0x3a1408, .45], sun: [0x80a8c0, .2], east: [0xff6a30, .3], embers: true },
     orc: { sk: 0x8a907a, ska: 0xa0a488, ar: 0x2a2630, le: 0x3a2a1a, met: 0x1e1c22, sc: .85 },
     edge(s0, s1) { cbox(this.gm, s0, s1, -4.3, -3.5, 0, .45, { tint: [.55, .53, .6], seg: 2 }); },
     pil(s, H) { addTorch(s, 3.0, 2.7); cbox(this.gm, s - .9, s + .9, 3.2, 3.5, 0, H, { f: 'oaz', tint: [.5, .48, .55], seg: 3 }); },
@@ -1081,10 +1145,44 @@ const THEMES = {
       for (let i = 0; i < 30; i++) { const g = glowSprite(0xff4a10, rand(20, 50), .55); g.material.fog = false; g.position.copy(ringPt(rand(0, TAU), R + rand(-25, 60), L.base + 2)); scene.add(g); }
       const ceil = new THREE.Mesh(new THREE.RingGeometry(1, R + 140, 48, 2), ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.rock.clone(); t.needsUpdate = true; t.repeat.set(40, 40); return t; })(), color: 0x403a40, side: THREE.DoubleSide })));
       ceil.rotation.x = Math.PI / 2; ceil.position.set(CX, Y0 + L.wallH, CZ);
-      if (STRAIGHT) { const cm = ceil.material; roadBox(-90, CIRC + 100, -200, R + 20, L.wallH, L.wallH + 2, cm); roadBox(-90, CIRC + 100, 4.6, R + 20, L.base, L.wallH, cm); } else scene.add(ceil);
+      if (STRAIGHT) {
+        const cm = ceil.material; roadBox(-90, CIRC + 100, -200, R + 20, L.wallH, L.wallH + 2, cm);
+        let a = -90; for (const [g0, g1] of L.open || []) { roadBox(a, g0, 4.6, R + 20, L.base, L.wallH, cm); a = g1; } roadBox(a, CIRC + 100, 4.6, R + 20, L.base, L.wallH, cm);   // the rock opens up beside the bridge
+      } else scene.add(ceil);
       const cols = [], caps = [];
       for (const [rr, n] of [[R + 17, 30], [R + 31, 38], [R + 47, 48]]) for (let k = 0; k < n; k++) { const p = ringPt(k / n * TAU, rr, 0); const h = L.wallH - L.base; cols.push([p.x, Y0 + L.base + h / 2, p.z, 2.2, h, 2.2]); caps.push([p.x, Y0 + L.wallH - 1, p.z, 3.4, 2, 3.4, k]); }
       instanced(GEO.cyl, lam(0x5a5660), cols); instanced(GEO.box, lam(0x4a4650), caps);
+      if (!STRAIGHT) return;
+      const onBridge = s => (L.open || []).some(([a, b]) => s > a - 6 && s < b + 6);
+      // chains hanging from the roof with lanterns on the ends, and more lanterns on the wall
+      const links = [], cages = [], stal = [], linkG = new THREE.TorusGeometry(.13, .035, 4, 8);
+      const lantern = (p, s) => { cages.push([p.x, p.y, p.z, .32, .45, .32]); const g = glowSprite(0xffc070, 2.4, .9); g.position.copy(p); scene.add(g); const c = glowSprite(0xfff0c0, .6, 1); c.position.copy(p); scene.add(c); L.torches.push({ s, p: p.clone() }); };
+      for (let s = -6; s < CIRC - 14; s += rand(3, 6)) {
+        const x = onBridge(s) ? (Math.random() < .5 ? rand(-9, -3) : rand(4, 9)) : rand(-10, -4.6), bottom = rand(3.5, 11), top = L.wallH;
+        for (let y = top, k = 0; y > bottom; y -= .21, k++) { const p = tw(s, x, y); links.push([p.x, p.y, p.z, 1, 1, 1, k % 2 ? Math.PI / 2 : 0]); }
+        if (Math.random() < .55) lantern(tw(s, x, bottom - .3), s);
+      }
+      for (let s = 8; s < CIRC - 16; s += 10) if (!onBridge(s)) lantern(tw(s + 5, 3.15, 3.4), s + 5);
+      instanced(linkG, lam(0x4a4a52, { emissive: 0x0a0a0c }), links); instanced(GEO_BOX, lam(0x2a2620), cages);
+      for (let i = 0; i < 260; i++) { const p = tw(rand(-60, CIRC + 60), rand(-60, 3.4), L.wallH), h = rand(1.5, 6); stal.push([p.x, p.y - h / 2, p.z, rand(.3, 1), -h, rand(.3, 1)]); }
+      instanced(GEO.cone, ps1(new THREE.MeshLambertMaterial({ map: TX.rock, color: 0x4a4650, side: THREE.DoubleSide })), stal);
+      // the Bridge of Khazad-dûm: a plank bridge with rope rails over a sea of mist, rock spires rising out of it
+      for (const [b0, b1] of L.open || []) {
+        const planks = [], posts = [], ropes = [], spires = [];
+        for (let s = b0; s < b1; s += .5) { const p = tw(s, rand(-.06, .06), .03); planks.push([p.x, p.y, p.z, 2.95, .08, .4, rand(-.04, .04)]); }
+        for (let s = b0; s <= b1; s += 2.5) for (const x of [-1.6, 1.6]) {
+          const p = tw(s, x, .6); posts.push([p.x, p.y, p.z, .07, 1.25, .07]);
+          if (s + 2.5 <= b1) for (const y of [.55, 1.15]) { const q = tw(s, x, y); ropes.push([q.x, q.y, q.z, .035, .035, 2.5]); }
+        }
+        instanced(GEO_BOX, ps1(new THREE.MeshLambertMaterial({ map: TX.wood, color: 0xb87a4a })), planks);
+        instanced(GEO.cyl, lam(0x6a4a2a), posts); instanced(GEO_CYLZ, lam(0xc8a868), ropes);
+        for (let i = 0; i < 90; i++) { const s = rand(b0 - 30, b1 + 30), x = (Math.random() < .5 ? -1 : 1) * rand(5, 45), h = rand(28, 52), p = tw(s, x, L.base); spires.push([p.x, p.y + h / 2, p.z, rand(1.2, 3.5), h, rand(1.2, 3.5), rand(0, 3)]); }
+        instanced(GEO.cone, ps1(new THREE.MeshLambertMaterial({ map: TX.rock, color: 0x9a6a50 })), spires);
+        const puffM = new THREE.SpriteMaterial({ map: TX.puff, color: 0xe8dcd4, transparent: true, depthWrite: false, opacity: .8 });
+        for (let i = 0; i < 170; i++) { const sp = new THREE.Sprite(puffM); const sc = rand(9, 20); tw(rand(b0 - 30, b1 + 30), (Math.random() < .5 ? -1 : 1) * rand(2.5, 50), rand(-15, -5), sp.position); sp.scale.set(sc, sc * .55, 1); scene.add(sp); }
+        const mist = new THREE.Mesh(new THREE.PlaneGeometry(110, b1 - b0 + 70), new THREE.MeshBasicMaterial({ color: 0xc8bab4, transparent: true, opacity: .55, depthWrite: false }));
+        mist.rotation.x = -Math.PI / 2; tw((b0 + b1) / 2, 0, -11, mist.position); scene.add(mist);
+      }
     },
   }),
 
