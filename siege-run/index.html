@@ -45,6 +45,11 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:'Luck
 .tally .v{color:var(--gold);text-align:right}
 .gem{color:#eaf6ff;text-shadow:0 0 12px #9ad8ff,3px 3px 0 #000}
 #qa{position:absolute;top:11vh;left:0;right:0;text-align:center;font:700 13px system-ui,sans-serif;color:#9aff9a;text-shadow:1px 1px 0 #000;letter-spacing:.08em;display:none;pointer-events:none}
+#duelhud{position:absolute;left:max(3vw,env(safe-area-inset-left));top:calc(max(2.2vh,env(safe-area-inset-top)) + clamp(40px,8vh,70px));display:none;flex-direction:column;gap:.5vh;font-size:clamp(13px,2.4vh,22px);color:#cfe0ff;-webkit-text-stroke:1.5px var(--ink);text-shadow:2px 2px 0 #000;pointer-events:none}
+#duelhud>div{display:flex;align-items:center;gap:.5em}#duelhud b{font-weight:normal;min-width:5.2em}
+#duelhud .bar{width:min(30vw,260px);height:1.6vh;border:3px solid #000;background:#0a1020;border-radius:4px;overflow:hidden}
+#duelhud i{display:block;height:100%;width:100%;background:linear-gradient(#a0e0ff,#3a8aff 55%,#1a3a90)}
+#duelhud .f i{background:linear-gradient(#e0d0ff,#9a6aff 55%,#4a2a90)}
 #bossbar{position:absolute;left:50%;bottom:4vh;transform:translateX(-50%);display:none;align-items:center;gap:.6em;font-size:clamp(18px,3.4vh,34px);color:#ffb070;-webkit-text-stroke:2px var(--ink);text-shadow:3px 3px 0 #000;pointer-events:none}
 #bossbar .bar{width:min(46vw,520px);height:2.4vh;border:3px solid #000;background:#2a0808;box-shadow:3px 3px 0 #000;border-radius:4px;overflow:hidden}
 #bossbar i{display:block;height:100%;width:100%;background:linear-gradient(#ffd060,#ff5a10 55%,#a01808);transition:width .3s}
@@ -112,6 +117,9 @@ body.touch #touch.on{display:block}
 .back{position:absolute;left:max(3vw,env(safe-area-inset-left));top:max(2.5vh,env(safe-area-inset-top));font-size:clamp(16px,4vh,28px);color:var(--gold);-webkit-text-stroke:1.5px var(--ink);background:rgba(14,4,36,.8);border:3px solid #000;box-shadow:3px 3px 0 #000;border-radius:10px;padding:.3em .7em}
 .back small{font:600 12px system-ui,sans-serif;color:#cfc4ee;-webkit-text-stroke:0;margin-left:.4em}
 .tbtns div.on{background:linear-gradient(90deg,rgba(255,170,30,.6),rgba(120,40,0,.6));color:#fff}
+/* phones: boss health bars go up top, clear of the touch buttons */
+body.touch #bossbar{bottom:auto;top:calc(max(2.2vh,env(safe-area-inset-top)) + clamp(40px,8vh,70px) + 70px);font-size:clamp(14px,2.6vh,24px)}
+body.touch #bossbar .bar{width:min(50vw,420px)}
 /* upright phones: the logo goes on top, the sign under it, and the map buttons get room */
 @media (orientation:portrait){
   #mapLogo{left:0;right:0;text-align:center;top:max(1.5vh,env(safe-area-inset-top));transform:rotate(-2deg)}
@@ -163,6 +171,7 @@ body.touch #touch.on{display:block}
   <div class="tb" id="tSpin" data-k="TSpin">SPIN</div>
   <div class="tb" id="tJump" data-k="TJump">JUMP</div>
 </div>
+<div id="duelhud"><div><b>GANDALF</b><div class="bar"><i id="gHPfill"></i></div></div><div><b>FORCE</b><div class="bar f"><i id="gFfill"></i></div></div></div>
 <div id="bossbar"><span id="bossName">SAURON</span><div class="bar"><i id="bossfill"></i></div></div>
 <div id="mapUI">
   <div id="sign"><div class="rope l"></div><div class="rope r"></div><div class="plank"><b id="signName">MINAS TIRITH</b><i id="signSub"></i></div></div>
@@ -629,6 +638,11 @@ const S = new Proxy({
   land() { nz(now(), .07, .18, 'lowpass', 500); },
   click() { osc('square', 200, now(), .05, .06); },
   win() { const t = now(); [523, 659, 784, 1047, 784, 1047, 1319, 1568].forEach((f, i) => osc('square', f, t + i * .1, .14, .08)); },
+  saberOn() { const t = now(); osc('sawtooth', 60, t, .6, .14, 0, 140, .02); nz(t, .5, .2, 'bandpass', 300, 1400, 3); },
+  saberSwing() { const t = now(); osc('sawtooth', 120, t, .28, .08, 0, 70, .01); nz(t, .25, .12, 'bandpass', 700, 300, 4); },
+  clash() { const t = now(); osc('square', 1900, t, .12, .12, 0, 900); nz(t, .3, .35, 'highpass', 2500, 4000, 1); osc('sawtooth', 160, t, .3, .1, 0, 90); },
+  zap() { const t = now(); nz(t, .22, .25, 'bandpass', 3000, 1200, 6); osc('square', 80 + Math.random() * 60, t, .2, .06); },
+  forcePush() { const t = now(); nz(t, .6, .4, 'lowpass', 900, 120, 1); osc('sine', 110, t, .5, .3, 0, 45); },
 }, { get(o, k) { return (...a) => { if (AC && AC.state === 'running') try { o[k](...a); } catch (e) { } }; } });
 function now() { return AC.currentTime; }
 
@@ -1275,7 +1289,8 @@ const THEMES = {
       for (const [a, b, c, d] of [[S0 - 1.5, S0, X0 - 1.5, X1 + 1.5], [S1, S1 + 1.5, X0 - 1.5, X1 + 1.5], [S0, S1, X0 - 1.5, X0], [S0, S1, X1, X1 + 1.5]]) cbox(G, a, b, c, d, 0, 2.6, { tint: [.45, .75, .35], seg: 3 });
       // paths of packed earth between the places
       const pathM = ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.path.clone(); t.needsUpdate = true; t.repeat.set(2, 12); return t; })(), color: 0xd8b888 }));
-      const path = (s0, x0, s1, x1, w = 3) => { const l = Math.hypot(s1 - s0, x1 - x0), m = new THREE.Mesh(new THREE.PlaneGeometry(w, l), pathM); m.rotation.set(-Math.PI / 2, 0, 0); m.rotation.order = 'YXZ'; m.rotation.y = -Math.atan2(x1 - x0, s1 - s0); tw((s0 + s1) / 2, (x0 + x1) / 2, .02, m.position); scene.add(m); };
+      // (in short sections, so the retro vertex wobble can't stretch a path across the screen)
+      const path = (s0, x0, s1, x1, w = 3) => { const l = Math.hypot(s1 - s0, x1 - x0), m = new THREE.Mesh(new THREE.PlaneGeometry(w, l, 1, Math.ceil(l / 2.5)), pathM); m.rotation.set(-Math.PI / 2, 0, 0); m.rotation.order = 'YXZ'; m.rotation.y = -Math.atan2(x1 - x0, s1 - s0); tw((s0 + s1) / 2, (x0 + x1) / 2, .02, m.position); scene.add(m); };
       path(-60, 0, 30, 0, 4); path(0, 0, 4, 30); path(4, 30, 4, 44); path(0, 0, 6, -24); path(-30, 0, -36, 28); path(30, 0, 42, 0, 3);
       // hobbit holes: round doors and windows in grassy mounds, with chimneys and little gardens
       const moundM = ps1(new THREE.MeshLambertMaterial({ map: TX.grass, color: 0xa8e080 })), frameM = lam(0x7a5430), knobM = lam(0xf0d040, { emissive: 0x403000 }), winM = bas(0xffe9a0);
@@ -1358,6 +1373,34 @@ const THEMES = {
       for (let i = 0; i < 900; i++) { const s = rand(S0 + 2, S1 - 2), x = rand(X0 + 2, X1 - 2); if (!free(s, x, .6)) continue; const p = tw(s, x, .12); blooms[i % 4].push([p.x, p.y, p.z, .14, .14, .14]); }
       instanced(GEO.cyl, lam(0x6a4420), trunks); instanced(GEO.sph, lam(0x4a9a30), crowns);
       [0xff6a8a, 0xffe060, 0xffffff, 0xb070ff].forEach((c, i) => instanced(GEO.sph, bas(c), blooms[i]));
+    },
+  }),
+
+  // Weathertop: a wind-swept hilltop at night, the ruined watchtower's ring of stones, storm clouds and lightning
+  weathertop: natTheme({
+    wallTex: TX.rock, floorTex: TX.floor, tint: [.75, .76, .82], door: 0x6a6a7a,
+    env: { sky: [0x05070e, 0x111a2c, 0x2a3448, 0x4a4a5a], fog: [30, 220], fogC: 0x141a26, amb: [0x50607a, .7], hemi: [0x8aa0c8, 0x1a1a14, .55], sun: [0xb0c0ff, .45], east: [0x6a7aa0, .2], stars: true, bolts: true },
+    orc: MT_ORC,
+    scenery(L) {
+      const [S0, S1, X0, X1] = L.field;
+      wideFloor(TX.grass, 0x3a4a30, 120, -26, 700);
+      // the hilltop: a round platform of old flagstones with grassy, rocky slopes falling away
+      const top = new THREE.Mesh(new THREE.CylinderGeometry(19, 30, 26, 28, 1), ps1(new THREE.MeshLambertMaterial({ map: TX.rock, color: 0x5a6050 }))); tw(0, 0, -13.02, top.position); scene.add(top);
+      const fl = new THREE.Mesh(new THREE.CircleGeometry(19, 32), ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.floor.clone(); t.needsUpdate = true; t.repeat.set(6, 6); return t; })(), color: 0x9a9aa8 }))); fl.rotation.x = -Math.PI / 2; tw(0, 0, .01, fl.position); scene.add(fl);
+      const grassRing = new THREE.Mesh(new THREE.RingGeometry(16.8, 19.05, 32), lam(0x4a5a3a)); grassRing.rotation.x = -Math.PI / 2; tw(0, 0, .02, grassRing.position); scene.add(grassRing);
+      // the broken ring of standing stones and the stumps of the old tower
+      const stone = ps1(new THREE.MeshLambertMaterial({ map: TX.rock, color: 0x8a8a92 }));
+      for (const [ss, xx, a, h] of L.layout.stones) { const m = new THREE.Mesh(GEO_BOX, stone); tw(ss, xx, h / 2, m.position); m.scale.set(1.6, h, 1.1); m.rotation.y = -a + rand(-.15, .15); m.rotation.z = rand(-.08, .08); scene.add(m); }
+      for (let k = 0; k < 8; k++) { const a = k / 8 * TAU, m = new THREE.Mesh(GEO_BOX, stone); tw(Math.cos(a) * 16.2, Math.sin(a) * 16.2, (k % 2 ? 4.6 : 3.5) + .4, m.position); m.scale.set(1.8, .5, 3.4); m.rotation.y = -a + Math.PI / 2; if (k % 3 === 0) scene.add(m); }
+      const rocks = [];
+      for (let i = 0; i < 60; i++) { const a = rand(0, TAU), r = rand(20, 34), p = tw(Math.cos(a) * r, Math.sin(a) * r, -r * .9 + 16), sz = rand(1, 3); rocks.push([p.x, p.y, p.z, sz, sz * .7, sz, rand(0, 3)]); }
+      instanced(GEO.ico, lam(0x4a4a50), rocks);
+      // the little campfire the hobbits lit, burnt down to embers at the edge of the ring
+      const fp = tw(-11, 7, .2); for (let k = 0; k < 6; k++) { const a = k / 6 * TAU; part(GEO.cyl, lam(0x3a2414), scene, fp.x + Math.cos(a) * .35, .15, fp.z + Math.sin(a) * .35, .07, .7, .07).rotation.set(Math.cos(a) * 1.2, 0, Math.sin(a) * 1.2); }
+      const fg = glowSprite(0xff7a20, 2.4, .9); fg.position.copy(fp); scene.add(fg); L.torches.push({ s: -11, p: fp.clone() });
+      // a big moon behind the storm clouds
+      const moonS = glowSprite(0xdde4ff, 70, .9); moonS.material.fog = false; tw(140, -90, 90, moonS.position); scene.add(moonS);
+      const moonD = new THREE.Mesh(new THREE.CircleGeometry(9, 24), new THREE.MeshBasicMaterial({ color: 0xf0f2ff, fog: false })); tw(141, -91, 90, moonD.position); moonD.lookAt(tw(0, 0, 0)); scene.add(moonD);
     },
   }),
 
@@ -1840,6 +1883,12 @@ function addPlat(s, x, y, o = {}) {
 //  dragon zones, Balrog encounters and a content() that places platforms, crates, apples and orcs
 // =====================================================================
 const crateList = list => { for (const [t, s, x, st] of list) addCrate(t, s, x, st || 0); };
+// Weathertop: the broken ring of Amon Sûl on its hilltop. The duel is fought inside the ring.
+function weathertopLayout() {
+  const L = { blocks: [], chimneys: [], stones: [] };
+  for (let k = 0; k < 22; k++) { const a = k / 22 * TAU + .1, r = 16.2, h = [3.5, 1.2, 4.6, 2.2, .8][k % 5] + rand(-.4, .4); L.stones.push([Math.cos(a) * r, Math.sin(a) * r, a, h]); }
+  return L;
+}
 // Hobbiton, laid out on a field 120 across (s runs north, x east). Everything here is both drawn and solid.
 function hobbitonLayout() {
   const L = { homes: [], houses: [], terraces: [], tables: [], walls: [], stalls: [], blocks: [], chimneys: [] };
@@ -2090,6 +2139,13 @@ const LEVELS = [
     },
   },
   {
+    // a lightsaber duel with the Witch-king inside the ruined ring on Weathertop
+    straight: true, roam: true, duel: true, name: 'WEATHERTOP', sub: 'THE WITCH-KING OF ANGMAR', loc: 'weather', theme: 'weathertop', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 45000, CZ: 0, base: -26, wallH: 0,
+    field: [-19, 19, -19, 19], start: [-6, 0], layout: weathertopLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { },
+  },
+  {
     // a climb up the side of the mountain on spires of rock, with the lava rising underneath
     straight: true, name: 'MOUNT DOOM', sub: 'CLIMB TO THE CRACK OF DOOM', loc: 'doom', theme: 'doom', next: 'RETURN TO THE MAP', R: 22, Y0: 0, CX: 35000, CZ: 0, base: -40, wallH: 50, wallTop: 70,
     floors: [[-16.6, 6.5, -3.5]],
@@ -2182,7 +2238,7 @@ function loadLevel(li) {
   gs.crateTotal = crates.filter(c => c.type !== 'i' && c.type !== 'ib').length;
   // in the courtyard you start on the south side, facing the tree
   gs.cp = LV.arena ? { s: R * Math.PI / 2, x: R - 9.5, y: 0, t: -1, deaths: 0 } : { s: START_S, x: LV.roam ? LV.start[1] : 0, y: 0, t: -1, deaths: 0 };
-  setupNazgul();
+  setupNazgul(); setupDuel();
   chase.active = chase.done = false;
   if (LV.door) { LV.door.endBlock.on = true; LV.door.L.rotation.y = LV.door.Rr.rotation.y = 0; LV.door.light.visible = LV.door.glow.visible = false; }
   dragons.forEach((d, i) => { d.active = i < 2 && LV.dz.length > 0; d.away = 0; d.hits = 0; d.spitT = 0; d.s = START_S + rand(30, 60); d.x = -70; d.y = 45; });
@@ -2219,7 +2275,7 @@ function respawn(fresh) {
   cratesDirty = 2;
   P.s = cp.s; P.x = cp.x; P.y = cp.y + .05; P.vs = P.vx = P.vy = 0; P.heading = LV.arena ? Math.PI / 2 : 0; P.spinT = 0; P.invT = 1; P.ground = false; P.standOn = null; P.fireAnim = 0; P.safe = null;
   if (cp.s > 1.5 && !LV.arena && !LV.roam) P.s = cp.s - 1.2;
-  cam.yaw = 0; resetNazgul();
+  cam.yaw = 0; resetNazgul(); if (LV.duel && duel.wk) resetDuel();
   for (const f of fireballs) killWarn(f.warn), scene.remove(f.mesh); fireballs = [];
   for (const a of arrows) scene.remove(a.mesh); arrows = [];
   for (const r of rockets) scene.remove(r.mesh); rockets = [];
@@ -2412,6 +2468,8 @@ function updatePlayer(dt) {
     const vt = -wx * Math.sin(th) + wz * Math.cos(th), vn = wx * Math.cos(th) + wz * Math.sin(th);
     ix = -vn; iz = vt;
   }
+  if (LV.duel && gBusy()) { duel.mash = inp.spinP || inp.jumpP; inp.x = inp.z = 0; inp.jumpP = inp.spinP = inp.fireP = false; }
+  if (LV.duel && duel.wk) cam.yaw = Math.atan2(duel.wk.x - P.x, duel.wk.s - P.s);   // move relative to him: forward closes in, sideways circles
   if (LV.roam) {
     // open country: the stick moves you relative to the camera, which swings round behind you as you go
     const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw), ds = iz * c - ix * sn, dx = iz * sn + ix * c; ix = dx; iz = ds;
@@ -2440,8 +2498,9 @@ function updatePlayer(dt) {
   if (P.vy <= 0) P.jumpHeld = false;
   P.spinCD -= dt; P.fireCD -= dt; P.fireAnim -= dt; P.invT -= dt;
   if (P.spinT > 0) { P.spinT -= dt; if (P.spinT <= 0) P.spinCD = .18; }
-  if (inp.spinP && P.spinT <= 0 && P.spinCD <= 0) { P.spinT = .5; P.spinId = (P.spinId || 0) + 1; S.spin(); }
-  if (inp.fireP && P.fireCD <= 0) fireRocket();
+  if (LV.duel) { if (inp.spinP) duelSwing(); if (inp.fireP) duelPush(); }
+  else if (inp.spinP && P.spinT <= 0 && P.spinCD <= 0) { P.spinT = .5; P.spinId = (P.spinId || 0) + 1; S.spin(); }
+  if (!LV.duel && inp.fireP && P.fireCD <= 0) fireRocket();
   P.vy = Math.max(P.vy - GRAV * dt, -32);
   // in the courtyard the ring is small, so a step along it has to be scaled to its radius here
   moveH('s', P.vs * dt * (LV.arena ? R / Math.max(2, R - P.x) : 1)); moveH('x', P.vx * dt);
@@ -3136,6 +3195,308 @@ function updateShelob(dt) {
   }
   place(sh.m.root, sh.s, sh.x, sh.y);
   poseShelob(dt, state === 'play' || sh.state === 'flee' ? spd : 0);
+}
+
+// =====================================================================
+//  WEATHERTOP: a lightsaber duel with the Witch-king
+//  Gandalf: SPIN = swing (a three-hit combo, the third an overhead), FIRE = Force push, blocks by himself when not attacking.
+//  The Witch-king: sword combos, lunges, Force push, and later a thrown saber, lightning and grip.
+// =====================================================================
+const ARENA_R = 13.4;
+function makeSaber(col) {
+  const g = new THREE.Group();
+  part(GEO.cyl, lam(0x2a2a30, { emissive: 0x0a0a0c }), g, 0, 0, 0, .04, .3, .04); part(GEO.cyl, lam(0xb8bcc8), g, 0, .16, 0, .05, .05, .05);
+  const blade = new THREE.Group(); blade.position.y = .18; g.add(blade);
+  part(GEO.cyl, bas(0xffffff), blade, 0, .65, 0, .022, 1.3, .022);
+  const glow = part(GEO.cyl, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false }), blade, 0, .65, 0, .07, 1.36, .07);
+  const tip = glowSprite(col, .9, .9); tip.position.y = 1.3; blade.add(tip);
+  const halo = glowSprite(col, 2.2, .35); halo.position.y = .65; halo.scale.set(.9, 2.6, 1); blade.add(halo);
+  return { g, blade, glow, on: 1 };
+}
+function makeWitchKing() {
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
+  const CL = lam(0x121014, { emissive: 0x050407 }), CL2 = lam(0x1a181e, { side: THREE.DoubleSide }), MET = lam(0x3a3a42, { emissive: 0x0c0c10 });
+  part(new THREE.ConeGeometry(.8, 2.4, 12, 1, true), CL2, body, 0, 1.2, 0);
+  for (let k = 0; k < 12; k++) { const a = k / 12 * TAU, t = part(GEO.cone, CL2, body, Math.cos(a) * .74, .14, Math.sin(a) * .74, .14, .5, .07); t.rotation.set(Math.PI, -a, 0); }
+  part(GEO.sph, MET, body, 0, 2.12, 0, .48, .34, .36);                                                   // armoured shoulders
+  for (const sx of [-1, 1]) part(GEO.sph, MET, body, sx * .46, 2.16, 0, .2, .16, .2);
+  const head = new THREE.Group(); head.position.set(0, 2.55, .02); body.add(head);
+  part(new THREE.CylinderGeometry(.25, .28, .5, 10), MET, head, 0, 0, 0);
+  part(GEO.sph, bas(0x000000), head, 0, -.05, .13, .2, .24, .14);
+  for (let k = 0; k < 9; k++) { const a = k / 9 * TAU, sp = part(GEO.cone, MET, head, Math.cos(a) * .24, .42, Math.sin(a) * .24, .05, .5, .05); sp.rotation.set(Math.sin(a) * .25, 0, -Math.cos(a) * .25); }   // the crown of spikes
+  const eyes = [-.08, .08].map(x => part(GEO.sph, bas(0xff5a1a), head, x, 0, .26, .035, .02, .02));
+  const cape = part(new THREE.PlaneGeometry(1.2, 2.2), CL2, body, 0, 1.1, -.4); cape.rotation.x = .12;
+  const mkArm = sx => { const g = new THREE.Group(); g.position.set(sx * .5, 2.08, 0); body.add(g); part(new THREE.CylinderGeometry(.1, .2, .85, 7), CL, g, 0, -.4, 0); part(GEO.sph, MET, g, 0, -.84, 0, .1, .1, .1); return g; };
+  const armL = mkArm(-1), armR = mkArm(1);
+  const saber = makeSaber(0xff2a1a); saber.g.position.set(0, -.86, .05); armR.add(saber.g);
+  const handGlow = glowSprite(0x9ab8ff, 1, 0); handGlow.position.set(0, -.9, .1); armL.add(handGlow);
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(.8, 14), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .5, depthWrite: false }));
+  shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
+  root.scale.setScalar(1.05); root.visible = shadow.visible = false; scene.add(root);
+  return { root, body, head, armL, armR, saber, handGlow, eyes, shadow, cape };
+}
+// the Witch-king's lightning: a few jagged lines redrawn every frame
+function makeBolts() {
+  const list = [];
+  for (let k = 0; k < 3; k++) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(16 * 3), 3)); const l = new THREE.Line(g, new THREE.LineBasicMaterial({ color: k ? 0x9ab8ff : 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); l.frustumCulled = false; l.visible = false; scene.add(l); list.push(l); }
+  return list;
+}
+function drawBolts(list, a, b, on) {
+  for (const l of list) {
+    l.visible = on; if (!on) continue;
+    const pa = l.geometry.attributes.position;
+    for (let i = 0; i < 16; i++) { const u = i / 15, j = Math.sin(u * Math.PI) * .55; pa.setXYZ(i, lerp(a.x, b.x, u) + rand(-j, j), lerp(a.y, b.y, u) + rand(-j, j), lerp(a.z, b.z, u) + rand(-j, j)); }
+    pa.needsUpdate = true;
+  }
+}
+const duel = { g: null, wk: null, bolts: null, gSaber: null };
+// poses for a sword arm: [arm x, arm z, body twist, saber tilt]
+const SP = {
+  guard: [-1.05, -.35, .15, .9], A0: [-1.35, -1.7, -.7, 1.2], A1: [-1.25, .7, .8, 1.3], B0: [-1.3, .8, .8, 1.25], B1: [-1.2, -1.6, -.7, 1.2],
+  C0: [-3.0, -.25, .1, .6], C1: [-.55, -.1, .1, 1.5], lock: [-1.5, -.2, 0, 1.15], cast: [-1.6, .1, 0, .9], block: [-1.2, .15, .25, .5],
+};
+function swingPose(atk) { const u = atk.t / atk.dur, k = ['A', 'B', 'C'][atk.n], a = SP[k + '0'], b = SP[k + '1'], g = SP.guard; if (u < .3) return lerpPose(g, a, smooth(u / .3)); if (u < .55) return lerpPose(a, b, smooth((u - .3) / .25)); return lerpPose(b, g, smooth((u - .55) / .45)); }
+const lerpPose = (a, b, u) => a.map((v, i) => lerp(v, b[i], u));
+function applyPose(arm, body, saberG, p, dt, k = 30) { arm.rotation.x = damp(arm.rotation.x, p[0], k, dt); arm.rotation.z = damp(arm.rotation.z, p[1], k, dt); body.rotation.y = damp(body.rotation.y, p[2], k, dt); saberG.rotation.x = damp(saberG.rotation.x, p[3], k, dt); }
+function setupDuel() {
+  if (!duel.wk) { duel.wk = { m: makeWitchKing() }; duel.bolts = makeBolts(); duel.gSaber = makeSaber(0x3a8aff); duel.gSaber.g.position.set(0, -.42, .04); hob.armR.add(duel.gSaber.g); }
+  const on = !!(LV && LV.duel);
+  hob.staff.visible = !on; duel.gSaber.g.visible = on; duel.wk.m.root.visible = duel.wk.m.shadow.visible = false; drawBolts(duel.bolts, null, null, false);
+  document.getElementById('tSpin').firstChild.textContent = on ? 'SWING' : 'SPIN'; document.getElementById('tFire').firstChild.textContent = on ? 'PUSH' : 'FIRE'; document.getElementById('tRk').style.display = on ? 'none' : '';
+  if (!on) return;
+  duel.phaseHP = 100; duel.started = false; resetDuel();
+}
+function resetDuel() {
+  const W = duel.wk;
+  Object.assign(W, { s: 7, x: 0, h: Math.PI, hp: duel.phaseHP, state: duel.started ? 'circle' : 'intro', t: 0, cd: 1.6, atk: null, guard: 0, kvs: 0, kvx: 0, combo: 0, flash: 0, circleDir: 1, thrown: null, saberOn: duel.started ? 1 : 0 });
+  Object.assign(duel, { gHP: 100, gF: 100, atk: null, comboT: 0, gkvs: 0, gkvx: 0, held: 0, grip: 0, lock: null, lightT: 0, hurtFlash: 0, mash: false });
+  duel.gSaber.blade.scale.y = 1;
+}
+const duelOn = () => LV && LV.duel && duel.wk;
+function phaseOf(hp) { return hp > 66 ? 1 : hp > 33 ? 2 : 3; }
+function gBusy() { return duel.held > 0 || duel.grip > 0 || duel.lock; }
+function gBlocking() { const W = duel.wk; return !duel.atk && !gBusy() && W && angDiff(P.heading, Math.atan2(W.x - P.x, W.s - P.s)) < 1.3 && Math.abs(angDiff(P.heading, Math.atan2(W.x - P.x, W.s - P.s))) < 1.3; }
+function hurtG(dmg, knock, kind) {
+  if (state !== 'play' || cheats.god) { if (cheats.god) { duel.hurtFlash = .2; } return; }
+  duel.gHP -= dmg; duel.hurtFlash = .3; cam.shake = Math.max(cam.shake, .3 + dmg * .02); S.hurt();
+  sparks(tw(P.s, P.x, P.y + 1.1), 14, 4, [1, .6, .4], [1, .2, .1]);
+  const W = duel.wk, ds = P.s - W.s, dx = P.x - W.x, d = Math.hypot(ds, dx) || 1;
+  if (knock) { duel.gkvs = ds / d * knock; duel.gkvx = dx / d * knock; }
+  if (kind === 'down') duel.held = .8;
+  duel.atk = null;
+  if (duel.gHP <= 0) { duel.gHP = 0; P.invT = 0; gs.phial = 0; gs.superT = 0; die('hit'); }
+}
+function hurtW(dmg, stun) {
+  const W = duel.wk; if (W.state === 'defeat' || W.state === 'intro') return;
+  W.hp = Math.max(0, W.hp - dmg); W.flash = .2; S.screech(); cam.shake = Math.max(cam.shake, .2);
+  sparks(tw(W.s, W.x, 1.6), 16, 5, [1, .5, .3], [1, .1, .05]);
+  if (W.hp <= 0) { W.state = 'defeat'; W.t = 0; W.atk = null; banner('THE WITCH-KING FALLS!', 2.4); S.roar(); return; }
+  const ph = phaseOf(W.hp); if (ph > phaseOf(W.hp + dmg)) { duel.phaseHP = W.hp; W.special = ph === 2 ? 'light' : 'grip'; banner(ph === 2 ? 'HE CALLS ON DARKER POWERS!' : 'THE WITCH-KING IS ENRAGED!', 1.8); if (stun) stun = Math.min(stun, .4); }
+  if (stun) { W.state = 'stagger'; W.t = 0; W.stunT = stun; W.atk = null; }
+}
+const clashAt = () => { const W = duel.wk; return tw((P.s + W.s) / 2, (P.x + W.x) / 2, 1.5); };
+// Gandalf's side: called from updatePlayer when the buttons are pressed
+function duelSwing() {
+  if (gBusy() || state !== 'play') return;
+  if (duel.atk) { if (duel.atk.t > duel.atk.dur * .45 && duel.atk.n < 2 && !duel.atk.next) duel.atk.next = true; return; }
+  duel.atk = { n: duel.comboT > 0 ? Math.min(2, duel.lastN + 1) : 0, t: 0, dur: .42, hit: false, next: false };
+  if (duel.atk.n === 2) duel.atk.dur = .55;
+  S.saberSwing();
+}
+function duelPush() {
+  if (gBusy() || state !== 'play') return;
+  if (duel.gF < 35) { S.click(); banner('NOT ENOUGH FORCE', .8); return; }
+  duel.gF -= 35; S.forcePush(); P.fireAnim = .35;
+  const W = duel.wk, ds = W.s - P.s, dx = W.x - P.x, d = Math.hypot(ds, dx) || 1;
+  for (let k = 0; k < 24; k++) { const u = rand(0, 1), a = P.heading + rand(-.5, .5); fx.spawn(...tw(P.s + Math.cos(a) * u * 6, P.x + Math.sin(a) * u * 6, 1.2).toArray(), Math.cos(a) * 3, 0, Math.sin(a) * 3, .4, .4, .2, [.7, .85, 1], [.4, .6, 1]); }
+  if (d > 9 || Math.abs(angDiff(P.heading, Math.atan2(dx, ds))) > 1) return;
+  const casting = W.atk && ['light', 'grip', 'throw', 'lunge'].includes(W.atk.type);
+  W.kvs = ds / d * 10; W.kvx = dx / d * 10;
+  if (casting || phaseOf(W.hp) < 3) { W.state = 'stagger'; W.t = 0; W.stunT = casting ? 1.1 : .6; if (W.atk && W.atk.type === 'throw' && W.thrown) W.thrown.back = true; W.atk = null; banner(casting ? 'INTERRUPTED!' : 'PUSHED BACK!', .9); }
+}
+function startLock() {
+  const W = duel.wk; duel.lock = { m: .5, t: 0 }; W.state = 'lock'; W.atk = null; duel.atk = null;
+  banner('SABER LOCK! MASH SWING!', 1.6); S.clash();
+}
+function updateDuel(dt) {
+  if (!duelOn()) return;
+  const W = duel.wk, m = W.m, live = state === 'play';
+  m.root.visible = m.shadow.visible = true;
+  W.t += dt; W.cd -= dt; W.flash -= dt; duel.comboT -= dt; duel.hurtFlash -= dt; W.guard = Math.max(0, W.guard - dt * .35);
+  const ph = phaseOf(W.hp), fast = ph === 3 ? .75 : ph === 2 ? .88 : 1;
+  const ds = P.s - W.s, dx = P.x - W.x, d = Math.hypot(ds, dx) || .01, toG = Math.atan2(dx, ds);
+  if (live) duel.gF = Math.min(100, duel.gF + 12 * dt);
+  // --- Gandalf: knockback, being held down or lifted by the grip, and the arena edge
+  if (live) {
+    P.s += duel.gkvs * dt; P.x += duel.gkvx * dt; duel.gkvs *= Math.exp(-5 * dt); duel.gkvx *= Math.exp(-5 * dt);
+    duel.held -= dt;
+    const r = Math.hypot(P.s, P.x); if (r > ARENA_R) { P.s *= ARENA_R / r; P.x *= ARENA_R / r; }
+    P.heading = Math.atan2(W.x - P.x, W.s - P.s);   // always facing him, like a locked-on duel
+    if (duel.grip > 0) {
+      duel.grip -= dt; P.y = 1.3 + Math.sin(T * 9) * .05; P.vy = 0; P.ground = false;
+      if (duel.mash) { duel.grip -= .14; sparks(tw(P.s, P.x, P.y + 1), 4, 3, [.7, .85, 1], [.4, .6, 1]); }
+      if (W.state === 'grip') hurtG(10 * dt, 0);
+      if (duel.grip <= 0) { duel.grip = 0; if (W.state === 'grip') { W.state = 'circle'; W.cd = 1; } banner('BROKE FREE!', .8); }
+    }
+  }
+  // --- Gandalf's swings
+  const A = duel.atk;
+  if (A && live) {
+    A.t += dt;
+    if (!A.hit && A.t > A.dur * .42) {
+      A.hit = true;
+      const facing = Math.abs(angDiff(P.heading, toG + Math.PI)) < 1.2 || true;
+      if (d < 2.9 && facing && W.state !== 'defeat' && W.state !== 'intro') {
+        const K = W.atk, wFacing = Math.abs(angDiff(W.h, Math.atan2(P.x - W.x, P.s - W.s))) < 1.3;
+        const wStrikeNow = K && K.type === 'combo' && K.t > K.wind - .12 && K.t < K.wind + .12;
+        // he's only open while recovering from a swing, staggered, casting, or caught from the side
+        const open = !wFacing || W.state === 'stagger' || W.state === 'grip' || (K && (K.type === 'light' || K.type === 'grip' || K.type === 'throw' || (K.type === 'push' && K.t < K.wind) || (K.type === 'combo' && K.done) || (K.type === 'lunge' && K.t > K.wind + .4)));
+        if (wStrikeNow && Math.random() < .5) startLock();
+        else if (K && K.type === 'combo' && !K.done) {
+          // you swung into his swing: the blades bounce off each other
+          S.clash(); sparks(clashAt(), 26, 7, [1, 1, 1], [1, .5, .5]); W.kvs = -ds / d * 2.5; W.kvx = -dx / d * 2.5; duel.gkvs = ds / d * 2.5; duel.gkvx = dx / d * 2.5; K.t = Math.max(0, K.t - .2); A.t = A.dur; A.next = false;
+        } else if (open) { hurtW(A.n === 2 ? 8 : 4, A.n === 2 ? .7 : .3); W.guard = 0; }
+        else {
+          // he blocks it; enough blocked swings break his guard, but block a couple and he strikes straight back
+          W.guard += A.n === 2 ? 2 : 1; S.clash(); sparks(clashAt(), 22, 6, [1, 1, 1], [1, .5, .4]); W.kvs = -ds / d * 2; W.kvx = -dx / d * 2;
+          if (W.guard >= 5) { W.guard = 0; W.state = 'stagger'; W.t = 0; W.stunT = 1.3; banner('GUARD BROKEN!', 1); }
+          else if (W.guard >= 2 && Math.random() < .6 + ph * .1) W.cd = Math.min(W.cd, .15);
+        }
+      } else S.saberSwing();
+    }
+    if (A.t >= A.dur) { duel.lastN = A.n; duel.comboT = .45; duel.atk = A.next && A.n < 2 ? { n: A.n + 1, t: 0, dur: A.n + 1 === 2 ? .55 : .42, hit: false, next: false } : null; if (duel.atk) S.saberSwing(); }
+  }
+  // --- the saber lock: mash to push his blade back
+  if (duel.lock && live) {
+    const L = duel.lock; L.t += dt; L.m -= (.3 + ph * .08) * dt; if (duel.mash) L.m += .085;
+    if (Math.random() < .5) sparks(clashAt(), 3, 4, [1, 1, 1], [1, .5, .5]);
+    W.s = P.s + Math.cos(P.heading) * 1.9; W.x = P.x + Math.sin(P.heading) * 1.9; W.h = P.heading + Math.PI;
+    if (L.m >= 1) { duel.lock = null; S.clash(); hurtW(6, 1.5); W.kvs = Math.cos(P.heading) * 9; W.kvx = Math.sin(P.heading) * 9; banner('YOU WIN THE LOCK!', 1); }
+    else if (L.m <= 0) { duel.lock = null; W.state = 'circle'; W.cd = .8; hurtG(14, 8, 'down'); banner('OVERPOWERED!', 1); }
+  }
+  duel.mash = false;
+  // --- the Witch-king
+  W.s += W.kvs * dt; W.x += W.kvx * dt; W.kvs *= Math.exp(-5 * dt); W.kvx *= Math.exp(-5 * dt);
+  { const r = Math.hypot(W.s, W.x); if (r > ARENA_R) { W.s *= ARENA_R / r; W.x *= ARENA_R / r; } }
+  const turnTo = (a, k) => { W.h += angDiff(W.h, a) * Math.min(1, dt * k); };
+  const mv = (sp, ang) => { W.s += Math.cos(ang) * sp * dt; W.x += Math.sin(ang) * sp * dt; };
+  if (W.state === 'intro') {
+    turnTo(toG, 3);
+    if ((d < 10 || W.t > 3) && live) { W.state = 'ignite'; W.t = 0; S.saberOn(); S.screech(); banner('THE WITCH-KING OF ANGMAR!', 2.2); }
+  } else if (W.state === 'ignite') {
+    W.saberOn = Math.min(1, W.t / .5); turnTo(toG, 4);
+    if (W.t > 1.4) { W.state = 'circle'; W.cd = .8; duel.started = true; banner('SWING: SPIN BUTTON · PUSH: FIRE BUTTON', 2.6); }
+  } else if (W.state === 'stagger') {
+    turnTo(toG, 2); if (W.t > W.stunT) { W.state = 'circle'; W.cd = .4 * fast; }
+  } else if (W.state === 'defeat') {
+    W.saberOn = Math.max(0, 1 - W.t / .8); m.body.rotation.x = Math.min(.6, W.t * .6); m.body.position.y = -Math.min(.9, W.t * .5);
+    if (Math.random() < .5) puff(tw(W.s + rand(-.5, .5), W.x + rand(-.5, .5), rand(.3, 2)), 1, .9, CSM);
+    if (W.t > 2.6 && live) { m.root.visible = m.shadow.visible = false; roamWin('THE WITCH-KING IS DEFEATED!'); }
+  } else if (W.state === 'lock') {
+    // held in the saber lock above
+  } else if (W.state === 'grip') {
+    turnTo(toG, 6); if (duel.grip <= 0) { W.state = 'circle'; W.cd = 1; }
+  } else if (W.state === 'circle' || W.state === 'approach') {
+    // circling, closing in, waiting for an opening
+    turnTo(toG, 6);
+    const want = 3.2;
+    if (d > want + .6) mv(d > 8 ? 5 : 3.2, toG);
+    else if (d < want - 1) mv(-2.5, toG);
+    mv(1.6 * W.circleDir, toG + Math.PI / 2); if (Math.random() < dt * .4) W.circleDir *= -1;
+    if (live && W.cd <= 0 && duel.started) {
+      const opts = [];
+      if (d < 4.2) opts.push('combo', 'combo', 'combo', d < 2.5 ? 'push' : 'combo');
+      if (d > 3.5 && d < 10) opts.push('lunge');
+      if (ph >= 2) opts.push('light', d > 3 ? 'throw' : 'push');
+      if (ph >= 3) opts.push('grip');
+      if (!opts.length) opts.push(d > 4 ? 'lunge' : 'combo');
+      const type = W.special || opts[Math.random() * opts.length | 0]; W.special = null;   // a new phase opens with its new power
+      W.atk = { type, t: 0, n: 0, wind: (type === 'combo' ? .42 : type === 'lunge' ? .55 : type === 'push' ? .35 : type === 'light' ? .55 : type === 'grip' ? .6 : .45) * fast, hits: type === 'combo' ? 2 + (Math.random() < .5 ? 1 : 0) : 1, done: false };
+      W.state = 'attack'; W.t = 0;
+      if (type === 'lunge') { W.atk.dir = toG; W.atk.dist = Math.min(d + 1.5, 10); }
+    }
+  } else if (W.state === 'attack') {
+    const K = W.atk; K.t += dt;
+    if (K.type !== 'lunge' || K.t < K.wind) turnTo(toG, K.t < K.wind ? 8 : 2);
+    if (K.type === 'combo') {
+      if (d > 2.2) mv(3.5, toG);
+      if (!K.done && K.t >= K.wind) {
+        K.done = true; S.saberSwing();
+        const heavy = K.n === K.hits - 1, inFront = Math.abs(angDiff(W.h, toG)) < 1.2;
+        if (live && d < 2.8 && inFront && !duel.lock && duel.grip <= 0) {
+          if (gBlocking()) { S.clash(); sparks(clashAt(), 20, 6, [1, 1, 1], [.5, .7, 1]); duel.gkvs = ds / d * (heavy ? 7 : 3); duel.gkvx = dx / d * (heavy ? 7 : 3); if (heavy) { duel.held = .5; hurtG(3, 0); } }
+          else hurtG(heavy ? 14 : 10, heavy ? 8 : 4);
+        }
+      }
+      if (K.t >= K.wind + .32 * fast) { K.n++; if (K.n >= K.hits) { W.state = 'circle'; W.cd = rand(.9, 1.6) * fast; W.atk = null; } else { K.t = 0; K.done = false; K.wind = .3 * fast; } }
+    } else if (K.type === 'lunge') {
+      if (K.t >= K.wind && K.t < K.wind + .4) {
+        // a flying spin-slash straight at you: jump it or get out of the line
+        mv(K.dist / .4, K.dir); if (Math.random() < .7) sparks(tw(W.s, W.x, 1.4), 2, 3, [1, .5, .4], [1, .1, .1]);
+        if (!K.done && live && d < 1.6 && P.y < 1.1) { K.done = true; if (gBlocking() && Math.abs(angDiff(P.heading, K.dir + Math.PI)) < .7) { S.clash(); hurtG(5, 9); } else hurtG(15, 10, 'down'); }
+      }
+      if (K.t >= K.wind + .9 * fast) { W.state = 'circle'; W.cd = rand(.8, 1.4) * fast; W.atk = null; }
+    } else if (K.type === 'push') {
+      if (!K.done && K.t >= K.wind) { K.done = true; S.forcePush(); for (let k = 0; k < 20; k++) { const a = W.h + rand(-.5, .5), u = rand(0, 1); fx.spawn(...tw(W.s + Math.cos(a) * u * 5, W.x + Math.sin(a) * u * 5, 1.4).toArray(), Math.cos(a) * 3, 0, Math.sin(a) * 3, .4, .4, .2, [1, .6, .5], [.8, .2, .2]); } if (live && d < 6 && Math.abs(angDiff(W.h, toG)) < 1) hurtG(6, 13, 'down'); }
+      if (K.t > K.wind + .5) { W.state = 'circle'; W.cd = rand(.7, 1.2) * fast; W.atk = null; }
+    } else if (K.type === 'light') {
+      // Force lightning from his left hand: hold your ground and your blade soaks most of it, or push him off it
+      const chan = K.t >= K.wind && K.t < K.wind + 1.8;
+      if (chan && live) {
+        const blk = gBlocking(); hurtG((blk ? 4 : 20) * dt, 0);
+        if (Math.random() < dt * 10) S.zap();
+        const hand = m.armL.localToWorld(_a.set(0, -.9, .2)), tgt = blk ? duel.gSaber.blade.localToWorld(_b.set(0, .7, 0)) : tw(P.s, P.x, P.y + 1.1, _b);
+        drawBolts(duel.bolts, hand, tgt, true); if (blk && Math.random() < .5) sparks(tgt, 2, 2, [.8, .9, 1], [.5, .6, 1]);
+      } else drawBolts(duel.bolts, null, null, false);
+      if (K.t >= K.wind + 1.9) { drawBolts(duel.bolts, null, null, false); W.state = 'circle'; W.cd = rand(1, 1.6) * fast; W.atk = null; }
+    } else if (K.type === 'grip') {
+      if (!K.done && K.t >= K.wind) { K.done = true; if (live && d < 12) { duel.grip = 1.8; W.state = 'grip'; W.atk = null; banner('GRIPPED! MASH SWING OR JUMP!', 1.4); S.screech(); return; } }
+      if (K.t > K.wind + .3) { W.state = 'circle'; W.cd = 1; W.atk = null; }
+    } else if (K.type === 'throw') {
+      if (!K.done && K.t >= K.wind) { K.done = true; W.thrown = { p: m.saber.g.getWorldPosition(new V3()), from: tw(W.s, W.x, 1.6), dir: tw(P.s, P.x, 1.2).sub(tw(W.s, W.x, 1.6)).normalize(), t: 0, back: false, hit: false }; S.saberSwing(); }
+      if (W.thrown) {
+        const th = W.thrown; th.t += dt;
+        if (!th.back) { th.p.addScaledVector(th.dir, 15 * dt); if (th.t > .9) th.back = true; }
+        else { const hb = tw(W.s, W.x, 1.6); th.p.lerp(hb, 1 - Math.exp(-7 * dt)); if (th.p.distanceTo(hb) < .5) { W.thrown = null; W.state = 'circle'; W.cd = rand(.8, 1.3) * fast; W.atk = null; } }
+        if (W.thrown && !th.hit && live && th.p.distanceTo(tw(P.s, P.x, P.y + 1.1)) < 1.2) {
+          th.hit = true;
+          if (gBlocking()) { S.clash(); sparks(th.p, 22, 6, [1, 1, 1], [1, .4, .3]); th.back = true; } else { hurtG(10, 6); th.back = true; }
+        }
+      }
+    }
+  }
+  // --- drawing him: robe, sword arm, the casting hand glowing for lightning and grip
+  place(m.root, W.s, W.x, 0, W.h); tw(W.s, W.x, .03, m.shadow.position);
+  let pose = SP.guard;
+  if (W.state === 'attack' && W.atk) {
+    const K = W.atk;
+    if (K.type === 'combo') { const u = Math.min(1, K.t / (K.wind + .32 * fast)), k = ['A', 'B', 'C'][K.n === K.hits - 1 ? 2 : K.n % 2], a = SP[k + '0'], b = SP[k + '1']; const wu = K.wind / (K.wind + .32 * fast); pose = u < wu ? lerpPose(SP.guard, a, smooth(u / wu)) : lerpPose(a, b, smooth(Math.min(1, (u - wu) / .35))); }
+    else if (K.type === 'lunge') pose = K.t < K.wind ? SP.C0 : SP.A1;
+    else if (K.type === 'throw') pose = K.t < K.wind ? SP.A0 : SP.A1;
+  } else if (W.state === 'lock') pose = SP.lock;
+  else if (W.state === 'stagger') pose = SP.block;
+  applyPose(m.armR, m.body, m.saber.g, pose, dt, W.state === 'attack' ? 26 : 12);
+  const casting = (W.state === 'attack' && W.atk && (W.atk.type === 'light' || W.atk.type === 'grip' || W.atk.type === 'push')) || W.state === 'grip';
+  m.armL.rotation.x = damp(m.armL.rotation.x, casting ? -1.5 : -.2, 12, dt); m.armL.rotation.z = damp(m.armL.rotation.z, casting ? -.2 : .15, 12, dt);
+  m.handGlow.material.opacity = casting ? .6 + Math.sin(T * 30) * .3 : 0;
+  if (W.state !== 'defeat') { m.body.rotation.x = W.state === 'stagger' ? -.25 : W.state === 'attack' && W.atk && W.atk.type === 'lunge' && W.atk.t > W.atk.wind ? .4 : 0; m.body.position.y = 0; }
+  m.saber.blade.scale.y = Math.max(.001, W.saberOn); m.saber.g.visible = !W.thrown;
+  if (W.thrown) { if (!duel.thrownMesh) { duel.thrownMesh = makeSaber(0xff2a1a); scene.add(duel.thrownMesh.g); } duel.thrownMesh.g.visible = true; duel.thrownMesh.g.position.copy(W.thrown.p); duel.thrownMesh.g.rotation.set(Math.PI / 2, 0, T * 20); }
+  else if (duel.thrownMesh) duel.thrownMesh.g.visible = false;
+  m.eyes.forEach(e => e.material.color.setHex(W.flash > 0 ? 0xffffff : 0xff5a1a));
+  if (!(W.state === 'attack' && W.atk && W.atk.type === 'light')) drawBolts(duel.bolts, null, null, false);
+}
+// Gandalf's sword arm, drawn after his normal animation
+function poseDuelGandalf(dt) {
+  if (!duelOn() || state === 'title' || state === 'map') return;
+  const H = hob; let p = SP.guard;
+  if (duel.lock) p = SP.lock; else if (duel.atk) p = swingPose(duel.atk); else if (duel.grip > 0) p = SP.cast;
+  else if (state === 'play' && duel.wk.atk && duel.wk.atk.type === 'light' && gBlocking()) p = SP.block;
+  if (state === 'dying') return;
+  applyPose(H.armR, H.body, duel.gSaber.g, p, dt, 1e9);   // set outright: his normal animation resets the arms every frame
+  if (P.fireAnim > 0) { H.armL.rotation.x = -1.5; H.armL.rotation.z = .2; }
+  if (duel.grip > 0) { H.legL.rotation.x = Math.sin(T * 20) * .3; H.legR.rotation.x = -Math.sin(T * 20) * .3; H.armL.rotation.z = 1.2 + Math.sin(T * 25) * .2; }
+  if (duel.held > 0) H.body.rotation.x = -.5;
 }
 
 // --- the Nazgûl: nine black riders hunting through Hobbiton. Spin into them or hit them with fireworks, three times each ---
@@ -3969,6 +4330,18 @@ function updateCamera(dt) {
     camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35));
     camera.lookAt(cam.wl); return;
   }
+  if (LV.duel && duel.wk) {
+    const W = duel.wk, a = Math.atan2(W.x - P.x, W.s - P.s), c = Math.cos(a), sn = Math.sin(a), d = Math.hypot(W.s - P.s, W.x - P.x);
+    const back = clamp(4.5 + d * .35, 5, 8.5), side = 1.3;
+    let cs = P.s - c * back - sn * side, cx = P.x - sn * back + c * side; const cr = Math.hypot(cs, cx); if (cr > 14.8) { cs *= 14.8 / cr; cx *= 14.8 / cr; }   // stay inside the ring of stones
+    _a.copy(tw(cs, cx, P.y * .5 + 3.2)); _b.copy(tw(lerp(P.s, W.s, .45), lerp(P.x, W.x, .45), 1.5 + P.y * .3));
+    if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; }
+    const k = 1 - Math.exp(-6 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k);
+    camera.position.copy(cam.wp);
+    const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2);
+    camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35));
+    camera.lookAt(cam.wl); return;
+  }
   if (LV.roam && !LV.duel) {
     // open country: a chase camera behind Gandalf that slowly swings round to follow where he's heading
     if (state === 'play') { const mv = Math.hypot(P.vs, P.vx); if (mv > 1) cam.yaw += angDiff(cam.yaw, P.heading) * (1 - Math.exp(-1.7 * dt * Math.min(1, mv / RUN))); }
@@ -4018,6 +4391,13 @@ function updateHUD(dt) {
     const nm = bal ? "DURIN'S BANE" : boss.state === 'eye' || boss.state === 'dying' ? 'THE EYE' : 'SAURON', ne = document.getElementById('bossName'); if (ne.textContent !== nm) ne.textContent = nm;
   }
   document.getElementById('nCrate').textContent = gs.crates + '/' + gs.crateTotal;
+  const dh = document.getElementById('duelhud'), showD = !!(LV && LV.duel && duel.wk) && state !== 'title' && state !== 'map' && state !== 'complete';
+  dh.style.display = showD ? 'flex' : 'none';
+  if (showD) {
+    document.getElementById('gHPfill').style.width = Math.max(0, duel.gHP) + '%'; document.getElementById('gFfill').style.width = duel.gF + '%';
+    bb.style.display = duel.wk.state === 'intro' ? 'none' : 'flex'; document.getElementById('bossfill').style.width = duel.wk.hp + '%';
+    const ne = document.getElementById('bossName'); if (ne.textContent !== 'THE WITCH-KING') ne.textContent = 'THE WITCH-KING';
+  }
   const nz = document.getElementById('hNaz'), showN = !!(LV && LV.nazgul) && state !== 'title' && state !== 'map'; nz.style.display = showN ? '' : 'none'; if (showN) document.getElementById('nNaz').textContent = NAZ.left;
   document.getElementById('nLives').textContent = Math.max(0, gs.lives);
 }
@@ -4094,7 +4474,7 @@ const RANGES = [
 ];
 const RIVERS = [[[41, -60], [43, -30], [41, -14], [45, 0], [46, 12], [47.6, 26], [46, 45]]];   // the Great River
 const DOOM = [60, 5];
-const SITES = [{ x: -50, z: -8, r: 6, y: 1.2 }, { x: -20, z: -29, r: 4, y: 1.3 }, { x: 10, z: 12, r: 3.5, y: 1.1 }, { x: 37, z: 21, r: 4.6, y: 1 }, { x: 66, z: -6, r: 3.5, y: 1 }, { x: 50.5, z: 10, r: 2.2, y: 2.2 }, { x: 62.5, z: 11.5, r: 2, y: 1.4 }];
+const SITES = [{ x: -50, z: -8, r: 6, y: 1.2 }, { x: -20, z: -29, r: 4, y: 1.3 }, { x: 10, z: 12, r: 3.5, y: 1.1 }, { x: 37, z: 21, r: 4.6, y: 1 }, { x: 66, z: -6, r: 3.5, y: 1 }, { x: 50.5, z: 10, r: 2.2, y: 2.2 }, { x: 62.5, z: 11.5, r: 2, y: 1.4 }, { x: -34, z: -14, r: 2.4, y: 2.2 }];
 function polyDist(px, pz, pts) {
   let best = 1e9;
   for (let i = 0; i < pts.length - 1; i++) {
@@ -4256,6 +4636,7 @@ const NODES = [
   { name: 'CIRITH UNGOL', x: 50.5, z: 10, open: true, loc: 'ungol', sub: "THE PASS · RUN FROM SHELOB!" },
   { name: 'MORDOR', x: 57, z: -3, open: true, loc: 'mordor', sub: 'IN THE SHADOW OF THE EYE · 1 LEVEL' },
   { name: 'MOUNT DOOM', x: 62.5, z: 11.5, open: true, loc: 'doom', sub: 'THE CLIMB · OUTRUN THE LAVA' },
+  { name: 'WEATHERTOP', x: -34, z: -14, open: true, loc: 'weather', sub: 'DUEL THE WITCH-KING' },   // added last: the road and Minas Tirith go by position in this list
 ];
 const ROAD = (() => {
   const way = [NODES[0], [-40, -6], [-30, -17], NODES[1], [-18.5, -13], NODES[2], [-5, 3], [1, 11], NODES[3], [21, 17], [31, 14.5], [40, 15.5], NODES[4], [46, 14.5], NODES[5], [54, 3], NODES[6], [62, 0], [65, 6], NODES[7]];
@@ -4407,10 +4788,10 @@ function step(dt, noRender) {
   else if (state === 'win') updateWin(dt);
   if (state !== 'paused') {
     if (state !== 'title' && state !== 'map' && state !== 'gameover' && state !== 'complete') {
-      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateHobbiton(dt);
+      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateHobbiton(dt); updateDuel(dt);
     }
     updateDragons(dt); updateApples(); updatePhial(dt); updateLightning(dt); updateAmbient(dt); updateTree(dt);
-    fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt);
+    fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt); poseDuelGandalf(dt);
   }
   updateCamera(state === 'paused' ? 0 : dt); updateLights(); updateHUD(dt); updateTouchUI();
   const onMap = state === 'map' || state === 'title'; if (onMap) updateMap(dt); else if (mapUIOn) { mapUIOn = false; mapUI.classList.remove('on'); } updateIris(dt); musicTick();
