@@ -25,3 +25,23 @@ canvas {
   text-align: center;
   padding: 0 16px;
 }
+
+/* Phones and tablets: fill the screen; the touch controls sit below or beside the canvas. */
+html.touch-device body {
+  min-height: 100dvh;
+  justify-content: flex-start;
+  padding-top: max(4px, env(safe-area-inset-top));
+  overflow: hidden;
+}
+
+html.touch-device canvas {
+  max-width: calc(100vw - 10px);
+  max-height: calc(100dvh - 10px);
+  border-width: 2px;
+}
+
+@media (orientation: landscape) {
+  html.touch-device body {
+    justify-content: center;
+  }
+}

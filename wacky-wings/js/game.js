@@ -45,6 +45,7 @@ for (const f of [0.1, 0.36, 0.6, 0.84]) {
 }
 
 // ---------- Input ----------
+const TOUCH = window.TouchControls && TouchControls.isTouch;
 const keys = {};
 const pressed = {};
 addEventListener('keydown', (e) => {
@@ -870,7 +871,7 @@ function drawPodium() {
     ctx.fillRect(-4, -2, 8, 4);
     ctx.restore();
   }
-  if (Math.floor(state.frame / 30) % 2 === 0) text('PRESS ENTER', lx + 170, 520, 30, '#fff', 'center');
+  if (Math.floor(state.frame / 30) % 2 === 0) text(TOUCH ? 'TAP TO CONTINUE' : 'PRESS ENTER', lx + 170, 520, 30, '#fff', 'center');
 }
 
 function draw() {
@@ -899,7 +900,7 @@ function draw() {
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     text('PAUSED', canvas.width / 2, 240, 70, '#fff', 'center');
-    text('Press P to carry on', canvas.width / 2, 320, 26, '#fff', 'center');
+    text(TOUCH ? 'Tap to carry on' : 'Press P to carry on', canvas.width / 2, 320, 26, '#fff', 'center');
   }
 }
 

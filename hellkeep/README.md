@@ -30,6 +30,10 @@ Double-click `serve.cmd` in the main game folder, pick Hellkeep, then click to s
 | G | Graphics high/low (switch to low if the game runs slowly) |
 | Esc | Pause |
 
+## On a phone or tablet
+
+Touch controls appear by themselves. In the 3D rounds the left thumb moves (push it all the way to sprint), drag the right side of the screen to look, and use **FIRE**, **JUMP** (hold it to fly once you have wings) and **GUN** to switch weapons. In the side-on rounds the left thumb moves and **JUMP** and **FIRE** sit on the right. **II** pauses, **♪** switches the music, and in 3D **FX** switches the graphics (phones start on low graphics so the game runs smoothly).
+
 ## The rules
 
 - You start round 1 with a **pistol** and an **assault rifle**. The **Flak Shotgun** (four chrome barrels, Delft-blue porcelain, glowing cyan energy cells) turns slowly on a display pedestal just inside the castle gate. Walk up to it to take it.

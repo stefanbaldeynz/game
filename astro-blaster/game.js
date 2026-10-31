@@ -16,6 +16,7 @@ const SIZES = {
   1: { r: 14, score: 100 },
 };
 
+const TOUCH = window.TouchControls && TouchControls.isTouch;
 const keys = {};
 addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
@@ -433,7 +434,7 @@ function draw() {
     centerText("Shoot the asteroids. Don't get hit.", 190, 18);
     drawShip(W / 2, 315, 2, true, Math.sin(performance.now() / 600) * 0.08);
     centerText('THE CHOW HAULER', 440, 16, '#f28c28');
-    centerText('Press Enter to start', 500, 22, '#ffd166');
+    centerText(TOUCH ? 'Tap to start' : 'Press Enter to start', 500, 22, '#ffd166');
     if (state.highScore > 0) centerText(`High score: ${state.highScore}`, 540, 16);
     return;
   }
@@ -454,7 +455,7 @@ function draw() {
   if (state.paused) {
     dim();
     centerText('PAUSED', H / 2, 40);
-    centerText('Press P to resume', H / 2 + 36, 18);
+    centerText(TOUCH ? 'Tap to resume' : 'Press P to resume', H / 2 + 36, 18);
   }
 
   if (state.mode === 'over') {
@@ -467,7 +468,7 @@ function draw() {
       18,
       state.newBest ? '#ffd166' : '#e8e8f0',
     );
-    centerText('Press Enter to play again', H / 2 + 85, 20, '#ffd166');
+    centerText(TOUCH ? 'Tap to play again' : 'Press Enter to play again', H / 2 + 85, 20, '#ffd166');
   }
 }
 

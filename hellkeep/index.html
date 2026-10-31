@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Hellkeep</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Metal+Mania&family=Oswald:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="../shared/touch-controls.js"></script>
 </head>
 <body>
   <div id="game"></div>
@@ -48,7 +49,7 @@
     <button id="overlay-button" type="button">Click to play</button>
     <p id="asset-note" class="note hidden">Opened straight from your files, so the 3D models are switched off. For the full graphics, start the game with <b>serve.cmd</b> (in the main game folder).</p>
     <div id="round-picker"></div>
-    <div class="controls">
+    <div class="controls keys-only">
       <div><b>WASD</b> move</div>
       <div><b>Mouse</b> look</div>
       <div><b>Click</b> shoot</div>
@@ -59,6 +60,14 @@
       <div><b>M</b> music on/off</div>
       <div><b>G</b> graphics high/low</div>
       <div><b>Esc</b> pause</div>
+    </div>
+    <div class="controls touch-only">
+      <div><b>Left thumb</b> move · push far to sprint</div>
+      <div><b>Drag right side</b> look</div>
+      <div><b>FIRE</b> shoot · <b>GUN</b> switch</div>
+      <div><b>JUMP</b> twice: double jump</div>
+      <div><b>Hold JUMP</b> fly with angel wings</div>
+      <div><b>II</b> pause · <b>♪</b> music · <b>FX</b> graphics</div>
     </div>
   </div>
 
@@ -98,6 +107,7 @@
     };
     window.MODELS = {};
     const button = document.getElementById('overlay-button');
+    if (TouchControls.isTouch) button.textContent = 'Tap to play';
     if (location.protocol === 'file:') {
       // Browsers block loading models into a page opened straight from your files.
       // The game still runs, with the old models built from code.
@@ -112,7 +122,7 @@
           console.warn(`Could not load ${url}; using the built-in model instead.`, error);
         }
       }));
-      button.textContent = 'Click to play';
+      button.textContent = TouchControls.isTouch ? 'Tap to play' : 'Click to play';
     }
 
     const scripts = [

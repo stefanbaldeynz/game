@@ -16,6 +16,10 @@ No build tools or installs: open `index.html` in a browser to play.
 | M | Sound on / off |
 | Left / Right, then Enter | Pick your driver and start |
 
+## On a phone or tablet
+
+Touch controls appear by themselves: steer with the left thumb (push up for gas, down to brake), or hold **GAS** on the right, with **THROW** and **BRAKE** next to it. **II** and **♪** at the top pause and switch the sound. On the driver screen the side arrows pick a bird; tap anywhere else to race.
+
 ## The drivers
 
 Each bird has its own speed, acceleration and handling. They all add up to the same total, so none is simply the best.

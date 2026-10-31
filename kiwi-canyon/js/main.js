@@ -144,6 +144,7 @@ const game = {
   kills: 0,
 };
 
+const TOUCH = TouchControls.isTouch;
 const keys = {};
 let mouseDown = false;
 const mouse = new THREE.Vector2();
@@ -314,8 +315,10 @@ function pickCell() {
   return { col, row };
 }
 
-function handleMapClick() {
+function handleMapClick(e) {
   if (game.state !== 'playing' || game.mode !== 'tower') return;
+  if (performance.now() < ignoreClicksUntil) return; // that was the end of a drag or pinch
+  mouse.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
   const cell = pickCell();
   if (!cell) return select(null);
   const tower = towerAt(cell.col, cell.row);
@@ -328,7 +331,7 @@ function handleMapClick() {
     const c = cellCenter(cell.col, cell.row);
     player.x = c.x;
     player.z = c.z;
-    showMessage('You will drop in here. Press F for first-person mode');
+    showMessage(TOUCH ? 'You will drop in here. Tap First-person mode' : 'You will drop in here. Press F for first-person mode');
   }
   select(null);
 }
@@ -337,13 +340,26 @@ function handleMapClick() {
 
 function enterFps() {
   if (game.state !== 'playing' || game.mode === 'fps') return;
+  if (TOUCH) {
+    // Phones can't lock the mouse: switch straight over and look around by dragging.
+    game.mode = 'fps';
+    game.paused = false;
+    select(null);
+    return;
+  }
   const request = canvas.requestPointerLock();
   if (request && request.catch) request.catch(() => showMessage('Click the game, then press F again'));
 }
 
 function toggleView() {
-  if (game.mode === 'fps') document.exitPointerLock();
-  else enterFps();
+  if (game.mode !== 'fps') enterFps();
+  else if (TOUCH) leaveFps();
+  else document.exitPointerLock();
+}
+
+function leaveFps() {
+  game.mode = 'tower';
+  mouseDown = false;
 }
 
 document.addEventListener('pointerlockchange', () => {
@@ -352,10 +368,88 @@ document.addEventListener('pointerlockchange', () => {
     game.paused = false;
     select(null);
   } else if (game.mode === 'fps') {
-    game.mode = 'tower';
-    mouseDown = false;
+    leaveFps();
   }
 });
+
+// ---------- Touch controls (phones and tablets) ----------
+
+// First person: a stick under the left thumb, drag the right side to look.
+const TOUCH_LOOK = 0.005; // radians turned per pixel dragged
+TouchControls.setup({
+  stick: { up: 'w', down: 's', left: 'a', right: 'd', sprint: 'Shift' },
+  look: (dx, dy) => {
+    player.yaw -= dx * TOUCH_LOOK;
+    player.pitch = clamp(player.pitch - dy * TOUCH_LOOK, -1.4, 1.4);
+  },
+  buttons: [
+    { label: 'FIRE', onDown: () => { mouseDown = true; }, onUp: () => { mouseDown = false; } },
+    { label: 'RELOAD', key: 'r', tap: true },
+    { label: 'TOWER<br>VIEW', onDown: leaveFps },
+  ],
+  hidden: () => !(game.state === 'playing' && game.mode === 'fps'),
+});
+
+// Tower view: drag with one finger to look around the map, pinch to zoom. A tap is a click.
+let ignoreClicksUntil = 0;
+const drag = { touches: {}, moved: 0, pinch: 0, startDistance: 0 };
+
+function pinchSpread() {
+  const [a, b] = Object.values(drag.touches);
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+canvas.addEventListener('touchstart', (e) => {
+  for (const t of e.changedTouches) drag.touches[t.identifier] = { x: t.clientX, y: t.clientY };
+  const count = Object.keys(drag.touches).length;
+  if (count === 1) drag.moved = 0;
+  if (count === 2) {
+    drag.pinch = pinchSpread();
+    drag.startDistance = tdView.distance;
+    drag.moved = 99; // a pinch is never a tap
+  }
+}, { passive: true });
+
+canvas.addEventListener('touchmove', (e) => {
+  if (game.mode !== 'tower') return;
+  e.preventDefault();
+  const count = Object.keys(drag.touches).length;
+  for (const t of e.changedTouches) {
+    const last = drag.touches[t.identifier];
+    if (!last) continue;
+    if (count === 1) {
+      const dx = t.clientX - last.x;
+      const dy = t.clientY - last.y;
+      drag.moved += Math.abs(dx) + Math.abs(dy);
+      const worldPerPixel = (0.93 * tdView.distance) / window.innerHeight;
+      tdView.x = clamp(tdView.x - dx * worldPerPixel, 0, WORLD_W);
+      tdView.z = clamp(tdView.z - dy * worldPerPixel, 0, WORLD_D);
+    }
+    last.x = t.clientX;
+    last.y = t.clientY;
+  }
+  if (count === 2 && drag.pinch > 0) {
+    tdView.distance = clamp((drag.startDistance * drag.pinch) / Math.max(1, pinchSpread()), 30, 110);
+  }
+}, { passive: false });
+
+function dragEnd(e) {
+  for (const t of e.changedTouches) delete drag.touches[t.identifier];
+  if (drag.moved > 12) ignoreClicksUntil = performance.now() + 400;
+  if (Object.keys(drag.touches).length < 2) drag.pinch = 0;
+}
+canvas.addEventListener('touchend', dragEnd);
+canvas.addEventListener('touchcancel', dragEnd);
+
+const pauseButton = document.getElementById('pause-button');
+pauseButton.addEventListener('click', () => {
+  if (game.state === 'playing' && game.mode === 'tower') game.paused = !game.paused;
+});
+if (TOUCH) {
+  ui.fpsButton.textContent = 'First-person mode';
+  ui.overlayButton.textContent = 'Tap to start';
+  ui.paused.textContent = 'Paused · tap Carry on';
+}
 
 // ---------- Input ----------
 
@@ -423,7 +517,8 @@ ui.overlay.addEventListener('click', () => {
 function startGame() {
   game.state = 'playing';
   ui.overlay.classList.add('hidden');
-  showMessage(`Build ${Math.floor(CONFIG.startMoney / CONFIG.tower.buildCost)} towers on the rim, then press N to start wave 1`, 6);
+  const how = TOUCH ? 'tap Start wave 1' : 'press N to start wave 1';
+  showMessage(`Build ${Math.floor(CONFIG.startMoney / CONFIG.tower.buildCost)} towers on the rim, then ${how}`, 6);
 }
 
 window.addEventListener('resize', () => {
@@ -496,6 +591,7 @@ function showMessage(text, seconds = 3) {
 }
 
 function showOverlay(title, text, button) {
+  if (TOUCH) button = button.replace(/^Click/, 'Tap');
   ui.overlayTitle.textContent = title;
   ui.overlayText.textContent = text;
   ui.overlayButton.textContent = button;
@@ -516,6 +612,7 @@ function updateHud(dt) {
     waveLabel = game.countdown > 0
       ? `Wave ${game.wave + 1} in ${Math.ceil(game.countdown)}s · start now [N]`
       : `Start wave ${game.wave + 1} [N]`;
+    if (TOUCH) waveLabel = waveLabel.replace(' [N]', '');
   }
   ui.waveButton.textContent = waveLabel;
   ui.waveButton.classList.toggle('hidden', !waveLabel);
@@ -523,6 +620,7 @@ function updateHud(dt) {
   ui.tdPanel.classList.toggle('hidden', fps || !playing);
   ui.fpsHud.classList.toggle('hidden', !fps);
   ui.paused.classList.toggle('hidden', !game.paused || fps);
+  pauseButton.textContent = game.paused ? 'Carry on' : 'Pause';
   ui.buildCost.textContent = `$${CONFIG.tower.buildCost}`;
 
   const nextRifle = CONFIG.rifle.levels[game.rifleLevel + 1];
@@ -538,7 +636,7 @@ function updateHud(dt) {
     ui.towerTitle.textContent = `Tower · level ${tower.level + 1} of ${CONFIG.tower.levels.length}`;
     ui.towerStats.textContent = `Damage ${s.damage} · ${s.fireRate} shots/s · range ${s.range}`;
     const cost = tower.upgradeCost;
-    ui.upgradeButton.textContent = cost === null ? 'Fully upgraded' : `Upgrade to level ${tower.level + 2} · $${cost} [U]`;
+    ui.upgradeButton.textContent = cost === null ? 'Fully upgraded' : `Upgrade to level ${tower.level + 2} · $${cost}${TOUCH ? '' : ' [U]'}`;
     ui.upgradeButton.disabled = cost === null || game.money < cost;
   }
 
