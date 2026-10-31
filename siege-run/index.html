@@ -106,10 +106,8 @@ body.touch #touch.on{display:block}
 #mapLogo{position:absolute;right:max(4vw,env(safe-area-inset-right));top:max(2.5vh,env(safe-area-inset-top));text-align:right;transform:rotate(-3deg)}
 #mapLogo span{display:block;font-size:clamp(26px,7vh,56px);line-height:.95;background:linear-gradient(#fff7b0 0%,#ffc21a 38%,#ff6a00 72%,#b82400);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;-webkit-text-stroke:2px var(--ink);filter:drop-shadow(0 4px 0 #6a1e00)}
 #mapLogo i{display:block;font-style:normal;font-size:clamp(13px,3vh,22px);color:#fff;-webkit-text-stroke:1px var(--ink);text-shadow:2px 2px 0 #000;letter-spacing:.14em}
-.marrow{position:absolute;bottom:max(4vh,env(safe-area-inset-bottom));width:clamp(56px,17vh,84px);height:clamp(56px,17vh,84px);border-radius:50%;border:3px solid #000;box-shadow:3px 4px 0 rgba(0,0,0,.6);background:radial-gradient(circle at 35% 30%,#fff7b0,#ffc21a 45%,#b85a00);display:flex;align-items:center;justify-content:center;font-size:clamp(24px,7vh,38px);color:#1a0800;pointer-events:auto;cursor:pointer}
-.marrow.l{left:max(4vw,env(safe-area-inset-left))}.marrow.r{right:max(4vw,env(safe-area-inset-right))}
-.marrow:active{transform:scale(.9)}
-#mapGo{position:absolute;left:50%;bottom:calc(max(3vh,env(safe-area-inset-bottom)) + clamp(22px,5vh,34px));transform:translateX(-50%);font-size:clamp(20px,5.5vh,36px);color:#fff;-webkit-text-stroke:1.5px var(--ink);text-shadow:2px 3px 0 #000;background:radial-gradient(circle at 35% 30%,#7af07a,#1e8a2a 70%);border:3px solid #000;box-shadow:3px 4px 0 rgba(0,0,0,.6);border-radius:14px;padding:.2em .9em;pointer-events:auto;cursor:pointer}
+#mapGo.off{display:none}
+#mapGo{position:absolute;left:50%;bottom:calc(max(3vh,env(safe-area-inset-bottom)) + clamp(32px,7.5vh,46px));transform:translateX(-50%);font-size:clamp(20px,5.5vh,36px);color:#fff;-webkit-text-stroke:1.5px var(--ink);text-shadow:2px 3px 0 #000;background:radial-gradient(circle at 35% 30%,#7af07a,#1e8a2a 70%);border:3px solid #000;box-shadow:3px 4px 0 rgba(0,0,0,.6);border-radius:14px;padding:.2em .9em;pointer-events:auto;cursor:pointer}
 #mapPrompt{position:absolute;left:0;right:0;bottom:max(3vh,env(safe-area-inset-bottom));text-align:center;font-size:clamp(14px,3.6vh,26px);color:#fff;-webkit-text-stroke:1.5px var(--ink);text-shadow:2px 2px 0 #000}
 .back{position:absolute;left:max(3vw,env(safe-area-inset-left));top:max(2.5vh,env(safe-area-inset-top));font-size:clamp(16px,4vh,28px);color:var(--gold);-webkit-text-stroke:1.5px var(--ink);background:rgba(14,4,36,.8);border:3px solid #000;box-shadow:3px 3px 0 #000;border-radius:10px;padding:.3em .7em}
 .back small{font:600 12px system-ui,sans-serif;color:#cfc4ee;-webkit-text-stroke:0;margin-left:.4em}
@@ -124,7 +122,7 @@ body.touch #touch.on{display:block}
   #sign .plank{margin-top:2.5vh;min-width:min(380px,78vw)}
   #sign b{font-size:min(8vw,42px)}
   #mapGo{font-size:min(7vw,34px)}
-  #mapPrompt{bottom:calc(max(4vh,env(safe-area-inset-bottom)) + clamp(56px,17vh,84px) + 14px);font-size:min(4.6vw,22px)}
+  #mapPrompt{bottom:calc(max(4vh,env(safe-area-inset-bottom)) + 96px);font-size:min(4.6vw,22px)}
   .hb{font-size:min(5.6vw,40px)}
   .hb canvas{width:1.3em;height:1.3em}
   #hud .grp{gap:2.5vw}
@@ -168,9 +166,8 @@ body.touch #touch.on{display:block}
 <div id="mapUI">
   <div id="sign"><div class="rope l"></div><div class="rope r"></div><div class="plank"><b id="signName">MINAS TIRITH</b><i id="signSub"></i></div></div>
   <div id="mapLogo"><span>SIEGE RUN</span><i>MIDDLE-EARTH</i></div>
-  <div class="marrow l" data-key="ArrowLeft">◀</div><div class="marrow r" data-key="ArrowRight">▶</div>
   <div id="mapGo" data-key="Enter">ENTER</div>
-  <div id="mapPrompt"><span class="kOnly">← → TRAVEL &nbsp;·&nbsp; ENTER TO PLAY</span><span class="tOnly">◀ ▶ OR TAP A PLACE TO TRAVEL</span></div>
+  <div id="mapPrompt"><span class="kOnly">ARROWS / WASD TO WALK &nbsp;·&nbsp; CLICK TO GO THERE &nbsp;·&nbsp; ENTER TO PLAY</span><span class="tOnly">TAP OR HOLD WHERE TO GO</span></div>
 </div>
 <div id="ov" class="dim">
   <div class="scr" id="sTitle">
@@ -219,6 +216,7 @@ body.touch #touch.on{display:block}
 // =====================================================================
 const TAU = Math.PI * 2;
 let R = 50, Y0 = 0, CIRC = TAU * R, CX = 0, CZ = 0;   // current ring: radius, walkway height and centre (set per level)
+let STRAIGHT = false;   // straight levels unroll the ring into a straight road heading north (+z); only Minas Tirith's ramparts curve
 const V3 = THREE.Vector3, UPV = new V3(0, 1, 0);
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -233,9 +231,12 @@ const C = h => [(h >> 16 & 255) / 255, (h >> 8 & 255) / 255, (h & 255) / 255];
 const angDiff = (a, b) => { let d = (b - a) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; };
 
 // track space: s = arc distance along the rampart, x = lateral (+ = inward, towards the city), y = height
-function tw(s, x, y, out) { out = out || new V3(); const th = s / R, r = R - x; return out.set(CX + Math.cos(th) * r, y + Y0, CZ + Math.sin(th) * r); }
-function toTrack(v) { const dx = v.x - CX, dz = v.z - CZ; let s = Math.atan2(dz, dx) * R; if (s < -25) s += CIRC; return { s, x: R - Math.hypot(dx, dz), y: v.y - Y0 }; }
-function place(o, s, x, y, h = 0) { tw(s, x, y, o.position); o.rotation.set(0, -(s / R + h), 0); }
+// on a straight level the same (s, x) frame is laid out flat: s runs along +z, and x (inward) along -x, so the road
+// looks exactly like the ring at its starting point, just without the bend
+function tw(s, x, y, out) { out = out || new V3(); if (STRAIGHT) return out.set(CX + R - x, y + Y0, CZ + s); const th = s / R, r = R - x; return out.set(CX + Math.cos(th) * r, y + Y0, CZ + Math.sin(th) * r); }
+function toTrack(v) { if (STRAIGHT) return { s: v.z - CZ, x: R - (v.x - CX), y: v.y - Y0 }; const dx = v.x - CX, dz = v.z - CZ; let s = Math.atan2(dz, dx) * R; if (s < -25) s += CIRC; return { s, x: R - Math.hypot(dx, dz), y: v.y - Y0 }; }
+const trackAng = s => STRAIGHT ? 0 : s / R;   // which way the road faces at s
+function place(o, s, x, y, h = 0) { tw(s, x, y, o.position); o.rotation.set(0, -(trackAng(s) + h), 0); }
 const _a = new V3(), _b = new V3(), _c = new V3(), _d = new V3(), _g = new V3();
 
 // =====================================================================
@@ -471,6 +472,11 @@ TX.path = mkTex(64, 64, g => { g.fillStyle = '#8a6a44'; g.fillRect(0, 0, 64, 64)
 TX.turf = mkTex(64, 64, g => { g.fillStyle = '#6a5034'; g.fillRect(0, 0, 64, 64); for (let i = 0; i < 520; i++) { const v = sr(); g.fillStyle = v < .45 ? '#5a4028' : v < .75 ? '#7a5e3e' : '#4e7a2e'; g.fillRect(sr() * 64 | 0, sr() * 64 | 0, 2, 1 + sr() * 2 | 0); } });
 TX.falls = mkTex(16, 64, g => { g.fillStyle = '#9ccbe8'; g.fillRect(0, 0, 16, 64); for (let i = 0; i < 70; i++) { g.fillStyle = sr() < .5 ? '#ffffff' : '#d4ecfa'; g.fillRect(sr() * 16 | 0, sr() * 64 | 0, 1, 4 + sr() * 14 | 0); } });
 TX.rock = mkTex(64, 64, g => { g.fillStyle = '#6a6460'; g.fillRect(0, 0, 64, 64); for (let i = 0; i < 40; i++) { const x = sr() * 64, y = sr() * 64, w = 6 + sr() * 14, h = 4 + sr() * 8, b = 80 + sr() * 50 | 0; g.fillStyle = `rgb(${b},${b - 4},${b - 8})`; for (const dx of [-64, 0, 64]) for (const dy of [-64, 0, 64]) g.fillRect(x + dx, y + dy, w, h); } speckle(g, 64, 64, 300, .25); });
+TX.web = mkTex(64, 64, g => {   // a spider web: spokes and a spiral, pale on clear
+  g.clearRect(0, 0, 64, 64); g.strokeStyle = 'rgba(235,235,225,.85)'; g.lineWidth = 1;
+  for (let k = 0; k < 12; k++) { const a = k / 12 * TAU; g.beginPath(); g.moveTo(32, 32); g.lineTo(32 + Math.cos(a) * 46, 32 + Math.sin(a) * 46); g.stroke(); }
+  g.beginPath(); for (let t = 0; t < 60; t += .05) { const r = 2 + t * .5, a = t * 1.1; g.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r); } g.stroke();
+}, false);
 [TX.marble, TX.floor, TX.dark, TX.roof, TX.plains, TX.wood, TX.lavaRock, TX.lavaGlow, TX.scales, TX.belly, TX.armor, TX.grass, TX.horn, TX.mosaic, TX.path, TX.turf, TX.rock].forEach(worldTex);
 
 // --- crate textures ---
@@ -780,7 +786,7 @@ function inSolid(t) { for (const b of solids) if (b.on && t.s > b.s0 && t.s < b.
 //  Every ring's visuals are built once so the circles you've climbed stay visible below; solids only for the level being played.
 // =====================================================================
 let LV = null, LI = 0, START_S = 1.2, END_S = 298.16, torches = [], buildL = null;
-function setFrame(L) { R = L.R; Y0 = L.Y0; CIRC = TAU * R; CX = L.CX || 0; CZ = L.CZ || 0; }
+function setFrame(L) { R = L.R; Y0 = L.Y0; CIRC = TAU * R; CX = L.CX || 0; CZ = L.CZ || 0; STRAIGHT = !!L.straight; }
 const GM = new Geo(), GF = new Geo();
 const rubbleList = [], cityFires = [], torchSprites = [];
 function rubble(s, x, y) { rubbleList.push({ p: tw(s, x, y), sz: rand(.3, .8) }); }
@@ -845,6 +851,14 @@ function buildRing(L, vis) {
     }
     spikes.push({ s, x0, x1 });
   }
+  // webs across the road (Cirith Ungol): sticky, so jump them like the barricades
+  for (const [s, x0, x1] of L.webs || []) {
+    if (vis) {
+      const w = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, 1.3), THEMES.ungol.webMat); place(w, s, (x0 + x1) / 2, .65); scene.add(w);
+      for (const ex of [x0, x1]) { const st = new THREE.Mesh(GEO.cyl, lam(0xd8d8cc)); place(st, s, ex, .65); st.scale.set(.03, 1.3, .03); scene.add(st); }
+    }
+    spikes.push({ s, x0, x1 });
+  }
   const TS0 = -16.6, TS1 = -1.6;
   // inner wall (the next circle of the city, or the hillside, cliff or cave wall) runs all the way round, except where L.open leaves a gap
   const runs = []; { let a = TS0; for (const [g0, g1] of L.open || []) { runs.push([a, g0]); a = g1; } runs.push([a, E]); }
@@ -856,7 +870,7 @@ function buildRing(L, vis) {
     cbox(GM, TS0, E, 3.5, 4.6, B, H, { f: 'ot', sh: ws, tint: MARBLE_T, seg: 2.5, ys: 3 });
     for (let s = -15; s < E - 1; s += 2.2) cbox(GM, s - .55, s + .55, 3.5, 4.2, H, H + .9, { seg: 5, ys: 5, tint: MARBLE_T });
   }
-  for (const [a, b] of runs) solid(a === TS0 ? -20 : a, b === E ? CIRC + 20 : b, 3.5, 9, -30, 40, 'wall');
+  for (const [a, b] of runs) solid(a === TS0 ? -20 : a, b === E ? CIRC + 20 : b, 3.5, 9, -30, L.wallTop || 40, 'wall');
   // pilasters with torches, banners between
   if (!TH.pil) for (let s = 14; s < E - 3; s += 14) {
     if (vis) {
@@ -868,15 +882,20 @@ function buildRing(L, vis) {
   }
   // gate tower: start tunnel, and the gate up to the next circle at the end
   if (vis) {
-    cbox(GM, TS0, TS1, -7.5, -3.5, B, 8, { tint: MARBLE_T, f: 'toaz' });
-    cbox(GM, TS0, TS1, -3.46, -3.4, 0, 5.6, { f: 'o', tint: [.8, .78, .8] });
-    cbox(GM, TS0, TS1, 3.5, 7.5, B, 8, { tint: MARBLE_T, f: 'toaz' });
-    cbox(GM, TS0, TS1, -3.5, 3.5, 5.6, 8, { f: 'tbaz', tint: MARBLE_T });
-    cbox(GM, TS0 + 1, TS1 - 1, -6.5, 6.5, 8, 21, { f: 'oiazt', tint: MARBLE_T, ys: 3 });
-    for (let x = -6; x <= 6; x += 2) { cbox(GM, TS0 + .6, TS0 + 1.6, x - .45, x + .45, 21, 22.2, { seg: 5, ys: 5, tint: MARBLE_T }); cbox(GM, TS1 - 1.6, TS1 - .6, x - .45, x + .45, 21, 22.2, { seg: 5, ys: 5, tint: MARBLE_T }); }
+    // on the ring the road ends back at the gate it started from; a straight road gets a second gate tower at its end
+    for (const off of STRAIGHT ? [0, CIRC] : [0]) {
+      const a0 = TS0 + off, a1 = TS1 + off, yo = off ? (L.endY || 0) : 0;   // a climbing level's last gate stands at the top
+      cbox(GM, a0, a1, -7.5, -3.5, B, 8 + yo, { tint: MARBLE_T, f: 'toaz' });
+      cbox(GM, a0, a1, -3.46, -3.4, yo, 5.6 + yo, { f: 'o', tint: [.8, .78, .8] });
+      cbox(GM, a0, a1, 3.5, 7.5, B, 8 + yo, { tint: MARBLE_T, f: 'toaz' });
+      cbox(GM, a0, a1, -3.5, 3.5, 5.6 + yo, 8 + yo, { f: 'tbaz', tint: MARBLE_T });
+      cbox(GM, a0 + 1, a1 - 1, -6.5, 6.5, 8 + yo, 21 + yo, { f: 'oiazt', tint: MARBLE_T, ys: 3 });
+      for (let x = -6; x <= 6; x += 2) { cbox(GM, a0 + .6, a0 + 1.6, x - .45, x + .45, 21 + yo, 22.2 + yo, { seg: 5, ys: 5, tint: MARBLE_T }); cbox(GM, a1 - 1.6, a1 - .6, x - .45, x + .45, 21 + yo, 22.2 + yo, { seg: 5, ys: 5, tint: MARBLE_T }); }
+    }
+    if (STRAIGHT) cbox(GM, TS0 - .4, TS0, -3.5, 3.5, 0, 5.6, { f: 'z', tint: [.35, .33, .38] });   // the start gate is shut behind you
     addTorch(-6, 3.1, 2.8); addTorch(-12, -3.1, 2.8); addTorch(-12, 3.1, 2.8, true); addTorch(-6, -3.1, 2.8, true);
-    addTorch(E - 1.2, -3.0, 3.4); addTorch(E - 1.2, 3.0, 3.4);
-    const door = L.door = {}, dg = new THREE.Group(); place(dg, TS0 - .05, 0, 0); scene.add(dg);
+    addTorch(E - 1.2, -3.0, 3.4 + (L.endY || 0)); addTorch(E - 1.2, 3.0, 3.4 + (L.endY || 0));
+    const door = L.door = {}, dg = new THREE.Group(); place(dg, TS0 - .05 + (STRAIGHT ? CIRC : 0), 0, L.endY || 0); scene.add(dg);
     const dmat = ps1(new THREE.MeshLambertMaterial({ map: TX.door, color: TH.door || 0xffffff, side: THREE.DoubleSide, emissive: 0x101820 }));
     for (const side of [-1, 1]) {
       const geo = new THREE.PlaneGeometry(3.5, 5.6); geo.translate(-side * 1.75, 2.8, 0);
@@ -889,7 +908,7 @@ function buildRing(L, vis) {
   }
   solid(TS0, TS1, -9, -3.5, -30, 30, 'wall');
   solid(TS0, TS0 + .7, -4, 4, -30, 30, 'wall');
-  L.door.endBlock = solid(E - .55, E + 3, -9, 9, -30, 30, 'wall');
+  L.door.endBlock = solid(E - .55, E + 3, -9, 9, -30, 30 + (L.endY || 0), 'wall');
   // a wall of fire across the road that only dies with the boss
   if (L.gateS) {
     if (vis) { L.fireGate = []; for (let x = -1.8; x <= 1.8; x += .6) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.fire, color: 0xffa060, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); tw(L.gateS, x, 1.3, sp.position); sp.scale.set(1.2, 2.9, 1); scene.add(sp); L.fireGate.push(sp); } }
@@ -948,11 +967,23 @@ let ORC_PAL = MT_ORC, ENV = MT_ENV;
 const THEMES_FALLS = [];   // waterfall textures that scroll every frame
 function natTheme(o) { return Object.assign({ gm: new Geo(), gf: new Geo(), gw: new Geo(), tint: [1, 1, 1] }, o); }
 // a point in the world at a ring angle and radius, measured from the ring's centre
-const ringPt = (th, r, y, out) => (out || new V3()).set(CX + Math.cos(th) * r, Y0 + y, CZ + Math.sin(th) * r);
+const ringPt = (th, r, y, out) => {
+  if (!STRAIGHT) return (out || new V3()).set(CX + Math.cos(th) * r, Y0 + y, CZ + Math.sin(th) * r);
+  const s = (((th % TAU) + TAU) % TAU) / TAU * (CIRC + 140) - 60;   // spread from behind the start to past the end
+  return tw(s, R - r, y, out);
+};
+// where a level's big landmark stands: the middle of the ring, or straight ahead past the end of a straight road
+const landmark = (L, ahead = 40, y = 0) => STRAIGHT ? tw(CIRC - 16 + ahead, 0, y) : new V3(CX, Y0 + y, CZ);
+// a point to look at from the side of a straight road (or the ring's middle)
+const roadLook = (p, out) => STRAIGHT ? (out || new V3()).set(CX + R, p.y, p.z) : (out || new V3()).set(CX, p.y, CZ);
 function wideFloor(tex, color, rep, y, rad = 900, basic) {
   const t = tex.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep);
   const m = new THREE.Mesh(new THREE.CircleGeometry(rad, 48), ps1(basic ? new THREE.MeshBasicMaterial({ map: t, color }) : new THREE.MeshLambertMaterial({ map: t, color })));
-  m.rotation.x = -Math.PI / 2; m.position.set(CX, Y0 + y, CZ); scene.add(m); return t;
+  m.rotation.x = -Math.PI / 2; if (STRAIGHT) tw(CIRC / 2, 0, y, m.position); else m.position.set(CX, Y0 + y, CZ); scene.add(m); return t;
+}
+function roadBox(s0, s1, x0, x1, y0, y1, mat) {   // straight levels only: a plain box lined up with the road
+  const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, s1 - s0), mat);
+  tw((s0 + s1) / 2, (x0 + x1) / 2, (y0 + y1) / 2, m.position); scene.add(m); return m;
 }
 function instanced(geo, mat, list) {   // list of [x, y, z, sx, sy, sz, rotY]
   const im = new THREE.InstancedMesh(geo, mat, list.length), Q = new THREE.Quaternion(), S3 = new V3(), P3 = new V3();
@@ -982,16 +1013,18 @@ const THEMES = {
     scenery(L) {
       wideFloor(TX.grass, 0xb8e090, 180, L.base);
       const hill = new THREE.Mesh(new THREE.SphereGeometry(R - 3.6, 28, 10, 0, TAU, 0, Math.PI / 2), ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.grass.clone(); t.needsUpdate = true; t.repeat.set(30, 30); return t; })(), color: 0xb0e088 })));
-      hill.scale.y = (L.wallH + 7 - L.base) / (R - 3.6); hill.position.set(CX, Y0 + L.base, CZ); scene.add(hill);
+      const lm = landmark(L, 52, L.base);
+      hill.scale.y = (L.wallH + 7 - L.base) / (R - 3.6); hill.position.copy(lm); scene.add(hill);
       const top = Y0 + L.wallH + 7;
-      part(GEO.cyl, lam(0x6a4420), scene, CX, top + 3, CZ, 1.1, 7, 1.1);
-      for (const [x, y, z, r] of [[0, 9, 0, 5], [3, 8, 1, 3.6], [-3, 8.4, -1, 3.8], [0, 11, 1, 3.4]]) part(GEO.sph, lam(0x3e8a2a), scene, CX + x, top + y, CZ + z, r, r * .85, r);
+      part(GEO.cyl, lam(0x6a4420), scene, lm.x, top + 3, lm.z, 1.1, 7, 1.1);
+      for (const [x, y, z, r] of [[0, 9, 0, 5], [3, 8, 1, 3.6], [-3, 8.4, -1, 3.8], [0, 11, 1, 3.4]]) part(GEO.sph, lam(0x3e8a2a), scene, lm.x + x, top + y, lm.z + z, r, r * .85, r);
+      if (STRAIGHT) { const bank = lam(0x7ab850); roadBox(-80, CIRC + 90, 4.6, R + 30, L.base, L.wallH, bank); }   // the grassy bank along the lane
       const trunks = [], crowns = [], holes = [];
       for (let i = 0; i < 260; i++) { const th = rand(0, TAU), r = R + rand(8, 160), p = ringPt(th, r, L.base); const s = rand(1.6, 3.4); trunks.push([p.x, p.y + s, p.z, .3 * s, 2 * s, .3 * s]); crowns.push([p.x, p.y + 2.4 * s, p.z, 1.3 * s, 1.15 * s, 1.3 * s]); }
       for (let i = 0; i < 26; i++) { const th = rand(0, TAU), r = R + rand(12, 70); holes.push({ p: ringPt(th, r, L.base), r: rand(4, 7), th }); }
       instanced(GEO.cyl, lam(0x6a4420), trunks); instanced(GEO.sph, lam(0x3e8a2a), crowns);
       instanced(new THREE.SphereGeometry(1, 12, 6, 0, TAU, 0, Math.PI / 2), lam(0x6aa444), holes.map(h => [h.p.x, h.p.y, h.p.z, h.r, h.r * .6, h.r]));
-      for (const h of holes) { const d = new THREE.Mesh(new THREE.CircleGeometry(.9, 12), lam([0x2e7a34, 0xd8a020, 0xb83a2a][Math.random() * 3 | 0])); d.position.copy(h.p).add(_a.set(Math.cos(h.th + Math.PI), 0, Math.sin(h.th + Math.PI)).multiplyScalar(h.r * .93)); d.position.y += .9; d.lookAt(CX, d.position.y, CZ); scene.add(d); }
+      for (const h of holes) { const d = new THREE.Mesh(new THREE.CircleGeometry(.9, 12), lam([0x2e7a34, 0xd8a020, 0xb83a2a][Math.random() * 3 | 0])); const lk = roadLook(h.p); d.position.copy(h.p).add(_a.set(lk.x - h.p.x, 0, lk.z - h.p.z).normalize().multiplyScalar(h.r * .93)); d.position.y += .9; d.lookAt(lk.x, d.position.y, lk.z); scene.add(d); }
       for (let i = 0; i < 14; i++) { const th = rand(0, TAU), r = R + rand(180, 380), p = ringPt(th, r, L.base), s = rand(30, 70); const m = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 6, 0, TAU, 0, Math.PI / 2), lam(0x5a9a40)); m.position.copy(p); m.scale.set(s, s * .45, s); scene.add(m); }
     },
   }),
@@ -1017,19 +1050,22 @@ const THEMES = {
       const ft = TX.falls.clone(); ft.needsUpdate = true; ft.repeat.set(1, 6); this.bigFall = ft;
       this.bigFallMat = ps1(new THREE.MeshBasicMaterial({ map: ft, transparent: true, opacity: .85 }));
       const cliff = new THREE.Mesh(new THREE.CylinderGeometry(R + 42, R + 50, 110, 48, 2, true), ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.rock.clone(); t.needsUpdate = true; t.repeat.set(40, 8); return t; })(), color: 0xd8c0a8, side: THREE.DoubleSide })));
-      cliff.position.set(CX, Y0 + L.base + 50, CZ); scene.add(cliff);
+      if (STRAIGHT) { scene.remove(cliff); const cm = cliff.material; cm.side = THREE.FrontSide; roadBox(-90, CIRC + 120, -60, -44, L.base, L.base + 110, cm); roadBox(-90, CIRC + 120, R + 18, R + 30, L.base, L.base + 110, cm); roadBox(CIRC + 100, CIRC + 120, -60, R + 30, L.base, L.base + 110, cm); }
+      cliff.position.set(CX, Y0 + L.base + 50, CZ); if (!STRAIGHT) scene.add(cliff);
       for (let k = 0; k < 14; k++) {
         const th = k / 14 * TAU + .1, p = ringPt(th, R + 41.5, L.base + 40);
-        const w = new THREE.Mesh(new THREE.PlaneGeometry(rand(3, 5), 90), this.bigFallMat); w.position.copy(p); w.lookAt(CX, p.y, CZ); scene.add(w);
+        const w = new THREE.Mesh(new THREE.PlaneGeometry(rand(3, 5), 90), this.bigFallMat); w.position.copy(p); if (STRAIGHT) w.position.x -= 2.4; w.lookAt(roadLook(p)); scene.add(w);
         const g = glowSprite(0xffffff, 14, .5); g.position.copy(ringPt(th, R + 39, L.base + 4)); scene.add(g);
       }
-      const plat = new THREE.Mesh(new THREE.CircleGeometry(R - 3.5, 40), lam(0x6a8a4a)); plat.rotation.x = -Math.PI / 2; plat.position.set(CX, Y0 + L.wallH + .02, CZ); scene.add(plat);
+      if (STRAIGHT) roadBox(-90, CIRC + 100, 4.6, R + 18, L.base, L.wallH, lam(0x6a8a4a));
+      else { const plat = new THREE.Mesh(new THREE.CircleGeometry(R - 3.5, 40), lam(0x6a8a4a)); plat.rotation.x = -Math.PI / 2; plat.position.set(CX, Y0 + L.wallH + .02, CZ); scene.add(plat); }
       const houses = [], roofs = [], trees = [];
       for (let i = 0; i < 26; i++) { const th = rand(0, TAU), r = rand(4, R - 9), p = ringPt(th, r, L.wallH); const w = rand(2, 4); houses.push([p.x, p.y + w * .6, p.z, w, w * 1.2, w * .8, -th]); roofs.push([p.x, p.y + w * 1.2 + w * .3, p.z, w * .85, w * .7, w * .85, -th + Math.PI / 4]); }
       for (let i = 0; i < 50; i++) { const th = rand(0, TAU), r = rand(2, R - 7), p = ringPt(th, r, L.wallH), s = rand(1.2, 2.4); trees.push([p.x, p.y + s * 1.6, p.z, s]); }
       instanced(GEO.box, lam(0xf0e6cc), houses); instanced(new THREE.ConeGeometry(1, 1, 4), lam(0x5a7a4a), roofs); instanced(GEO.sph, lam(0xe0a030), trees);
-      const tw2 = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.6, 22, 8), lam(0xf0e6cc)); tw2.position.set(CX, Y0 + L.wallH + 11, CZ); scene.add(tw2);
-      part(new THREE.ConeGeometry(2, 4, 8), lam(0x5a7a4a), scene, CX, Y0 + L.wallH + 24, CZ);
+      const tp = STRAIGHT ? tw(CIRC + 10, 14, 0) : new V3(CX, Y0, CZ);
+      const tw2 = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.6, 22, 8), lam(0xf0e6cc)); tw2.position.set(tp.x, Y0 + L.wallH + 11, tp.z); scene.add(tw2);
+      part(new THREE.ConeGeometry(2, 4, 8), lam(0x5a7a4a), scene, tp.x, Y0 + L.wallH + 24, tp.z);
     },
   }),
 
@@ -1044,7 +1080,8 @@ const THEMES = {
       wideFloor(TX.lavaRock, 0x6a3020, 120, L.base, 700);
       for (let i = 0; i < 30; i++) { const g = glowSprite(0xff4a10, rand(20, 50), .55); g.material.fog = false; g.position.copy(ringPt(rand(0, TAU), R + rand(-25, 60), L.base + 2)); scene.add(g); }
       const ceil = new THREE.Mesh(new THREE.RingGeometry(1, R + 140, 48, 2), ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.rock.clone(); t.needsUpdate = true; t.repeat.set(40, 40); return t; })(), color: 0x403a40, side: THREE.DoubleSide })));
-      ceil.rotation.x = Math.PI / 2; ceil.position.set(CX, Y0 + L.wallH, CZ); scene.add(ceil);
+      ceil.rotation.x = Math.PI / 2; ceil.position.set(CX, Y0 + L.wallH, CZ);
+      if (STRAIGHT) { const cm = ceil.material; roadBox(-90, CIRC + 100, -200, R + 20, L.wallH, L.wallH + 2, cm); roadBox(-90, CIRC + 100, 4.6, R + 20, L.base, L.wallH, cm); } else scene.add(ceil);
       const cols = [], caps = [];
       for (const [rr, n] of [[R + 17, 30], [R + 31, 38], [R + 47, 48]]) for (let k = 0; k < n; k++) { const p = ringPt(k / n * TAU, rr, 0); const h = L.wallH - L.base; cols.push([p.x, Y0 + L.base + h / 2, p.z, 2.2, h, 2.2]); caps.push([p.x, Y0 + L.wallH - 1, p.z, 3.4, 2, 3.4, k]); }
       instanced(GEO.cyl, lam(0x5a5660), cols); instanced(GEO.box, lam(0x4a4650), caps);
@@ -1061,15 +1098,22 @@ const THEMES = {
     pil(s) { flag(s, 2.9, 0x2a7a2a); },
     scenery(L) {
       wideFloor(TX.grass, 0xe0c870, 180, L.base);
-      const hill = new THREE.Mesh(new THREE.CylinderGeometry(8, R - 4, L.wallH + 10 - L.base, 24), lam(0x8aa048)); hill.position.set(CX, Y0 + L.base + (L.wallH + 10 - L.base) / 2, CZ); scene.add(hill);
+      const lm = landmark(L, 62, 0);
+      const hill = new THREE.Mesh(new THREE.CylinderGeometry(8, R - 4, L.wallH + 10 - L.base, 24), lam(0x8aa048)); hill.position.set(lm.x, Y0 + L.base + (L.wallH + 10 - L.base) / 2, lm.z); scene.add(hill);
       const top = Y0 + L.wallH + 10;
-      part(GEO.box, lam(0x8a5428), scene, CX, top + 2, CZ, 12, 4, 6);
-      const roof = part(new THREE.CylinderGeometry(4, 4, 13, 3), lam(0xe8b830, { emissive: 0x3a2800 }), scene, CX, top + 5.3, CZ, 1, 1, .9); roof.rotation.z = Math.PI / 2;
-      for (let k = 0; k < 40; k++) { const p = ringPt(k / 40 * TAU, 7.6, L.wallH + 10.6); part(GEO.box, lam(0x6a4420), scene, p.x, p.y, p.z, .4, 1.4, .4); }
+      const hall = part(GEO.box, lam(0x8a5428), scene, lm.x, top + 2, lm.z, 12, 4, 6);
+      const roof = part(new THREE.CylinderGeometry(4, 4, 13, 3), lam(0xe8b830, { emissive: 0x3a2800 }), scene, lm.x, top + 5.3, lm.z, 1, 1, .9); roof.rotation.z = Math.PI / 2;
+      if (STRAIGHT) { hall.rotation.y = Math.PI / 2; roof.rotation.set(-Math.PI / 2, 0, 0); }   // the hall's gable faces down the road towards you
+      for (let k = 0; k < 40; k++) { const a = k / 40 * TAU; part(GEO.box, lam(0x6a4420), scene, lm.x + Math.cos(a) * 7.6, Y0 + L.wallH + 10.6, lm.z + Math.sin(a) * 7.6, .4, 1.4, .4); }
       const grass = [];
       for (let i = 0; i < 160; i++) { const p = ringPt(rand(0, TAU), R + rand(8, 200), L.base); grass.push([p.x, p.y + .5, p.z, rand(1, 2.5), rand(.6, 1.4), rand(1, 2.5)]); }
       instanced(GEO.sph, lam(0xb8a040), grass);
-      for (let i = 0; i < 18; i++) { const a = rand(-2.4, -.7), r = rand(420, 620), h = rand(120, 220); const m = gradCone(rand(70, 120), h, 6, 0xf4f4fa, 0x5a5a6a); m.position.set(CX + Math.cos(a) * r, Y0 + L.base + h / 2 - 10, CZ + Math.sin(a) * r); scene.add(m); }
+      for (let i = 0; i < 18; i++) {
+        const a = rand(-2.4, -.7), r = rand(420, 620), h = rand(120, 220); const m = gradCone(rand(70, 120), h, 6, 0xf4f4fa, 0x5a5a6a);
+        if (STRAIGHT) tw(rand(40, CIRC + 500), (i % 2 ? -1 : 1) * r * .8, L.base + h / 2 - 10, m.position);   // snowy peaks on both sides of the plain
+        else m.position.set(CX + Math.cos(a) * r, Y0 + L.base + h / 2 - 10, CZ + Math.sin(a) * r);
+        scene.add(m);
+      }
     },
   }),
 
@@ -1086,12 +1130,70 @@ const THEMES = {
       for (let i = 0; i < 70; i++) { const p = ringPt(rand(0, TAU), R + rand(8, 160), L.base), s = rand(2, 9); rocks.push([p.x, p.y + s * .3, p.z, s, s * rand(.6, 1.8), s, rand(0, 3)]); }
       instanced(GEO.ico, lam(0x241a18), rocks);
       let y = Y0 + L.base;
-      for (const [rt, rb, h] of [[11, 15, 20], [8, 11, 40], [6, 8, 34], [4, 5.5, 22]]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 8), lam(0x1a1416)); m.position.set(CX, y + h / 2, CZ); scene.add(m); y += h; }
-      for (const d of [-1, 1]) { const h = new THREE.Mesh(GEO.cone, lam(0x1a1416)); h.position.set(CX + d * 2.6, y + 6, CZ); h.scale.set(1.3, 14, 1.3); h.rotation.z = -d * .2; scene.add(h); }
-      const eye = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.eye, transparent: true, depthWrite: false, fog: false })); eye.position.set(CX, y + 6, CZ); eye.scale.set(9, 13, 1); scene.add(eye);
+      const bd = STRAIGHT ? tw(CIRC * .7, -70, 0) : new V3(CX, 0, CZ);   // Barad-dûr
+      for (const [rt, rb, h] of [[11, 15, 20], [8, 11, 40], [6, 8, 34], [4, 5.5, 22]]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 8), lam(0x1a1416)); m.position.set(bd.x, y + h / 2, bd.z); scene.add(m); y += h; }
+      for (const d of [-1, 1]) { const h = new THREE.Mesh(GEO.cone, lam(0x1a1416)); h.position.set(bd.x, y + 6, bd.z + d * 2.6); if (!STRAIGHT) h.position.set(bd.x + d * 2.6, y + 6, bd.z); h.scale.set(1.3, 14, 1.3); if (STRAIGHT) h.rotation.x = d * .2; else h.rotation.z = -d * .2; scene.add(h); }
+      const eye = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.eye, transparent: true, depthWrite: false, fog: false })); eye.position.set(bd.x, y + 6, bd.z); eye.scale.set(9, 13, 1); scene.add(eye);
       const eg = glowSprite(0xff3a08, 40, .7); eg.material.fog = false; eg.position.copy(eye.position); scene.add(eg);
-      const dm = gradCone(150, 230, 7, 0x3a1a1a, 0x140808); dm.position.set(CX + 520, Y0 + L.base + 100, CZ + 120); scene.add(dm);
-      const dg = glowSprite(0xff4a10, 160, .9); dg.material.fog = false; dg.position.set(CX + 520, Y0 + L.base + 220, CZ + 120); scene.add(dg);
+      const dp = STRAIGHT ? tw(CIRC + 420, 60, 0) : new V3(CX + 520, 0, CZ + 120);   // Mount Doom
+      const dm = gradCone(150, 230, 7, 0x3a1a1a, 0x140808); dm.position.set(dp.x, Y0 + L.base + 100, dp.z); scene.add(dm);
+      const dg = glowSprite(0xff4a10, 160, .9); dg.material.fog = false; dg.position.set(dp.x, Y0 + L.base + 220, dp.z); scene.add(dg);
+    },
+  }),
+
+  // Cirith Ungol: a narrow pass high in the Mountains of Shadow, webs strung everywhere, and Shelob waiting in the dark
+  ungol: natTheme({
+    wallTex: TX.rock, floorTex: TX.dark, tint: [.5, .52, .58], door: 0x6a7080,
+    webMat: new THREE.MeshBasicMaterial({ map: TX.web, transparent: true, side: THREE.DoubleSide, depthWrite: false }),
+    env: { sky: [0x020306, 0x0a0e14, 0x182018, 0x3a2a18], fog: [16, 140], fogC: 0x0c100c, amb: [0x58606a, .65], hemi: [0x8a98b0, 0x1a1410, .5], sun: [0xa0a8d0, .35], east: [0xff6a30, .35], stars: true },
+    orc: MT_ORC,
+    edge(s0, s1) { for (let s = s0 + .4; s < s1 - .4; s += 1.1) cbox(this.gm, s - .4, s + .4, -4.3, -3.5, 0, .4 + hsh(s, 4, 1) * 1.1, { seg: 5, ys: 5, tint: [.45, .47, .52] }); },
+    pil(s) {
+      const w = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 3.4), this.webMat); place(w, s, 3.42, 2.4 + hsh(s, 1, 1) * 2.5, -Math.PI / 2); scene.add(w);
+      const c = new THREE.Mesh(GEO.sph, lam(0xd8d4c8)); place(c, s + 2.4, 3.05, 3.4); c.scale.set(.32, .8, .32); scene.add(c);   // something wrapped up for later
+    },
+    scenery(L) {
+      wideFloor(TX.dark, 0x30303a, 120, L.base, 700);
+      const rock = ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.rock.clone(); t.needsUpdate = true; t.repeat.set(30, 6); return t; })(), color: 0x50545e }));
+      roadBox(-90, CIRC + 120, -30, -15, L.base, 30, rock);                 // the far side of the chasm
+      roadBox(-90, CIRC + 120, 4.6, 24, L.base, L.wallH, rock);             // the mountain behind the near wall
+      const spires = [];
+      for (let i = 0; i < 70; i++) { const p = tw(rand(-60, CIRC + 100), rand(-15, -12), 30), h = rand(4, 14); spires.push([p.x, p.y + h / 2, p.z, rand(.8, 2), h, rand(.8, 2)]); }
+      instanced(GEO.cone, lam(0x3a3e46), spires);
+      // great webs strung across the pass over your head, with Shelob's larder hanging from them
+      for (let s = 10; s < CIRC + 40; s += rand(14, 24)) {
+        const w = new THREE.Mesh(new THREE.PlaneGeometry(rand(16, 24), rand(10, 15)), this.webMat); place(w, s, rand(-8, -4), rand(9, 13)); w.rotation.z = rand(-.3, .3); scene.add(w);
+        for (let k = 0; k < 2; k++) { const c = new THREE.Mesh(GEO.sph, lam(0xcac6b8)); place(c, s + rand(-.3, .3), rand(-9, -1), rand(6.5, 9)); c.scale.set(.4, 1, .4); scene.add(c); }
+      }
+      const dm = gradCone(140, 220, 7, 0x3a1a1a, 0x140808); tw(CIRC + 420, 40, L.base + 90, dm.position); scene.add(dm);   // Mount Doom glows past the end of the pass
+      const dg = glowSprite(0xff4a10, 150, .85); dg.material.fog = false; tw(CIRC + 420, 40, L.base + 210, dg.position); scene.add(dg);
+    },
+  }),
+
+  // Mount Doom: rock spires up the side of the mountain, with the lava rising behind you
+  doom: natTheme({
+    wallTex: TX.lavaRock, floorTex: TX.dark, tint: [.72, .6, .56], door: 0xff8a40,
+    env: { sky: [0x140404, 0x4a0e06, 0x8a2008, 0xff6a10], fog: [30, 230], fogC: 0x4a160a, amb: [0x7a4a40, .65], hemi: [0xffaa70, 0x3a0a04, .55], sun: [0xffb090, .4], east: [0xff5a20, .7], cloud: 0x803020, bolts: true, embers: true },
+    orc: { sk: 0x5a4a3a, ska: 0x6a5844, ar: 0x4a2420, le: 0x2a1a12, met: 0x1a1414, sc: 1 },
+    edge() { },
+    pil(s) {
+      // torches on the mountain wall, beside whichever spire is there
+      const top = groundBelow(s, 0, 60); if (top < -5) return;
+      addTorch(s, 3.0, top + 2.7);
+    },
+    scenery(L) {
+      const lt = TX.lavaGlow.clone(); lt.needsUpdate = true; lt.wrapS = lt.wrapT = THREE.RepeatWrapping; lt.repeat.set(60, 60); this.lavaTex = lt;
+      const lava = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), ps1(new THREE.MeshBasicMaterial({ map: lt, color: 0xff8a40 })));
+      lava.rotation.x = -Math.PI / 2; tw(CIRC / 2, -40, L.base, lava.position); scene.add(lava); this.lavaMesh = lava;
+      const rock = ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.lavaRock.clone(); t.needsUpdate = true; t.repeat.set(30, 12); return t; })(), color: 0x6a4a42 }));
+      roadBox(-90, CIRC + 120, 4.6, 40, L.base, L.wallH, rock);   // the mountain itself, rising beside you
+      roadBox(CIRC - 2, CIRC + 120, -40, 40, L.base, (L.endY || 0) - .02, rock);   // the ledge at the top, by the Crack of Doom
+      const bd = tw(CIRC * .4, -260, 0);   // Barad-dûr across the plain
+      let y = Y0 + L.base;
+      for (const [rt, rb, h] of [[11, 15, 30], [8, 11, 50], [6, 8, 40], [4, 5.5, 26]]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 8), lam(0x1a1416)); m.position.set(bd.x, y + h / 2, bd.z); scene.add(m); y += h; }
+      const eye = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.eye, transparent: true, depthWrite: false, fog: false })); eye.position.set(bd.x, y + 8, bd.z); eye.scale.set(14, 20, 1); scene.add(eye);
+      const eg = glowSprite(0xff3a08, 60, .7); eg.material.fog = false; eg.position.copy(eye.position); scene.add(eg);
+      for (let i = 0; i < 24; i++) { const g = glowSprite(0xff5010, rand(20, 50), .5); g.material.fog = false; g.position.copy(tw(rand(-40, CIRC + 80), rand(-160, -20), L.base + 2)); scene.add(g); }
     },
   }),
 };
@@ -1616,7 +1718,7 @@ const LEVELS = [
   },
   // ---- one level for each of the other places on the map; each ring sits far out on its own so they never see each other ----
   {
-    name: 'THE SHIRE', sub: 'ORCS IN HOBBITON', loc: 'shire', theme: 'shire', next: 'RETURN TO THE MAP', R: 34, Y0: 0, CX: 5000, CZ: 0, base: -6, wallH: 7,
+    straight: true, name: 'THE SHIRE', sub: 'ORCS IN HOBBITON', loc: 'shire', theme: 'shire', next: 'RETURN TO THE MAP', R: 34, Y0: 0, CX: 5000, CZ: 0, base: -6, wallH: 7,
     floors: [[-16.6, 38, -3.5], [42, 70, -3.5], [70, 84, .2], [88.5, 118, -3.5], [128, 150, -3.5], [150, 162, -.6], [166, 1e9, -3.5]],
     pillars: [], bars: [[30, -3.5, .2], [56, -.4, 3.5], [100, -3.5, 3.5], [142, -3.5, .4], [176, .4, 3.5]],
     dz: [], balrogs: [],
@@ -1636,7 +1738,7 @@ const LEVELS = [
     },
   },
   {
-    name: 'RIVENDELL', sub: 'THE HIDDEN VALLEY', loc: 'riv', theme: 'riv', next: 'RETURN TO THE MAP', R: 34, Y0: 0, CX: 10000, CZ: 0, base: -30, wallH: 14,
+    straight: true, name: 'RIVENDELL', sub: 'THE HIDDEN VALLEY', loc: 'riv', theme: 'riv', next: 'RETURN TO THE MAP', R: 34, Y0: 0, CX: 10000, CZ: 0, base: -30, wallH: 14,
     floors: [[-16.6, 30, -3.5], [34.5, 60, -3.5], [72, 96, -3.5], [96, 110, .4], [114, 140, -3.5], [152, 175, -3.5], [178.5, 1e9, -3.5]],
     pillars: [[63, 64.8, -1.4, 1.4, .4], [67, 69, -.4, 2.4, 1.2]], bars: [[24, -3.5, .3], [84, -.3, 3.5], [126, -3.5, 3.5], [186, -3.5, .4]],
     dz: [], balrogs: [],
@@ -1657,7 +1759,7 @@ const LEVELS = [
     },
   },
   {
-    name: 'THE MINES OF MORIA', sub: "DURIN'S BANE AWAKES", loc: 'moria', theme: 'moria', next: 'RETURN TO THE MAP', R: 36, Y0: 0, CX: 15000, CZ: 0, base: -40, wallH: 16,
+    straight: true, name: 'THE MINES OF MORIA', sub: "DURIN'S BANE AWAKES", loc: 'moria', theme: 'moria', next: 'RETURN TO THE MAP', R: 36, Y0: 0, CX: 15000, CZ: 0, base: -40, wallH: 16,
     floors: [[-16.6, 26, -3.5], [30, 52, -3.5], [52, 66, .2], [70, 96, -3.5], [108, 128, -3.5], [131.5, 152, -3.5], [152, 202, -1.4, 1.4], [202, 1e9, -3.5]],
     pillars: [[99, 100.8, -1.4, 1.4, 0], [103, 104.8, -.6, 2.2, .6]], bars: [],
     open: [[152, 202]], gateS: 200.5,   // the Bridge of Khazad-dûm, and a wall of fire at its far end until the Balrog falls
@@ -1677,7 +1779,7 @@ const LEVELS = [
     },
   },
   {
-    name: 'THE RIDE TO EDORAS', sub: 'URUK-HAI ON THE PLAINS', loc: 'rohan', theme: 'rohan', next: 'RETURN TO THE MAP', R: 44, Y0: 0, CX: 20000, CZ: 0, base: -8, wallH: 6, ride: true,
+    straight: true, name: 'THE RIDE TO EDORAS', sub: 'URUK-HAI ON THE PLAINS', loc: 'rohan', theme: 'rohan', next: 'RETURN TO THE MAP', R: 44, Y0: 0, CX: 20000, CZ: 0, base: -8, wallH: 6, ride: true,
     floors: [[-16.6, 40, -3.5], [45, 75, -3.5], [75, 92, .4], [92, 118, -3.5], [123, 150, -3.5], [150, 166, -.4], [171, 205, -3.5], [210, 1e9, -3.5]],
     pillars: [],
     bars: [[16, -3.5, .3], [24, -.3, 3.5], [32, -3.5, 3.5], [52, -3.5, -.5], [58, .5, 3.5], [66, -3.5, 3.5], [98, -3.5, .2], [104, -.2, 3.5], [112, -3.5, 3.5], [130, -1.5, 3.5], [138, -3.5, .8], [144, -3.5, 3.5],
@@ -1697,7 +1799,7 @@ const LEVELS = [
     },
   },
   {
-    name: 'MORDOR', sub: 'IN THE SHADOW OF THE EYE', loc: 'mordor', theme: 'mordor', next: 'RETURN TO THE MAP', R: 36, Y0: 0, CX: 25000, CZ: 0, base: -14, wallH: 12,
+    straight: true, name: 'MORDOR', sub: 'IN THE SHADOW OF THE EYE', loc: 'mordor', theme: 'mordor', next: 'RETURN TO THE MAP', R: 36, Y0: 0, CX: 25000, CZ: 0, base: -14, wallH: 12,
     floors: [[-16.6, 32, -3.5], [36, 60, -3.5], [60, 78, .3], [82.5, 104, -3.5], [116, 140, -3.5], [140, 156, -.5], [160, 1e9, -3.5]],
     pillars: [], bars: [[26, -3.5, .3], [48, -.3, 3.5], [92, -3.5, 3.5], [130, -3.5, .2], [170, .3, 3.5], [190, -3.5, 3.5]],
     dz: [{ s0: 36, s1: 82, int: 2.6 }, { s0: 118, s1: 204, int: 2.3, multi: 170 }], d3: 160, balrogs: [],
@@ -1717,7 +1819,54 @@ const LEVELS = [
       addOrc('grunt', 178, -3, { ladder: true }); addOrc('archer', 186, -2.4); addOrc('grunt', 196, 0, { patrol: { ax: 'x', amp: 2, sp: 2.6 } });
     },
   },
+  {
+    straight: true, name: 'THE PASS OF CIRITH UNGOL', sub: "SHELOB'S LAIR", loc: 'ungol', theme: 'ungol', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 30000, CZ: 0, base: -30, wallH: 26,
+    floors: [[-16.6, 44, -3.5], [47.5, 82, -3.5], [82, 98, .3], [98, 128, -3.5], [131.5, 166, -3.5], [166, 182, -3.5, -.2], [185.5, 1e9, -3.5]],
+    pillars: [], bars: [],
+    webs: [[24, -3.5, .2], [34, -.2, 3.5], [58, -3.5, 3.5], [68, -3.5, .4], [106, -.4, 3.5], [114, -3.5, 3.5], [122, -3.5, 0], [140, 0, 3.5], [150, -3.5, 3.5], [158, -3.5, .2], [196, -3.5, 3.5], [204, -.3, 3.5], [212, -3.5, .3]],
+    shelob: { r0: 8, r1: 222 },   // she drops in behind you near the start and chases you all the way down the pass
+    dz: [], balrogs: [],
+    content() {
+      crateList([
+        // during the chase you can't see far ahead, so the crates sit at the sides: grab them or leave them
+        ['b', 16, -2.4], ['b', 16, 2.4], ['q', 30, 2.4], ['b', 40, 2.4], ['c', 52, 2.4], ['r', 63, 2.4], ['b', 76, -2.4], ['q', 90, 2.4], ['b', 102, -2.4],
+        ['c', 118, -2.4], ['b', 136, 2.4], ['l', 146, -2.4], ['b', 162, -2.4], ['c', 176, -2.4], ['q', 192, 2.4], ['b', 200, -2.4], ['b', 218, 2.4],
+      ]);
+      aLine(3, 7, 0, .8, 5); aArc(22.5, 25.5, -1.6, .8, 2.2, 4); aArc(32.5, 35.5, 1.6, .8, 2.2, 4); aArc(42.5, 49, 0, .8, 3, 6); aArc(56.5, 59.5, 0, .8, 2.2, 4);
+      aLine(84, 96, 2, .8, 8); aArc(104.5, 107.5, 1.6, .8, 2.2, 4); aArc(112.5, 115.5, 0, .8, 2.2, 4); aArc(126.5, 133, 0, .8, 3, 6); aArc(148.5, 151.5, 0, .8, 2.2, 4);
+      aLine(168, 180, -2, .8, 8); aArc(183.5, 187.5, -1, .8, 2.6, 4); aArc(194.5, 197.5, 0, .8, 2.2, 4); aLine(224, 232, 0, .8, 6);
+    },
+  },
+  {
+    // a climb up the side of the mountain on spires of rock, with the lava rising underneath
+    straight: true, name: 'MOUNT DOOM', sub: 'CLIMB TO THE CRACK OF DOOM', loc: 'doom', theme: 'doom', next: 'RETURN TO THE MAP', R: 22, Y0: 0, CX: 35000, CZ: 0, base: -40, wallH: 50, wallTop: 70,
+    floors: [[-16.6, 6.5, -3.5]],
+    pillars: (() => {
+      // stepping stones that zig-zag left and right, a wide resting spire every fourth step
+      const list = []; let s = 6.5, top = 1.1, i = 0;
+      while (s < 113) {
+        const rest = i % 4 === 0, lane = rest ? [-3.5, 3.5] : i % 2 ? [-3.5, .7] : [-.7, 3.5], len = rest ? 4.2 : 2.6;
+        list.push([s, s + len, lane[0], lane[1], +top.toFixed(2)]);
+        s += len + 1.5 + (i % 3) * .35; top += 1.15 + (i % 5 === 4 ? .75 : (i % 2) * .3); i++;
+      }
+      list.push([s, TAU * 22 + 2, -3.5, 3.5, +top.toFixed(2)]);   // the ledge at the top, up to the last gate
+      return list;
+    })(),
+    bars: [], dz: [{ s0: 36, s1: 104, int: 3.4 }], balrogs: [],
+    lava: { rate: .4, delay: 3.5 },
+    content() {
+      const P = this.pillars;
+      P.forEach((p, i) => {
+        const [s0, s1, x0, x1, top] = p, sm = (s0 + Math.min(s1, END_S)) / 2, xm = (x0 + x1) / 2;
+        if (i === 8 || i === 16) addCrate('c', sm, xm);
+        else if (i > 0 && i % 4 === 0) addCrate(i % 8 ? 'q' : 'r', sm, xm + 1.6);
+        if (i < P.length - 1) aLine(s0 + .5, Math.min(s1, END_S) - .5, xm, top + .8, 3);
+      });
+    },
+  },
 ];
+
+for (const L of LEVELS) if (L.lava) L.endY = L.pillars[L.pillars.length - 1][4];   // the climb's last gate stands on the top spire
 
 // apples as instanced 3D fruit
 const APPLE_MAX = 260;
@@ -1749,6 +1898,7 @@ function setupEntities() {
   BALROG_POOL = [0, 1, 2].map(() => makeBalrog());
   BALROG_POOL.forEach(m => hideBalrog({ m }));
   SAURON = makeSauron(); calibrateSauron(); showSauron(false);
+  shelob.m = makeShelob();
   const pg = new THREE.Group();
   part(new THREE.OctahedronGeometry(1, 0), bas(0xeaf8ff), pg, 0, 0, 0, .14, .24, .14);
   const gl = glowSprite(0x9ad8ff, 1.3); pg.add(gl);
@@ -1765,6 +1915,7 @@ function clearLevel() {
   for (const pl of plats) { scene.remove(pl.mesh); (pl.ropes || []).forEach(r => scene.remove(r)); } plats.length = 0;
   apples.length = 0; solids.length = 0; spikes.length = 0;
   for (const b of balrogs) { if (b.atk) endAttack(b); hideBalrog(b); } balrogs = [];
+  resetShelob(); lavaY = -99;
 }
 function loadLevel(li) {
   clearLevel();
@@ -1824,6 +1975,7 @@ function respawn(fresh) {
   const ch = balrogs.find(b => b.def.chase);
   if (!ch || cp.s < ch.def.r1) { chase.active = false; chase.done = false; }
   if (LV.boss) resetBoss();
+  resetShelob(); resetLava();
   cam.mode = 0; cam.m = 0; Music.mode = 0;
   for (const pl of plats) { pl.gone = 0; pl.cr = 0; pl.fv = 0; pl.cy = pl.by; pl.box.on = true; pl.mesh.visible = true; }
   hob.meshes.forEach(m => m.material = m.userData.mat); hob.root.scale.set(1, 1, 1); hob.body.rotation.set(0, 0, 0);
@@ -1853,6 +2005,7 @@ addEventListener('mousedown', e => {
   if (e.button === 2) hit.Mouse2 = true;
 });
 addEventListener('contextmenu', e => e.preventDefault());
+addEventListener('pointermove', e => { if (state === 'map' && (e.buttons & 1) && !(e.target.closest && e.target.closest('[data-key]'))) mapClick(e.clientX, e.clientY, true); });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; touchReset(); if (state === 'play') pause(true); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(true); });
 function onKey(code) {
@@ -1860,9 +2013,7 @@ function onKey(code) {
   if (code === 'KeyZ') { cheats.god = !cheats.god; if (state !== 'paused') banner(cheats.god ? 'INVINCIBLE ON' : 'INVINCIBLE OFF', 1); syncPauseBtns(); return; }
   if (code === 'KeyX') { cheats.ammo = !cheats.ammo; if (state !== 'paused') banner(cheats.ammo ? 'UNLIMITED ROCKETS' : 'ROCKETS NORMAL', 1); syncPauseBtns(); return; }
   if (state === 'map') {
-    if (code === 'ArrowLeft' || code === 'KeyA' || code === 'ArrowDown' || code === 'KeyS') mapGo(-1);
-    else if (code === 'ArrowRight' || code === 'KeyD' || code === 'ArrowUp' || code === 'KeyW') mapGo(1);
-    else if (code === 'Enter' || code === 'Space') mapSelect();
+    if (code === 'Enter' || code === 'Space') mapSelect();   // walking is read every frame from the held keys
     else if (/^(Digit|Numpad)[123]$/.test(code)) startGame(+code.slice(-1) - 1);
     return;
   }
@@ -1908,12 +2059,6 @@ function pollPad() {
   pad.z = clamp(-dz(gp.axes[1] || 0) + (b(12) ? 1 : 0) - (b(13) ? 1 : 0), -1, 1);
   pad.jump = b(0); pad.jumpP = pr(0); pad.spinP = pr(2) || pr(4); pad.fireP = pr(1) || pr(5) || pr(7);
   if (state === 'title') { if (pr(12)) onKey('ArrowUp'); if (pr(13)) onKey('ArrowDown'); if (pr(1)) onKey('Escape'); }
-  if (state === 'map') {
-    const ax = gp.axes[0] || 0, sx = ax > .5 ? 1 : ax < -.5 ? -1 : 0;
-    if (pr(14) || pr(13) || (sx < 0 && pad.sx >= 0)) onKey('ArrowLeft');
-    if (pr(15) || pr(12) || (sx > 0 && pad.sx <= 0)) onKey('ArrowRight');
-    pad.sx = sx;
-  }
   if (pr(9)) onKey(state === 'paused' ? 'Escape' : 'Enter');
   else if (pr(0) && (state === 'title' || state === 'map' || state === 'gameover' || state === 'complete')) onKey('Enter');
   for (let i = 0; i < gp.buttons.length; i++) pad.prev[i] = b(i);
@@ -2676,6 +2821,75 @@ function poseBalrog(b, dt) {
     if (Math.random() < .4) { _a.set(rand(-2, 2), rand(5, 7), rand(-2.4, -1.4)).applyMatrix4(r.matrixWorld); smoke.spawn(_a.x, _a.y, _a.z, rand(-.5, .5), rand(1.5, 3), rand(-.5, .5), rand(1.2, 2), .8, 2.6, [.1, .05, .05], [.2, .12, .12], -.3, .5); }
   }
 }
+// --- Shelob: the great spider of Cirith Ungol drops out of the webs and chases you down the pass ---
+const shelob = { m: null, s: 0, x: 0, y: 0, state: 'hidden', t: 0, gait: 0 };
+function makeShelob() {
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
+  const hide = lam(0x17130f, { emissive: 0x060403 }), sheen = lam(0x2c2620), pale = lam(0x8a8270), SPH = new THREE.SphereGeometry(1, 14, 10);
+  part(SPH, hide, body, 0, 2.7, -2.7, 2.3, 1.9, 2.9);                                        // the great swollen body
+  for (const [x, z] of [[0, -1.2], [-.7, -2.2], [.7, -2.2], [0, -3.2], [-.5, -4], [.5, -4]]) part(SPH, pale, body, x, 4.4 - Math.abs(z + 2.6) * .3, z, .28, .1, .34);
+  part(SPH, sheen, body, 0, 1.95, .45, 1.25, 1, 1.4);                                       // head
+  const EYE = lam(0xd8ffb0, { emissive: 0x7ac050 }), eyes = [];
+  for (const [x, y, z, r] of [[-.42, 2.5, 1.55, .17], [.42, 2.5, 1.55, .17], [-.2, 2.68, 1.62, .12], [.2, 2.68, 1.62, .12], [-.7, 2.25, 1.3, .12], [.7, 2.25, 1.3, .12], [-.16, 2.25, 1.8, .1], [.16, 2.25, 1.8, .1]]) eyes.push(part(SPH, EYE, body, x, y, z, r, r, r));
+  const glow = glowSprite(0xb0ff80, 2.2, .75); glow.position.set(0, 2.45, 1.8); body.add(glow);
+  for (const x of [-.32, .32]) { const f = part(GEO.cone, lam(0x0c0a08), body, x, 1.35, 1.65, .14, .8, .14); f.rotation.x = Math.PI * .85; }   // fangs
+  const legs = [];
+  [1.0, .45, -.15, -.75].forEach((z0, k) => { for (const side of [-1, 1]) legs.push({ side, z0, ph: (k % 2 ? Math.PI : 0) + (side > 0 ? Math.PI : 0), upper: part(GEO.cyl, hide, root, 0, 0, 0), lower: part(GEO.cyl, hide, root, 0, 0, 0) }); });
+  root.scale.setScalar(1.45); root.visible = false; scene.add(root);
+  return { root, body, legs, glow };
+}
+function poseShelob(dt, speed) {
+  const sh = shelob, m = sh.m; sh.gait += dt * (1.2 + Math.abs(speed) * 1.5) * Math.sign(speed || 1);
+  const hip = _a, knee = _b, foot = _c;
+  for (const L of m.legs) {
+    const ph = sh.gait + L.ph, sw = Math.sin(ph), lift = Math.max(0, Math.cos(ph));
+    hip.set(L.side * .75, 2, L.z0);
+    foot.set(L.side * (3.3 + Math.abs(L.z0) * .4), lift * .8 - sh.y / 1.45 * 0, L.z0 * 2 + sw * 1.1);
+    knee.copy(hip).add(foot).multiplyScalar(.5); knee.x += L.side * .7; knee.y += 2.3;
+    setLimb(L.upper, hip, knee, .17); setLimb(L.lower, knee, foot, .11);
+  }
+  m.body.position.y = Math.sin(sh.gait * 2) * .12; m.glow.material.opacity = .55 + Math.sin(T * 7) * .2;
+}
+function resetShelob() { shelob.state = 'hidden'; shelob.y = 0; if (shelob.m) shelob.m.root.visible = false; }
+function updateShelob(dt) {
+  const d = LV && LV.shelob, sh = shelob;
+  if (!d || !sh.m) return;
+  if (sh.state === 'hidden') {
+    if (state === 'play' && !chase.done && P.s > d.r0 && P.s < d.r1) {
+      chase.active = true; chase.s = P.s - 13; sh.state = 'drop'; sh.t = 0; sh.x = 0; sh.m.root.visible = true;
+      cam.mode = 1; Music.mode = 1; S.roar(); cam.shake = .6; banner('SHELOB! RUN!!!', 1.8);
+    } else return;
+  }
+  sh.t += dt;
+  let spd = 0;
+  if (sh.state === 'drop' || sh.state === 'chase') {
+    if (sh.state === 'drop') { sh.y = lerp(16, 0, easeOut(sh.t / .9)); if (sh.t >= .9) { sh.state = 'chase'; cam.shake = Math.max(cam.shake, .7); S.smash(); } }
+    if (state === 'play') {
+      const gap = P.s - chase.s; spd = 7.2 + Math.max(0, gap - 9) * .6; chase.s += spd * dt;
+      if (P.s < chase.s + 1.4) hurt('squash');
+      if (P.s > d.r1) { chase.done = true; chase.active = false; sh.state = 'flee'; sh.t = 0; cam.mode = 0; Music.mode = gs.superT > 0 ? 2 : 0; S.roar(); banner('PHEW!'); }
+    }
+    sh.s = chase.s - 3.2; sh.x = damp(sh.x, clamp(P.x, -1.5, 1.5) * .6, 2, dt);
+  } else if (sh.state === 'flee') {   // the light of the phial is too much for her: she backs away into the dark
+    spd = -4; sh.s -= 4 * dt; sh.y = -Math.max(0, sh.t - 1.2) * 3;
+    if (sh.t > 3) { resetShelob(); return; }
+  }
+  place(sh.m.root, sh.s, sh.x, sh.y);
+  poseShelob(dt, state === 'play' || sh.state === 'flee' ? spd : 0);
+}
+
+// --- Mount Doom's lava: it rises steadily, so keep climbing ---
+let lavaY = -99, lavaT = 0;
+function resetLava() { if (!LV || !LV.lava) return; lavaY = gs.cp.y - 5; lavaT = 0; }
+function updateLava(dt) {
+  const L = LV && LV.lava, TH = THEMES.doom;
+  if (!L) return;
+  if (state === 'play') { lavaT += dt; if (lavaT > L.delay) lavaY += L.rate * dt; if (lavaT - dt <= L.delay && lavaT > L.delay) banner('THE LAVA IS RISING!', 1.6); }
+  if (TH.lavaMesh) { TH.lavaMesh.position.y = Y0 + lavaY; TH.lavaTex.offset.x += dt * .015; TH.lavaTex.offset.y += dt * .01; }
+  if (state === 'play' && Math.random() < dt * 14) flame(tw(P.s + rand(-8, 14), rand(-10, 3), lavaY + .1, _a), 1.2, 2);
+  if (state === 'play' && P.y < lavaY + .15) hurt('burn');
+}
+
 function updateChase(b, dt) {
   const d = b.def;
   if (b.state === 'hidden') {
@@ -3313,7 +3527,7 @@ function animHorse(dt) {
 function animHobbit(dt) {
   const H = hob, r = H.root, riding = LV && LV.ride;
   if (state === 'title' || state === 'map') { P.s = START_S + 1; P.x = 0; P.y = 0; P.heading = 0; P.ground = true; P.vs = P.vx = 0; }
-  const rotY = -(P.s / R + P.heading);
+  const rotY = -(trackAng(P.s) + P.heading);
   horse.root.visible = riding; horse.shadow.visible = false;
   if (riding) {
     // Gandalf sits on Shadowfax's back and rides with him
@@ -3495,7 +3709,7 @@ const RANGES = [
 ];
 const RIVERS = [[[41, -60], [43, -30], [41, -14], [45, 0], [46, 12], [47.6, 26], [46, 45]]];   // the Great River
 const DOOM = [60, 5];
-const SITES = [{ x: -50, z: -8, r: 6, y: 1.2 }, { x: -20, z: -29, r: 4, y: 1.3 }, { x: 10, z: 12, r: 3.5, y: 1.1 }, { x: 37, z: 21, r: 4.6, y: 1 }, { x: 66, z: -6, r: 3.5, y: 1 }];
+const SITES = [{ x: -50, z: -8, r: 6, y: 1.2 }, { x: -20, z: -29, r: 4, y: 1.3 }, { x: 10, z: 12, r: 3.5, y: 1.1 }, { x: 37, z: 21, r: 4.6, y: 1 }, { x: 66, z: -6, r: 3.5, y: 1 }, { x: 50.5, z: 10, r: 2.2, y: 2.2 }, { x: 62.5, z: 11.5, r: 2, y: 1.4 }];
 function polyDist(px, pz, pts) {
   let best = 1e9;
   for (let i = 0; i < pts.length - 1; i++) {
@@ -3654,10 +3868,12 @@ const NODES = [
   { name: 'MORIA', x: -14.5, z: -3.5, open: true, loc: 'moria', sub: "THE MINES · BALROG BOSS" },
   { name: 'EDORAS', x: 10, z: 16.8, open: true, loc: 'rohan', sub: 'RIDE ACROSS ROHAN · 1 LEVEL' },
   { name: 'MINAS TIRITH', x: 42.2, z: 21, open: true, loc: 'mt', sub: 'THE SIEGE OF GONDOR · 3 LEVELS' },
+  { name: 'CIRITH UNGOL', x: 50.5, z: 10, open: true, loc: 'ungol', sub: "THE PASS · RUN FROM SHELOB!" },
   { name: 'MORDOR', x: 57, z: -3, open: true, loc: 'mordor', sub: 'IN THE SHADOW OF THE EYE · 1 LEVEL' },
+  { name: 'MOUNT DOOM', x: 62.5, z: 11.5, open: true, loc: 'doom', sub: 'THE CLIMB · OUTRUN THE LAVA' },
 ];
 const ROAD = (() => {
-  const way = [NODES[0], [-40, -6], [-30, -17], NODES[1], [-18.5, -13], NODES[2], [-5, 3], [1, 11], NODES[3], [21, 17], [31, 14.5], [40, 15.5], NODES[4], [46, 15], [51, 7], NODES[5]];
+  const way = [NODES[0], [-40, -6], [-30, -17], NODES[1], [-18.5, -13], NODES[2], [-5, 3], [1, 11], NODES[3], [21, 17], [31, 14.5], [40, 15.5], NODES[4], [46, 14.5], NODES[5], [54, 3], NODES[6], [62, 0], [65, 6], NODES[7]];
   const curve = new THREE.CatmullRomCurve3(way.map(w => w.x !== undefined ? new V3(w.x, 0, w.z) : new V3(w[0], 0, w[1])), false, 'centripetal');
   const N = 1600, pts = curve.getSpacedPoints(N), len = curve.getLength();
   pts.forEach(p => p.y = groundY(p.x, p.z));
@@ -3682,7 +3898,7 @@ const ROAD = (() => {
 }
 
 // --- Gandalf's map token ---
-const tok = { g: new THREE.Group(), s: ROAD.at[4], target: 4, face: 0, hop: 0 };
+const tok = { g: new THREE.Group(), p: new V3(NODES[4].x, 0, NODES[4].z + 2), dest: null, near: -1, face: 0, hop: 0 };
 {
   const g = tok.g, b = new THREE.Group(); g.add(b); tok.body = b;
   mcone(.55, 1.5, 8, 0xf4f4fa, 0, .75, 0, b);
@@ -3698,36 +3914,48 @@ const tok = { g: new THREE.Group(), s: ROAD.at[4], target: 4, face: 0, hop: 0 };
 // --- map state, controls and camera ---
 const mc = { zoom: 0, zt: 0, p: new V3(), l: new V3(), snap: true };
 const mapUI = document.getElementById('mapUI'), signEl = document.getElementById('sign');
-let signShown = -1, mapUIOn = null;
-const tokArrived = () => Math.abs(tok.s - ROAD.at[tok.target]) < .5;
-function mapGo(d) { const t = clamp(tok.target + d, 0, NODES.length - 1); if (t === tok.target) { S.click(); return; } tok.target = t; S.jump(); }
+let signShown = null, mapUIOn = null;
+// Gandalf walks freely over Middle-earth: keys, stick or gamepad, or tap/hold where he should go.
+// Walk up to a place and its sign comes up; Enter (or the ENTER button, or tapping the place) goes in.
+const NEAR_R = 2.4;
+function nodeNear() { let best = -1, bd = NEAR_R; NODES.forEach((n, i) => { const d = Math.hypot(tok.p.x - n.x, tok.p.z - n.z); if (d < bd) { bd = d; best = i; } }); return best; }
+const onLand = (x, z) => coastAt(x, z) > .8;
 function mapSelect() {
-  if (!tokArrived()) return;
-  const n = NODES[tok.target];
+  if (tok.near < 0) { S.click(); return; }
+  const n = NODES[tok.near];
   if (!n.open) { S.click(); signEl.classList.remove('shake'); void signEl.offsetWidth; signEl.classList.add('shake'); return; }
   S.dbl();
   if (n.loc === 'mt') enterCity(false); else startGame(LEVELS.findIndex(L => L.loc === n.loc));
 }
-// after a place is finished (or quit), come back out onto the map with Gandalf standing on it
+// after a place is finished (or quit), come back out onto the map with Gandalf standing just in front of it
 function backToMap(loc) {
   newGame(0); state = 'map'; iris.mode = 'none'; showScreen(null);
-  const i = Math.max(0, NODES.findIndex(n => n.loc === loc)); tok.target = i; tok.s = ROAD.at[i];
-  mc.zoom = mc.zt = 0; mc.snap = true; signShown = -1;
+  const n = NODES.find(n => n.loc === loc) || NODES[0]; tok.p.set(n.x, 0, n.z + 1.6); tok.dest = null;
+  mc.zoom = mc.zt = 0; mc.snap = true; signShown = null;
 }
 function enterCity(instant) {
-  state = 'title'; mc.zt = 1; tok.target = 4; iris.mode = 'none';
-  if (instant) { mc.zoom = 1; tok.s = ROAD.at[4]; mc.snap = true; showScreen('sTitle'); } else showScreen(null);
+  state = 'title'; mc.zt = 1; iris.mode = 'none'; tok.dest = null;
+  if (instant) { mc.zoom = 1; tok.p.set(NODES[4].x, 0, NODES[4].z + 1.6); mc.snap = true; showScreen('sTitle'); } else showScreen(null);
 }
 function toMap() { state = 'map'; mc.zt = 0; showScreen(null); S.click(); }
-function mapClick(cx, cy) {
-  const r = canvas.getBoundingClientRect(); let best = -1, bd = Math.max(46, r.height * .11);
-  NODES.forEach((n, i) => {
+// where on the land a screen point is (null over the sea)
+function groundAt(cx, cy) {
+  const r = canvas.getBoundingClientRect();
+  _a.set((cx - r.left) / r.width * 2 - 1, -(cy - r.top) / r.height * 2 + 1, .5).unproject(mapCam);
+  const dir = _a.sub(mapCam.position).normalize(), o = mapCam.position;
+  let y = 1, x = 0, z = 0;
+  for (let k = 0; k < 4; k++) { const t = (y - o.y) / dir.y; x = o.x + dir.x * t; z = o.z + dir.z * t; y = groundY(x, z); }
+  return onLand(x, z) ? { x, z } : null;
+}
+function mapClick(cx, cy, held) {
+  const r = canvas.getBoundingClientRect(); let best = -1, bd = Math.max(40, r.height * .08);
+  if (!held) NODES.forEach((n, i) => {
     _a.set(n.x, groundY(n.x, n.z) + 1, n.z).project(mapCam);
     const d = Math.hypot(r.left + (_a.x * .5 + .5) * r.width - cx, r.top + (-_a.y * .5 + .5) * r.height - cy);
     if (d < bd) { bd = d; best = i; }
   });
-  if (best < 0) return;
-  if (best === tok.target && tokArrived()) mapSelect(); else { tok.target = best; S.jump(); }
+  if (best >= 0) { if (best === tok.near) mapSelect(); else { tok.dest = { x: NODES[best].x, z: NODES[best].z + .6 }; S.jump(); } return; }
+  const g = groundAt(cx, cy); if (g) { if (!held && !tok.dest) S.jump(); tok.dest = g; }
 }
 function updateMap(dt) {
   TX.sea.offset.x += dt * .012; TX.sea.offset.y += dt * .005;
@@ -3735,34 +3963,43 @@ function updateMap(dt) {
   for (const c of mapFx.clouds) { c.position.x += dt * .8; if (c.position.x > 100) c.position.x = -90; }
   mapFx.eye.material.opacity = .85 + Math.sin(T * 3) * .15; mapFx.doom.material.opacity = .7 + Math.sin(T * 2.3) * .2;
   for (const n of NODES) if (n.lock) n.lock.position.y += Math.sin(T * 2.5 + n.x) * .004;
-  // Gandalf hops along the road at a steady pace
-  const goal = ROAD.at[tok.target], spd = 15 * ROAD.N / ROAD.len, prev = tok.s;
-  tok.s = approach(tok.s, goal, spd * dt);
-  const i0 = Math.min(ROAD.N - 1, Math.floor(tok.s)), f = tok.s - i0, a = ROAD.pts[i0], b = ROAD.pts[i0 + 1];
-  const moving = tok.s !== prev;
-  if (moving) { tok.hop += dt * 9; tok.face = Math.atan2((b.x - a.x) * Math.sign(tok.s - prev), (b.z - a.z) * Math.sign(tok.s - prev)); }
-  else { tok.hop = 0; tok.face = 0; }
-  tok.g.position.set(lerp(a.x, b.x, f), lerp(a.y, b.y, f) + .05, lerp(a.z, b.z, f));
-  tok.body.position.y = moving ? Math.abs(Math.sin(tok.hop)) * .45 : Math.sin(T * 2.5) * .03;
-  tok.g.rotation.y = damp(tok.g.rotation.y, tok.g.rotation.y + angDiff(tok.g.rotation.y, tok.face), 12, dt);
-  const sel = NODES[tok.target];
-  mapFx.ring.position.set(sel.x, groundY(sel.x, sel.z) + .3, sel.z); mapFx.ring.scale.setScalar(1 + Math.sin(T * 5) * .08); mapFx.ring.visible = tokArrived();
-  // the sign names the place Gandalf is heading for
-  if (signShown !== tok.target) {
-    signShown = tok.target;
-    document.getElementById('signName').textContent = sel.name;
-    document.getElementById('signSub').textContent = sel.open ? sel.sub : 'LOCKED · COMING SOON';
-    signEl.classList.toggle('locked', !sel.open);
+  // Gandalf walks where he's told
+  let mx = 0, mz = 0;
+  if (state === 'map') {
+    mx = inp.x; mz = -inp.z;
+    if (mx || mz) tok.dest = null;
+    else if (tok.dest) { mx = tok.dest.x - tok.p.x; mz = tok.dest.z - tok.p.z; if (Math.hypot(mx, mz) < .25) { tok.dest = null; mx = mz = 0; } }
+  }
+  const ml = Math.hypot(mx, mz), moving = ml > 0;
+  if (moving) {
+    const sp = 11 * dt * Math.min(1, ml) / ml, nx = tok.p.x + mx * sp, nz = tok.p.z + mz * sp;
+    if (onLand(nx, nz)) tok.p.set(nx, 0, nz);                      // slide along the coast rather than stopping dead
+    else if (onLand(nx, tok.p.z)) tok.p.x = nx;
+    else if (onLand(tok.p.x, nz)) tok.p.z = nz;
+    else tok.dest = null;
+    tok.hop += dt * 10; tok.face = Math.atan2(mx, mz);
+  } else tok.hop = 0;
+  tok.g.position.set(tok.p.x, groundY(tok.p.x, tok.p.z) + .05, tok.p.z);
+  tok.body.position.y = moving ? Math.abs(Math.sin(tok.hop)) * .4 : Math.sin(T * 2.5) * .03;
+  tok.g.rotation.y = damp(tok.g.rotation.y, tok.g.rotation.y + angDiff(tok.g.rotation.y, moving ? tok.face : 0), 12, dt);
+  tok.near = nodeNear();
+  const sel = NODES[tok.near];
+  mapFx.ring.visible = !!sel;
+  if (sel) { mapFx.ring.position.set(sel.x, groundY(sel.x, sel.z) + .3, sel.z); mapFx.ring.scale.setScalar(1 + Math.sin(T * 5) * .08); }
+  // the sign names the place Gandalf is standing at
+  if (signShown !== tok.near) {
+    signShown = tok.near;
+    document.getElementById('signName').textContent = sel ? sel.name : 'MIDDLE-EARTH';
+    document.getElementById('signSub').textContent = sel ? (sel.open ? sel.sub : 'LOCKED · COMING SOON') : 'WALK TO A PLACE TO PLAY IT';
+    signEl.classList.toggle('locked', !!sel && !sel.open);
+    document.getElementById('mapGo').classList.toggle('off', !sel);
   }
   // camera: high over the road following Gandalf, then down into the city for the level select
   mc.zoom = approach(mc.zoom, mc.zt, dt * 1.1);
   if (state === 'title' && mc.zoom > .78 && !document.getElementById('sTitle').classList.contains('on')) showScreen('sTitle');
   const e = smooth(mc.zoom), tp = tok.g.position;
-  // frame Gandalf together with the stops either side of him, so the next place is always on screen
-  let x0 = tp.x, x1 = tp.x, z0 = tp.z, z1 = tp.z;
-  for (const n of [NODES[tok.target - 1], NODES[tok.target], NODES[tok.target + 1]]) if (n) { x0 = Math.min(x0, n.x); x1 = Math.max(x1, n.x); z0 = Math.min(z0, n.z); z1 = Math.max(z1, n.z); }
-  const fx = (x0 + x1) / 2, fz = (z0 + z1) / 2, fk = clamp(Math.max((x1 - x0) / 46, (z1 - z0) / 26), .9, 1.7);
-  _b.set(fx, 33 * fk, fz + 30 * fk); _c.set(fx, 1, fz - 4 * fk);
+  // follow Gandalf from high above
+  _b.set(tp.x, 30, tp.z + 27); _c.set(tp.x, 1, tp.z - 4);
   const oa = .95 + Math.sin(T * .15) * .25;
   _d.set(MT.x + Math.sin(oa) * 11, MT.y + 6.5, MT.z + Math.cos(oa) * 11); _g.set(MT.x, MT.y + 3.6, MT.z);
   _b.lerp(_d, e); _b.y += Math.sin(e * Math.PI) * 5; _c.lerp(_g, e);
@@ -3785,7 +4022,7 @@ function step(dt, noRender) {
   else if (state === 'win') updateWin(dt);
   if (state !== 'paused') {
     if (state !== 'title' && state !== 'map' && state !== 'gameover' && state !== 'complete') {
-      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt);
+      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt);
     }
     updateDragons(dt); updateApples(); updatePhial(dt); updateLightning(dt); updateAmbient(dt); updateTree(dt);
     fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt);
