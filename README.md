@@ -14,7 +14,7 @@ The server is `serve.ps1`, which uses the PowerShell built into Windows. It only
 
 | Game | Folder | What it is |
 | --- | --- | --- |
-| Iyla's Game | [`iylas-game/`](iylas-game/) | 3D runner for phones. Iyla rides 10 animals through 5 levels, with Rhino and Giant Shark boss fights and Milo the sausage dog. |
+| Iyla's Game | [`iylas-game/`](iylas-game/) | 3D runner for phones. Iyla rides 13 animals and birds through 6 levels, with Rhino and Giant Shark boss fights and Milo the sausage dog. |
 | Siege Run | [`siege-run/`](siege-run/) | 3D platformer across a map of Middle-earth: eight levels from the Shire to Mordor, with a Balrog boss in Moria. Works on phones with touch controls. |
 | Astro Blaster | [`astro-blaster/`](astro-blaster/) | 2D arcade space shooter. Fly The Chow Hauler and blast asteroids. |
 | Hellkeep | [`hellkeep/`](hellkeep/) | Shooter in hell, in four rounds: two in 3D first-person, then two side-on platform rounds (built from Gem Quest's levels). |
