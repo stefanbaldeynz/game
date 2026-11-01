@@ -231,6 +231,61 @@ class Balrog {
       this.whip.push(segment);
     }
     for (let i = 0; i <= WHIP_SEGMENTS; i++) this.whipPoints.push(new THREE.Vector3(x, 0, z));
+    if (window.MODELS && MODELS.balrog) this.wearModel(MODELS.balrog);
+  }
+
+  // Your own Balrog (models/balrog.glb, only on your computer: see the BFME notes in the Siege Run models README).
+  // The built-in one stays underneath, unseen, so his hands, jaw and sword still aim the whip, the fire and the flames;
+  // the model is drawn over it and plays its own animations. His whip of fire stays as it is.
+  wearModel(gltf) {
+    this.group.traverse((o) => { if (o.isMesh) o.visible = false; });
+    const model = THREE_ADDONS.SkeletonUtils.clone(gltf.scene);
+    const fx = /fire|flame|cloud|flar|glow|light|spark|smoke/i;
+    const box = new THREE.Box3();
+    model.updateMatrixWorld(true);
+    model.traverse((o) => { if (o.isMesh && !fx.test(o.name + ' ' + o.material.name)) box.union(new THREE.Box3().setFromObject(o)); });
+    const size = box.getSize(new THREE.Vector3());
+    const centre = box.getCenter(new THREE.Vector3());
+    const scale = 6.6 / Math.max(0.01, size.y); // a little taller than the built-in one
+    model.scale.setScalar(scale);
+    model.position.set(-centre.x * scale, -box.min.y * scale, -centre.z * scale);
+    model.traverse((o) => {
+      if (!o.isMesh) return;
+      o.frustumCulled = false;
+      o.castShadow = true;
+      if (/swordfire/i.test(o.name)) { o.visible = false; return; } // a cloud the size of a house round the sword
+      if (fx.test(o.name + ' ' + o.material.name)) {
+        o.material = new THREE.MeshBasicMaterial({ map: o.material.map, color: 0xff7a30, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, side: THREE.DoubleSide });
+      } else {
+        // Battle for Middle-earth keeps its team colours in the alpha, so the body is solid whatever it says; it glows by its own picture
+        o.material = o.material.clone();
+        Object.assign(o.material, { transparent: false, alphaTest: 0, depthWrite: true, emissive: new THREE.Color(0xffffff), emissiveMap: o.material.map, emissiveIntensity: 0.35 });
+      }
+    });
+    // Battle for Middle-earth's models face along x; turn it to face the way he does
+    const pivot = new THREE.Group();
+    pivot.rotation.y = Math.PI / 2;
+    pivot.add(model);
+    this.group.add(pivot);
+    const mixer = new THREE.AnimationMixer(model);
+    const clip = (re) => gltf.animations.find((a) => re.test(a.name));
+    const acts = {};
+    for (const [key, re] of Object.entries({ idle: /^idle/i, walk: /^walk|^run_a/i, whip: /whip/i, slam: /^attack_a/i, breath: /attack_fire|roar/i, die: /^die/i })) {
+      const c = clip(re);
+      if (c) acts[key] = mixer.clipAction(c);
+    }
+    if (acts.die) { acts.die.loop = THREE.LoopOnce; acts.die.clampWhenFinished = true; }
+    this.skin = { mixer, acts, current: null };
+  }
+
+  // Play one of the model's animations, blending from the last.
+  skinPlay(key) {
+    const s = this.skin;
+    const next = s.acts[key] || s.acts.idle;
+    if (!next || next === s.current) return;
+    next.reset().fadeIn(0.2).play();
+    if (s.current) s.current.fadeOut(0.2);
+    s.current = next;
   }
 
   get alive() {
@@ -521,6 +576,10 @@ class Balrog {
     this.glow.intensity = (this.enraged ? 9 : 7) * LIGHT_UNITS * (0.85 + Math.sin(t * 11) * 0.08 + Math.sin(t * 7.3) * 0.07);
     this.group.position.set(this.x, moving ? Math.abs(Math.sin(this.stepPhase)) * 0.12 : 0, this.z);
     this.group.rotation.y = this.yaw;
+    if (this.skin) {
+      this.skinPlay(name || (moving ? 'walk' : 'idle'));
+      this.skin.mixer.update(dt * (this.enraged ? 1.3 : 1));
+    }
   }
 
   // Lay the whip along its curve: trailing on the ground behind his hand, drawn back over
@@ -602,7 +661,13 @@ class Balrog {
 
   // Sink to his knees, topple forward and burn down to smoke.
   updateDeath(dt) {
-    if (this.deathT < 1) {
+    if (this.skin) {
+      // your own model plays its death, then burns down into the floor
+      this.skinPlay('die');
+      this.skin.mixer.update(dt);
+      this.deathT = Math.min(1, this.deathT + dt * 0.3);
+      this.group.position.y = -Math.max(0, this.deathT - 0.5) * 6;
+    } else if (this.deathT < 1) {
       this.deathT = Math.min(1, this.deathT + dt * 0.6);
       const k = this.deathT;
       this.legs[0].rotation.x = this.legs[1].rotation.x = -1.2 * Math.min(1, k * 2);
