@@ -793,11 +793,13 @@ function shadowFlags(root) {
   });
 }
 // switch between the HD and retro looks (G, or the button in the pause menu); remembered on this device
+// soft things (fire, glows, clouds, mist) are drawn smooth in HD; in the retro look everything stays pixelly
+function softTex() { for (const k of ['fire', 'glow', 'cloud', 'puff']) if (TX[k]) { TX[k].magFilter = TX[k].minFilter = RETRO ? THREE.NearestFilter : THREE.LinearFilter; TX[k].needsUpdate = true; } }
 function setLook(retro) {
   RETRO = retro; try { localStorage.setItem('siegeRunLook', retro ? 'retro' : 'hd'); } catch (e) { }
   rt = RETRO ? rtLo : rtHD; post.uniforms.tDiffuse.value = rt.texture; post.uniforms.uHD.value = RETRO ? 0 : 1;
   renderer.shadowMap.enabled = !RETRO; moon.castShadow = !RETRO;
-  shadowFlags(scene);
+  shadowFlags(scene); softTex();
   for (const sc of [scene, mapScene]) sc.traverse(o => { if (o.material) [].concat(o.material).forEach(m => m.needsUpdate = true); });
   resize();
 }
@@ -1800,91 +1802,157 @@ function makeDragon() {
   return { root, head, jaw, tail, neck, spade, wings, throat };
 }
 
+// The Balrog, built like Hellkeep's: nearly black skin split by glowing cracks of fire, legs bent like a beast's,
+// a hunched body with a ridge of spines, a long horned skull with burning eyes and a maw full of fire, ragged wings
+// of shadow, a sword of flame in one hand and the whip in the other. It climbs out of the abyss beside the bridge.
+const CRACK_GLSL = `
+varying vec3 vHellPos;
+vec3 hellHash(vec3 p) {
+  p = vec3(dot(p, vec3(127.1, 311.7, 74.7)), dot(p, vec3(269.5, 183.3, 246.1)), dot(p, vec3(113.5, 271.9, 124.6)));
+  return fract(sin(p) * 43758.5453);
+}
+float hellCracks(vec3 p) {
+  vec3 i = floor(p), f = fract(p);
+  float d1 = 8.0, d2 = 8.0;
+  for (int z = -1; z <= 1; z++) for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec3 g = vec3(float(x), float(y), float(z));
+    vec3 r = g + hellHash(i + g) - f;
+    float d = dot(r, r);
+    if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) { d2 = d; }
+  }
+  return 1.0 - smoothstep(0.02, 0.09, sqrt(d2) - sqrt(d1));
+}`;
+// dark skin that glows along a web of cracks (measured in world-sized units, so stretched limbs crack evenly)
+function hellSkin(color, scale, glow) {
+  const m = new THREE.MeshLambertMaterial({ color, emissive: glow, emissiveIntensity: .8 });
+  m.onBeforeCompile = sh => {
+    ps1Compile(sh);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vHellPos;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvHellPos = position * vec3(length(modelMatrix[0].xyz), length(modelMatrix[1].xyz), length(modelMatrix[2].xyz));');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\n' + CRACK_GLSL)
+      .replace('vec3 totalEmissiveRadiance = emissive;', `vec3 totalEmissiveRadiance = emissive * hellCracks(vHellPos * ${scale.toFixed(2)});`);
+  };
+  m.customProgramCacheKey = () => 'hellskin' + scale;
+  return m;
+}
 let BRM = null;
 function balrogMats() {
   return BRM || (BRM = {
-    rock: ps1(new THREE.MeshLambertMaterial({ map: TX.lavaRock, emissive: 0xffffff, emissiveMap: TX.lavaGlow })),
-    horn: ps1(new THREE.MeshLambertMaterial({ map: TX.horn, emissive: 0x140604 })),
-    dark: lam(0x140c0a), bone: lam(0xe0d0a8, { emissive: 0x281408 }), glow: bas(0xfff4b0), lava: bas(0xff6a10),
-    mem: ps1(new THREE.MeshLambertMaterial({ color: 0x24100c, emissive: 0x3a0a04, side: THREE.DoubleSide })),
+    rock: hellSkin(0x161010, 1.45, 0xff4a08),   // the skin (called rock: poseBalrog makes its cracks throb)
+    horn: lam(0x1a1210), bone: lam(0x0c0806), dark: lam(0x140c0a), glow: bas(0xfff4b0), lava: bas(0xff6a10), blade: bas(0xffc070),
+    eyes: bas(0xffd060), maw: bas(0xff7a20), iron: lam(0x2a2224, { emissive: 0x100404 }),
+    mem: ps1(new THREE.MeshLambertMaterial({ color: 0x050303, emissive: 0x1c0402, side: THREE.DoubleSide, transparent: true, opacity: .88, depthWrite: false })),
     whip: ps1(new THREE.MeshBasicMaterial({ color: 0xffffff })),
   });
 }
-// a horn swept back from the skull, down past the cheek and curling forward under the jaw, built along a smooth curve
-function hornCurve(parent, pts, r0, r1, M) {
-  const c = new THREE.CatmullRomCurve3(pts).getPoints(16), n = c.length - 1;
-  chain(parent, c, c.slice(0, n).map((_, i) => lerp(r0, r1, i / (n - 1)) * (i % 2 ? 1 : 1.08)), M.horn, M.horn);
+// a horn along a smooth curve: pale bone at the root darkening to the tip, with ridged rings
+function taperedHorn(parent, pts, r0, r1) {
+  const curve = new THREE.CatmullRomCurve3(pts.map(p => new V3(...p))), n = 10, bone = new THREE.Color(0xc8b090), tip = new THREE.Color(0x2a1a10);
+  for (let i = 0; i < n; i++) {
+    const a = curve.getPoint(i / n), b = curve.getPoint((i + 1) / n), k = i / n, r = lerp(r0, r1, k), m = lam(bone.clone().lerp(tip, k * k).getHex());
+    const seg = new THREE.Mesh(new THREE.CylinderGeometry(r * .92, r, a.distanceTo(b) * 1.05, 10), m);
+    seg.position.copy(a).add(b).multiplyScalar(.5); seg.quaternion.setFromUnitVectors(UPV, b.clone().sub(a).normalize()); parent.add(seg);
+    if (i % 2 === 0 && i < n - 2) { const ring = new THREE.Mesh(new THREE.TorusGeometry(r * .95, r * .18, 6, 14), m); ring.position.copy(a); ring.quaternion.setFromUnitVectors(new V3(0, 0, 1), b.clone().sub(a).normalize()); parent.add(ring); }
+  }
 }
-const WHIP_N = 48;
+// a wing of shadow: bones fanning out from the shoulder with a ragged membrane between them
+function shadowWing(M) {
+  const wing = new THREE.Group();
+  const joints = [[0, 0], [1.8, 2.6], [5.2, 3.9], [5.8, 1.2], [4.6, -1.0]];
+  const outline = [[0, 0], [1.8, 2.6], [5.2, 3.9], [4.3, 2.4], [5.8, 1.2], [4.4, .4], [4.6, -1.0], [3.0, -.6], [2.1, -1.9], [.8, -1.0]];
+  const shape = new THREE.Shape(); outline.forEach(([x, y], i) => (i ? shape.lineTo(x, y) : shape.moveTo(x, y)));
+  wing.add(new THREE.Mesh(new THREE.ShapeGeometry(shape), M.mem));
+  const bone = (a, b, r) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r * .6, r, Math.hypot(b[0] - a[0], b[1] - a[1]), 6), M.horn); m.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 0); m.rotation.z = Math.atan2(b[1] - a[1], b[0] - a[0]) - Math.PI / 2; wing.add(m); };
+  bone(joints[0], joints[1], .16); for (const t of joints.slice(2)) bone(joints[1], t, .09);
+  part(new THREE.ConeGeometry(.1, .5, 6), M.horn, wing, joints[1][0], joints[1][1] + .3, 0).rotation.z = -.3;
+  return wing;
+}
+const WHIP_N = 48, BAL_S = 1.6;   // the body is Hellkeep's, made 1.6 times bigger
 function makeBalrog() {
-  const M = balrogMats(), root = new THREE.Group();
-  const rk = (sx, sy, sz, x, y, z, parent = root, rx = 0) => { const m = part(rockGeo(.14, rand(0, 50)), M.rock, parent, x, y, z, sx, sy, sz); m.rotation.x = rx; return m; };
-  // hunched torso: a deep chest thrust forward, heavy traps and shoulders, banded belly, a ridge of spines down the back
-  rk(2.6, 2.2, 1.9, 0, 4.5, .55, root, .35);
-  for (const sx of [1, -1]) {
-    rk(1.15, .9, .6, sx * 1.05, 4.3, 1.9, root, .3);
-    rk(1.35, .95, 1.15, sx * 1.4, 6.0, -.05, root, .25);
-    rk(1.55, 1.4, 1.45, sx * 2.8, 5.45, .35);
-    for (let k = 0; k < 3; k++) { const sp = part(GEO.cone, M.horn, root, sx * (2.5 + k * .55), 6.6 - k * .3, -.15 - k * .35, .3 - k * .05, 1.7 - k * .35, .3 - k * .05); sp.rotation.set(-.35 - k * .15, 0, -sx * (.35 + k * .22)); }
+  const M = balrogMats(), skin = M.rock, root = new THREE.Group();   // root: +z faces the bridge, y = 0 at the bridge's deck
+  // legs, body and wings, built facing -z as in Hellkeep and turned round; the legs reach down into the abyss
+  const body = new THREE.Group(); body.rotation.y = Math.PI; body.scale.setScalar(BAL_S); body.position.y = -2.6; root.add(body);
+  for (const side of [-1, 1]) {
+    const hip = new THREE.Group(); hip.position.set(side * .75, 2.7, .15); hip.rotation.x = -.35; body.add(hip);
+    part(new THREE.CylinderGeometry(.5, .36, 1.5, 10).translate(0, -.7, 0), skin, hip, 0, 0, 0).rotation.x = -.25;
+    const knee = new THREE.Group(); knee.position.set(0, -1.35, -.35); knee.rotation.x = .55; hip.add(knee);
+    part(new THREE.CylinderGeometry(.34, .24, 1.4, 10).translate(0, -.65, 0), skin, knee, 0, 0, 0).rotation.x = .3;
+    part(new THREE.SphereGeometry(.3, 10, 8), skin, knee, 0, 0, 0);
+    part(GEO_BOX, skin, knee, 0, -1.25, -.2, .55, .3, .9);
+    for (const x of [-.18, 0, .18]) part(new THREE.ConeGeometry(.07, .35, 6), M.horn, knee, x, -1.32, -.72).rotation.x = -Math.PI / 2;
   }
-  for (let i = 0; i < 3; i++) rk(1.8 - i * .15, .75, 1.3 - i * .1, 0, 2.6 - i * .85, .4 - i * .1);
-  for (let i = 0; i < 6; i++) part(GEO.cone, M.horn, root, 0, 7.0 - i * 1.1, -1.15 - i * .14, .26, 1.1, .26).rotation.x = -1.15;
-  part(rockGeo(.2, 9), M.rock, root, 0, -6, -.3, 2.3, 9, 1.8);
-  rk(1.05, 1.0, 1.35, 0, 6.15, 1.55, root, .65);
-  // head, low and forward like a beast's: long skull, heavy brow over burning eyes, a fanged jaw with fire in its throat
-  const head = new THREE.Group(); head.position.set(0, 6.75, 2.75); root.add(head);
-  rk(1.0, .9, 1.2, 0, .15, -.1, head);
-  rk(1.35, .36, .62, 0, .55, .78, head, .2);
-  for (const sx of [1, -1]) { rk(.48, .4, .6, sx * .72, -.06, .68, head); part(GEO.cone, M.horn, head, sx * .55, .72, 1.0, .12, .5, .12).rotation.set(.6, 0, -sx * .4); }
-  rk(.72, .52, .85, 0, -.22, 1.2, head);
-  for (const sx of [1, -1]) part(GEO.sph, M.lava, head, sx * .22, -.18, 2.0, .1, .07, .06);
-  const jaw = new THREE.Group(); jaw.position.set(0, -.55, .35); head.add(jaw);
-  rk(.82, .32, 1.0, 0, -.15, .7, jaw);
-  part(GEO.box, M.lava, jaw, 0, .07, .8, .95, .14, .8);
-  for (const sx of [1, -1]) {
-    for (const [x, z] of [[.4, 1.3], [.2, 1.5]]) { part(GEO.cone, M.bone, jaw, sx * x, .28, z, .08, .42, .08); part(GEO.cone, M.bone, head, sx * x * .95, -.74, z + .4, .08, .44, .08).rotation.x = Math.PI; }
-    part(GEO.box, M.glow, head, sx * .42, .3, 1.18, .34, .09, .1).rotation.z = sx * -.25;
-    const g = glowSprite(0xffc040, 1.7); g.position.set(sx * .45, .3, 1.4); head.add(g);
-    hornCurve(head, [[.7, .55, .1], [1.45, 1.05, -.55], [2.35, 1.0, -1.15], [3.05, .15, -1.0], [3.15, -.85, -.1], [2.75, -1.35, .85], [2.1, -1.1, 1.55], [1.75, -.55, 1.95]].map(([x, y, z]) => new V3(sx * x, y, z)), .55, .14, M);
+  part(new THREE.CylinderGeometry(.9, .2, 9, 10), skin, body, 0, -2.4, .3);   // the rest of it, lost in the dark below
+  const torso = new THREE.Group(); torso.position.set(0, 2.7, .1); torso.rotation.x = -.22; body.add(torso);
+  part(new THREE.SphereGeometry(.85, 14, 10), skin, torso, 0, .2, 0, 1.2, .8, .9);
+  part(new THREE.CylinderGeometry(1.05, .8, 1.4, 14), skin, torso, 0, .95, 0, 1, 1, .8);
+  part(new THREE.SphereGeometry(1.15, 18, 14), skin, torso, 0, 1.9, -.1, 1.2, 1, .85);
+  for (const side of [-1, 1]) part(new THREE.SphereGeometry(.62, 12, 10), skin, torso, side * 1.3, 2.3, .05);
+  for (let i = 0; i < 7; i++) part(new THREE.ConeGeometry(.12, .6 - i * .04, 6), M.horn, torso, 0, 2.6 - i * .35, .75 + Math.sin(i * .4) * .15).rotation.x = .9;
+  const wings = [-1, 1].map(side => {
+    const wr = new THREE.Group(); wr.position.set(side * .7, 2.4, .75); torso.add(wr);
+    const w = shadowWing(M); w.scale.x = side; wr.add(w);
+    return { update(beat) { wr.rotation.set(.15, side * .3, side * (.4 + beat * .22)); } };
+  });
+  // the head, facing the bridge: a long horned skull, burning eyes and a jaw that drops open on a mouthful of fire
+  const head = new THREE.Group(); head.position.set(0, 5.9, 2.0); root.add(head);
+  const hs = new THREE.Group(); hs.scale.setScalar(BAL_S); head.add(hs);
+  part(new THREE.CylinderGeometry(.45, .6, .8, 10), skin, hs, 0, -.35, -.35).rotation.x = -.6;
+  part(new THREE.SphereGeometry(.55, 14, 12), skin, hs, 0, .1, 0, 1, .95, 1.15);
+  part(GEO_BOX, skin, hs, 0, -.05, .55, .62, .38, .7);
+  part(GEO_BOX, M.maw, hs, 0, -.24, .6, .5, .06, .55);
+  for (const side of [-1, 1]) {
+    part(new THREE.SphereGeometry(.08, 8, 6), M.eyes, hs, side * .24, .18, .52);
+    part(GEO_BOX, skin, hs, side * .24, .3, .5, .3, .1, .25).rotation.z = side * .4;
+    for (let i = 0; i < 3; i++) part(new THREE.ConeGeometry(.035, .18, 5), M.horn, hs, side * (.08 + i * .08), -.28, .82 - i * .1).rotation.x = Math.PI;
+    taperedHorn(hs, [[side * .35, .4, -.05], [side * .9, .55, -.05], [side * 1.35, .85, .25], [side * 1.5, 1.3, .65], [side * 1.35, 1.7, .9]], .2, .03);
+    const g = glowSprite(0xffb040, 1.4); g.position.set(side * .38, .3, .95); head.add(g);
   }
-  const mouth = glowSprite(0xff8a20, 2.4, .9); mouth.position.set(0, -.55, 1.25); head.add(mouth);
-  // shadow wings: huge, ragged and bony
-  const wings = [1, -1].map(sx => { const w = new BatWing(root, { L1: 3.6, L2: 4.3, fingers: [[7.6, .35], [8.2, -.2], [7.2, -.75], [5.4, -1.3]], back: 5.2, amp: .4, boneR: .32, mat: M.mem, boneMat: M.horn }); w.g.position.set(sx * 1.5, 6.5, -1.2); w.g.rotation.set(0, sx * .55, sx * .38); w.g.scale.x = sx; return w; });
-  // a crown of fire on the head and a mane of it down the back and shoulders
+  const jaw = new THREE.Group(); jaw.position.set(0, -.32, .16); head.add(jaw);
+  part(GEO_BOX, skin, jaw, 0, -.16, .72, .88, .26, 1.28);
+  const mouth = glowSprite(0xff8a20, 2.4, .9); mouth.position.set(0, -.5, 1.2); head.add(mouth);
+  // a crown of fire on the head and a mane of it over the shoulders and down the back
   const fires = [];
   const fire = (x, y, z, s, parent) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.fire, color: 0xffc080, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); sp.position.set(x, y + s * .35, z); parent.add(sp); fires.push({ sp, s, ph: rand(0, 6) }); };
-  for (const [x, y, z, s] of [[0, .9, -.2, 3.4], [.7, .7, -.5, 2.6], [-.7, .7, -.5, 2.6], [0, .6, -1.0, 3]]) fire(x, y, z, s, head);
-  for (const [x, y, z, s] of [[2.8, 6.8, 0, 2.6], [-2.8, 6.8, 0, 2.6], [2, 7.1, -.8, 2.2], [-2, 7.1, -.8, 2.2], [0, 7.6, -1.4, 3.4], [1.1, 6.4, -1.9, 2.4], [-1.1, 6.4, -1.9, 2.4], [0, 5.2, -2, 2.6], [1.8, 2.2, .6, 1.8], [-1.8, 2.2, .6, 1.8]]) fire(x, y, z, s, root);
+  for (const [x, y, z, s] of [[0, 1.2, -.7, 2.4], [.9, 1.0, -.8, 1.8], [-.9, 1.0, -.8, 1.8], [0, .9, -1.3, 2.4]]) fire(x, y, z, s, head);
+  for (const [x, y, z, s] of [[2.4, 5.9, .3, 2.4], [-2.4, 5.9, .3, 2.4], [1.3, 6.4, -.9, 2.2], [-1.3, 6.4, -.9, 2.2], [0, 6.5, -1.2, 3.2], [0, 5, -1.6, 2.6], [1.5, 1.9, .3, 1.8], [-1.5, 1.9, .3, 1.8], [1.2, -2.6, .4, 2.6], [-1.2, -2.6, .4, 2.6]]) fire(x, y, z, s, root);
   const halo = glowSprite(0xff4a10, 19, .38); halo.position.set(0, 5, -1.5); root.add(halo);
   scene.add(root);
-  // arms (posed in world space by IK): rough upper arm, forearm, spiked elbow, clawed hand with curling fingers
+  // arms (posed in world space by IK): the same cracked skin, a spiked elbow, clawed hands with curling fingers
   const arms = [0, 1].map(i => {
-    const upper = new THREE.Mesh(limbGeo(.9, 1.05, .14, i * 3), M.rock), fore = new THREE.Mesh(limbGeo(.72, 1.0, .14, i * 3 + 1), M.rock);
-    const elbow = new THREE.Mesh(rockGeo(.2, i * 5), M.rock); elbow.scale.setScalar(1.05);
-    part(GEO.cone, M.horn, elbow, 0, 0, 1.3, .3, 1.6, .3).rotation.x = Math.PI / 2;
+    const upper = new THREE.Mesh(limbGeo(.9, 1.05, .05, i * 3), skin), fore = new THREE.Mesh(limbGeo(.72, 1.0, .05, i * 3 + 1), skin);
+    const elbow = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 10), skin); elbow.scale.setScalar(.95);
+    part(new THREE.ConeGeometry(1, 1, 6), M.horn, elbow, 0, 0, 1.2, .26, 1.4, .26).rotation.x = Math.PI / 2;
     const fist = new THREE.Group();
-    part(rockGeo(.15, 20 + i), M.rock, fist, 0, 0, .25, 1.1, .62, 1.15);
+    part(new THREE.SphereGeometry(1, 12, 10), skin, fist, 0, 0, .25, .95, .6, 1.05);
     const fingers = [];
     for (let k = 0; k < 4; k++) {
-      const f = new THREE.Group(); f.position.set(-.6 + k * .4, -.05, 1.05); fist.add(f);
-      part(GEO_CYLZ, M.rock, f, 0, 0, 0, .2, .2, .75);
+      const f = new THREE.Group(); f.position.set(-.6 + k * .4, -.05, 1.0); fist.add(f);
+      part(GEO_CYLZ, skin, f, 0, 0, 0, .2, .2, .75);
       const f2 = new THREE.Group(); f2.position.z = .72; f.add(f2);
-      part(GEO_CYLZ, M.rock, f2, 0, 0, 0, .17, .17, .55);
-      part(GEO_CONEZ, M.bone, f2, 0, 0, .5, .13, .13, .65);
+      part(GEO_CYLZ, skin, f2, 0, 0, 0, .17, .17, .55);
+      part(GEO_CONEZ, M.horn, f2, 0, 0, .5, .12, .12, .6);
       fingers.push({ f, f2 });
     }
     const th = new THREE.Group(); th.position.set(.85, -.1, .35); th.rotation.y = .8; fist.add(th);
-    part(GEO_CYLZ, M.rock, th, 0, 0, 0, .2, .2, .6); part(GEO_CONEZ, M.bone, th, 0, 0, .55, .14, .14, .5);
+    part(GEO_CYLZ, skin, th, 0, 0, 0, .2, .2, .6); part(GEO_CONEZ, M.horn, th, 0, 0, .55, .13, .13, .5);
     scene.add(upper, fore, elbow, fist);
     return { upper, fore, elbow, fist, fingers, pos: new V3(), rest: new V3(), curl: .6 };
   });
+  // the sword of flame, held up out of the first fist: white-hot, so it glows
+  const sword = new THREE.Group(); arms[0].fist.add(sword); sword.position.set(0, .2, .55);
+  part(GEO_BOX, M.iron, sword, 0, .55, 0, 1.5, .2, .26);
+  part(GEO.cyl, M.iron, sword, 0, .1, 0, .12, .8, .12);
+  const blade = part(GEO_BOX, M.blade, sword, 0, 3.4, 0, .42, 5.4, .1);
+  part(new THREE.ConeGeometry(.21, .8, 4), M.blade, sword, 0, 6.5, 0, 1, 1, .25);
+  for (let k = 0; k < 3; k++) { const g = glowSprite(0xff9a30, 2.2, .55); g.position.set(0, 1.8 + k * 1.8, 0); sword.add(g); }
   // whip: a tapering chain of segments, dark at the handle and white-hot at the tip
   const whip = new THREE.InstancedMesh(GEO.cyl, M.whip, WHIP_N - 1); whip.frustumCulled = false;
   const c = new THREE.Color(), c1 = new THREE.Color(0xff5a10), c2 = new THREE.Color(0xffe890);
   for (let k = 0; k < WHIP_N - 1; k++) { const u = k / (WHIP_N - 2); c.setHex(0x5a1406).lerp(c1, Math.min(1, u * 2)).lerp(c2, Math.max(0, u * 2 - 1)); whip.setColorAt(k, c); }
   scene.add(whip);
-  const emit = [new V3(0, 8.2, 2.4), new V3(1, 7.8, 1.9), new V3(-1, 7.8, 1.9), new V3(2.6, 6.3, .2), new V3(-2.6, 6.3, .2), new V3(0, 6.6, -1.3), new V3(1.4, 6.9, -.9), new V3(-1.4, 6.9, -.9)];
-  const BAL = { root, head, jaw, mouth, wings, arms, whip, emit, fires }; addSkin(BAL, 'balrog', root, root, fires || []); return BAL;
+  const emit = [new V3(0, 8.4, 1.6), new V3(1.2, 7.6, 1.4), new V3(-1.2, 7.6, 1.4), new V3(2.4, 5.9, .4), new V3(-2.4, 5.9, .4), new V3(0, 6.4, -1.0), new V3(1.4, 6.6, -.8), new V3(-1.4, 6.6, -.8)];
+  const sh = [new V3(2.3, 5.3, .65), new V3(-2.3, 5.3, .65)];   // where the arms join the shoulders
+  const BAL = { root, head, jaw, mouth, wings, arms, whip, emit, fires, sh, blade }; addSkin(BAL, 'balrog', root, root, fires || []); return BAL;
 }
 function setLimb(m, a, b, r) { _d.subVectors(b, a); const len = _d.length(); m.position.addVectors(a, b).multiplyScalar(.5); m.quaternion.setFromUnitVectors(UPV, _d.divideScalar(Math.max(len, 1e-4))); m.scale.set(r, len, r); }
 
@@ -2315,7 +2383,7 @@ function loadLevel(li) {
   scene.fog.color.setHex(LV.fog ?? ENV.fogC);
   if (LV.tree) { LV.tree.userData.bloom.visible = false; LV.tree.userData.bloomT = -1; }
   boss.ckpt = false; resetBoss();
-  shadowFlags(scene);
+  shadowFlags(scene); softTex();
 }
 function newGame(li) {
   Object.assign(gs, { apples: 0, lives: 10, rockets: 8, phial: 0, superT: 0 });
@@ -3192,14 +3260,14 @@ function poseBalrog(b, dt) {
     const side = i ? -1 : 1, busy = b.atk && b.atk.hi === i;
     arm.rest.copy(tw(b.s + side * 3.2, edgeX(b.s + side * 3.2) - .9, Math.min(1.5, b.y + 2 + Math.sin(T * 6 + i * Math.PI) * (b.state === 'rise' ? 1.5 : .1))));
     if (!busy) arm.pos.lerp(arm.rest, 1 - Math.exp(-8 * dt));
-    const sh = _a.set(side * 2.8, 5.45, .5).applyMatrix4(r.matrixWorld);
+    const sh = _a.copy(b.m.sh[i]).applyMatrix4(r.matrixWorld);
     const L = 6.8; _b.subVectors(arm.pos, sh); const dd = _b.length(), dir = _b.clone().divideScalar(dd || 1);
     // elbows splay outwards and away from the body, like something hauling itself over a ledge
     const bend = tw(b.s, BX - 1, 0).sub(tw(b.s, BX, 0)).add(tw(b.s + side, BX, 0).sub(tw(b.s, BX, 0)).multiplyScalar(.7)).add(_c.set(0, .35, 0));
     bend.addScaledVector(dir, -bend.dot(dir)).normalize();
     const hh = Math.sqrt(Math.max(0, L * L - dd * dd / 4));
     const elbow = sh.clone().add(arm.pos).multiplyScalar(.5).addScaledVector(bend, hh);
-    setLimb(arm.upper, sh, elbow, 1.05); setLimb(arm.fore, elbow, arm.pos, .88);
+    setLimb(arm.upper, sh, elbow, .78); setLimb(arm.fore, elbow, arm.pos, .66);
     arm.elbow.position.copy(elbow); arm.elbow.lookAt(_w.copy(elbow).add(bend));
     arm.fist.position.copy(arm.pos); arm.fist.lookAt(_d.copy(arm.pos).add(arm.pos.clone().sub(elbow)));
     // claws open while gripping the wall, close into a fist to smash, grip the whip handle
@@ -3210,6 +3278,7 @@ function poseBalrog(b, dt) {
   updateWhip(b);
   if (Math.abs(b.s - P.s) < 60) {
     for (let k = 0; k < 3; k++) { const e = b.m.emit[Math.random() * b.m.emit.length | 0]; flame(_a.copy(e).applyMatrix4(r.matrixWorld), 1.5, 1.6); }
+    if (b.m.blade && b.m.blade.parent.parent.visible !== false && Math.random() < .6) flame(b.m.blade.localToWorld(_a.set(0, rand(-.45, .45), 0)), 1, 1.4);   // the sword burns
     if (Math.random() < .4) { _a.set(rand(-2, 2), rand(5, 7), rand(-2.4, -1.4)).applyMatrix4(r.matrixWorld); smoke.spawn(_a.x, _a.y, _a.z, rand(-.5, .5), rand(1.5, 3), rand(-.5, .5), rand(1.2, 2), .8, 2.6, [.1, .05, .05], [.2, .12, .12], -.3, .5); }
   }
 }
@@ -4871,7 +4940,8 @@ function step(dt, noRender) {
     skinPlay(hob, state === 'dying' ? 'die' : !P.ground && P.airT > .1 ? 'jump' : P.spinT > 0 || (LV && LV.duel && duel.atk) ? 'attack' : Math.hypot(P.vs, P.vx) > 1 ? 'walk' : 'idle');
     updateSkins(dt);
   }
-  updateCamera(state === 'paused' ? 0 : dt); updateLights(); updateHUD(dt); updateTouchUI();
+  updateCamera(state === 'paused' ? 0 : dt); if (DEBUG_CAM) { camera.position.copy(DEBUG_CAM.p); camera.lookAt(DEBUG_CAM.l); }
+  updateLights(); updateHUD(dt); updateTouchUI();
   const onMap = state === 'map' || state === 'title'; if (onMap) updateMap(dt); else if (mapUIOn) { mapUIOn = false; mapUI.classList.remove('on'); } updateIris(dt); musicTick();
   for (const k in hit) hit[k] = false;
   if (!noRender) {
@@ -4890,7 +4960,7 @@ function step(dt, noRender) {
     renderer.setRenderTarget(null); renderer.render(postScene, postCam);
   }
 }
-let last = performance.now();
+let last = performance.now(), DEBUG_CAM = null;   // DEBUG_CAM { p, l }: a fixed camera, for testing
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = clamp((now - last) / 1000, 0, .05); last = now;
@@ -4967,7 +5037,7 @@ async function loadLocalAssets() {
 }
 
 buildStatic();
-renderer.shadowMap.enabled = !RETRO; moon.castShadow = !RETRO;
+renderer.shadowMap.enabled = !RETRO; moon.castShadow = !RETRO; softTex();
 setupEntities();
 loadLocalAssets();
 newGame(0); state = 'map'; iris.mode = 'none';
@@ -4976,7 +5046,12 @@ showScreen(null); syncPauseBtns();
 {
   const q = new URLSearchParams(location.search), li = LEVELS.findIndex(L => L.loc === q.get('play'));
   if (q.get('look')) setLook(q.get('look') === 'retro');   // ?look=retro or ?look=hd
-  if (li >= 0) startGame(li);
+  if (li >= 0) {
+    startGame(li);
+    if (q.get('at')) { gs.cp.s = Number(q.get('at')); respawn(true); }   // &at=160 starts 160 along the level
+    if (q.get('sim')) { cheats.god = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); }   // &sim=6 plays 6 seconds first (invincible)
+    if (q.get('peek') && balrogs[0]) { const r = balrogs[0].m.root, [x, y, z] = q.get('peek').split(',').map(Number); r.updateMatrixWorld(true); DEBUG_CAM = { p: r.localToWorld(new V3(x, y, z)), l: r.localToWorld(new V3(0, 5, 0)) }; }   // &peek=8,7,12 looks at the Balrog from there
+  }
 }
 requestAnimationFrame(frame);
 </script>

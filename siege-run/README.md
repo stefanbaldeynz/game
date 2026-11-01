@@ -52,7 +52,7 @@ Gandalf has a blue lightsaber and the Witch-king a red one. Gandalf always faces
 
 ### The Balrog (end of Moria)
 
-On the Bridge of Khazad-dûm, Durin's Bane climbs out of the abyss beside the bridge. A wall of fire blocks the far end until it falls. It has 9 hits (health bar at the bottom):
+On the Bridge of Khazad-dûm, Durin's Bane climbs out of the abyss beside the bridge. It's built like Hellkeep's Balrog: black skin split by glowing cracks of fire, a long horned skull, ragged wings of shadow, a sword of flame in one fist and the whip in the other. A wall of fire blocks the far end until it falls. It has 9 hits (health bar at the bottom):
 
 - **Fireworks** at its head do 1 hit each.
 - When it **smashes its fist** onto the bridge, the fist stays there for a moment: **spin** into it for a hit (spinning protects you from the flames).
