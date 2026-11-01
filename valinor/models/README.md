@@ -7,7 +7,7 @@ Put a `.glb` file here with one of these names and Valinor uses it instead of it
 | `gandalf.glb` | Gandalf (his staff and lightsaber stay) | Every level |
 | `balrog.glb` | The Balrog (and Hellkeep's, when it's copied into `hellkeep/models/` too) | Moria (boss, giant and waist-deep in the abyss) and the First Circle chase |
 | `witchking.glb` | The Witch-king (his red lightsaber stays) | Weathertop |
-| `shelob.glb` | Shelob | The Pass of Cirith Ungol |
+| `shelob.glb` | Shelob, and (smaller) Mirkwood's spiders | The Pass of Cirith Ungol, and Mirkwood |
 | `nazgul.glb` | The nine Nazgûl | Hobbiton |
 | `orc.glb` | Orcs and goblins | Most levels |
 | `fellbeast.glb` | The fell beasts (a Nazgûl on a winged beast) | Minas Tirith, Mordor and Mount Doom |
@@ -17,6 +17,24 @@ Put a `.glb` file here with one of these names and Valinor uses it instead of it
 
 **Everything in this folder stays on your computer.** Git ignores it, so it's never pushed to GitHub or the public website. Only this README is in the repository.
 
+## Scenery: `props/` (Battle for Middle-earth's trees, hobbit holes, Rivendell and Mirkwood)
+
+`props/` holds Battle for Middle-earth's own scenery for the open levels, one `.glb` per model, and `props/index.json` lists them:
+
+- **Hobbiton:** Bag End, hobbit holes, the Green Dragon, the mill, the Shire bridge, Shire trees, hedges, fences, bushes, flowers, grass and stones.
+- **Rivendell:** the Last Homely House, elven houses, towers, the gazebo, the bridge, ruined walls, waterfalls, cliffs, mallorns and elven woods.
+- **Mirkwood:** its dark trees, webbed trees, undergrowth, webs, egg sacs, the spider lair and Dol Guldur's tower.
+
+Each level uses whichever are there and builds its own shapes for the rest. Add `?props=none` to the address to compare with the built ones.
+
+To make them (Blender and the W3D add-on, as for the characters):
+
+```powershell
+& C:\Users\Stefan\bfme\tools\Prep-Props.ps1      # pulls the models and their textures out of BFME II / RotWK
+& C:\Users\Stefan\bfme\tools\Convert-Props.ps1   # turns each into props/<name>.glb and writes props/index.json
+```
+
+`Convert-Props.ps1` skips what's already converted, so it's quick to run again. Give it names to redo just those. If a model faces the wrong way, ask Claude to set its turn in `PROP_TURN` in `index.html`.
 ## How it works
 
 - It only works when you start the game with `serve.cmd`. Browsers won't load models into a page opened straight from your files, and the public website never asks for them.
