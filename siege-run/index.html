@@ -2140,7 +2140,7 @@ function makeBalrog() {
   scene.add(whip);
   const emit = [new V3(0, 8.4, 1.6), new V3(1.2, 7.6, 1.4), new V3(-1.2, 7.6, 1.4), new V3(2.4, 5.9, .4), new V3(-2.4, 5.9, .4), new V3(0, 6.4, -1.0), new V3(1.4, 6.6, -.8), new V3(-1.4, 6.6, -.8)];
   const sh = [new V3(2.3, 5.3, .65), new V3(-2.3, 5.3, .65)];   // where the arms join the shoulders
-  const BAL = { root, head, jaw, mouth, wings, arms, whip, emit, fires, sh, blade }; addSkin(BAL, 'balrog', root, root, fires || []); return BAL;
+  const BAL = { root, head, jaw, mouth, wings, arms, whip, emit, fires, sh, blade }; addSkin(BAL, 'balrog', root, [root, whip, ...arms.flatMap(a => [a.upper, a.fore, a.elbow, a.fist])]); return BAL;   // the arms and whip hang off the scene, not the root
 }
 function setLimb(m, a, b, r) { _d.subVectors(b, a); const len = _d.length(); m.position.addVectors(a, b).multiplyScalar(.5); m.quaternion.setFromUnitVectors(UPV, _d.divideScalar(Math.max(len, 1e-4))); m.scale.set(r, len, r); }
 
@@ -5174,26 +5174,50 @@ resize();
 //  The README in each folder lists the slots.
 // =====================================================================
 const LOCAL_ASSETS = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
-// height: how tall the model is made, in the game's units (Gandalf is about 1.75). turn: spin it round if it faces the wrong way.
+// height: how tall the model is made, in the game's units (Gandalf is about 1.75). turn: spin it round if it faces the wrong way
+// (models from Battle for Middle-earth face along x, so they need -Math.PI / 2). glow: 0-1, how much it lights itself in the dark.
 const MODEL_SLOTS = {
-  gandalf: { height: 1.75 }, balrog: { height: 8.5 }, witchking: { height: 2.9 }, shelob: { height: 3.2 }, nazgul: { height: 2.3 }, orc: { height: 1.45 },
+  gandalf: { height: 1.75, turn: -Math.PI / 2 }, balrog: { height: 8.5, turn: -Math.PI / 2, glow: .35 }, witchking: { height: 2.9, turn: -Math.PI / 2 },
+  shelob: { height: 3.2, turn: -Math.PI / 2 }, nazgul: { height: 2.3, turn: -Math.PI / 2 }, orc: { height: 1.45, turn: -Math.PI / 2 },
 };
 // which animation plays for each action: the first clip whose name matches (case doesn't matter)
-const ANIM_NAMES = { idle: /idle|stand|breath|ready/i, walk: /walk|run|move|gallop/i, attack: /attack|atk|smash|swing|slash|strike|hit_?a/i, hit: /hurt|damage|stun|flinch|react/i, die: /die|death|dead/i, jump: /jump|fall|air/i };
+const ANIM_NAMES = { idle: /idle|stand|breath|ready/i, walk: /walk|wala|run|move|gallop/i, attack: /attack|atk|smash|swing|slash|strike|hit_?a/i, hit: /hurt|damage|stun|flinch|react/i, die: /die|death|dead|dtha/i, jump: /jump|fall|air/i };
 const TEXTURE_SLOTS = ['meadow', 'grass', 'rock', 'path', 'turf', 'moss', 'marble', 'floor', 'dark', 'lavaRock', 'wood', 'roof', 'plains', 'metal', 'mosaic'];
 const LOADED = {}, SKINS = [];
-// a built-in character can be swapped for a loaded model: its own meshes are hidden (except the ones in keep) and the model takes their place
+// game models keep their flames, glows and eyes as flat cards: drawn as plain added light, never lit or shadowed
+const FX_MAT = /fire|flame|cloud|flar|glow|light|eyes?\b|spark|smoke/i, SKIN_MATS = new Map();
+const isFx = o => FX_MAT.test(o.name + ' ' + o.material.name);
+function skinMat(m, cfg, fx) {
+  const key = m.uuid + (cfg.glow || 0); if (SKIN_MATS.has(key)) return SKIN_MATS.get(key);
+  if (m.map) m.map.encoding = THREE.sRGBEncoding;
+  let out = m;
+  if (fx) out = new THREE.MeshBasicMaterial({ map: m.map, color: 0xffffff, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, side: THREE.DoubleSide, skinning: true });
+  else {
+    // Battle for Middle-earth keeps its team-colour mask in the alpha, so a body is solid whatever the alpha says
+    out = m.clone(); out.transparent = false; out.alphaTest = 0; out.depthWrite = true;
+    if (cfg.glow && m.map) { out.emissive = new THREE.Color(0xffffff).multiplyScalar(cfg.glow); out.emissiveMap = m.map; }   // glow: it lights itself, by its own picture
+  }
+  SKIN_MATS.set(key, out); return out;
+}
+// a built-in character can be swapped for a loaded model: its own meshes and sprites are hidden (hideRoot can be one group or a list;
+// anything in keep stays) and the model takes their place
 function addSkin(M, slot, attachTo, hideRoot, keep = [], top) { M.skin = { slot, attachTo, hideRoot, keep, top: top || M.root || hideRoot, obj: null, mixer: null, acts: {}, cur: '' }; SKINS.push(M.skin); if (LOADED[slot]) attachSkin(M.skin); }
 function attachSkin(K) {
   const gl = LOADED[K.slot], cfg = MODEL_SLOTS[K.slot]; if (!gl || K.obj) return;
   const kept = new Set(); for (const k of K.keep) if (k) k.traverse(o => kept.add(o));
-  K.hideRoot.traverse(o => { if (o.isMesh && !kept.has(o)) o.visible = false; });
+  for (const r of [].concat(K.hideRoot)) r.traverse(o => { if ((o.isMesh || o.isSprite) && !kept.has(o)) o.visible = false; });
   const obj = THREE.SkeletonUtils ? THREE.SkeletonUtils.clone(gl.scene) : gl.scene.clone(true);
-  const box = new THREE.Box3().setFromObject(obj), size = box.getSize(new V3()), sc = cfg.height / Math.max(.01, size.y);
+  // measured by its body alone: a big glow card round a staff mustn't shrink the wizard
+  const box = new THREE.Box3(); obj.updateMatrixWorld(true); obj.traverse(o => { if (o.isMesh && !isFx(o)) box.union(new THREE.Box3().setFromObject(o)); });
+  if (box.isEmpty()) box.setFromObject(obj);
+  const size = box.getSize(new V3()), sc = cfg.height / Math.max(.01, size.y);
   const pivot = new THREE.Group(); pivot.add(obj); obj.scale.setScalar(sc);
   const c = box.getCenter(new V3()); obj.position.set(-c.x * sc, -box.min.y * sc, -c.z * sc); pivot.rotation.y = cfg.turn || 0;
-  obj.traverse(o => { if (o.isMesh) { o.frustumCulled = false; if (o.material && o.material.map) o.material.map.encoding = THREE.sRGBEncoding; } });
-  K.attachTo.add(pivot); K.obj = pivot;
+  obj.traverse(o => {
+    if (!o.isMesh) return; o.frustumCulled = false; o.userData.cast = true;   // its size is in the model's own units, so don't judge it by that
+    o.material = skinMat(o.material, cfg, isFx(o));
+  });
+  K.attachTo.add(pivot); K.obj = pivot; shadowFlags(pivot);
   if (gl.animations.length) {
     K.mixer = new THREE.AnimationMixer(obj);
     for (const k in ANIM_NAMES) { const clip = gl.animations.find(a => ANIM_NAMES[k].test(a.name)); if (clip) K.acts[k] = K.mixer.clipAction(clip); }
@@ -5231,7 +5255,13 @@ async function loadLocalAssets() {
     await loadScript(base + 'loaders/GLTFLoader.js'); await loadScript(base + 'utils/SkeletonUtils.js');
   } catch (e) { console.warn('Siege Run: could not load the glTF loader, so your own models are off.'); return; }
   const loader = new THREE.GLTFLoader();
-  for (const slot in MODEL_SLOTS) { try { LOADED[slot] = await loader.loadAsync(`models/${slot}.glb`); got.push(`models/${slot}.glb (${LOADED[slot].animations.map(a => a.name).join(', ') || 'no animations'})`); } catch (e) { } }
+  // all at once; a missing file is fine (the built-in one stays), a file that's there but won't load is worth saying
+  // ?models=balrog,gandalf loads just those, for testing
+  const only = new URLSearchParams(location.search).get('models'), slots = Object.keys(MODEL_SLOTS).filter(s => !only || only.split(',').includes(s));
+  await Promise.all(slots.map(async slot => {
+    try { LOADED[slot] = await loader.loadAsync(`models/${slot}.glb`); got.push(`models/${slot}.glb (${LOADED[slot].animations.map(a => a.name).join(', ') || 'no animations'})`); }
+    catch (e) { if (e instanceof Error) console.warn(`Siege Run: models/${slot}.glb is there but would not load:`, e.message); }
+  }));
   for (const K of SKINS) attachSkin(K);
   if (got.length) console.log('Siege Run is using your own files:\n  ' + got.join('\n  '));
 }

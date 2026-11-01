@@ -16,13 +16,15 @@ Put a `.glb` file here with one of these names and Siege Run uses it instead of 
 ## How it works
 
 - It only works when you start the game with `serve.cmd`. Browsers won't load models into a page opened straight from your files, and the public website never asks for them.
-- The model is scaled to the right height and stood on the ground automatically. If it faces the wrong way or is the wrong size, ask Claude to change its `turn` or `height` in `MODEL_SLOTS` in `index.html`.
+- The model is scaled to the right height and stood on the ground automatically. If it faces the wrong way, is the wrong size, or is too dark, ask Claude to change its `turn`, `height` or `glow` in `MODEL_SLOTS` in `index.html`. BFME models face sideways, so their slots already have `turn: -Math.PI / 2`.
+- Bodies are drawn solid (BFME keeps its team-colour mask in the transparency channel). Parts named like fire, flame, cloud, flare, glow, light or eyes are drawn as glowing see-through effects instead.
+- To test one model on its own, add `&models=balrog` (or a list, `&models=balrog,gandalf`) to the address.
 - Animations are picked by name, so name your animations (Blender's Action editor) with these words in them:
   - **idle** (or stand, breath, ready): standing still
-  - **walk** (or run, move): moving
+  - **walk** (or run, move, gallop, and BFME's `wala`): moving
   - **attack** (or smash, swing, slash, strike): attacking
   - **hurt** (or damage, stun): being hit
-  - **die** (or death): dying (played once)
+  - **die** (or death, dead, and BFME's `dtha`): dying (played once)
   - **jump** (or fall): in the air (Gandalf)
 
   Missing ones fall back to idle. Exact names don't matter otherwise: `Balrog_Smash_01` counts as an attack.
