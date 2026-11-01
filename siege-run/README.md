@@ -69,6 +69,10 @@ Minas Tirith's levels are curved ramparts (rings). Hobbiton and Weathertop are o
 - `THEMES` holds each place's textures, sky colours, fog, lights, enemy colours, edge and wall decoration, and the scenery around the ring.
 - `NODES` (in the `WORLD MAP` section) lists the map stops.
 
+## Your own models and textures
+
+You can swap characters and surfaces for your own files, for example ones taken from BFME2: put a `.glb` in [`models/`](models/) (`balrog.glb`, `witchking.glb`, `shelob.glb`, `nazgul.glb`, `orc.glb`, `gandalf.glb`) or a picture in [`textures/`](textures/) (`grass.png`, `rock.png`, `path.png` and more). They're used when you play through `serve.cmd`, and both folders are ignored by git, so they never reach GitHub or the public site. The README in each folder lists the names and explains how to get a model out of BFME2 with FinalBIG and Blender.
+
 ## Pause menu
 
 Resume, Restart, Quit (back to the Minas Tirith menu), Music, and the two cheats: **Invincible** and **Unlimited rockets**. Cheat buttons light up when on. Keys Z and X still toggle them too.
