@@ -104,6 +104,7 @@ h2.t small{font-size:.55em;color:#ffe14d}
       <button class="tab" data-t="sea">🐬 Sea</button>
       <button class="tab" data-t="sky">🦅 Sky</button>
       <button class="tab" data-t="dino">🦖 Dino</button>
+      <button class="tab" data-t="ice">🐧 Ice</button>
       <button class="tab" data-t="outfit">👗 Outfit</button>
       <button class="tab" data-t="friend">🐶 Friend</button>
     </div>
@@ -215,13 +216,17 @@ const ANIMALS = {
   raptor: { dino: true, name: 'Velociraptor', em: '🦎', desc: 'The speediest dino, with a double jump!', jump: 11.6, hearts: 3, speed: 1.18, steer: 16, magnet: 1.6, camH: 5.6, double: true },
   stego: { dino: true, name: 'Stegosaurus', em: '🦕', desc: 'Spiky and tough: 5 hearts!', jump: 10.8, hearts: 5, speed: 0.94, steer: 10, magnet: 1.7, camH: 6.4 },
   brachio: { dino: true, name: 'Brachiosaurus', em: '🦕', desc: 'Super tall! Its long neck grabs treats from far away', jump: 12.4, hearts: 4, speed: 0.96, steer: 10, magnet: 3.2, camH: 11.5 },
+  penguin: { ice: true, name: 'Penguin', em: '🐧', desc: 'Belly-slides super fast, with a double jump!', jump: 11, hearts: 3, speed: 1.16, steer: 15, magnet: 1.6, camH: 5.2, double: true },
+  walrus: { ice: true, name: 'Walrus', em: '🦭', desc: 'Big tusks smash right through ice! 5 hearts', jump: 10.6, hearts: 5, speed: 0.94, steer: 10, magnet: 1.7, camH: 5.4, smash: true },
+  polarbear: { ice: true, name: 'Polar Bear', em: '🐻‍❄️', desc: 'Strong and fluffy, and grabs fish from far away!', jump: 11.6, hearts: 4, speed: 1.06, steer: 13, magnet: 2.6, camH: 6 },
 };
-const LAND = Object.keys(ANIMALS).filter(k => !ANIMALS[k].sea && !ANIMALS[k].sky && !ANIMALS[k].dino), SEA = Object.keys(ANIMALS).filter(k => ANIMALS[k].sea), SKY = Object.keys(ANIMALS).filter(k => ANIMALS[k].sky), DINO = Object.keys(ANIMALS).filter(k => ANIMALS[k].dino);
-if (!ANIMALS[save.animal] || ANIMALS[save.animal].sea || ANIMALS[save.animal].sky || ANIMALS[save.animal].dino) save.animal = 'giraffe';
+const LAND = Object.keys(ANIMALS).filter(k => !ANIMALS[k].sea && !ANIMALS[k].sky && !ANIMALS[k].dino && !ANIMALS[k].ice), ICE = Object.keys(ANIMALS).filter(k => ANIMALS[k].ice), SEA = Object.keys(ANIMALS).filter(k => ANIMALS[k].sea), SKY = Object.keys(ANIMALS).filter(k => ANIMALS[k].sky), DINO = Object.keys(ANIMALS).filter(k => ANIMALS[k].dino);
+if (!ANIMALS[save.animal] || ANIMALS[save.animal].sea || ANIMALS[save.animal].sky || ANIMALS[save.animal].dino || ANIMALS[save.animal].ice) save.animal = 'giraffe';
 if (!ANIMALS[save.sea] || !ANIMALS[save.sea].sea) save.sea = 'dolphin';
 if (!ANIMALS[save.sky] || !ANIMALS[save.sky].sky) save.sky = 'eagle';
 if (!ANIMALS[save.dino] || !ANIMALS[save.dino].dino) save.dino = 'trex';
-const rideOf = th => th.sea ? save.sea : th.fly ? save.sky : th.dino ? save.dino : save.animal;
+if (!ANIMALS[save.ice] || !ANIMALS[save.ice].ice) save.ice = 'penguin';
+const rideOf = th => th.sea ? save.sea : th.fly ? save.sky : th.dino ? save.dino : th.ice ? save.ice : save.animal;
 
 const OUTFITS = [
   { k: 'pink', name: 'Pink Dress', em: '👗', need: 0, top: 0xff5fa8, skirt: 0xff9fd0, shoes: 0xff4f9a },
@@ -293,6 +298,13 @@ const THEMES = {
     sky: ['#4ab0d8', '#9fe0e8', '#e8fff0'], fog: 0xa8d8b8, fogNear: 40, fogFar: 125, ground: 'jungle', path: 'junglePath', river: 'jungleRiver',
     hemi: [0xeaffea, 0x3a6a2a, 0.82], fruitEm: '🍌', fruitName: 'bananas', music: 'jungle',
     hints: { low: 'Jump the mossy rocks!', river: 'Jump over the river!', bar: 'Jump the mossy log!', tall: 'Giant jungle tree! Move to dodge it!', meteor: 'Coconut! Get off the red circle!' },
+  },
+  ice: {
+    key: 'ice', name: 'Ice Kingdom', em: '❄️', len: 1250, seed: 3131, req: 'mountain', boss: 'icemonster', ice: true, meteors: true, meteorColor: 0xe8f8ff,
+    desc: 'Ride a penguin, a walrus or a polar bear across the frozen land! Jump the icy water… and watch out for the Ice Monster!',
+    sky: ['#3a7ad8', '#9ad0f2', '#f0faff'], fog: 0xdcecf8, ground: 'iceGround', path: 'icePath', river: 'iceWater',
+    hemi: [0xffffff, 0x8ab0d0, 0.88], fruitEm: '🐟', fruitName: 'fish', music: 'ice',
+    hints: { low: 'Jump the ice blocks!', river: 'Jump over the icy water!', bar: 'Jump the frozen log!', tall: 'Giant icicle! Move to dodge it!', meteor: 'Snowball! Get off the red circle!' },
   },
 };
 // every level is open from the start (req still says which level comes before, for the story)
@@ -428,6 +440,21 @@ const PAINT = {
     for (let j = 0; j < 10; j++) { x.strokeStyle = j % 2 ? 'rgba(255,255,255,.45)' : 'rgba(20,110,130,.6)'; x.beginPath(); for (let i = 0; i <= w; i += 8) { const y = j * h / 10 + Math.sin(i / w * TAU * 3 + j) * 4; i ? x.lineTo(i, y) : x.moveTo(i, y); } x.stroke(); }
     for (let i = 0; i < 9; i++) { const cx = Math.random() * w, cy = Math.random() * h; x.fillStyle = '#4fae3a'; x.beginPath(); x.arc(cx, cy, 11, 0.4, TAU); x.lineTo(cx, cy); x.fill(); if (i % 3 === 0) { x.fillStyle = '#ff8fc8'; x.beginPath(); x.arc(cx + 3, cy - 3, 4, 0, TAU); x.fill(); } }
   },
+  // the Ice Kingdom
+  iceGround(x, w, h) {
+    speckle(x, w, h, '#eef6fc', ['#dceaf6', '#ffffff', '#cfe2f2', '#e4f0fa'], 700, 1, 3.5);
+    x.lineWidth = 1.5; for (let i = 0; i < 26; i++) { x.strokeStyle = 'rgba(140,190,230,.45)'; x.beginPath(); let px = Math.random() * w, py = Math.random() * h; x.moveTo(px, py); for (let k = 0; k < 4; k++) { px += rand(-18, 18); py += rand(-18, 18); x.lineTo(px, py); } x.stroke(); }
+  },
+  icePath(x, w, h) {
+    x.fillStyle = '#bfe2f6'; x.fillRect(0, 0, w, h);
+    for (let j = 0; j < 4; j++) for (let i = -1; i < 5; i++) { x.fillStyle = ['#a8d6f2', '#b8def4', '#9ccff0'][(i + j + 3) % 3]; roundRect(x, i * 64 + (j % 2) * 32 + 3, j * 64 + 3, 58, 58, 8); x.fill(); x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(i * 64 + (j % 2) * 32 + 10, j * 64 + 10, 22, 5); }
+  },
+  iceWater(x, w, h) {
+    x.fillStyle = '#1f5a8a'; x.fillRect(0, 0, w, h); x.lineWidth = 3;
+    for (let j = 0; j < 9; j++) { x.strokeStyle = j % 2 ? 'rgba(255,255,255,.3)' : 'rgba(20,60,110,.6)'; x.beginPath(); for (let i = 0; i <= w; i += 8) { const y = j * h / 9 + Math.sin(i / w * TAU * 3 + j) * 4; i ? x.lineTo(i, y) : x.moveTo(i, y); } x.stroke(); }
+    for (let i = 0; i < 8; i++) { x.fillStyle = 'rgba(240,250,255,.9)'; x.beginPath(); const cx = Math.random() * w, cy = Math.random() * h; for (let k = 0; k < 6; k++) { const a = k / 6 * TAU + rand(-0.3, 0.3), r = rand(7, 16); x.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } x.fill(); }   // ice floes
+  },
+  fur(x, w, h) { speckle(x, w, h, '#f6f2e8', ['#ebe4d4', '#ffffff', '#e2dacb'], 900, 1, 2.5); },
   dinoGreen(x, w, h) { dinoScales(x, w, h, '#58b04a', ['#4a9a3e', '#6cc058', '#3f8a36']); },
   dinoTeal(x, w, h) { dinoScales(x, w, h, '#5aaed0', ['#4a98bc', '#6cc0e0', '#3f86a8']); for (let i = 0; i < 40; i++) { x.fillStyle = 'rgba(40,90,130,.5)'; x.beginPath(); x.arc(Math.random() * w, Math.random() * h, rand(4, 10), 0, TAU); x.fill(); } },
   dinoOlive(x, w, h) { dinoScales(x, w, h, '#8aa84a', ['#7a9840', '#9cba58', '#6e8a3a']); },
@@ -1053,12 +1080,123 @@ function buildMushrooms(parent, x, z, s = 1) {
   return g;
 }
 
+/* ---------------- the Ice Kingdom: penguin, walrus and polar bear rides, the Ice Monster, and icy scenery ---------------- */
+const iceCrystal = () => new THREE.MeshPhongMaterial({ color: 0xcff4ff, emissive: 0x2a7ab0, shininess: 90, transparent: true, opacity: 0.85 });
+function buildPenguin() {
+  const g = new THREE.Group(), BK = 0x23283a, OR = 0xff9a2a;
+  const body = grp(g, [0, 1.3, 0]);
+  const lean = grp(body, [0, 0, 0]); lean.rotation.x = -0.85;   // leaning right forward, ready to belly-slide
+  part(G.sph, BK, lean, [0, 0, 0], [0.85, 1.25, 0.8]);
+  part(G.sph, 0xffffff, lean, [0, -0.05, -0.34], [0.68, 1.08, 0.52]);   // white tummy
+  const head = grp(lean, [0, 1.2, -0.05]); head.rotation.x = 0.85;
+  part(G.sph, BK, head, [0, 0, 0], [0.55, 0.52, 0.55]);
+  for (const s of [-1, 1]) part(G.sph, 0xffffff, head, [s * 0.2, 0.02, -0.36], [0.2, 0.24, 0.12]);
+  dEyes(head, 0.22, 0.08, -0.4, 0.1);
+  part(G.cone, OR, head, [0, -0.1, -0.62], [0.12, 0.34, 0.1], [-Math.PI / 2, 0, 0]);
+  const flippers = [-1, 1].map(s => { const f = grp(lean, [s * 0.8, 0.35, 0]); part(G.sph, BK, f, [s * 0.1, -0.45, 0], [0.13, 0.6, 0.32], [0, 0, s * 0.2]); return f; });
+  part(G.cone, BK, lean, [0, -1.15, 0.45], [0.25, 0.4, 0.12], [2.4, 0, 0]);   // little tail
+  const legs = [-1, 1].map(s => leg(g, s * 0.35, 0.6, 0.7, 0.5, 0.12, OR, OR));
+  legs.forEach(l => part(G.sph, OR, l, [0, -0.5, -0.18], [0.22, 0.06, 0.32]));   // big flat feet
+  return {
+    g, body, legs, head, seatY: 2.15, seatZ: 0.3, bodyY: 1.3, runFreq: 12, legAmp: 0.6, shadow: 1.6,
+    extra(ph, k, air) { flippers.forEach((f, i) => f.rotation.z = (i ? -1 : 1) * (air ? 1.1 : 0.25 + Math.abs(Math.sin(ph)) * 0.5 * k)); },
+  };
+}
+function buildWalrus() {
+  const g = new THREE.Group(), BR = 0x9a6a50, DK = 0x6a4434, T = 0xfff4e0;
+  const body = grp(g, [0, 1.15, 0]);
+  part(G.sph, BR, body, [0, 0, 0.1], [1.05, 0.95, 1.6]);
+  part(G.sph, 0xae8064, body, [0, -0.32, -0.2], [0.9, 0.6, 1.2]);
+  part(G.sph, BR, body, [0, -0.35, 1.5], [0.62, 0.45, 0.85]);
+  for (const s of [-1, 1]) part(G.sph, DK, body, [s * 0.45, -0.72, 2.15], [0.42, 0.08, 0.3], [0, s * 0.4, 0]);   // tail flippers
+  const head = grp(body, [0, 0.35, -1.45]);
+  part(G.sph, BR, head, [0, 0, -0.1], [0.62, 0.56, 0.56]);
+  for (const s of [-1, 1]) {
+    part(G.sph, 0xc8987a, head, [s * 0.2, -0.18, -0.52], [0.28, 0.25, 0.22]);   // whiskery cheeks
+    for (let i = 0; i < 3; i++) part(G.sphLo, DK, head, [s * (0.12 + i * 0.1), -0.12 - i * 0.03, -0.72], 0.025);
+    part(G.cone, T, head, [s * 0.16, -0.62, -0.58], [0.07, 0.75, 0.07], [Math.PI + 0.15, 0, 0]);   // the tusks
+  }
+  part(G.sph, 0x3a2418, head, [0, 0.02, -0.66], [0.12, 0.08, 0.06]);
+  dEyes(head, 0.3, 0.2, -0.3, 0.1);
+  const legs = [[-0.8, -0.75, 0.8, 0.72, 0.22], [0.8, -0.75, 0.8, 0.72, 0.22], [-0.55, 1.1, 0.55, 0.45, 0.18], [0.55, 1.1, 0.55, 0.45, 0.18]].map(([x, z, y, l, r]) => leg(g, x, y, z, l, r, BR, DK));
+  return { g, body, legs, head, seatY: 2.2, seatZ: 0.2, bodyY: 1.15, runFreq: 9, legAmp: 0.5, shadow: 2.3 };
+}
+function buildPolarBear() {
+  const g = new THREE.Group(), F = texMat('fur', 2, 2), FL = texMat('fur', 1, 2), C = 0xf6f2e8;
+  const body = grp(g, [0, 1.55, 0]);
+  part(G.sph, F, body, [0, 0, -0.05], [0.82, 0.8, 1.25]);
+  part(G.sph, F, body, [0, 0.12, 0.75], [0.74, 0.74, 0.72]);
+  const legs = [[-0.42, -0.75], [0.42, -0.75], [-0.42, 0.8], [0.42, 0.8]].map(([x, z]) => leg(g, x, 1.35, z, 1.3, 0.25, FL, 0xe6dfcf));
+  legs.forEach(l => { for (const t of [-1, 0, 1]) part(G.cone, 0x2a2a2a, l, [t * 0.1, -1.3, -0.28], [0.03, 0.1, 0.03], [-Math.PI / 2, 0, 0]); });   // claws
+  const head = grp(body, [0, 0.3, -1.25]);
+  part(G.sph, F, head, [0, 0, -0.1], [0.46, 0.43, 0.5]);
+  part(G.sph, C, head, [0, -0.1, -0.55], [0.26, 0.22, 0.32]);
+  part(G.sph, 0x1a1a1a, head, [0, -0.02, -0.86], [0.1, 0.07, 0.06]);
+  for (const s of [-1, 1]) { part(G.sph, C, head, [s * 0.3, 0.36, 0], [0.13, 0.13, 0.07]); part(G.sph, 0x2a2a2a, head, [s * 0.3, 0.36, -0.03], [0.07, 0.07, 0.04]); part(G.sph, 0x1a1a1a, head, [s * 0.18, 0.12, -0.47], 0.055); }
+  const tail = grp(body, [0, 0.25, 1.42]); part(G.sph, C, tail, [0, 0, 0], 0.14);
+  return { g, body, legs, head, tail, seatY: 2.5, seatZ: 0.2, bodyY: 1.55, runFreq: 10, legAmp: 0.6, shadow: 2 };
+}
+// the Ice Monster: the boss of the Ice Kingdom, a great lump of living ice with crystals growing out of him
+function buildIceMonster() {
+  const g = new THREE.Group(), ICE = shiny(0x9fd8f5, 0x1a4a6a), DEEP = shiny(0x5ab0e8, 0x10304a), SNOW = mat(0xf4fbff), CR = iceCrystal();
+  const body = grp(g, [0, 1.75, 0]);
+  part(G.sph, ICE, body, [0, 0.45, 0], [1.25, 1.2, 1.0]);
+  part(G.sph, SNOW, body, [0, 0.15, -0.55], [0.9, 0.9, 0.5]);   // a frosty white chest
+  for (let i = 0; i < 7; i++) { const a = -0.9 + i * 0.3; part(G.octa, CR, body, [Math.sin(a) * 0.9, 1.15 + Math.cos(a) * 0.4, 0.55], [0.18, 0.6 - Math.abs(a) * 0.2, 0.18], [0.4, 0, a * 0.6]); }
+  for (const s of [-1, 1]) part(G.octa, CR, body, [s * 1.15, 1.2, 0], [0.22, 0.7, 0.22], [0, 0, -s * 0.5]);
+  const head = grp(body, [0, 1.5, -0.45]);
+  part(G.sph, ICE, head, [0, 0, 0], [0.6, 0.55, 0.55]);
+  part(G.sph, SNOW, head, [0, 0.35, 0.05], [0.62, 0.3, 0.55]);
+  for (const s of [-1, 1]) {
+    part(G.sph, glowM(0x7af0ff), head, [s * 0.22, 0.08, -0.48], [0.12, 0.09, 0.05]);
+    part(G.box, 0x1a4a7a, head, [s * 0.22, 0.24, -0.5], [0.3, 0.07, 0.06], [0, 0, s * 0.4]);   // cross brows
+    part(G.octa, CR, head, [s * 0.42, 0.55, 0], [0.12, 0.45, 0.12], [0, 0, -s * 0.5]);       // icy horns
+  }
+  const jaw = grp(head, [0, -0.25, -0.3]);
+  part(G.box, 0x1a3a5a, jaw, [0, 0, -0.15], [0.55, 0.12, 0.15]);
+  for (let i = -2; i <= 2; i++) part(G.cone, 0xffffff, jaw, [i * 0.1, 0.08, -0.22], [0.04, 0.14, 0.04]);
+  const arms = [-1, 1].map(s => { const a = grp(body, [s * 1.2, 0.95, -0.1]); part(G.cyl, ICE, a, [0, -0.7, 0], [0.32, 1.4, 0.32]); part(G.sph, DEEP, a, [0, -1.5, -0.1], [0.5, 0.45, 0.5]); for (let k = -1; k <= 1; k++) part(G.octa, CR, a, [k * 0.18, -1.75, -0.35], [0.08, 0.22, 0.08]); return a; });
+  const legs = [-1, 1].map(s => { const l = grp(g, [s * 0.55, 1.6, 0.1]); part(G.cyl, ICE, l, [0, -0.7, 0], [0.38, 1.4, 0.38]); part(G.sph, SNOW, l, [0, -1.45, -0.12], [0.5, 0.25, 0.6]); return l; });
+  g.scale.setScalar(1.6);
+  return { g, body, legs, head, arms, runFreq: 7, bodyY: 1.75 };
+}
+function buildIceberg(parent, x, z, s = 1) {
+  const g = grp(parent, [x, 0, z]); g.scale.setScalar(s); g.rotation.y = rand(0, TAU);
+  part(G.rock, shiny(0xdff4ff, 0x203a50), g, [0, 1.2, 0], [2.2, 2.4, 1.8]); part(G.rock, shiny(0xbfe6fa, 0x1a3048), g, [1.3, 0.7, 0.5], [1.2, 1.4, 1.1]);
+  part(G.sph, 0xffffff, g, [0, 2.6, 0], [1.4, 0.4, 1.1]);
+  return g;
+}
+function buildIgloo(parent, x, z, s = 1) {
+  const g = grp(parent, [x, 0, z]); g.scale.setScalar(s); g.rotation.y = rand(0, TAU); const SN = 0xf4fbff;
+  part(G.hemi, SN, g, [0, 0, 0], [2, 1.8, 2]);
+  for (let i = 1; i < 4; i++) part(G.ring, 0xd8e8f4, g, [0, i * 0.42, 0], [2 * Math.cos(Math.asin(i * 0.42 / 1.8)), 2 * Math.cos(Math.asin(i * 0.42 / 1.8)), 0.25], [Math.PI / 2, 0, 0]);   // rows of snow blocks
+  part(G.cyl, SN, g, [0, 0.5, -1.9], [0.75, 1.1, 0.75], [Math.PI / 2, 0, 0]);
+  part(new THREE.CircleGeometry(0.5, 14), 0x2a3a4a, g, [0, 0.5, -2.46], null, [0, Math.PI, 0]);
+  return g;
+}
+function buildSnowman(parent, x, z, s = 1) {
+  const g = grp(parent, [x, 0, z]); g.scale.setScalar(s); g.rotation.y = rand(-0.5, 0.5) + Math.PI; const SN = 0xffffff;
+  part(G.sph, SN, g, [0, 0.6, 0], 0.7); part(G.sph, SN, g, [0, 1.5, 0], 0.5); part(G.sph, SN, g, [0, 2.2, 0], 0.36);
+  part(G.cone, 0xff8a2a, g, [0, 2.2, -0.45], [0.06, 0.3, 0.06], [-Math.PI / 2, 0, 0]);
+  for (const sx of [-1, 1]) { part(G.sphLo, 0x1a1a1a, g, [sx * 0.12, 2.32, -0.3], 0.04); part(G.cyl, 0x6a4a2a, g, [sx * 0.75, 1.65, 0], [0.04, 0.8, 0.04], [0, 0, sx * 1.1]); }
+  part(G.ring, 0xe83a3a, g, [0, 1.92, 0], [0.4, 0.4, 0.8], [Math.PI / 2, 0, 0]);
+  part(G.cyl, 0x2a2a2a, g, [0, 2.6, 0], [0.26, 0.4, 0.26]); part(G.cyl, 0x2a2a2a, g, [0, 2.42, 0], [0.4, 0.05, 0.4]);   // a top hat
+  return g;
+}
+function buildIceSpire(parent, x, z, s = 1) {   // a tall spike of ice crystals
+  const g = grp(parent, [x, 0, z]); g.scale.setScalar(s); const CR = iceCrystal();
+  part(G.octa, CR, g, [0, 2.6, 0], [0.8, 2.8, 0.8]); part(G.octa, CR, g, [0.7, 1.2, 0.3], [0.4, 1.3, 0.4], [0, 0, -0.4]); part(G.octa, CR, g, [-0.6, 1, -0.2], [0.35, 1.1, 0.35], [0, 0, 0.35]);
+  part(G.sphLo, 0xffffff, g, [0, 0.15, 0], [1.2, 0.3, 1.2]);
+  return g;
+}
+
 function buildRider(kind, outfit, sea) {
   const builders = {
     giraffe: buildGiraffe, hippo: buildHippo, lion: () => buildCat(false), tiger: () => buildCat(true), flamingo: buildFlamingo,
     elephant: buildElephantRide, zebra: () => buildZebra(null, 0, 0, 0, true), dolphin: buildDolphin, shark: () => buildShark(false), whale: buildWhale,
     eagle: () => buildBird('eagle'), owl: () => buildBird('owl'), parrot: () => buildBird('parrot'),
     trex: buildTrex, raptor: buildRaptor, stego: buildStego, brachio: buildBrachio,
+    penguin: buildPenguin, walrus: buildWalrus, polarbear: buildPolarBear,
   };
   const a = builders[kind]();
   const iyla = buildIyla(outfit, sea);
@@ -1266,6 +1404,12 @@ function makeTreat(key) {
     const c = pick([[0xfff4dc, 0x6ac040], [0xd8f0ff, 0x3a8ae0], [0xffe0f0, 0xff5fa8]]);
     part(G.sph, shiny(c[0], 0x302a20), f, [0, 0, 0], [0.32, 0.42, 0.32]);
     for (const [x, y, z] of [[0.2, 0.15, -0.2], [-0.22, -0.05, -0.18], [0.05, -0.2, -0.27], [-0.1, 0.25, -0.2]]) part(G.sphLo, shiny(c[1]), f, [x, y, z], [0.08, 0.08, 0.04]);
+  } else if (key === 'ice') {
+    // a shiny fish
+    const m = shiny(pick([0x7ac8ff, 0xb8c8d8, 0xff9a6a]), 0x203040);
+    part(G.sph, m, f, [0, 0, 0], [0.42, 0.26, 0.14]);
+    part(G.cone, m, f, [0.5, 0, 0], [0.2, 0.26, 0.06], [0, 0, Math.PI / 2]);
+    part(G.sphLo, 0x1a1a1a, f, [-0.26, 0.06, -0.12], 0.04);
   } else if (key === 'jungle') {
     // a bunch of bananas
     const m = shiny(0xffd83a, 0x403000);
@@ -1357,6 +1501,7 @@ const SONGS = {
   candy: { bpm: 144, root: 392, wave: 'sine', shaker: true },
   dinos: { bpm: 132, root: 247, wave: 'square', shaker: true },
   jungle: { bpm: 126, root: 294, wave: 'triangle', shaker: true },
+  ice: { bpm: 124, root: 330, wave: 'triangle', shaker: true },
   boss: { bpm: 172, root: 247, wave: 'square', shaker: true, minor: true },
 };
 const MEL = [0, 4, 7, 4, 9, 7, 4, 2, 0, 2, 4, 7, 4, 2, 0, null, 5, 9, 12, 9, 7, 4, 2, 4, 0, 4, 7, 12, 11, 7, 4, null];
@@ -1392,7 +1537,7 @@ function starStr(n) { return '★'.repeat(n) + '☆'.repeat(3 - n); }
    OVERWORLD: a little Africa you ride around. Gates lead to levels.
    ===================================================================== */
 const W = { scene: null, rider: null, pos: new THREE.Vector3(0, 0, 24), face: 0, target: null, cols: [], walk: [], gates: {}, near: null, elephants: [], zebras: [], fx: null, t: 0, milo: null };
-const CANDY_C = { x: 0, z: -30 }, DESERT_C = { x: -33, z: -14 }, MOUNT_C = { x: 25, z: -29 }, DINO_C = { x: -27, z: 28 };
+const CANDY_C = { x: 0, z: -30 }, DESERT_C = { x: -33, z: -14 }, MOUNT_C = { x: 25, z: -29 }, DINO_C = { x: -27, z: 28 }, ICE_C = { x: 41, z: -11 };
 function heightAt(x, z) { const d = Math.hypot(x - CANDY_C.x, z - CANDY_C.z); return d < 12 ? 2 : d < 16 ? 2 * (16 - d) / 4 : 0; }
 const faceTo = (x, z, tx, tz) => Math.atan2(tx - x, tz - z);
 const GATE_AT = {
@@ -1404,6 +1549,7 @@ const GATE_AT = {
   mountain: [16, 0, -20, faceTo(16, -20, 0, -5)],
   dinos: [-17, 0, 31, faceTo(-17, 31, -6, 40)],
   jungle: [-38, 0, 19, faceTo(-38, 19, -26, 26)],
+  ice: [34, 0, -4, faceTo(34, -4, 24, 8)],
 };
 
 function buildWorld() {
@@ -1441,6 +1587,7 @@ function buildWorld() {
   stones(0, 24, 0, 12); stones(0, 12, -6, 12); stones(-6, 12, tr('serengeti').x, tr('serengeti').z); stones(0, 12, 0, -13); stones(0, -13, 0, -18.5);
   stones(0, 12, tr('desert').x, tr('desert').z); stones(0, 12, tr('volcano').x, tr('volcano').z); stones(0, 24, tr('ocean').x, tr('ocean').z); stones(0, -13, tr('mountain').x, tr('mountain').z);
   stones(0, 24, tr('dinos').x, tr('dinos').z); stones(tr('dinos').x, tr('dinos').z, tr('jungle').x, tr('jungle').z);
+  stones(0, 12, 26, 7); stones(26, 7, tr('ice').x, tr('ice').z);
   // the ocean pier behind the sea gate
   const [ox, , oz, ory] = GATE_AT.ocean; const out = new THREE.Vector3(-Math.sin(ory), 0, -Math.cos(ory));
   for (let i = 0; i < 14; i++) { const d = 1.5 + i * 1.1; part(G.box, 0x9a6a3a, S, [ox + out.x * d, 0.15, oz + out.z * d], [3, 0.2, 1], [0, ory, 0]); }
@@ -1479,6 +1626,12 @@ function buildWorld() {
   buildEggNest(S, DC.x + 1, DC.z + 4, 1); W.cols.push({ x: DC.x + 1, z: DC.z + 4, r: 0.9 });
   W.brachio = buildBrachio(); W.brachio.g.scale.setScalar(0.75); W.brachio.g.position.set(DC.x - 1.5, 0, DC.z + 1); W.brachio.g.rotation.y = -2.15; S.add(W.brachio.g);
   W.cols.push({ x: DC.x - 1.5, z: DC.z + 1, r: 2 });
+  // the ice corner, by the ice gate: a patch of snow, an igloo, an ice spike and a penguin
+  const IC = ICE_C;
+  const ip = part(new THREE.CircleGeometry(6, 36), texMat('iceGround', 2, 2), S, [IC.x, 0.035, IC.z], null, [-Math.PI / 2, 0, 0]); W.walk.push(ip);
+  const ig = buildIgloo(S, IC.x + 2, IC.z - 1, 0.7); ig.rotation.y = -2.4; W.cols.push({ x: IC.x + 2, z: IC.z - 1, r: 1.6 });
+  buildIceSpire(S, IC.x - 2.5, IC.z - 3, 0.6); W.cols.push({ x: IC.x - 2.5, z: IC.z - 3, r: 0.7 });
+  W.penguin = buildPenguin(); W.penguin.g.scale.setScalar(0.55); W.penguin.g.position.set(IC.x - 1.5, 0, IC.z + 2.5); W.penguin.g.rotation.y = 2.2; S.add(W.penguin.g);
 
   // animals
   W.elephants.push(buildElephant(S, -27, 11, 0.6, 0.9), buildElephant(S, -15, 24, -2.2, 0.75));
@@ -1487,7 +1640,7 @@ function buildWorld() {
 
   // trees
   const rng = mulberry32(11);
-  const keepClear = (x, z) => Math.hypot(x - CANDY_C.x, z - CANDY_C.z) < 19 || Math.hypot(x - MOUNT_C.x, z - MOUNT_C.z) < 15 || Math.hypot(x - V.x, z - V.z) < 11 || Math.hypot(x + 22, z - 17) < 8 || Math.hypot(x - DESERT_C.x, z - DESERT_C.z) < 17 || Math.hypot(x - DINO_C.x, z - DINO_C.z) < 11
+  const keepClear = (x, z) => Math.hypot(x - CANDY_C.x, z - CANDY_C.z) < 19 || Math.hypot(x - MOUNT_C.x, z - MOUNT_C.z) < 15 || Math.hypot(x - V.x, z - V.z) < 11 || Math.hypot(x + 22, z - 17) < 8 || Math.hypot(x - DESERT_C.x, z - DESERT_C.z) < 17 || Math.hypot(x - ICE_C.x, z - ICE_C.z) < 8 || Math.hypot(x - DINO_C.x, z - DINO_C.z) < 11
     || Object.values(W.gates).some(g => Math.hypot(x - g.trig.x, z - g.trig.z) < 7) || (Math.abs(x) < 4 && z > -20) || Math.hypot(x, z - 12) < 5;
   for (let i = 0; i < 46; i++) {
     const a = rng() * TAU, r = 10 + rng() * 34; const x = Math.cos(a) * r, z = Math.sin(a) * r;
@@ -1524,6 +1677,7 @@ const GATE_STYLE = {
   ocean: { label: 'UNDER THE SEA', bg: '#5fc8ff', fg: '#ffffff', post: 0xff6f61, beam: 0x4fd8c8, tip: 0xffd84a, ring: 0x5fd0ff },
   dinos: { label: 'DINO VALLEY', bg: '#ffb86b', fg: '#6a2a10', post: 0xf2e6c8, beam: 0xf2e6c8, tip: 0xff8a3a, ring: 0xffb04a },
   jungle: { label: 'DINO LAND', bg: '#6ad06a', fg: '#ffffff', post: 0x7a5a3a, beam: 0x4a8a2a, tip: 0xffd84a, ring: 0x8be06a },
+  ice: { label: 'ICE KINGDOM', bg: '#dff4ff', fg: '#2a6ab0', post: 0xbfe8ff, beam: 0x8fd0ff, tip: 0xffffff, ring: 0x8fe0ff },
 };
 function buildGate(S, key, x, y, z, ry) {
   const g = grp(S, [x, y, z]); g.rotation.y = ry;
@@ -1637,7 +1791,7 @@ function showGatePop(k) {
   $('popTitle').textContent = th.em + ' ' + th.name;
   $('popDesc').textContent = th.desc;
   const an = ANIMALS[rideOf(th)];
-  $('popRide').textContent = `Riding: ${an.em} ${an.name}` + (th.sea ? ' (change it under Sea)' : th.fly ? ' (change it under Sky)' : th.dino ? ' (change it under Dino)' : '') + (th.boss ? `  ·  Boss: ${BOSSES[th.boss].em} ${BOSSES[th.boss].name}` : '');
+  $('popRide').textContent = `Riding: ${an.em} ${an.name}` + (th.sea ? ' (change it under Sea)' : th.fly ? ' (change it under Sky)' : th.dino ? ' (change it under Dino)' : th.ice ? ' (change it under Ice)' : '') + (th.boss ? `  ·  Boss: ${BOSSES[th.boss].em} ${BOSSES[th.boss].name}` : '');
   const b = save.best[k]; $('popStars').textContent = b ? starStr(b.stars) + `  ${th.fruitEm} ${b.fruit}` : '';
   $('lockMsg').innerHTML = th.req ? `Finish <b>${THEMES[th.req].name}</b> to open this one!` : '';
   $('popLock').style.display = locked ? '' : 'none';
@@ -1882,6 +2036,44 @@ const ST = {
       L.leaves = true;
     },
   },
+  ice: {
+    low(g, r) { part(G.box, shiny(0xbfe6fa, 0x1a3a58), g, [0, 0.55, 0], [1.4, 1.1, 1.1], [0, r() * 0.6 - 0.3, 0]); part(G.sph, 0xffffff, g, [0, 1.12, 0], [0.8, 0.18, 0.62]); part(G.box, shiny(0xd8f2ff, 0x1a3a58), g, [-0.8, 0.3, 0.3], [0.6, 0.6, 0.6], [0, 0.5, 0]); },
+    bar(g) {   // a frozen log, glazed with ice and topped with snow
+      part(G.cyl, 0x6a4a2a, g, [0, 0.55, 0], [0.5, 9, 0.5], [0, 0, Math.PI / 2]);
+      part(G.cyl, new THREE.MeshPhongMaterial({ color: 0xcff0ff, shininess: 90, transparent: true, opacity: 0.45 }), g, [0, 0.55, 0], [0.6, 9.1, 0.6], [0, 0, Math.PI / 2]);
+      part(G.box, 0xffffff, g, [0, 1.12, 0], [8.8, 0.14, 0.5]);
+      for (let i = -3; i <= 3; i++) part(G.cone, iceCrystal(), g, [i * 1.2 + 0.3, 0.1, 0.45], [0.06, 0.4, 0.06], [Math.PI, 0, 0]);   // icicles hanging off it
+    },
+    tall(g) { buildIceSpire(g, 0, 0, 1.1); },
+    bank: 0xeaf6ff, riverDeco(g, r) { for (let i = 0; i < 5; i++) part(new THREE.CircleGeometry(0.6 + r() * 0.5, 7), 0xf4fbff, g, [rand(-12, 12), 0.09, rand(-1.2, 1.2)], null, [-Math.PI / 2, 0, r() * 6]); for (let i = 0; i < 6; i++) { const x = (r() < 0.5 ? -1 : 1) * (5.5 + r() * 30); part(G.rock, 0xdcecf8, g, [x, 0.2, (r() < 0.5 ? -1 : 1) * 1.9], [0.6, 0.4, 0.5], rand3(r)); } },
+    decor(S, x, z, r, L) {
+      const k = r();
+      if (k < 0.22) return buildPine(S, x, z, 0.8 + r() * 0.8);
+      if (k < 0.38) return buildIceberg(S, x, z, 0.8 + r() * 1.2);
+      if (k < 0.5) return buildIceSpire(S, x, z, 0.7 + r() * 0.9);
+      if (k < 0.58) return buildIgloo(S, x, z, 0.8 + r() * 0.4);
+      if (k < 0.65) return buildSnowman(S, x, z, 0.9 + r() * 0.4);
+      if (k < 0.72) { const o = grp(S, [x, 0, z]); part(G.sph, 0xf4f8fc, o, [0, 0, 0], [2.5 + r() * 2, 1 + r(), 2 + r() * 2]); return o; }
+      if (Math.abs(x) > 9) {   // penguins and polar bears out on the ice
+        const pickB = r(), d = pickB < 0.6 ? buildPenguin() : pickB < 0.8 ? buildWalrus() : buildPolarBear();
+        d.g.position.set(x, 0, z); S.add(d.g); if (pickB < 0.6) d.g.scale.setScalar(0.5 + r() * 0.2);
+        L.walkers.push({ ...d, phase: r() * 6, speed: pickB < 0.6 ? 1.6 + r() : pickB < 0.8 ? 1 : 2.4 }); return null;
+      }
+      return null;
+    },
+    tuft: { geo: () => G.coneLo, m: () => mat(0xffffff), cols: [0xffffff, 0xdcecf8, 0xbfe0f4] },
+    curb: () => mat(0xa8d6f2),
+    backdrop(bd, L) {
+      part(G.sph, nf(0xfffbe0), bd, [55, 48, -150], 8);
+      [[-75, 34, 52], [-35, 46, 62], [5, 38, 56], [42, 50, 64], [82, 32, 50]].forEach(([x, h, r]) => { part(new THREE.ConeGeometry(r * 0.6, h, 7), nf(0x8aa8c8), bd, [x, h / 2 - 2, -158]); part(new THREE.ConeGeometry(r * 0.6 * 0.45, h * 0.45, 7), nf(0xffffff), bd, [x, h - 2 - h * 0.225 + 0.3, -157.6]); });
+      // the northern lights, rippling over the mountains
+      const aur = new THREE.MeshBasicMaterial({ color: 0x6affc8, transparent: true, opacity: 0.18, depthWrite: false, fog: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+      const aur2 = aur.clone(); aur2.color.setHex(0xb07aff);
+      for (let i = 0; i < 6; i++) part(G.plane, i % 2 ? aur2 : aur, bd, [-70 + i * 28, 62 + (i % 3) * 5, -150], [30, 14, 1], [0, 0, (i % 2 ? 1 : -1) * 0.25]);
+      for (let i = -6; i <= 6; i++) part(G.sphLo, nf(0xe8f2fa), bd, [i * 25, -2, -135], [16, 7, 4]);
+      L.snow = true;
+    },
+  },
 };
 
 /* =====================================================================
@@ -1972,7 +2164,7 @@ function buildLevel(key) {
   L.fruits.sort((a, b) => b.z - a.z);
   L.total = L.fruits.length;
   // checkpoints
-  const flagC = { serengeti: 0xff7a2a, candy: 0xff6fb8, desert: 0x3ab0a0, volcano: 0xffd84a, ocean: 0xffd84a, mountain: 0x3a8ae0, dinos: 0x6ac040, jungle: 0xffd84a }[key];
+  const flagC = { serengeti: 0xff7a2a, candy: 0xff6fb8, desert: 0x3ab0a0, volcano: 0xffd84a, ocean: 0xffd84a, mountain: 0x3a8ae0, dinos: 0x6ac040, jungle: 0xffd84a, ice: 0x5ac8ff }[key];
   for (const cp of L.cps) {
     cp.flags = [];
     for (const s of [-1, 1]) {
@@ -2026,11 +2218,12 @@ function buildLevel(key) {
   return L;
 }
 
-/* ---------------- bosses: the Rhino, the Giant Shark and the Triceratops ---------------- */
+/* ---------------- bosses: the Rhino, the Giant Shark, the Triceratops and the Ice Monster ---------------- */
 const BOSSES = {
   rhino: { name: 'Rhino', em: '🦏', build: buildRhino, wave: 0xe8c08a, chase: 'The Rhino is chasing you!', bye: 'Bye bye, Rhino!' },
   shark: { name: 'Giant Shark', em: '🦈', build: () => { const s = buildShark(true); s.g.scale.setScalar(2.3); return s; }, wave: 0xcff6ff, chase: 'The Giant Shark is after you!', bye: 'Bye bye, Shark!' },
   trike: { name: 'Triceratops', em: '🦕', build: buildTrike, wave: 0xb8946a, chase: 'The Triceratops is charging!', bye: 'Bye bye, Triceratops!' },
+  icemonster: { name: 'Ice Monster', em: '🧊', build: buildIceMonster, wave: 0xd8f4ff, chase: 'The Ice Monster is stomping after you!', bye: 'Bye bye, Ice Monster!' },
 };
 function makeBoss(kind, S) {
   const BS = BOSSES[kind], m = BS.build();
@@ -2123,6 +2316,7 @@ function updateBoss(L, dt, speed) {
   const run = B.state === 'dizzy' || B.state === 'gone' ? 0 : 1;
   B.m.g.position.set(B.x, B.y + (sea ? 0.3 : 0), L.pz + B.rel);
   if (B.m.legs) B.m.legs.forEach((l, i) => l.rotation.x = Math.sin(B.phase + (i === 0 || i === 3 ? 0 : Math.PI)) * 0.6 * run);
+  if (B.m.arms) B.m.arms.forEach((a, i) => a.rotation.x = Math.sin(B.phase + (i ? 0 : Math.PI)) * 0.5 * run);
   if (B.m.tail && sea) B.m.tail.rotation.y = Math.sin(B.phase) * 0.5;
   if (!sea) B.m.body.position.y = 1.75 + Math.abs(Math.sin(B.phase)) * 0.15 * run;
   if (run && Math.random() < dt * 10) L.fx.spawn(B.x + rand(-1, 1), 0.3, L.pz + B.rel + 2, sea ? 0xe8fbff : 0xe2c48a, { vy: rand(0.5, 2), g: 0, size: sea ? 0.35 : 1, grow: 2, op: 0.6, life: 0.6 });
@@ -2222,8 +2416,8 @@ function hitObstacle(L, o) {
   o.hit = true;
   if (o.kind === 'river') {
     L.vy = L.an.jump * 0.85; sfx('sizzle');
-    banner({ candy: 'Sticky!', desert: 'Sinky sand!', ocean: 'Ouch, spiky!', mountain: 'Whoa! Too low!', dinos: 'Sticky tar!', jungle: 'Splash!' }[L.key] || 'Hot hot hot!', 900);
-    for (let i = 0; i < 12; i++) L.fx.spawn(L.px + rand(-1, 1), 0.5, L.pz + rand(-1, 1), L.key === 'candy' ? 0x8a4a22 : L.key === 'desert' ? 0xc89a5a : L.sea ? 0x8a3aaa : L.key === 'mountain' ? 0xffffff : L.key === 'dinos' ? 0x2a2420 : L.key === 'jungle' ? 0x9fe8ff : 0xff7a10, { vy: rand(3, 6), g: 9, size: 0.45, life: 0.8 });
+    banner({ candy: 'Sticky!', desert: 'Sinky sand!', ocean: 'Ouch, spiky!', mountain: 'Whoa! Too low!', dinos: 'Sticky tar!', jungle: 'Splash!', ice: 'Brrr! Icy water!' }[L.key] || 'Hot hot hot!', 900);
+    for (let i = 0; i < 12; i++) L.fx.spawn(L.px + rand(-1, 1), 0.5, L.pz + rand(-1, 1), L.key === 'candy' ? 0x8a4a22 : L.key === 'desert' ? 0xc89a5a : L.sea ? 0x8a3aaa : L.key === 'mountain' ? 0xffffff : L.key === 'dinos' ? 0x2a2420 : L.key === 'jungle' || L.key === 'ice' ? 0x9fe8ff : 0xff7a10, { vy: rand(3, 6), g: 9, size: 0.45, life: 0.8 });
   } else { sfx('bonk'); banner('Ouch!', 700); knock(L, o); }
   hurt(L, 'obstacle');
 }
@@ -2308,7 +2502,7 @@ function updateLevel(dt) {
   L.flying = L.flying.filter(o => { const F = o.fly; F.t += dt; F.vy -= 25 * dt; o.g.position.x += F.vx * dt; o.g.position.y += F.vy * dt; o.g.position.z += F.vz * dt; o.g.rotation.z += F.sp * dt; o.g.rotation.x += F.sp * 0.6 * dt; if (F.t > 1.6) { o.g.visible = false; return false; } return true; });
   // ambient effects
   for (const rz of L.riverZs) if (rz < L.pz + 5 && rz > L.pz - 60 && Math.random() < dt * 8) {
-    const c = { candy: 0xa0602c, desert: 0xc89a5a, ocean: 0xffffff, dinos: 0x5a4a40, jungle: 0xe8ffff }[L.key] || (Math.random() < 0.5 ? 0xffd040 : 0xff6a10);
+    const c = { candy: 0xa0602c, desert: 0xc89a5a, ocean: 0xffffff, dinos: 0x5a4a40, jungle: 0xe8ffff, ice: 0xe8f8ff }[L.key] || (Math.random() < 0.5 ? 0xffd040 : 0xff6a10);
     L.fx.spawn(rand(-12, 12), 0.2, rz + rand(-1.4, 1.4), c, { vy: rand(1, 3), vx: 0, vz: 0, g: L.key === 'candy' ? 6 : L.sea ? -1 : 1, size: 0.3, life: 0.9 });
   }
   if (L.smokeAt && Math.random() < dt * 4) { const p = L.backdrop.position; L.fx.spawn(p.x + L.smokeAt.x + rand(-2, 2), L.smokeAt.y, p.z + L.smokeAt.z, 0x777777, { vy: rand(3, 5), vx: rand(0.5, 2), vz: 0, g: 0, size: 6, grow: 2, op: 0.6, life: 3 }); }
@@ -2406,6 +2600,7 @@ function buildCards() {
   if (selTab === 'sky') SKY.forEach(k => add(k, ANIMALS[k].em, ANIMALS[k].name, ANIMALS[k].desc, k === save.sky, 0, () => pickSky(k)));
   if (selTab === 'sea') SEA.forEach(k => add(k, ANIMALS[k].em, ANIMALS[k].name, ANIMALS[k].desc, k === save.sea, 0, () => pickSea(k)));
   if (selTab === 'dino') DINO.forEach(k => add(k, ANIMALS[k].em, ANIMALS[k].name, ANIMALS[k].desc, k === save.dino, 0, () => pickDino(k)));
+  if (selTab === 'ice') ICE.forEach(k => add(k, ANIMALS[k].em, ANIMALS[k].name, ANIMALS[k].desc, k === save.ice, 0, () => pickIce(k)));
   if (selTab === 'outfit') OUTFITS.forEach(o => add(o.k, o.em, o.name, 'Tap to wear', o.k === save.outfit, o.need, () => pickOutfit(o.k)));
   if (selTab === 'friend') {
     add('none', '🙅', 'No friend', 'Ride on your own', save.friend !== 'milo', 0, () => pickFriend(''));
@@ -2414,7 +2609,7 @@ function buildCards() {
   const on = c.querySelector('.card.on'); if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' });
 }
 function previewRide() {
-  const kind = selTab === 'sea' ? save.sea : selTab === 'sky' ? save.sky : selTab === 'dino' ? save.dino : save.animal;
+  const kind = selTab === 'sea' ? save.sea : selTab === 'sky' ? save.sky : selTab === 'dino' ? save.dino : selTab === 'ice' ? save.ice : save.animal;
   const ry = W.rider ? W.rider.root.rotation.y : 0;
   if (W.rider) W.scene.remove(W.rider.root);
   W.rider = buildRider(kind, save.outfit, false); W.scene.add(W.rider.root); W.rider.root.rotation.y = ry; W.rider.root.position.copy(W.pos);
@@ -2425,6 +2620,7 @@ function pickAnimal(k) { audioInit(); sfx('click'); save.animal = k; persist(); 
 function pickSky(k) { audioInit(); sfx('click'); save.sky = k; persist(); buildCards(); previewRide(); }
 function pickSea(k) { audioInit(); sfx('click'); save.sea = k; persist(); buildCards(); previewRide(); }
 function pickDino(k) { audioInit(); sfx(k === 'trex' ? 'roar' : 'click'); save.dino = k; persist(); buildCards(); previewRide(); }
+function pickIce(k) { audioInit(); sfx('click'); save.ice = k; persist(); buildCards(); previewRide(); }
 function pickOutfit(k) { audioInit(); sfx('click'); save.outfit = k; persist(); buildCards(); previewRide(); }
 function pickFriend(f) { audioInit(); save.friend = f; persist(); if (f) sfx('bark'); else sfx('click'); buildCards(); setMapMilo(); }
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { audioInit(); sfx('click'); selTab = t.dataset.t; buildCards(); previewRide(); }));
@@ -2540,7 +2736,7 @@ function boot() {
   // for testing: ?play=dinos opens a level straight away (&ride=raptor picks the ride, &at=1200 starts further along),
   // ?menu=dino opens the ride menu on that tab, and ?map=1 goes to the map
   const q = new URLSearchParams(location.search), ride = q.get('ride');
-  if (ride && ANIMALS[ride]) { const a = ANIMALS[ride]; save[a.sea ? 'sea' : a.sky ? 'sky' : a.dino ? 'dino' : 'animal'] = ride; }
+  if (ride && ANIMALS[ride]) { const a = ANIMALS[ride]; save[a.sea ? 'sea' : a.sky ? 'sky' : a.dino ? 'dino' : a.ice ? 'ice' : 'animal'] = ride; }
   if (THEMES[q.get('play')]) {
     startLevel(q.get('play')); if (q.get('at')) { LV.lastCp = 0; resetRun(LV, -Number(q.get('at'))); }
     for (let i = 0; i < Number(q.get('sim') || 0) * 60; i++) updateLevel(1 / 60);   // &sim=8 runs the level for 8 seconds first

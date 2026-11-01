@@ -11,6 +11,7 @@ Everything (models, textures, music and sound) is in the one file, `index.html`.
    - **Sea**: the animal for the underwater level.
    - **Sky**: the bird for the mountain level.
    - **Dino**: the dinosaur for Dinosaur Valley and Dino Land.
+   - **Ice**: the penguin, walrus or polar bear for the Ice Kingdom.
    - **Outfit**: what Iyla wears. New outfits unlock as you collect stars.
    - **Friend**: bring Milo along once he's unlocked.
 2. **Explore the map.** Tap the ground to ride there. Ride into a glowing gate to open its level.
@@ -50,12 +51,13 @@ Everything (models, textures, music and sound) is in the one file, `index.html`.
 | 🌋 Volcano Run | At the foot of the volcano | Lots of lava, obsidian spikes, and fireballs falling from the sky (red circles show where) |
 | 🦖 Dinosaur Valley | The bone gate in the dino corner (bottom left) | Tar pits, giant fossil bones, boulders and tree ferns, with volcanoes, nests of eggs and dinosaurs roaming the plain. Collect dino eggs. **Boss: the Triceratops** |
 | 🌴 Dino Land | The jungle gate past the dino corner | A steamy jungle: rivers, mossy logs, giant jungle trees, and coconuts falling from the trees (red circles show where). Dinosaurs wander through the trees. Collect bananas |
+| ❄️ Ice Kingdom | The icy gate past the volcano (right) | Ride a penguin (fast, double jump), a walrus (5 hearts, smashes ice) or a polar bear (grabs fish from far away). Icy water, ice blocks, frozen logs and giant icicles, snowballs falling (red circles show where), igloos, snowmen, penguins and the northern lights. Collect fish. **Boss: the Ice Monster** |
 
 Every level is open from the start, so you can play any of them whenever you like.
 
 ### Boss fights
 
-At the end of the Desert, Under the Sea and Dinosaur Valley levels, a boss chases you down. It charges at you down a lane (the lane flashes red first), so move out of the way. Every third attack it stomps (or slaps its tail) and sends a wave along the ground: jump it. Survive five attacks and the boss gets dizzy and gives up, and the finish line appears.
+At the end of the Desert, Under the Sea, Dinosaur Valley and Ice Kingdom levels, a boss chases you down (the Rhino, the Giant Shark, the Triceratops and the Ice Monster). It charges at you down a lane (the lane flashes red first), so move out of the way. Every third attack it stomps (or slaps its tail) and sends a wave along the ground: jump it. Survive five attacks and the boss gets dizzy and gives up, and the finish line appears.
 
 ### Milo the sausage dog
 
