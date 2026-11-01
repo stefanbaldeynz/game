@@ -2,3 +2,10 @@
 Thumbs.db
 .vscode/
 node_modules/
+
+# Siege Run: your own models and textures (for example from BFME2) stay on your computer only.
+# They're never committed, so they never reach GitHub or the public site.
+siege-run/models/*
+!siege-run/models/README.md
+siege-run/textures/*
+!siege-run/textures/README.md

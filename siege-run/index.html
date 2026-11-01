@@ -1548,7 +1548,8 @@ function makeGandalf() {
   shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
   scene.add(root);
   const meshes = []; root.traverse(o => { if (o.isMesh && o !== swirl && !eyes.includes(o) && !pupils.includes(o)) { o.userData.mat = o.material; meshes.push(o); } });
-  return { root, body, legL, legR, armL, armR, head, cloak, eyes, pupils, swirl, shadow, meshes, staff, tip, tipGlow, ph: 0, blink: 2 };
+  const M = { root, body, legL, legR, armL, armR, head, cloak, eyes, pupils, swirl, shadow, meshes, staff, tip, tipGlow, ph: 0, blink: 2 };
+  addSkin(M, 'gandalf', body, body, [staff]); return M;
 }
 // Shadowfax, lord of all horses: no saddle, no bridle
 function makeHorse() {
@@ -1617,7 +1618,7 @@ function makeOrc(type) {
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(.5, 8), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .45, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
   shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
   scene.add(root);
-  return { root, body, legL, legR, armL, armR, head, shadow };
+  const M = { root, body, legL, legR, armL, armR, head, shadow }; addSkin(M, 'orc', body, root); return M;
 }
 
 // --- shared model helpers: faceted rocks, rough limbs, tapered chains, bat wings ---
@@ -1815,7 +1816,7 @@ function makeBalrog() {
   for (let k = 0; k < WHIP_N - 1; k++) { const u = k / (WHIP_N - 2); c.setHex(0x5a1406).lerp(c1, Math.min(1, u * 2)).lerp(c2, Math.max(0, u * 2 - 1)); whip.setColorAt(k, c); }
   scene.add(whip);
   const emit = [new V3(0, 8.2, 2.4), new V3(1, 7.8, 1.9), new V3(-1, 7.8, 1.9), new V3(2.6, 6.3, .2), new V3(-2.6, 6.3, .2), new V3(0, 6.6, -1.3), new V3(1.4, 6.9, -.9), new V3(-1.4, 6.9, -.9)];
-  return { root, head, jaw, mouth, wings, arms, whip, emit, fires };
+  const BAL = { root, head, jaw, mouth, wings, arms, whip, emit, fires }; addSkin(BAL, 'balrog', root, root, fires || []); return BAL;
 }
 function setLimb(m, a, b, r) { _d.subVectors(b, a); const len = _d.length(); m.position.addVectors(a, b).multiplyScalar(.5); m.quaternion.setFromUnitVectors(UPV, _d.divideScalar(Math.max(len, 1e-4))); m.scale.set(r, len, r); }
 
@@ -2213,7 +2214,7 @@ function setupEntities() {
   pg.userData.glow = gl; pg.visible = false; scene.add(pg); phial.g = pg;
 }
 function hideBalrog(b) { b.m.root.visible = false; b.m.arms.forEach(a => { a.upper.visible = a.fore.visible = a.elbow.visible = a.fist.visible = false; }); b.m.whip.visible = false; }
-function showBalrog(b) { b.m.root.visible = true; b.m.arms.forEach(a => { a.upper.visible = a.fore.visible = a.elbow.visible = a.fist.visible = true; }); b.m.whip.visible = true; }
+function showBalrog(b) { b.m.root.visible = true; const own = !(b.m.skin && b.m.skin.obj); b.m.arms.forEach(a => { a.upper.visible = a.fore.visible = a.elbow.visible = a.fist.visible = own; }); b.m.whip.visible = own; }
 
 // --- level flow ---
 function clearLevel() {
@@ -2771,7 +2772,7 @@ function updateOrcs(dt) {
         }
       }
     }
-    place(m.root, o.s, o.x, o.y, o.h);
+    place(m.root, o.s, o.x, o.y, o.h); skinPlay(m, o.state === 'squash' || o.state === 'flying' ? 'die' : moving ? 'walk' : 'idle');
     if (o.state === 'walk') {
       const ph = o.t * 9;
       m.legL.rotation.x = moving ? Math.sin(ph) * .7 : 0; m.legR.rotation.x = moving ? -Math.sin(ph) * .7 : 0;
@@ -3102,6 +3103,7 @@ function updateBalrogs(dt) {
 }
 function edgeX(s) { for (const f of LV.floors) if (s >= f[0] && s <= f[1]) return f[2]; return -3.5; }
 function poseBalrog(b, dt) {
+  skinPlay(b.m, b.state === 'fall' ? 'die' : b.atk ? 'attack' : b.state === 'chase' ? 'walk' : 'idle');
   const r = b.m.root, M = balrogMats();
   place(r, b.s, BX, b.y + Math.sin(T * 1.3) * .25, Math.PI / 2);
   r.rotation.z = b.stun > 0 ? Math.sin(T * 9) * .08 : Math.sin(T * .9) * .03;
@@ -3155,7 +3157,7 @@ function makeShelob() {
   const legs = [];
   [1.0, .45, -.15, -.75].forEach((z0, k) => { for (const side of [-1, 1]) legs.push({ side, z0, ph: (k % 2 ? Math.PI : 0) + (side > 0 ? Math.PI : 0), upper: part(GEO.cyl, hide, root, 0, 0, 0), lower: part(GEO.cyl, hide, root, 0, 0, 0) }); });
   root.scale.setScalar(1.45); root.visible = false; scene.add(root);
-  return { root, body, legs, glow };
+  const M = { root, body, legs, glow }; addSkin(M, 'shelob', body, root, [glow]); return M;
 }
 function poseShelob(dt, speed) {
   const sh = shelob, m = sh.m; sh.gait += dt * (1.2 + Math.abs(speed) * 1.5) * Math.sign(speed || 1);
@@ -3195,6 +3197,7 @@ function updateShelob(dt) {
   }
   place(sh.m.root, sh.s, sh.x, sh.y);
   poseShelob(dt, state === 'play' || sh.state === 'flee' ? spd : 0);
+  skinPlay(sh.m, Math.abs(spd) > .5 ? 'walk' : 'idle');
 }
 
 // =====================================================================
@@ -3233,7 +3236,7 @@ function makeWitchKing() {
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(.8, 14), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .5, depthWrite: false }));
   shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
   root.scale.setScalar(1.05); root.visible = shadow.visible = false; scene.add(root);
-  return { root, body, head, armL, armR, saber, handGlow, eyes, shadow, cape };
+  const M = { root, body, head, armL, armR, saber, handGlow, eyes, shadow, cape }; addSkin(M, 'witchking', body, root, [saber.g, handGlow]); return M;
 }
 // the Witch-king's lightning: a few jagged lines redrawn every frame
 function makeBolts() {
@@ -3484,6 +3487,7 @@ function updateDuel(dt) {
   if (W.thrown) { if (!duel.thrownMesh) { duel.thrownMesh = makeSaber(0xff2a1a); scene.add(duel.thrownMesh.g); } duel.thrownMesh.g.visible = true; duel.thrownMesh.g.position.copy(W.thrown.p); duel.thrownMesh.g.rotation.set(Math.PI / 2, 0, T * 20); }
   else if (duel.thrownMesh) duel.thrownMesh.g.visible = false;
   m.eyes.forEach(e => e.material.color.setHex(W.flash > 0 ? 0xffffff : 0xff5a1a));
+  skinPlay(m, W.state === 'defeat' ? 'die' : W.state === 'attack' || W.state === 'lock' ? 'attack' : W.state === 'stagger' ? 'hit' : W.state === 'circle' ? 'walk' : 'idle');
   if (!(W.state === 'attack' && W.atk && W.atk.type === 'light')) drawBolts(duel.bolts, null, null, false);
 }
 // Gandalf's sword arm, drawn after his normal animation
@@ -3517,7 +3521,7 @@ function makeNazgul() {
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(.6, 12), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .45, depthWrite: false }));
   shadow.rotation.x = -Math.PI / 2; scene.add(shadow); root.visible = shadow.visible = false; scene.add(root);
   const mats = []; root.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); if (!eyes.includes(o)) mats.push(o); } });
-  return { root, body, armL, armR, sword, eyes, shadow, mats };
+  const M = { root, body, armL, armR, sword, eyes, shadow, mats }; addSkin(M, 'nazgul', body, root); return M;
 }
 const nazLive = n => n.active && n.state !== 'fade' && n.state !== 'dead';
 function setupNazgul() {
@@ -3588,6 +3592,7 @@ function updateNazgul(dt) {
     const up = n.state === 'wind' ? -2.6 * Math.min(1, n.wt / .3) : n.state === 'recover' ? .9 : -.5 + Math.sin(n.t * 3) * .1 * walk;
     m.armR.rotation.x = damp(m.armR.rotation.x, up, n.state === 'recover' ? 30 : 10, dt); m.armL.rotation.x = -.3 + Math.sin(n.t * 2) * .1;
     m.eyes.forEach(e => e.material.color.setHex(n.state === 'wind' ? 0xff4040 : 0xc8d0ff));
+    skinPlay(m, n.state === 'fade' ? 'die' : n.state === 'wind' || n.state === 'recover' ? 'attack' : n.state === 'stun' ? 'hit' : walk > .5 ? 'walk' : 'idle');
     const fl = n.flash > 0; m.mats.forEach(o => o.material.emissive && o.material.emissive.setHex(fl ? 0x8888aa : 0x050407));
   }
   if (NAZ.winT > 0 && state === 'play') { NAZ.winT -= dt; if (NAZ.winT <= 0) roamWin('THE SHIRE IS SAFE!'); }
@@ -4792,6 +4797,8 @@ function step(dt, noRender) {
     }
     updateDragons(dt); updateApples(); updatePhial(dt); updateLightning(dt); updateAmbient(dt); updateTree(dt);
     fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt); poseDuelGandalf(dt);
+    skinPlay(hob, state === 'dying' ? 'die' : !P.ground && P.airT > .1 ? 'jump' : P.spinT > 0 || (LV && LV.duel && duel.atk) ? 'attack' : Math.hypot(P.vs, P.vx) > 1 ? 'walk' : 'idle');
+    updateSkins(dt);
   }
   updateCamera(state === 'paused' ? 0 : dt); updateLights(); updateHUD(dt); updateTouchUI();
   const onMap = state === 'map' || state === 'title'; if (onMap) updateMap(dt); else if (mapUIOn) { mapUIOn = false; mapUI.classList.remove('on'); } updateIris(dt); musicTick();
@@ -4810,8 +4817,77 @@ function frame(now) {
 }
 
 resize();
+// =====================================================================
+//  YOUR OWN MODELS AND TEXTURES (optional, and only on your own computer)
+//  Put a .glb in siege-run/models/ (balrog.glb, witchking.glb, ...) or a .png/.jpg in siege-run/textures/
+//  (grass.png, rock.png, ...) and, when the game runs through serve.cmd, it uses them instead of the built-in ones.
+//  Both folders are ignored by git, so nothing in them is ever pushed to GitHub or the public site.
+//  The README in each folder lists the slots.
+// =====================================================================
+const LOCAL_ASSETS = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+// height: how tall the model is made, in the game's units (Gandalf is about 1.75). turn: spin it round if it faces the wrong way.
+const MODEL_SLOTS = {
+  gandalf: { height: 1.75 }, balrog: { height: 8.5 }, witchking: { height: 2.9 }, shelob: { height: 3.2 }, nazgul: { height: 2.3 }, orc: { height: 1.45 },
+};
+// which animation plays for each action: the first clip whose name matches (case doesn't matter)
+const ANIM_NAMES = { idle: /idle|stand|breath|ready/i, walk: /walk|run|move|gallop/i, attack: /attack|atk|smash|swing|slash|strike|hit_?a/i, hit: /hurt|damage|stun|flinch|react/i, die: /die|death|dead/i, jump: /jump|fall|air/i };
+const TEXTURE_SLOTS = ['grass', 'rock', 'path', 'turf', 'moss', 'marble', 'floor', 'dark', 'lavaRock', 'wood', 'roof', 'plains', 'metal', 'mosaic'];
+const LOADED = {}, SKINS = [];
+// a built-in character can be swapped for a loaded model: its own meshes are hidden (except the ones in keep) and the model takes their place
+function addSkin(M, slot, attachTo, hideRoot, keep = [], top) { M.skin = { slot, attachTo, hideRoot, keep, top: top || M.root || hideRoot, obj: null, mixer: null, acts: {}, cur: '' }; SKINS.push(M.skin); if (LOADED[slot]) attachSkin(M.skin); }
+function attachSkin(K) {
+  const gl = LOADED[K.slot], cfg = MODEL_SLOTS[K.slot]; if (!gl || K.obj) return;
+  const kept = new Set(); for (const k of K.keep) if (k) k.traverse(o => kept.add(o));
+  K.hideRoot.traverse(o => { if (o.isMesh && !kept.has(o)) o.visible = false; });
+  const obj = THREE.SkeletonUtils ? THREE.SkeletonUtils.clone(gl.scene) : gl.scene.clone(true);
+  const box = new THREE.Box3().setFromObject(obj), size = box.getSize(new V3()), sc = cfg.height / Math.max(.01, size.y);
+  const pivot = new THREE.Group(); pivot.add(obj); obj.scale.setScalar(sc);
+  const c = box.getCenter(new V3()); obj.position.set(-c.x * sc, -box.min.y * sc, -c.z * sc); pivot.rotation.y = cfg.turn || 0;
+  obj.traverse(o => { if (o.isMesh) { o.frustumCulled = false; if (o.material && o.material.map) o.material.map.encoding = THREE.sRGBEncoding; } });
+  K.attachTo.add(pivot); K.obj = pivot;
+  if (gl.animations.length) {
+    K.mixer = new THREE.AnimationMixer(obj);
+    for (const k in ANIM_NAMES) { const clip = gl.animations.find(a => ANIM_NAMES[k].test(a.name)); if (clip) K.acts[k] = K.mixer.clipAction(clip); }
+    if (!K.acts.idle) K.acts.idle = K.mixer.clipAction(gl.animations[0]);
+    K.acts.die && (K.acts.die.loop = THREE.LoopOnce, K.acts.die.clampWhenFinished = true);
+    skinPlay({ skin: K }, 'idle');
+  }
+}
+function skinPlay(M, key) {
+  const K = M && M.skin; if (!K || !K.mixer || K.cur === key) return;
+  const next = K.acts[key] || (key === 'jump' || key === 'hit' ? K.acts.idle : key === 'attack' ? K.acts.walk || K.acts.idle : K.acts.idle);
+  const prev = K.acts[K.cur] || null; if (next === prev) { K.cur = key; return; }
+  next.reset().fadeIn(.18).play(); if (prev) prev.fadeOut(.18); K.cur = key;
+}
+function updateSkins(dt) {
+  for (let i = SKINS.length - 1; i >= 0; i--) { const K = SKINS[i]; if (!K.top.parent) { if (K.slot === 'orc') SKINS.splice(i, 1); continue; } if (K.mixer) K.mixer.update(dt); }
+}
+// a texture slot: draw the picture into the built-in texture's canvas, so everything already using it updates
+function replaceTex(key, img) {
+  const t = TX[key]; if (!t || !t.image || !t.image.getContext) return;
+  const c = t.image; c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext('2d').drawImage(img, 0, 0);
+  for (const sc of [scene, mapScene]) sc.traverse(o => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) if (m.map && m.map.image === c) m.map.needsUpdate = true; });
+  t.needsUpdate = true;
+}
+const loadScript = src => new Promise((ok, no) => { const e = document.createElement('script'); e.src = src; e.onload = ok; e.onerror = no; document.head.appendChild(e); });
+const loadImage = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
+async function loadLocalAssets() {
+  if (!LOCAL_ASSETS) return;   // the public site never asks for them
+  const got = [];
+  for (const key of TEXTURE_SLOTS) for (const ext of ['png', 'jpg', 'jpeg', 'webp']) { try { replaceTex(key, await loadImage(`textures/${key}.${ext}`)); got.push(`textures/${key}.${ext}`); break; } catch (e) { } }
+  try {
+    const base = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/';
+    await loadScript(base + 'loaders/GLTFLoader.js'); await loadScript(base + 'utils/SkeletonUtils.js');
+  } catch (e) { console.warn('Siege Run: could not load the glTF loader, so your own models are off.'); return; }
+  const loader = new THREE.GLTFLoader();
+  for (const slot in MODEL_SLOTS) { try { LOADED[slot] = await loader.loadAsync(`models/${slot}.glb`); got.push(`models/${slot}.glb (${LOADED[slot].animations.map(a => a.name).join(', ') || 'no animations'})`); } catch (e) { } }
+  for (const K of SKINS) attachSkin(K);
+  if (got.length) console.log('Siege Run is using your own files:\n  ' + got.join('\n  '));
+}
+
 buildStatic();
 setupEntities();
+loadLocalAssets();
 newGame(0); state = 'map'; iris.mode = 'none';
 showScreen(null); syncPauseBtns();
 requestAnimationFrame(frame);
