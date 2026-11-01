@@ -234,7 +234,7 @@ class Balrog {
     if (window.MODELS && MODELS.balrog) this.wearModel(MODELS.balrog);
   }
 
-  // Your own Balrog (models/balrog.glb, only on your computer: see the BFME notes in the Siege Run models README).
+  // Your own Balrog (models/balrog.glb, only on your computer: see the BFME notes in the Valinor models README).
   // The built-in one stays underneath, unseen, so his hands, jaw and sword still aim the whip, the fire and the flames;
   // the model is drawn over it and plays its own animations. His whip of fire stays as it is.
   wearModel(gltf) {

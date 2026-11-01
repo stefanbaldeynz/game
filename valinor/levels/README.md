@@ -8,7 +8,7 @@ To make it, with Fable: The Lost Chapters installed, run:
 & C:\Users\Stefan\bfme\tools\Prep-Oakvale.ps1
 ```
 
-- The ground and where everything stands come from Fable. The buildings themselves are Siege Run's own (Fable's 3D models aren't converted), sized for each kind of building.
+- The ground and where everything stands come from Fable. The buildings themselves are Valinor's own (Fable's 3D models aren't converted), sized for each kind of building.
 - To play the usual Hobbiton while the file is here, add `?layout=shire` to the address, or delete the file.
 
 **Everything in this folder stays on your computer.** Git ignores it (only this README is in the repository). Fable belongs to Microsoft and Lionhead, so keep it for playing at home.

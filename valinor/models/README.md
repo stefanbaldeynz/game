@@ -1,6 +1,6 @@
 # Your own character models (only on your computer)
 
-Put a `.glb` file here with one of these names and Siege Run uses it instead of its built-in model:
+Put a `.glb` file here with one of these names and Valinor uses it instead of its built-in model:
 
 | File | Who it replaces | Where you meet them |
 | --- | --- | --- |
@@ -13,6 +13,7 @@ Put a `.glb` file here with one of these names and Siege Run uses it instead of 
 | `fellbeast.glb` | The fell beasts (a Nazgûl on a winged beast) | Minas Tirith, Mordor and Mount Doom |
 | `horse.glb` | Shadowfax | The First Circle and the Ride to Edoras |
 | `frodo.glb`, `sam.glb`, `merry.glb`, `pippin.glb`, `aragorn.glb`, `legolas.glb`, `gimli.glb`, `boromir.glb` | The Fellowship | Rivendell |
+| `livingmap.glb` + `livingmap.json` | The map: BFME II's War of the Ring board instead of the little diorama (make them with `Prep-Map.ps1`, then `Convert-Chars.ps1 livingmap`) | The world map, where you pick a place |
 
 **Everything in this folder stays on your computer.** Git ignores it, so it's never pushed to GitHub or the public website. Only this README is in the repository.
 
@@ -32,7 +33,7 @@ Put a `.glb` file here with one of these names and Siege Run uses it instead of 
   - **jump** (or fall): in the air (Gandalf)
 
   Missing ones fall back to idle. Exact names don't matter otherwise: `Balrog_Smash_01` counts as an attack.
-- To check it worked, open the browser's console (F12). Siege Run lists the files it's using and the animation names it found.
+- To check it worked, open the browser's console (F12). Valinor lists the files it's using and the animation names it found.
 
 ## Getting a model out of BFME2
 

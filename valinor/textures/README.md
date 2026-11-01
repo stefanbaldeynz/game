@@ -1,6 +1,6 @@
 # Your own textures (only on your computer)
 
-Put a picture here with one of these names (`.png`, `.jpg` or `.webp`) and Siege Run draws that surface with it instead of its built-in pixel-art texture:
+Put a picture here with one of these names (`.png`, `.jpg` or `.webp`) and Valinor draws that surface with it instead of its built-in pixel-art texture:
 
 | File | What it covers |
 | --- | --- |

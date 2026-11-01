@@ -3,15 +3,15 @@ Thumbs.db
 .vscode/
 node_modules/
 
-# Siege Run: your own models and textures (for example from BFME2) stay on your computer only.
+# Valinor: your own models and textures (for example from BFME2) stay on your computer only.
 # They're never committed, so they never reach GitHub or the public site.
-siege-run/models/*
-!siege-run/models/README.md
-siege-run/textures/*
-!siege-run/textures/README.md
-siege-run/sabers/*
-!siege-run/sabers/README.md
-siege-run/levels/*
-!siege-run/levels/README.md
+valinor/models/*
+!valinor/models/README.md
+valinor/textures/*
+!valinor/textures/README.md
+valinor/sabers/*
+!valinor/sabers/README.md
+valinor/levels/*
+!valinor/levels/README.md
 # Hellkeep: your own Balrog (copied there by the BFME converter); the other models in that folder are part of the game
 hellkeep/models/balrog.glb
