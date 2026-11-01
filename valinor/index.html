@@ -911,7 +911,7 @@ const MARBLE_T = [1, .97, .93];
 // --- collision solids (track-space boxes) for the level being played ---
 const solids = [], spikes = [];
 function solid(s0, s1, x0, x1, y0, y1, kind = 'wall', ref = null) { const b = { s0, s1, x0, x1, y0, y1, kind, ref, on: true }; solids.push(b); return b; }
-function groundBelow(s, x, y, skip) { let g = -100; for (const b of solids) { if (!b.on || b === skip) continue; if (s >= b.s0 && s <= b.s1 && x >= b.x0 && x <= b.x1 && b.y1 <= y + .06 && b.y1 > g) g = b.y1; } if (TERR) { const t = terrainAt(s, x); if (t <= y + .06 && t > g) g = t; } if (DECK) { const d = deckAt(s, x); if (d <= y + .06 && d > g) g = d; } return g; }
+function groundBelow(s, x, y, skip) { let g = -100; for (const b of solids) { if (!b.on || b === skip) continue; if (s >= b.s0 && s <= b.s1 && x >= b.x0 && x <= b.x1 && b.y1 <= y + .06 && b.y1 > g) g = b.y1; } if (TERR) { const t = terrainAt(s, x); if (t <= y + .06 && t > g) g = t; } if (DECK) { const d = deckAt(s, x, y + .06); if (d > g) g = d; } return g; }
 // rolling ground for an open level built from a heightmap (Oakvale, from Fable: see levels/README.md). TERR is the level's, or null.
 // Its height under any point, smoothly between the metre-square corners; the sea floor counts as just under the water, for wading.
 let TERR = null;
@@ -925,7 +925,30 @@ const landAt = (s, x) => TERR ? terrainAt(s, x) : 0;
 // NO_DECK where there's no walkway. Gandalf walks up its ramps and stands on it like the ground, and under it too.
 const NO_DECK = -1e9;
 let DECK = null;
-function deckAt(s, x) { const D = DECK, i = Math.round(x - D.x0), j = Math.round(s - D.s0); return i < 0 || j < 0 || i >= D.w || j >= D.h ? NO_DECK : D.top[j * D.w + i]; }
+// each square keeps up to DECK_L surfaces one over another (a walkway over a walkway, a rail over its deck); top is the highest
+const DECK_L = 3;
+function newDeck(s0, x0, w, h) { return { s0, x0, w, h, top: new Float32Array(w * h).fill(NO_DECK), lay: new Float32Array(w * h * DECK_L).fill(NO_DECK) }; }
+// the highest walkway surface at s, x no higher than y
+function deckAt(s, x, y = Infinity) { const D = DECK, i = Math.round(x - D.x0), j = Math.round(s - D.s0); if (i < 0 || j < 0 || i >= D.w || j >= D.h) return NO_DECK; let b = NO_DECK; for (let q = 0, k = (j * D.w + i) * DECK_L; q < DECK_L; q++) { const v = D.lay[k + q]; if (v <= y && v > b) b = v; } return b; }
+// a surface at height y on square k: joins one within .6 of it, or takes a free place (or the lowest's)
+function deckPut(D, k, y) {
+  const L = D.lay, b = k * DECK_L; if (y > D.top[k]) D.top[k] = y;
+  for (let q = 0; q < DECK_L; q++) if (L[b + q] > NO_DECK && Math.abs(L[b + q] - y) < .6) { if (y > L[b + q]) L[b + q] = y; return; }
+  let lo = 0; for (let q = 0; q < DECK_L; q++) { if (L[b + q] <= NO_DECK) { lo = q; break; } if (L[b + q] < L[b + lo]) lo = q; }
+  if (L[b + lo] <= NO_DECK || y > L[b + lo]) L[b + lo] = y;
+}
+// a triangle's face, laid into the squares under it (corners [s, x, y]); only faces turned up are walked on
+function deckTri(D, A, B, C) {
+  const e1 = [B[0] - A[0], B[1] - A[1], B[2] - A[2]], e2 = [C[0] - A[0], C[1] - A[1], C[2] - A[2]];
+  const n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]], nl = Math.hypot(...n); if (nl < 1e-6 || Math.abs(n[2]) / nl < .6) return;
+  const d = (B[1] - C[1]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[1] - C[1]); if (Math.abs(d) < 1e-9) return;
+  const j0 = Math.max(0, Math.ceil(Math.min(A[0], B[0], C[0]) - D.s0 - .5)), j1 = Math.min(D.h - 1, Math.floor(Math.max(A[0], B[0], C[0]) - D.s0 + .5));
+  const i0 = Math.max(0, Math.ceil(Math.min(A[1], B[1], C[1]) - D.x0 - .5)), i1 = Math.min(D.w - 1, Math.floor(Math.max(A[1], B[1], C[1]) - D.x0 + .5));
+  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+    const ps = D.s0 + j, px = D.x0 + i, w1 = ((B[1] - C[1]) * (ps - C[0]) + (C[0] - B[0]) * (px - C[1])) / d, w2 = ((C[1] - A[1]) * (ps - C[0]) + (A[0] - C[0]) * (px - C[1])) / d, w3 = 1 - w1 - w2;
+    if (w1 < -.2 || w2 < -.2 || w3 < -.2) continue; deckPut(D, j * D.w + i, w1 * A[2] + w2 * B[2] + w3 * C[2]);
+  }
+}
 // ground distance between two track points: in the small courtyard ring, track units aren't metres, so measure in the world
 const _h1 = new V3(), _h2 = new V3();
 function hd(s1, x1, s2, x2) { if (!LV || !LV.arena) return Math.hypot(s1 - s2, x1 - x2); tw(s1, x1, 0, _h1); tw(s2, x2, 0, _h2); return Math.hypot(_h1.x - _h2.x, _h1.z - _h2.z); }
@@ -2902,7 +2925,9 @@ function readInput() {
   inp.jumpP = !!(hit.Space || hit.KeyK || hit.TJump || pad.jumpP);
   inp.spinP = !!(hit.KeyJ || hit.ShiftLeft || hit.ShiftRight || hit.Mouse2 || hit.TSpin || pad.spinP);
   inp.fireP = !!(hit.KeyL || hit.KeyF || hit.Mouse0 || hit.TFire || pad.fireP);
+  if (WALKTO) { const ds = WALKTO[0] - P.s, dx = WALKTO[1] - P.x, d = Math.hypot(ds, dx); if (d > .5) { const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw), us = ds / d, ux = dx / d; inp.z = us * c + ux * sn; inp.x = -us * sn + ux * c; } else inp.x = inp.z = 0; }   // testing: &walkto=s,x
 }
+let WALKTO = null;
 
 // ---- touch: a floating stick under the left thumb, JUMP / SPIN / FIRE under the right ----
 // the buttons press the same keys/hit slots as the keyboard (TJump, TSpin, TFire), so the game reads them like any other key
@@ -3045,7 +3070,7 @@ function moveH(ax, d) {
   if (!d) return;
   if (TERR) { const was = terrainAt(P.s, P.x); P[ax] += d; const now = terrainAt(P.s, P.x); if (now - Math.max(P.y, was) > .55) { P[ax] -= d; if (ax === 's') P.vs = 0; else P.vx = 0; return; } P[ax] -= d; }
   P[ax] += d;
-  if (DECK && P.ground) { const dk = deckAt(P.s, P.x); if (dk > P.y && dk - P.y <= .55) P.y = dk; }   // up a walkway's ramp, or onto its edge
+  if (DECK && P.ground) { const dk = deckAt(P.s, P.x, P.y + .9); if (dk > P.y) P.y = dk; }   // (the seams between walkway pieces can be a step up)   // up a walkway's ramp, or onto its edge
   for (const b of solids) {
     if (!b.on || P.s + PR <= b.s0 || P.s - PR >= b.s1 || P.x + PR <= b.x0 || P.x - PR >= b.x1 || P.y + PH <= b.y0 || P.y >= b.y1 - 1e-4) continue;
     if (b.kind === 'crate' && b.ref.type === 'n') { crateExplode(b.ref); continue; }
@@ -3065,7 +3090,7 @@ function moveV(d, lands, bonks) {
     else if (d > 0 && prevY + PH <= b.y0 + .05) { P.y = b.y0 - PH; P.vy = 0; if (b.kind === 'crate') bonks.push(b.ref); }
   }
   // a walkway: land on it, and keep to it walking down its ramps
-  if (DECK && !P.ground) { const dk = deckAt(P.s, P.x); if (dk > NO_DECK && d <= 0 && ((P.y <= dk && prevY >= dk - .45) || (P.airT < .12 && P.y >= dk && P.y - dk < .45))) { P.y = dk; P.vy = 0; P.ground = true; P.standOn = TERR_FLOOR; } }
+  if (DECK && !P.ground) { const dk = deckAt(P.s, P.x, prevY + .45); if (dk > NO_DECK && d <= 0 && (P.y <= dk || (P.airT < .12 && P.y - dk < .45))) { P.y = dk; P.vy = 0; P.ground = true; P.standOn = TERR_FLOOR; } }
   if (TERR && !P.ground) { const tg = terrainAt(P.s, P.x); if (P.y <= tg || (d <= 0 && P.airT < .12 && P.y - tg < .45)) { P.y = tg; if (P.vy <= 0) { P.vy = 0; P.ground = true; P.standOn = TERR_FLOOR; } } }
 }
 const TERR_FLOOR = { kind: 'floor' };
@@ -5877,7 +5902,7 @@ async function loadProps() {
   if (!LOCAL_ASSETS || new URLSearchParams(location.search).get('props') === 'none') return;   // ?props=none: the built shapes, for comparing
   const r = await fetch('models/props/index.json').catch(() => null); if (!r || !r.ok) return;
   let names, loader; try { names = await r.json(); loader = await gltfLoader(); } catch (e) { return; }
-  await Promise.all(names.map(async n => { try { PROPS[n] = propParts(n, await loader.loadAsync(`models/props/${n}.glb`)); } catch (e) { console.warn(`Valinor: models/props/${n}.glb would not load`); } }));
+  await Promise.all(names.map(async n => { try { PROPS[n] = propParts(n, await loader.loadAsync(`models/props/${n}.glb`)); } catch (e) { console.warn(`Valinor: models/props/${n}.glb would not load:`, e.message); } }));
   console.log(`Valinor: ${Object.keys(PROPS).length} scenery models from models/props/`);
   if (new URLSearchParams(location.search).get('propinfo')) for (const n in PROPS) console.log('prop ' + n + ' ' + PROPS[n].size.toArray().map(v => v.toFixed(1)).join('x') + ' mirrored ' + PROPS[n].mirrored);
 }
@@ -5886,7 +5911,7 @@ function propParts(name, gl) {
   const box = new THREE.Box3(), parts = [], geos = []; gl.scene.updateMatrixWorld(true);
   gl.scene.traverse(o => {
     if (!o.isMesh || !o.visible) return;
-    const g = o.geometry.clone(); g.applyMatrix4(o.matrixWorld); if (g.attributes.color) g.deleteAttribute('color');
+    const g = o.geometry.clone(); if (o.isSkinnedMesh) skinBake(o, g); else g.applyMatrix4(o.matrixWorld); if (g.attributes.color) g.deleteAttribute('color');
     if (o.matrixWorld.determinant() < 0) { parts.mirrored = true; const ix = g.index; if (ix) for (let i = 0; i < ix.count; i += 3) { const a = ix.getX(i + 1); ix.setX(i + 1, ix.getX(i + 2)); ix.setX(i + 2, a); } }   // a mirrored part would be inside out
     g.computeBoundingBox(); box.union(g.boundingBox); geos.push(g);
     const ms = [].concat(o.material);
@@ -5895,6 +5920,28 @@ function propParts(name, gl) {
   });
   const c = box.getCenter(new V3()); for (const g of geos) g.translate(-c.x, -box.min.y, -c.z);
   return { parts, size: box.getSize(new V3()), mirrored: !!parts.mirrored };
+}
+// BFME builds its scenery from parts hung on bones (the converter keeps them as a skinned mesh): put every corner where its
+// bones hold it, as the skinned mesh would draw it, so the model is one still shape in the world
+function skinBake(o, g) {
+  o.skeleton.update();
+  const P_ = g.attributes.position, N_ = g.attributes.normal, SI = g.attributes.skinIndex, SW = g.attributes.skinWeight, bm = o.skeleton.boneMatrices;
+  const acc = new THREE.Matrix4(), bone = new THREE.Matrix4(), full = new THREE.Matrix4(), nm = new THREE.Matrix3(), v = new V3();
+  for (let i = 0; i < P_.count; i++) {
+    acc.elements.fill(0);
+    for (let q = 0; q < 4; q++) { const get = ['getX', 'getY', 'getZ', 'getW'][q], w = SW[get](i); if (!w) continue; bone.fromArray(bm, SI[get](i) * 16); for (let e = 0; e < 16; e++) acc.elements[e] += bone.elements[e] * w; }
+    full.copy(o.matrixWorld).multiply(o.bindMatrixInverse).multiply(acc).multiply(o.bindMatrix);
+    v.fromBufferAttribute(P_, i).applyMatrix4(full); P_.setXYZ(i, v.x, v.y, v.z);
+    if (N_) { nm.getNormalMatrix(full); v.fromBufferAttribute(N_, i).applyMatrix3(nm).normalize(); N_.setXYZ(i, v.x, v.y, v.z); }
+  }
+  g.deleteAttribute('skinIndex'); g.deleteAttribute('skinWeight');
+}
+// a placed model's faces as level corners [s, x, y] (straight levels), for walking on it
+function propTris(g) {
+  g.updateMatrixWorld(true); const out = [], v = new V3(), lv = p => [p.z - CZ, CX + R - p.x, p.y - Y0];
+  g.traverse(o => { if (!o.isMesh) return; const P_ = o.geometry.attributes.position, I = o.geometry.index, n = I ? I.count : P_.count, c = [];
+    for (let i = 0; i < n; i++) { v.fromBufferAttribute(P_, I ? I.getX(i) : i).applyMatrix4(o.matrixWorld); c.push(lv(v)); if (c.length === 3) { out.push(c.slice()); c.length = 0; } } });
+  return out;
 }
 function propMat(name, m) {
   if (PROP_MATS.has(m.uuid)) return PROP_MATS.get(m.uuid);
@@ -5931,7 +5978,7 @@ const oakPos = (fx, fy) => [OAK.cy - fy, OAK.cx - fx];          // Fable's east 
 const oakHeading = (fwx, fwy) => Math.atan2(-fwx, -fwy);
 // each building's size, by what Fable calls it: across the front, front to back, and the walls' height (0: a bridge)
 // the Shire's hobbit homes, from Battle for Middle-earth (see models/props), in the order they're handed out
-const HOBBIT_HOMES = ['sbgen_01', 'sbgen_02', 'sbgen_03', 'sbgen_04', 'sbgen_05', 'sbgen_06', 'cbhobbitbldg01', 'cbhobbitbldg02'];
+const HOBBIT_HOMES = ['sbgen_01', 'sbgen_02', 'sbgen_03', 'sbgen_04', 'sbgen_05', 'sbgen_06', 'cbhobbitbldg02'];   // (Bag End is only its front: it needs BFME's own hill behind it)
 const OAK_BUILD = [[/TAVERN/, 14, 10, 5], [/HOUSE_LARGE/, 11, 8, 4.6], [/TWO_FLOORS/, 8, 7, 5.2], [/HOUSE_MEDIUM/, 8, 6, 3.2], [/SHOP/, 6, 6, 3.4], [/WAREHOUSE/, 14, 9, 5.2], [/TRADERBRIDGE/, 4, 12, 0]];
 async function loadOakvale() {
   if (!LOCAL_ASSETS || new URLSearchParams(location.search).get('layout') === 'shire') return;
@@ -5959,6 +6006,15 @@ function applyOakvale(L, D) {
     else if (/SCARECROW/.test(def)) Y.scarecrows.push({ s, x, y: fz, h });
     else if (/CHICKEN/.test(def)) Y.chickens.push({ s, x });
     else if (/HERO_FATHER/.test(def) && !Y.start) Y.start = [s + 3, x];
+  }
+  // the ground under each building made level at Fable's floor height, easing back into the hillside round it, so no house sinks into a slope
+  for (const b of Y.buildings) {
+    if (!b.hgt) continue; const c = Math.cos(b.h), sn = Math.sin(b.h), R_ = Math.max(b.w, b.d) / 2 + 4;
+    for (let j = Math.floor(OAK.cy - b.s - R_); j <= Math.ceil(OAK.cy - b.s + R_); j++) for (let i = Math.floor(OAK.cx - b.x - R_); i <= Math.ceil(OAK.cx - b.x + R_); i++) {
+      if (i < 0 || j < 0 || i >= D.w || j >= D.h) continue; const ds = OAK.cy - j - b.s, dx = OAK.cx - i - b.x;
+      const out = Math.max(Math.abs(ds * c + dx * sn) - b.d / 2 - .8, Math.abs(-ds * sn + dx * c) - b.w / 2 - .8, 0); if (out > 3) continue;   // how far outside its footprint
+      const k = j * D.w + i, e = out / 3; hs[k] = lerp(b.y, hs[k], e * e * (3 - 2 * e));
+    }
   }
   // collision: each building as the box round its turned footprint (a little inside it); the bridge is a deck to walk on
   for (const b of Y.buildings) {
@@ -6013,10 +6069,10 @@ function buildOakvale(L, TH) {
   const hills = [], hillM = ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.meadow.clone(); t.needsUpdate = true; t.repeat.set(6, 6); return t; })(), color: 0x8aa868 }));
   for (let k = 0; k < 60; k++) {
     const side = k % 3, u = rand(0, 1), fx = side === 0 ? u * W : side === 1 ? -rand(6, 30) : W + rand(6, 30), fy = side === 0 ? H + rand(6, 30) : 60 + u * (H - 60);
-    const ey = T_.hs[Math.round(clamp(fy, 0, H - 1)) * W + Math.round(clamp(fx, 0, W - 1))], r = rand(18, 34), p = tw(OAK.cy - fy, OAK.cx - fx, ey - r * .3);
+    const ey = T_.hs[Math.round(clamp(fy, 0, H - 1)) * W + Math.round(clamp(fx, 0, W - 1))], r = rand(18, 34), p = tw(OAK.cy - fy, OAK.cx - fx, ey - r * .45);   // (deep enough that no underside shows)
     hills.push([p.x, p.y, p.z, r, r * rand(.5, .8), r]);
   }
-  instanced(new THREE.SphereGeometry(1, 18, 9, 0, TAU, 0, Math.PI / 2), hillM, hills);
+  instanced(new THREE.SphereGeometry(1, 18, 12), hillM, hills);
   // the buildings: a stone footing down to the ground, plastered walls crossed with dark beams, thatched gable roofs,
   // a door, lit windows and a chimney (warehouses are planked and the trader's bridge is a wooden deck)
   // with Battle for Middle-earth's Shire models, each is a hobbit hole instead: the tavern the Green Dragon, the warehouse
@@ -6024,9 +6080,10 @@ function buildOakvale(L, TH) {
   const homes = propsOf(HOBBIT_HOMES); let bagEnd = false, nHome = 0;
   for (const b of Y.buildings) {
     const low = Math.min(...[[-1, -1], [1, -1], [-1, 1], [1, 1], [0, 0]].map(([a, c]) => terrainAt(b.s + Math.cos(b.h) * a * b.d / 2 - Math.sin(b.h) * c * b.w / 2, b.x + Math.sin(b.h) * a * b.d / 2 + Math.cos(b.h) * c * b.w / 2, true)));
-    const own = /TRADERBRIDGE/.test(b.def) ? 'sbbridge' : /TAVERN/.test(b.def) ? 'sbgrndrg' : /WAREHOUSE/.test(b.def) ? 'sbmill' : /HOUSE_LARGE/.test(b.def) && !bagEnd && PROPS.sbbagend ? 'sbbagend' : homes[nHome++ % Math.max(1, homes.length)];
-    const pr = own && PROPS[own] && propOne(own, b.s, b.x, b.hgt ? low : b.y - .2, b.h, Math.max(b.w, b.d) * (b.hgt ? 1.15 : 1));
-    if (pr) { if (own === 'sbbagend') bagEnd = true; if (b.hgt) { pr.g.updateMatrixWorld(true); Y.chimneys.push(pr.g.localToWorld(new V3(0, PROPS[own].size.y * .95, 0))); } continue; }
+    const own = /TRADERBRIDGE/.test(b.def) ? 'sbbridge' : /TAVERN/.test(b.def) ? 'sbgrndrg' : /WAREHOUSE/.test(b.def) ? 'sbmill' : /HOUSE_LARGE/.test(b.def) && !bagEnd && PROPS.cbhobbitbldg01 ? 'cbhobbitbldg01' : homes[nHome++ % Math.max(1, homes.length)];
+    const pr = own && PROPS[own] && propOne(own, b.s, b.x, b.hgt ? b.y - .1 : b.y - .2, b.h, Math.max(b.w, b.d) * (b.hgt ? 1.15 : 1));
+    if (pr && new URLSearchParams(location.search).get('propinfo')) console.log(`building ${own} at ${b.s.toFixed(0)},${b.x.toFixed(0)},${low.toFixed(1)} facing ${b.h.toFixed(2)}`);
+    if (pr) { if (own === 'cbhobbitbldg01') bagEnd = true; if (b.hgt) { pr.g.updateMatrixWorld(true); Y.chimneys.push(pr.g.localToWorld(new V3(0, PROPS[own].size.y * .95, 0))); } continue; }
     const g = new THREE.Group(); place(g, b.s, b.x, b.y, b.h); scene.add(g);
     if (!b.hgt) {   // the trader's bridge
       part(GEO_BOX, wood, g, 0, -.15, 0, b.w, .3, b.d);
@@ -6217,9 +6274,9 @@ function applyRivendell(L, D) {
     }
     if (!best) { b.len = 0; continue; }
     const ds = Math.cos(best.a), dx = Math.sin(best.a), mid = (best.r1 - best.r2) / 2;
-    Object.assign(b, { h: best.a, len: best.r1 + best.r2 + 2, cs: b.s + ds * mid, cx: b.x + dx * mid });
-    for (let r = -b.len / 2; r <= b.len / 2; r += .6) { const s = b.cs + ds * r, x = b.cx + dx * r; Y.blocks.push([s - 1.1, s + 1.1, x - 1.1, x + 1.1, b.y + .15, 'floor', b.y - .5]); }
-    for (let r = -b.len / 2 + 1.2; r <= b.len / 2 - 1.2; r += .6) for (const sd of [-1, 1]) { const s = b.cs + ds * r - dx * sd * 1.7, x = b.cx + dx * r + ds * sd * 1.7; Y.blocks.push([s - .15, s + .15, x - .15, x + .15, b.y + 1.2, 'wall', b.y + .15]); }
+    Object.assign(b, { h: best.a, len: best.r1 + best.r2 + 2, cs: b.s + ds * mid, cx: b.x + dx * mid, own: [] });
+    for (let r = -b.len / 2; r <= b.len / 2; r += .6) { const s = b.cs + ds * r, x = b.cx + dx * r; const bk = [s - 1.1, s + 1.1, x - 1.1, x + 1.1, b.y + .15, 'floor', b.y - .5]; Y.blocks.push(bk); b.own.push(bk); }
+    for (let r = -b.len / 2 + 1.2; r <= b.len / 2 - 1.2; r += .6) for (const sd of [-1, 1]) { const s = b.cs + ds * r - dx * sd * 1.7, x = b.cx + dx * r + ds * sd * 1.7; const bk = [s - .15, s + .15, x - .15, x + .15, b.y + 1.2, 'wall', b.y + .15]; Y.blocks.push(bk); b.own.push(bk); }
   }
   // how far every spot is from the river, for building along the edge of the gorge
   const dW = new Float32Array(W * H).fill(1e9), q = [];
@@ -6292,8 +6349,8 @@ function buildRivFable(L, TH) {
   }
   // wooded hills round about, so the edge of the land never shows
   const hills = [], hillM = ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.meadow.clone(); t.needsUpdate = true; t.repeat.set(6, 6); return t; })(), color: 0x6a8a58 }));
-  for (let k = 0; k < 70; k++) { const side = k % 4, u = rand(0, 1), s = side === 0 ? S0 - rand(4, 24) : side === 1 ? S1 + rand(4, 24) : S0 + u * (S1 - S0), x = side === 2 ? X0 - rand(4, 24) : side === 3 ? X1 + rand(4, 24) : X0 + u * (X1 - X0); const ey = at(clamp(s, S0, S1), clamp(x, X0, X1)), r = rand(16, 30), p = tw(s, x, ey - r * .25); hills.push([p.x, p.y, p.z, r, r * rand(.6, .9), r]); }
-  instanced(new THREE.SphereGeometry(1, 18, 9, 0, TAU, 0, Math.PI / 2), hillM, hills);
+  for (let k = 0; k < 70; k++) { const side = k % 4, u = rand(0, 1), s = side === 0 ? S0 - rand(4, 24) : side === 1 ? S1 + rand(4, 24) : S0 + u * (S1 - S0), x = side === 2 ? X0 - rand(4, 24) : side === 3 ? X1 + rand(4, 24) : X0 + u * (X1 - X0); const ey = at(clamp(s, S0, S1), clamp(x, X0, X1)), r = rand(16, 30), p = tw(s, x, ey - r * .45); hills.push([p.x, p.y, p.z, r, r * rand(.6, .9), r]); }
+  instanced(new THREE.SphereGeometry(1, 18, 12), hillM, hills);
   // the elves' buildings: Battle for Middle-earth's own if they're there, otherwise pale halls under golden roofs
   const OWN = { hall: ['rivrhall'], house: ['rivelhouse'], tower: ['rivbtower', 'rivrtower', 'rivgtower'], gazebo: ['rivgazebo'] }, SIZE = { hall: [20, 'w'], house: [10, 'w'], tower: [16, 'h'], gazebo: [7, 'w'] };
   const house = (s, x, w, d, y0, h, hd) => {
@@ -6315,7 +6372,19 @@ function buildRivFable(L, TH) {
   for (const b of Y.bridges) {
     if (!b.len) continue;
     const pr = PROPS.rivbridge && propOne('rivbridge', b.cs, b.cx, b.y, b.h, b.len, 'w');
-    if (pr) { pr.g.position.y -= pr.size.y * .8; continue; }
+    if (pr) {
+      // walked on as the model is: its centre level with the bridge's height, its own deck laid into the walkway squares,
+      // and rails at its sides (in place of the plain deck that was there for the built bridge)
+      const tris = propTris(pr.g); let top = -Infinity; for (const tr of tris) for (const p of tr) if (Math.hypot(p[0] - b.cs, p[1] - b.cx) < 2.5 && p[2] > top) top = p[2];
+      const dy = isFinite(top) ? b.y + .1 - top : 0; pr.g.position.y += dy;
+      if (!L.deck) L.deck = newDeck(S0 - 2, X0 - 2, Math.ceil(X1 - X0) + 5, Math.ceil(S1 - S0) + 5);
+      for (const [A, B, C] of tris) deckTri(L.deck, [A[0], A[1], A[2] + dy], [B[0], B[1], B[2] + dy], [C[0], C[1], C[2] + dy]);
+      Y.blocks = L.layout.blocks = Y.blocks.filter(bk => !b.own.includes(bk));
+      if (new URLSearchParams(location.search).get('propinfo')) console.log(`bridge at ${b.cs.toFixed(1)},${b.cx.toFixed(1)} height ${b.y.toFixed(1)} heading ${b.h.toFixed(2)} length ${b.len.toFixed(1)}`);
+      const half = Math.min(pr.size.x, pr.size.z) / 2 - .4, ds = Math.cos(b.h), dx = Math.sin(b.h);
+      for (let r = -b.len / 2 + 1.5; r <= b.len / 2 - 1.5; r += .6) for (const sd of [-1, 1]) { const s = b.cs + ds * r - dx * sd * half, x = b.cx + dx * r + ds * sd * half, dk = deckAt_(L.deck, s, x), y = dk > NO_DECK ? dk : b.y; Y.blocks.push([s - .2, s + .2, x - .2, x + .2, y + 1.1, 'wall', y - 2]); }
+      continue;
+    }
     const g = new THREE.Group(); place(g, b.cs, b.cx, b.y, b.h); scene.add(g);
     part(GEO_BOX, pale, g, 0, -.3, 0, 2.6, .9, b.len);
     for (const sx of [-1, 1]) { part(GEO_BOX, pale, g, sx * 1.6, .55, 0, .3, 1, b.len); for (const z of [-b.len / 2 + .3, b.len / 2 - .3]) { g.updateMatrixWorld(true); lamp(g.localToWorld(new V3(sx * 1.6, 1.4, z)), 1); } }
@@ -6424,33 +6493,23 @@ function applyMirkwood(L, D) {
   const inst = (m, vx, vy, vz) => { const a = m[4] / 65536 * TAU, ca = Math.cos(a), sa = Math.sin(a), d = m[5]; return toLvl(m[1] + (vx * ca - vy * sa) * d, m[2] + (vx * sa + vy * ca) * d, m[3] + vz * d); };
   const Y = L.layout = { blocks: [], trunks: [], lanterns: [], glows: [], pods: [], obelisks: [], springs: [], D, inst, toLvl };
   // the walkways: every face of a catwalk, ramp or the arena floor that's turned up, laid into a grid of metre squares
-  const s0 = CY - Wm + 1, x0 = CX - Wm + 1, top = new Float32Array(Wm * Wm).fill(NO_DECK);
+  const s0 = CY - Wm + 1, x0 = CX - Wm + 1, DK = newDeck(s0, x0, Wm, Wm), top = DK.top;
   for (const m of D.meshes) {
     const sh = D.shapes[m[0]]; if (!sh || !MIRK_DECK.test(m[0])) continue;
     const v = sh.v;
-    for (let t = 0; t < sh.k.length; t++) {
-      if (sh.k[t] !== 2) continue;
-      const A = inst(m, v[t * 9], v[t * 9 + 1], v[t * 9 + 2]), B = inst(m, v[t * 9 + 3], v[t * 9 + 4], v[t * 9 + 5]), C = inst(m, v[t * 9 + 6], v[t * 9 + 7], v[t * 9 + 8]);
-      const e1 = [B[0] - A[0], B[1] - A[1], B[2] - A[2]], e2 = [C[0] - A[0], C[1] - A[1], C[2] - A[2]];
-      const n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]], nl = Math.hypot(...n); if (nl < 1e-6 || Math.abs(n[2]) / nl < .6) continue;
-      const d = (B[1] - C[1]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[1] - C[1]); if (Math.abs(d) < 1e-9) continue;
-      const j0 = Math.max(0, Math.ceil(Math.min(A[0], B[0], C[0]) - s0 - .5)), j1 = Math.min(Wm - 1, Math.floor(Math.max(A[0], B[0], C[0]) - s0 + .5));
-      const i0 = Math.max(0, Math.ceil(Math.min(A[1], B[1], C[1]) - x0 - .5)), i1 = Math.min(Wm - 1, Math.floor(Math.max(A[1], B[1], C[1]) - x0 + .5));
-      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-        const ps = s0 + j, px = x0 + i, w1 = ((B[1] - C[1]) * (ps - C[0]) + (C[0] - B[0]) * (px - C[1])) / d, w2 = ((C[1] - A[1]) * (ps - C[0]) + (A[0] - C[0]) * (px - C[1])) / d, w3 = 1 - w1 - w2;
-        if (w1 < -.2 || w2 < -.2 || w3 < -.2) continue; const y = w1 * A[2] + w2 * B[2] + w3 * C[2], k = j * Wm + i; if (y > top[k]) top[k] = y;
-      }
-    }
+    for (let t = 0; t < sh.k.length; t++) if (sh.k[t] === 2) deckTri(DK, inst(m, v[t * 9], v[t * 9 + 1], v[t * 9 + 2]), inst(m, v[t * 9 + 3], v[t * 9 + 4], v[t * 9 + 5]), inst(m, v[t * 9 + 6], v[t * 9 + 7], v[t * 9 + 8]));
   }
-  for (let k = 0; k < top.length; k++) if (top[k] > NO_DECK && top[k] < hs[(CY - (s0 + (k / Wm | 0))) * Wm + (CX - (x0 + k % Wm))] + .3) top[k] = NO_DECK;   // down at the ground, the ground will do
-  L.deck = { s0, x0, w: Wm, h: Wm, top };
-  if (new URLSearchParams(location.search).get('deck')) { let n = 0, lo2 = 1e9, hi2 = -1e9, ex = []; for (let k = 0; k < top.length; k++) if (top[k] > NO_DECK) { n++; lo2 = Math.min(lo2, top[k]); hi2 = Math.max(hi2, top[k]); if (n % 400 === 1) ex.push([s0 + (k / Wm | 0), x0 + k % Wm, top[k].toFixed(1), (top[k] - hs[(CY - (s0 + (k / Wm | 0))) * Wm + (CX - (x0 + k % Wm))]).toFixed(1)].join(',')); } console.log(`walkway: ${n} squares, ${lo2.toFixed(1)}..${hi2.toFixed(1)} up; e.g. (s,x,y,above ground) ${ex.join(' ')}`); }   // &deck=1
+  // down at the ground, the ground will do
+  for (let k = 0; k < top.length; k++) { const g = hs[(CY - (s0 + (k / Wm | 0))) * Wm + (CX - (x0 + k % Wm))] + .3; top[k] = NO_DECK; for (let q = 0; q < DECK_L; q++) { const v = DK.lay[k * DECK_L + q]; if (v < g) DK.lay[k * DECK_L + q] = NO_DECK; else if (v > top[k]) top[k] = v; } }
+  L.deck = DK;
+  if (new URLSearchParams(location.search).get('deck')) { let n = 0, lo2 = 1e9, hi2 = -1e9, ex = []; for (let k = 0; k < top.length; k++) if (top[k] > NO_DECK) { n++; lo2 = Math.min(lo2, top[k]); hi2 = Math.max(hi2, top[k]); if (n % 400 === 1) ex.push([s0 + (k / Wm | 0), x0 + k % Wm, top[k].toFixed(1), (top[k] - hs[(CY - (s0 + (k / Wm | 0))) * Wm + (CX - (x0 + k % Wm))]).toFixed(1)].join(',')); } for (const STEPT of [.95]) { const W_ = DK.w, NL = DECK_L, lay = DK.lay, comp = new Int32Array(lay.length).fill(-1), sizes = [], reach = []; for (let n0 = 0; n0 < lay.length; n0++) { if (lay[n0] <= NO_DECK || comp[n0] >= 0) continue; const id = sizes.length, st = [n0]; comp[n0] = id; let n2 = 0, low = 1e9; while (st.length) { const nn = st.pop(), k = nn / NL | 0, y = lay[nn]; n2++; const i = k % W_, j = k / W_ | 0; for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= W_ || jj >= W_) continue; const kk = jj * W_ + ii; let any = false; for (let q = 0; q < NL; q++) { const m = kk * NL + q; if (lay[m] > NO_DECK && Math.abs(lay[m] - y) < STEPT) { any = true; if (comp[m] < 0) { comp[m] = id; st.push(m); } } } if (!any) low = Math.min(low, y - hs[(CY - (s0 + jj)) * Wm + (CX - (x0 + ii))]); } } sizes.push(n2); reach.push(low); } const ord = sizes.map((n, i) => i).sort((a, b) => sizes[b] - sizes[a]); console.log('step ' + STEPT + ' walkway pieces: ' + sizes.length + '; biggest (squares / step up from the ground at its lowest edge): ' + ord.slice(0, 10).map(i => sizes[i] + '/' + reach[i].toFixed(1)).join(' ')); }
+    console.log(`walkway: ${n} squares, ${lo2.toFixed(1)}..${hi2.toFixed(1)} up; e.g. (s,x,y,above ground) ${ex.join(' ')}`); }   // &deck=1
   const deckAtL = (s, x) => { const i = Math.round(x - x0), j = Math.round(s - s0); return i < 0 || j < 0 || i >= Wm || j >= Wm ? NO_DECK : top[j * Wm + i]; };
   // the giant trees (collision round each trunk), Tokara's lanterns, pods, statues and lights
   const trunkR = (() => { const sh = D.shapes.StaticMesh1; if (!sh) return 2.6 / SC; let n = 0, r = 0; for (let i = 0; i < sh.v.length; i += 3) if (sh.v[i + 2] > -100 && sh.v[i + 2] < 500) { r += Math.hypot(sh.v[i], sh.v[i + 1]); n++; } return n ? r / n : 2.6 / SC; })();
   for (const m of D.meshes) {
     const p = inst(m, 0, 0, 0);
-    if (m[0] === 'StaticMesh1') { const r = trunkR * m[5] * SC * .7; Y.trunks.push({ m, s: p[0], x: p[1], y: p[2], r }); Y.blocks.push([p[0] - r, p[0] + r, p[1] - r, p[1] + r, p[2] + 90, 'wall', p[2] - 20]); }
+    if (m[0] === 'StaticMesh1') { const r = trunkR * m[5] * SC * .45; Y.trunks.push({ m, s: p[0], x: p[1], y: p[2], r }); Y.blocks.push([p[0] - r, p[0] + r, p[1] - r, p[1] + r, p[2] + 90, 'wall', p[2] - 20]); }
     else if (m[0] === 'HanginLight2') Y.lanterns.push({ s: p[0], x: p[1], y: p[2], top: inst(m, 0, 0, 990)[2] });
     else if (m[0] === 'BioPod01LowAR') Y.pods.push({ s: p[0], x: p[1], y: inst(m, 0, 0, 15)[2], size: 145 * m[5] * SC });
     else if (m[0] === 'Obelisk1') Y.obelisks.push({ s: p[0], x: p[1], y: p[2], h: m[4] / 65536 * TAU, size: 157 * m[5] * SC });
@@ -6621,8 +6680,10 @@ showScreen(null); syncPauseBtns();
   if (li >= 0) {
     startGame(li);
     if (q.get('at')) { gs.cp.s = Number(q.get('at')); respawn(true); }   // &at=160 starts 160 along the level
+    if (q.get('propview')) { const n = q.get('propview'), sz = +(q.get('size') || 10); const pr = propOne(n, 8, 0, groundBelow(8, 0, 40), +(q.get('turn') || 0), sz); console.log('propview', n, pr && pr.size.toArray().map(v => v.toFixed(1)).join('x')); DEBUG_CAM = { p: tw(8 - sz * 1.3, sz * .6, sz * .7), l: tw(8, 0, sz * .25) }; }   // &propview=sbbagend&size=12: one scenery model alone, to look at
     if (q.get('pos')) { const [s, x, y] = q.get('pos').split(',').map(Number); Object.assign(gs.cp, { s, x, y: y || 0 }); respawn(true); }   // &pos=s,x,y starts there (open levels)
     if (q.get('spring') && LV.springs && LV.springs[+q.get('spring')]) { const sp = LV.springs[+q.get('spring')]; Object.assign(gs.cp, { s: sp.s, x: sp.x, y: sp.y }); respawn(true); console.log('spring', JSON.stringify(sp)); }   // &spring=0 starts on that web spring
+    if (q.get('walkto')) WALKTO = q.get('walkto').split(',').map(Number);
     if (q.get('sim')) { cheats.god = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (q.get('pos') || q.get('spring')) console.log(`after ${q.get('sim')}s: s ${P.s.toFixed(1)} x ${P.x.toFixed(1)} y ${P.y.toFixed(1)} ground ${P.ground}`); }   // &sim=6 plays 6 seconds first (invincible)
     if (q.get('info')) setTimeout(() => { renderer.info.autoReset = false; renderer.info.reset(); renderer.setRenderTarget(rt); renderer.render(scene, camera); console.log('scene: ' + renderer.info.render.calls + ' draw calls, ' + renderer.info.render.triangles + ' triangles'); renderer.info.autoReset = true; }, 500);   // &info=1 logs how much one frame draws
     if (q.get('cam')) { const [s, x, y, ls, lx, ly] = q.get('cam').split(',').map(Number); DEBUG_CAM = { p: tw(s, x, y), l: tw(ls, lx, ly) }; }   // &cam=s,x,y,ls,lx,ly: a fixed camera in the level
