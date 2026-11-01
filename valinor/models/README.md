@@ -11,7 +11,8 @@ Put a `.glb` file here with one of these names and Valinor uses it instead of it
 | `nazgul.glb` | The nine Nazgûl | Hobbiton |
 | `orc.glb` | Orcs and goblins | Most levels |
 | `fellbeast.glb` | The fell beasts (a Nazgûl on a winged beast) | Minas Tirith, Mordor and Mount Doom |
-| `horse.glb` | Shadowfax | The First Circle and the Ride to Edoras |
+| `horse.glb` | Shadowfax | The First Circle |
+| `uruk.glb`, `lurtz.glb`, `theoden.glb` | The Uruk-hai, Lurtz and Théoden | Edoras |
 | `frodo.glb`, `sam.glb`, `merry.glb`, `pippin.glb`, `aragorn.glb`, `legolas.glb`, `gimli.glb`, `boromir.glb` | The Fellowship | Rivendell |
 | `livingmap.glb` + `livingmap.json` | The map: BFME II's War of the Ring board instead of the little diorama (make them with `Prep-Map.ps1`, then `Convert-Chars.ps1 livingmap`) | The world map, where you pick a place |
 
@@ -24,6 +25,8 @@ Put a `.glb` file here with one of these names and Valinor uses it instead of it
 - **Hobbiton:** Bag End, hobbit holes, the Green Dragon, the mill, the Shire bridge, Shire trees, hedges, fences, bushes, flowers, grass and stones.
 - **Rivendell:** the Last Homely House, elven houses, towers, the gazebo, the bridge, ruined walls, waterfalls, cliffs, mallorns and elven woods.
 - **Mirkwood:** its dark trees, webbed trees, undergrowth, webs, egg sacs, the spider lair and Dol Guldur's tower.
+- **Edoras:** Meduseld, the town's houses, its palisade and gate, the well, and the trees of the fields.
+- **Minas Tirith:** the White Tree in the Citadel.
 
 Each level uses whichever are there and builds its own shapes for the rest. Add `?props=none` to the address to compare with the built ones.
 

@@ -56,6 +56,18 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:'Luck
 #bossbar .bar{position:relative}
 #bossbar .bar::before,#bossbar .bar::after{content:'';position:absolute;top:0;bottom:0;width:3px;background:#000;z-index:1}
 #bossbar .bar::before{left:33.3%}#bossbar .bar::after{left:66.6%}
+/* Edoras: Kingdom Hearts II style HP and MP (bottom right), the enemy you're fighting (top right), a reaction command, and GUARD */
+#khhud{position:absolute;right:max(3vw,env(safe-area-inset-right));bottom:max(4vh,env(safe-area-inset-bottom));display:none;flex-direction:column;align-items:flex-end;gap:.6vh;font-size:clamp(13px,2.4vh,22px);color:#eaffe0;-webkit-text-stroke:1.5px var(--ink);text-shadow:2px 2px 0 #000;pointer-events:none}
+#khhud>div{display:flex;align-items:center;gap:.5em}#khhud .bar,#khtarget .bar{height:1.9vh;border:3px solid #000;background:#0a160a;border-radius:10px;overflow:hidden;box-shadow:3px 3px 0 #000}
+#khhud .hp{width:min(32vw,300px)}#khhud .mp{width:min(22vw,200px)}#khhud i,#khtarget i{display:block;height:100%;width:100%;transition:width .15s}
+#khhud .hp i{background:linear-gradient(#c8ff9a,#3ac83a 55%,#1a6a1a)}#khhud .mp i{background:linear-gradient(#b8e4ff,#3a8aff 55%,#1a3a90)}
+#khtarget{position:absolute;right:max(3vw,env(safe-area-inset-right));top:calc(max(2.2vh,env(safe-area-inset-top)) + clamp(40px,8vh,70px));display:none;align-items:center;gap:.5em;font-size:clamp(13px,2.4vh,22px);color:#ffd0b0;-webkit-text-stroke:1.5px var(--ink);text-shadow:2px 2px 0 #000;pointer-events:none}
+#khtarget .bar{width:min(24vw,220px);background:#200808}#khtarget i{background:linear-gradient(#ffe070,#ff7a20 55%,#a02808)}
+#khreact{position:absolute;left:50%;bottom:20vh;transform:translateX(-50%);display:none;font-size:clamp(20px,4.2vh,40px);color:#fff;-webkit-text-stroke:2px var(--ink);text-shadow:3px 3px 0 #000;background:linear-gradient(#5ac85a,#1a6a1a);border:3px solid #000;border-radius:12px;padding:.15em .9em;box-shadow:4px 4px 0 #000;pointer-events:auto;cursor:pointer;animation:khpulse .5s infinite alternate}
+#khreact small{font-size:.5em;opacity:.85;margin-left:.6em}@keyframes khpulse{to{filter:brightness(1.35)}}
+body.touch #khhud{bottom:auto;right:auto;left:max(3vw,env(safe-area-inset-left));top:calc(max(2.2vh,env(safe-area-inset-top)) + clamp(40px,8vh,70px));align-items:flex-start}
+body.touch #khtarget{top:calc(max(2.2vh,env(safe-area-inset-top)) + clamp(40px,8vh,70px) + 12vh)}
+#tGuard{right:calc(max(4vw,env(safe-area-inset-right)) + var(--bj) + var(--bs) + 5vh);bottom:max(4vh,env(safe-area-inset-bottom));background:radial-gradient(circle at 35% 30%,#9ad8ff,#1a5aa0 70%);display:none}body.kh #tGuard{display:flex}
 .menu{margin:3.5vh auto 0;display:flex;flex-direction:column;gap:1.1vh;width:min(560px,90vw)}
 .mi{display:grid;grid-template-columns:2.1em 1fr;align-items:center;column-gap:.6em;text-align:left;padding:.45em .8em;border:3px solid #000;border-radius:12px;background:rgba(14,4,36,.7);box-shadow:4px 4px 0 #000;cursor:pointer;transition:transform .15s,background .15s}
 .mi b{grid-row:span 2;font-weight:normal;font-size:clamp(26px,4.4vh,44px);color:var(--gold);-webkit-text-stroke:2px var(--ink);text-align:center}
@@ -171,9 +183,13 @@ body.touch #bossbar .bar{width:min(50vw,420px)}
   <div class="tb" id="tFire" data-k="TFire">FIRE<small id="tRk">8</small></div>
   <div class="tb" id="tSpin" data-k="TSpin">SPIN</div>
   <div class="tb" id="tJump" data-k="TJump">JUMP</div>
+  <div class="tb" id="tGuard" data-k="TGuard">GUARD</div>
 </div>
 <div id="duelhud"><div><b>GANDALF</b><div class="bar"><i id="gHPfill"></i></div></div><div><b>FORCE</b><div class="bar f"><i id="gFfill"></i></div></div><div id="gStance" data-key="KeyC"><b>STANCE</b><span id="gStanceName">MEDIUM</span><small class="kOnly">&nbsp;C</small></div></div>
 <div id="bossbar"><span id="bossName">SAURON</span><div class="bar"><i id="bossfill"></i></div></div>
+<div id="khhud"><div><b>HP</b><div class="bar hp"><i id="khHP"></i></div></div><div><b>MP</b><div class="bar mp"><i id="khMP"></i></div></div></div>
+<div id="khtarget"><span id="khTName">URUK-HAI</span><div class="bar"><i id="khTHP"></i></div></div>
+<div id="khreact"><span id="khRName">TAKEDOWN</span><small class="kOnly">R</small></div>
 <div id="mapUI">
   <div id="sign"><div class="rope l"></div><div class="rope r"></div><div class="plank"><b id="signName">MINAS TIRITH</b><i id="signSub"></i></div></div>
   <div id="mapLogo"><span>VALINOR</span><i>MIDDLE-EARTH</i></div>
@@ -911,7 +927,7 @@ const MARBLE_T = [1, .97, .93];
 // --- collision solids (track-space boxes) for the level being played ---
 const solids = [], spikes = [];
 function solid(s0, s1, x0, x1, y0, y1, kind = 'wall', ref = null) { const b = { s0, s1, x0, x1, y0, y1, kind, ref, on: true }; solids.push(b); return b; }
-function groundBelow(s, x, y, skip) { let g = -100; for (const b of solids) { if (!b.on || b === skip) continue; if (s >= b.s0 && s <= b.s1 && x >= b.x0 && x <= b.x1 && b.y1 <= y + .06 && b.y1 > g) g = b.y1; } if (TERR) { const t = terrainAt(s, x); if (t <= y + .06 && t > g) g = t; } if (DECK) { const d = deckAt(s, x); if (d <= y + .06 && d > g) g = d; } return g; }
+function groundBelow(s, x, y, skip) { let g = -100; for (const b of solids) { if (!b.on || b === skip) continue; if (s >= b.s0 && s <= b.s1 && x >= b.x0 && x <= b.x1 && b.y1 <= y + .06 && b.y1 > g) g = b.y1; } if (TERR) { const t = terrainAt(s, x); if (t <= y + .06 && t > g) g = t; } if (DECK) { const d = deckAt(s, x, y + .06); if (d > g) g = d; } return g; }
 // rolling ground for an open level built from a heightmap (Oakvale, from Fable: see levels/README.md). TERR is the level's, or null.
 // Its height under any point, smoothly between the metre-square corners; the sea floor counts as just under the water, for wading.
 let TERR = null;
@@ -925,7 +941,30 @@ const landAt = (s, x) => TERR ? terrainAt(s, x) : 0;
 // NO_DECK where there's no walkway. Gandalf walks up its ramps and stands on it like the ground, and under it too.
 const NO_DECK = -1e9;
 let DECK = null;
-function deckAt(s, x) { const D = DECK, i = Math.round(x - D.x0), j = Math.round(s - D.s0); return i < 0 || j < 0 || i >= D.w || j >= D.h ? NO_DECK : D.top[j * D.w + i]; }
+// each square keeps up to DECK_L surfaces one over another (a walkway over a walkway, a rail over its deck); top is the highest
+const DECK_L = 3;
+function newDeck(s0, x0, w, h) { return { s0, x0, w, h, top: new Float32Array(w * h).fill(NO_DECK), lay: new Float32Array(w * h * DECK_L).fill(NO_DECK) }; }
+// the highest walkway surface at s, x no higher than y
+function deckAt(s, x, y = Infinity) { const D = DECK, i = Math.round(x - D.x0), j = Math.round(s - D.s0); if (i < 0 || j < 0 || i >= D.w || j >= D.h) return NO_DECK; let b = NO_DECK; for (let q = 0, k = (j * D.w + i) * DECK_L; q < DECK_L; q++) { const v = D.lay[k + q]; if (v <= y && v > b) b = v; } return b; }
+// a surface at height y on square k: joins one within .6 of it, or takes a free place (or the lowest's)
+function deckPut(D, k, y) {
+  const L = D.lay, b = k * DECK_L; if (y > D.top[k]) D.top[k] = y;
+  for (let q = 0; q < DECK_L; q++) if (L[b + q] > NO_DECK && Math.abs(L[b + q] - y) < .6) { if (y > L[b + q]) L[b + q] = y; return; }
+  let lo = 0; for (let q = 0; q < DECK_L; q++) { if (L[b + q] <= NO_DECK) { lo = q; break; } if (L[b + q] < L[b + lo]) lo = q; }
+  if (L[b + lo] <= NO_DECK || y > L[b + lo]) L[b + lo] = y;
+}
+// a triangle's face, laid into the squares under it (corners [s, x, y]); only faces turned up are walked on
+function deckTri(D, A, B, C) {
+  const e1 = [B[0] - A[0], B[1] - A[1], B[2] - A[2]], e2 = [C[0] - A[0], C[1] - A[1], C[2] - A[2]];
+  const n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]], nl = Math.hypot(...n); if (nl < 1e-6 || Math.abs(n[2]) / nl < .6) return;
+  const d = (B[1] - C[1]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[1] - C[1]); if (Math.abs(d) < 1e-9) return;
+  const j0 = Math.max(0, Math.ceil(Math.min(A[0], B[0], C[0]) - D.s0 - .5)), j1 = Math.min(D.h - 1, Math.floor(Math.max(A[0], B[0], C[0]) - D.s0 + .5));
+  const i0 = Math.max(0, Math.ceil(Math.min(A[1], B[1], C[1]) - D.x0 - .5)), i1 = Math.min(D.w - 1, Math.floor(Math.max(A[1], B[1], C[1]) - D.x0 + .5));
+  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+    const ps = D.s0 + j, px = D.x0 + i, w1 = ((B[1] - C[1]) * (ps - C[0]) + (C[0] - B[0]) * (px - C[1])) / d, w2 = ((C[1] - A[1]) * (ps - C[0]) + (A[0] - C[0]) * (px - C[1])) / d, w3 = 1 - w1 - w2;
+    if (w1 < -.2 || w2 < -.2 || w3 < -.2) continue; deckPut(D, j * D.w + i, w1 * A[2] + w2 * B[2] + w3 * C[2]);
+  }
+}
 // ground distance between two track points: in the small courtyard ring, track units aren't metres, so measure in the world
 const _h1 = new V3(), _h2 = new V3();
 function hd(s1, x1, s2, x2) { if (!LV || !LV.arena) return Math.hypot(s1 - s2, x1 - x2); tw(s1, x1, 0, _h1); tw(s2, x2, 0, _h2); return Math.hypot(_h1.x - _h2.x, _h1.z - _h2.z); }
@@ -945,7 +984,7 @@ const wallShFor = base => (s, x, y) => clamp(.5 + (y - base) / (12 - base) * .5,
 function buildRoam(L) {
   const [S0, S1, X0, X1] = L.field, P0 = L.layout.pool;
   const pieces = P0 ? [[S0, P0[0], X0, X1], [P0[1], S1, X0, X1], [P0[0], P0[1], X0, P0[2]], [P0[0], P0[1], P0[3], X1]] : [[S0, S1, X0, X1]];
-  for (const [a, b, c, d] of pieces) if (b > a && d > c) solid(a, b, c, d, -30, 0, 'floor');
+  if (!L.terrain) for (const [a, b, c, d] of pieces) if (b > a && d > c) solid(a, b, c, d, -30, 0, 'floor');   // (on a heightmap the ground is the floor)
   if (P0) solid(P0[0], P0[1], P0[2], P0[3], -30, -.55, 'floor');   // wade into the pool
   solid(S0 - 6, S0, X0 - 6, X1 + 6, -30, 60, 'wall'); solid(S1, S1 + 6, X0 - 6, X1 + 6, -30, 60, 'wall');
   solid(S0, S1, X0 - 6, X0, -30, 60, 'wall'); solid(S0, S1, X1, X1 + 6, -30, 60, 'wall');
@@ -2586,24 +2625,12 @@ const LEVELS = [
     },
   },
   {
-    straight: true, name: 'THE RIDE TO EDORAS', sub: 'URUK-HAI ON THE PLAINS', loc: 'rohan', theme: 'rohan', next: 'RETURN TO THE MAP', R: 44, Y0: 0, CX: 20000, CZ: 0, base: -8, wallH: 6, ride: true,
-    floors: [[-16.6, 40, -3.5], [45, 75, -3.5], [75, 92, .4], [92, 118, -3.5], [123, 150, -3.5], [150, 166, -.4], [171, 205, -3.5], [210, 1e9, -3.5]],
-    pillars: [],
-    bars: [[16, -3.5, .3], [24, -.3, 3.5], [32, -3.5, 3.5], [52, -3.5, -.5], [58, .5, 3.5], [66, -3.5, 3.5], [98, -3.5, .2], [104, -.2, 3.5], [112, -3.5, 3.5], [130, -1.5, 3.5], [138, -3.5, .8], [144, -3.5, 3.5],
-      [178, -.5, 3.5], [186, -3.5, -.3], [194, -3.5, 3.5], [216, -3.5, .5], [224, -.5, 3.5], [232, -3.5, 3.5], [244, .4, 3.5]],
-    dz: [], balrogs: [],
-    content() {
-      crateList([
-        ['b', 8, 0], ['b', 10, 0], ['q', 20, 2.2], ['r', 28, -2.4], ['p', 38, 0], ['b', 48, -2], ['b', 50, -2], ['c', 62, 0], ['t', 70, 1.5], ['b', 70, -1.5], ['b', 80, 2.4], ['q', 86, 2.4], ['l', 90, 2.8],
-        ['n', 108, -2], ['b', 108, 2], ['r', 116, 0], ['c', 126, 0], ['b', 134, 2], ['q', 148, 0], ['b', 156, 2.4], ['q', 162, 1.6], ['c', 176, 0], ['t', 190, -2], ['b', 190, 2], ['b', 200, 0],
-        ['n', 220, 2], ['r', 228, -2], ['q', 238, 0], ['b', 250, -2], ['b', 250, 2],
-      ]);
-      aLine(3, 6.5, 0, .8, 5); aArc(38.5, 46.5, 0, .8, 3, 7); aLine(52, 60, 0, .8, 7); aLine(78, 90, 1.6, .8, 9); aArc(116.5, 124.5, 0, .8, 3, 7); aLine(150, 164, 1.4, .8, 10); aArc(164.5, 172.5, 1, .8, 3, 7);
-      aArc(203.5, 211.5, 0, .8, 3, 7); aLine(236, 256, 0, .8, 12);
-      addOrc('grunt', 22, -2); addOrc('archer', 54, 2.8); addOrc('grunt', 60, -1.4, { patrol: { ax: 'x', amp: 1.4, sp: 1.6 } }); addOrc('grunt', 96, -3, { ladder: true }); addOrc('archer', 102, 2.8);
-      addOrc('grunt', 114, -3, { ladder: true }); addOrc('grunt', 140, 2, { patrol: { ax: 'x', amp: 1.2, sp: 1.8 } }); addOrc('grunt', 158, 1.5); addOrc('archer', 182, 2.8); addOrc('grunt', 198, -3, { ladder: true });
-      addOrc('grunt', 220, -2.6); addOrc('archer', 236, 2.8); addOrc('grunt', 248, 0, { patrol: { ax: 'x', amp: 2, sp: 1.8 } });
-    },
+    // up the hill through Edoras to Meduseld, fighting Uruk-hai the Kingdom Hearts II way: each square locks behind a
+    // golden barrier until its waves are beaten; Lurtz waits at the top, and then Théoden comes out to you
+    straight: true, roam: true, kh: true, name: 'EDORAS', sub: 'THE GOLDEN HALL', loc: 'rohan', theme: 'edoras', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 20000, CZ: 0, base: -4, wallH: 0,
+    ...edorasLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { edorasContent(this); },
   },
   {
     straight: true, name: 'MORDOR', sub: 'IN THE SHADOW OF THE EYE', loc: 'mordor', theme: 'mordor', next: 'RETURN TO THE MAP', R: 36, Y0: 0, CX: 25000, CZ: 0, base: -14, wallH: 12,
@@ -2751,8 +2778,8 @@ function loadLevel(li) {
   Object.assign(gs, { crates: 0, time: 0, kills: 0, appleTotal: 0 });
   gs.crateTotal = crates.filter(c => c.type !== 'i' && c.type !== 'ib').length;
   // in the courtyard you start on the south side, facing the tree
-  gs.cp = LV.arena ? { s: R * Math.PI / 2, x: R - 9.5, y: 0, t: -1, deaths: 0 } : { s: START_S, x: LV.roam ? LV.start[1] : 0, y: 0, t: -1, deaths: 0 };
-  setupNazgul(); setupDuel(); setupFellowship();
+  gs.cp = LV.arena ? { s: R * Math.PI / 2, x: R - 9.5, y: 0, t: -1, deaths: 0 } : { s: START_S, x: LV.roam ? LV.start[1] : 0, y: TERR ? terrainAt(START_S, LV.start[1]) : 0, t: -1, deaths: 0 };
+  setupNazgul(); setupDuel(); setupFellowship(); setupKH();
   chase.active = chase.done = false;
   if (LV.door) { LV.door.endBlock.on = true; LV.door.L.rotation.y = LV.door.Rr.rotation.y = 0; LV.door.light.visible = LV.door.glow.visible = false; }
   dragons.forEach((d, i) => { d.active = i < 2 && LV.dz.length > 0; d.away = 0; d.hits = 0; d.spitT = 0; d.s = START_S + rand(30, 60); d.x = -70; d.y = 45; });
@@ -2790,7 +2817,7 @@ function respawn(fresh) {
   cratesDirty = 2;
   P.s = cp.s; P.x = cp.x; P.y = cp.y + .05; P.vs = P.vx = P.vy = 0; P.heading = LV.arena ? Math.PI / 2 : 0; P.spinT = 0; P.invT = 1; P.ground = false; P.standOn = null; P.fireAnim = 0; P.safe = null;
   if (cp.s > 1.5 && !LV.arena && !LV.roam) P.s = cp.s - 1.2;
-  cam.yaw = 0; resetNazgul(); resetFellowship(); if (LV.duel && duel.wk) resetDuel();
+  cam.yaw = 0; resetNazgul(); resetFellowship(); if (LV.duel && duel.wk) resetDuel(); if (LV.kh) resetKH(fresh);
   for (const f of fireballs) killWarn(f.warn), scene.remove(f.mesh); fireballs = [];
   for (const a of arrows) scene.remove(a.mesh); arrows = [];
   for (const r of rockets) scene.remove(r.mesh); rockets = [];
@@ -2902,7 +2929,12 @@ function readInput() {
   inp.jumpP = !!(hit.Space || hit.KeyK || hit.TJump || pad.jumpP);
   inp.spinP = !!(hit.KeyJ || hit.ShiftLeft || hit.ShiftRight || hit.Mouse2 || hit.TSpin || pad.spinP);
   inp.fireP = !!(hit.KeyL || hit.KeyF || hit.Mouse0 || hit.TFire || pad.fireP);
+  inp.guardP = !!(hit.KeyE || hit.TGuard || pad.guardP); inp.reactP = !!(hit.KeyR || hit.TReact || pad.reactP);   // Edoras: guard (or roll), and the reaction command
+  if (AUTOFIGHT && LV && LV.kh) { const u = URUKS.find(ukLive); WALKTO = u ? [u.s, u.x] : AUTOFIGHT.next(); if (u && Math.hypot(u.s - P.s, u.x - P.x) < 4 && T % .3 < .02) hit.KeyJ = true; if (u && KH.mp >= 25 && T % 3 < .02) hit.KeyF = true; if (KH.react) hit.KeyR = true; }   // testing: &autofight=1
+  inp.spinP = inp.spinP || !!hit.KeyJ; inp.fireP = inp.fireP || !!hit.KeyF; inp.reactP = inp.reactP || !!hit.KeyR;
+  if (WALKTO) { const ds = WALKTO[0] - P.s, dx = WALKTO[1] - P.x, d = Math.hypot(ds, dx); if (d > .5) { const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw), us = ds / d, ux = dx / d; inp.z = us * c + ux * sn; inp.x = -us * sn + ux * c; } else inp.x = inp.z = 0; }   // testing: &walkto=s,x
 }
+let WALKTO = null, AUTOFIGHT = null;
 
 // ---- touch: a floating stick under the left thumb, JUMP / SPIN / FIRE under the right ----
 // the buttons press the same keys/hit slots as the keyboard (TJump, TSpin, TFire), so the game reads them like any other key
@@ -3018,9 +3050,11 @@ function updatePlayer(dt) {
   P.spinCD -= dt; P.fireCD -= dt; P.fireAnim -= dt; P.invT -= dt;
   if (P.spinT > 0) { P.spinT -= dt; if (P.spinT <= 0) P.spinCD = .18; }
   if (LV.duel) { if (inp.spinP) duelSwing(); if (inp.fireP) duelPush(); }
+  else if (LV.kh) khInput(dt);
   else if (inp.spinP && P.spinT <= 0 && P.spinCD <= 0) { P.spinT = .5; P.spinId = (P.spinId || 0) + 1; S.spin(); }
-  if (!LV.duel && inp.fireP && P.fireCD <= 0) fireRocket();
-  P.vy = Math.max(P.vy - GRAV * dt, -32);
+  if (!LV.duel && !LV.kh && inp.fireP && P.fireCD <= 0) fireRocket();
+  if (LV.kh) khMove(dt);
+  P.vy = Math.max(P.vy - GRAV * dt * (LV.kh && KH.hover > 0 ? .12 : 1), -32);
   // in the courtyard the ring is small, so a step along it has to be scaled to its radius here
   moveH('s', P.vs * dt * (LV.arena ? R / Math.max(2, R - P.x) : 1)); moveH('x', P.vx * dt);
   const wasGround = P.ground, fallV = P.vy;
@@ -3045,7 +3079,7 @@ function moveH(ax, d) {
   if (!d) return;
   if (TERR) { const was = terrainAt(P.s, P.x); P[ax] += d; const now = terrainAt(P.s, P.x); if (now - Math.max(P.y, was) > .55) { P[ax] -= d; if (ax === 's') P.vs = 0; else P.vx = 0; return; } P[ax] -= d; }
   P[ax] += d;
-  if (DECK && P.ground) { const dk = deckAt(P.s, P.x); if (dk > P.y && dk - P.y <= .55) P.y = dk; }   // up a walkway's ramp, or onto its edge
+  if (DECK && P.ground) { const dk = deckAt(P.s, P.x, P.y + .9); if (dk > P.y) P.y = dk; }   // (the seams between walkway pieces can be a step up)   // up a walkway's ramp, or onto its edge
   for (const b of solids) {
     if (!b.on || P.s + PR <= b.s0 || P.s - PR >= b.s1 || P.x + PR <= b.x0 || P.x - PR >= b.x1 || P.y + PH <= b.y0 || P.y >= b.y1 - 1e-4) continue;
     if (b.kind === 'crate' && b.ref.type === 'n') { crateExplode(b.ref); continue; }
@@ -3065,7 +3099,7 @@ function moveV(d, lands, bonks) {
     else if (d > 0 && prevY + PH <= b.y0 + .05) { P.y = b.y0 - PH; P.vy = 0; if (b.kind === 'crate') bonks.push(b.ref); }
   }
   // a walkway: land on it, and keep to it walking down its ramps
-  if (DECK && !P.ground) { const dk = deckAt(P.s, P.x); if (dk > NO_DECK && d <= 0 && ((P.y <= dk && prevY >= dk - .45) || (P.airT < .12 && P.y >= dk && P.y - dk < .45))) { P.y = dk; P.vy = 0; P.ground = true; P.standOn = TERR_FLOOR; } }
+  if (DECK && !P.ground) { const dk = deckAt(P.s, P.x, prevY + .45); if (dk > NO_DECK && d <= 0 && (P.y <= dk || (P.airT < .12 && P.y - dk < .45))) { P.y = dk; P.vy = 0; P.ground = true; P.standOn = TERR_FLOOR; } }
   if (TERR && !P.ground) { const tg = terrainAt(P.s, P.x); if (P.y <= tg || (d <= 0 && P.airT < .12 && P.y - tg < .45)) { P.y = tg; if (P.vy <= 0) { P.vy = 0; P.ground = true; P.standOn = TERR_FLOOR; } } }
 }
 const TERR_FLOOR = { kind: 'floor' };
@@ -4451,8 +4485,16 @@ function makeWhiteTree() {
     const n = depth > 2 ? 2 : 3;
     for (let i = 0; i < n; i++) { const d = dir.clone().add(new V3(rand(-.85, .85), rand(.15, .55), rand(-.85, .85))).normalize(); branch(end, d, len * rand(.62, .78), r * .66, depth - 1); }
   };
-  branch(new V3(0, 0, 0), new V3(0, 1, 0), 3.8, .7, 4);
-  part(rockGeo(.2, 77), bark, g, 0, 0, 0, .9, .35, .9);
+  // Battle for Middle-earth's own White Tree when models/props has it (blossoms come out high in its crown); built branches otherwise
+  const own = PROPS.gbslvrtree;
+  if (own) {
+    const k = 7.5 / own.size.y; for (const p of own.parts) { const m = new THREE.Mesh(p.g, p.m); m.scale.setScalar(k); m.userData.cast = true; g.add(m); }
+    const pos = own.parts[0].g.attributes.position;
+    for (let n = 0; n < 600 && tips.length < 40; n++) { const j = Math.random() * pos.count | 0, y = pos.getY(j); if (y > own.size.y * .55) tips.push(new V3(pos.getX(j) * k, y * k, pos.getZ(j) * k)); }
+  } else {
+    branch(new V3(0, 0, 0), new V3(0, 1, 0), 3.8, .7, 4);
+    part(rockGeo(.2, 77), bark, g, 0, 0, 0, .9, .35, .9);
+  }
   const halo = glowSprite(0xdde8ff, 9, .25); halo.position.y = 5; g.add(halo);
   // blossoms appear when Sauron is defeated
   const bloom = new THREE.Group(), petal = bas(0xffffff), leaf = lam(0xd8f0e0, { emissive: 0x2a3a30 });
@@ -5192,6 +5234,7 @@ function updateHUD(dt) {
     const nm = bal ? "DURIN'S BANE" : boss.state === 'eye' || boss.state === 'dying' ? 'THE EYE' : 'SAURON', ne = document.getElementById('bossName'); if (ne.textContent !== nm) ne.textContent = nm;
   }
   document.getElementById('nCrate').textContent = gs.crates + '/' + gs.crateTotal;
+  khHud();
   const dh = document.getElementById('duelhud'), showD = !!(LV && LV.duel && duel.wk) && state !== 'title' && state !== 'map' && state !== 'complete';
   dh.style.display = showD ? 'flex' : 'none';
   if (showD) {
@@ -5436,7 +5479,7 @@ const NODES = [
   { name: 'THE SHIRE', x: -50, z: -2.5, open: true, loc: 'shire', sub: 'OPEN COUNTRY · DEFEAT THE NINE NAZGÛL' },
   { name: 'RIVENDELL', x: -20, z: -23.5, open: true, loc: 'riv', sub: 'OPEN VALLEY · FIND THE FELLOWSHIP' },
   { name: 'MORIA', x: -14.5, z: -3.5, open: true, loc: 'moria', sub: "THE MINES · BALROG BOSS" },
-  { name: 'EDORAS', x: 10, z: 16.8, open: true, loc: 'rohan', sub: 'RIDE ACROSS ROHAN · 1 LEVEL' },
+  { name: 'EDORAS', x: 10, z: 16.8, open: true, loc: 'rohan', sub: 'TO THE GOLDEN HALL · URUK-HAI' },
   { name: 'MINAS TIRITH', x: 42.2, z: 21, open: true, loc: 'mt', sub: 'THE SIEGE OF GONDOR · 3 LEVELS' },
   { name: 'CIRITH UNGOL', x: 50.5, z: 10, open: true, loc: 'ungol', sub: "THE PASS · RUN FROM SHELOB!" },
   { name: 'MORDOR', x: 57, z: -3, open: true, loc: 'mordor', sub: 'IN THE SHADOW OF THE EYE · 1 LEVEL' },
@@ -5688,12 +5731,13 @@ function step(dt, noRender) {
   pollPad(); readInput();
   if (LV && LV.boss && (boss.state === 'intro' || boss.state === 'transform')) { inp.x = inp.z = 0; inp.jump = inp.jumpP = inp.spinP = inp.fireP = false; }   // hands off during cutscenes
   T += dt;
-  if (state === 'play') { gs.time += dt; updatePlatforms(dt); updatePlayer(dt); }
+  const gdt = LV && LV.kh && KH.hitstop > 0 ? dt * .08 : dt; KH.hitstop -= dt;   // (a hit in Edoras freezes the moment for a blink)
+  if (state === 'play') { gs.time += dt; updatePlatforms(dt); updatePlayer(gdt); }
   else if (state === 'dying') updateDying(dt);
   else if (state === 'win') updateWin(dt);
   if (state !== 'paused') {
     if (state !== 'title' && state !== 'map' && state !== 'gameover' && state !== 'complete') {
-      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateFellowship(dt); updateHobbiton(dt); updateDuel(dt); updateSprings(dt);
+      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateFellowship(dt); updateHobbiton(dt); updateDuel(dt); updateSprings(dt); updateKH(gdt);
     }
     updateDragons(dt); updateApples(); updatePhial(dt); updateLightning(dt); updateAmbient(dt); updateTree(dt);
     fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt); poseDuelGandalf(dt);
@@ -5808,7 +5852,7 @@ function skinPlay(M, key) {
   next.reset().fadeIn(.18).play(); if (prev) prev.fadeOut(.18); K.cur = key; K.curAct = next;
 }
 function updateSkins(dt) {
-  for (let i = SKINS.length - 1; i >= 0; i--) { const K = SKINS[i]; if (!K.top.parent) { if (K.slot === 'orc') SKINS.splice(i, 1); continue; } if (K.mixer) K.mixer.update(dt); }
+  for (let i = SKINS.length - 1; i >= 0; i--) { const K = SKINS[i]; if (!K.top.parent) { if (K.slot === 'orc' || K.temp) SKINS.splice(i, 1); continue; } if (K.mixer) K.mixer.update(dt); }
 }
 // a texture slot: draw the picture into the built-in texture's canvas, so everything already using it updates
 function replaceTex(key, img) {
@@ -5865,6 +5909,8 @@ const PROPS = {}, PROP_MATS = new Map();
 // leaves, grass and webs are cut out at the edges of their pictures; everything else is solid (BFME keeps a building's
 // team-colour mask in its alpha, which mustn't punch holes in the walls). Waterfalls are see-through.
 const PROP_CUT = /tree|bush|grass|flower|fern|hedge|shrub|web|wood0|lothlorien|pipeweed|fence|mirk/i, PROP_FLOW = /falls/i;
+// some come out too dark under Valinor's light (BFME lights its own scenery brightly): lit a little by their own picture too
+const PROP_LIFT = [[/^riv/, .4, 0xfff2dc], [/^pt(elvn|lothl)/, .3, 0xfff0d0], [/slvrtree/, .45, 0xf4f6ff]];
 // which way each model faces, where it isn't the way the levels expect (doors towards +s)
 const PROP_TURN = {};
 let GLTF = null;
@@ -5875,28 +5921,53 @@ async function loadProps() {
   if (!LOCAL_ASSETS || new URLSearchParams(location.search).get('props') === 'none') return;   // ?props=none: the built shapes, for comparing
   const r = await fetch('models/props/index.json').catch(() => null); if (!r || !r.ok) return;
   let names, loader; try { names = await r.json(); loader = await gltfLoader(); } catch (e) { return; }
-  await Promise.all(names.map(async n => { try { PROPS[n] = propParts(n, await loader.loadAsync(`models/props/${n}.glb`)); } catch (e) { console.warn(`Valinor: models/props/${n}.glb would not load`); } }));
+  await Promise.all(names.map(async n => { try { PROPS[n] = propParts(n, await loader.loadAsync(`models/props/${n}.glb`)); } catch (e) { console.warn(`Valinor: models/props/${n}.glb would not load:`, e.message); } }));
   console.log(`Valinor: ${Object.keys(PROPS).length} scenery models from models/props/`);
+  if (new URLSearchParams(location.search).get('propinfo')) for (const n in PROPS) console.log('prop ' + n + ' ' + PROPS[n].size.toArray().map(v => v.toFixed(1)).join('x') + ' mirrored ' + PROPS[n].mirrored);
 }
 // a model's meshes, each moved into the model's own frame, stood on the ground (its lowest point at 0) and centred
 function propParts(name, gl) {
   const box = new THREE.Box3(), parts = [], geos = []; gl.scene.updateMatrixWorld(true);
   gl.scene.traverse(o => {
     if (!o.isMesh || !o.visible) return;
-    const g = o.geometry.clone(); g.applyMatrix4(o.matrixWorld); if (g.attributes.color) g.deleteAttribute('color');
+    const g = o.geometry.clone(); if (o.isSkinnedMesh) skinBake(o, g); else g.applyMatrix4(o.matrixWorld); if (g.attributes.color) g.deleteAttribute('color');
+    if (o.matrixWorld.determinant() < 0) { parts.mirrored = true; const ix = g.index; if (ix) for (let i = 0; i < ix.count; i += 3) { const a = ix.getX(i + 1); ix.setX(i + 1, ix.getX(i + 2)); ix.setX(i + 2, a); } }   // a mirrored part would be inside out
     g.computeBoundingBox(); box.union(g.boundingBox); geos.push(g);
     const ms = [].concat(o.material);
     if (ms.length > 1 && g.groups.length) for (const gr of g.groups) { const sub = g.clone(); sub.clearGroups(); sub.setDrawRange(gr.start, gr.count); geos.push(sub); parts.push({ g: sub, m: propMat(name, ms[gr.materialIndex]) }); }
     else parts.push({ g, m: propMat(name, ms[0]) });
   });
   const c = box.getCenter(new V3()); for (const g of geos) g.translate(-c.x, -box.min.y, -c.z);
-  return { parts, size: box.getSize(new V3()) };
+  return { parts, size: box.getSize(new V3()), mirrored: !!parts.mirrored };
+}
+// BFME builds its scenery from parts hung on bones (the converter keeps them as a skinned mesh): put every corner where its
+// bones hold it, as the skinned mesh would draw it, so the model is one still shape in the world
+function skinBake(o, g) {
+  o.skeleton.update();
+  const P_ = g.attributes.position, N_ = g.attributes.normal, SI = g.attributes.skinIndex, SW = g.attributes.skinWeight, bm = o.skeleton.boneMatrices;
+  const acc = new THREE.Matrix4(), bone = new THREE.Matrix4(), full = new THREE.Matrix4(), nm = new THREE.Matrix3(), v = new V3();
+  for (let i = 0; i < P_.count; i++) {
+    acc.elements.fill(0);
+    for (let q = 0; q < 4; q++) { const get = ['getX', 'getY', 'getZ', 'getW'][q], w = SW[get](i); if (!w) continue; bone.fromArray(bm, SI[get](i) * 16); for (let e = 0; e < 16; e++) acc.elements[e] += bone.elements[e] * w; }
+    full.copy(o.matrixWorld).multiply(o.bindMatrixInverse).multiply(acc).multiply(o.bindMatrix);
+    v.fromBufferAttribute(P_, i).applyMatrix4(full); P_.setXYZ(i, v.x, v.y, v.z);
+    if (N_) { nm.getNormalMatrix(full); v.fromBufferAttribute(N_, i).applyMatrix3(nm).normalize(); N_.setXYZ(i, v.x, v.y, v.z); }
+  }
+  g.deleteAttribute('skinIndex'); g.deleteAttribute('skinWeight');
+}
+// a placed model's faces as level corners [s, x, y] (straight levels), for walking on it
+function propTris(g) {
+  g.updateMatrixWorld(true); const out = [], v = new V3(), lv = p => [p.z - CZ, CX + R - p.x, p.y - Y0];
+  g.traverse(o => { if (!o.isMesh) return; const P_ = o.geometry.attributes.position, I = o.geometry.index, n = I ? I.count : P_.count, c = [];
+    for (let i = 0; i < n; i++) { v.fromBufferAttribute(P_, I ? I.getX(i) : i).applyMatrix4(o.matrixWorld); c.push(lv(v)); if (c.length === 3) { out.push(c.slice()); c.length = 0; } } });
+  return out;
 }
 function propMat(name, m) {
   if (PROP_MATS.has(m.uuid)) return PROP_MATS.get(m.uuid);
   const cut = PROP_CUT.test(name), flow = PROP_FLOW.test(name); if (m.map) m.map.encoding = THREE.sRGBEncoding;
   const out = ps1(new THREE.MeshLambertMaterial({ map: m.map || null, color: m.map ? 0xffffff : m.color ? m.color.getHex() : 0xc8c8c8, side: cut || flow ? THREE.DoubleSide : THREE.FrontSide,
     alphaTest: cut ? .45 : 0, transparent: flow, opacity: flow ? .8 : 1, depthWrite: !flow }));
+  const lift = PROP_LIFT.find(l => l[0].test(name)); if (lift && m.map) { out.color.setHex(lift[2]); out.emissive.setScalar(lift[1]); out.emissiveMap = m.map; }
   PROP_MATS.set(m.uuid, out); return out;
 }
 const propsOf = list => list.filter(n => PROPS[n]);
@@ -5926,7 +5997,7 @@ const oakPos = (fx, fy) => [OAK.cy - fy, OAK.cx - fx];          // Fable's east 
 const oakHeading = (fwx, fwy) => Math.atan2(-fwx, -fwy);
 // each building's size, by what Fable calls it: across the front, front to back, and the walls' height (0: a bridge)
 // the Shire's hobbit homes, from Battle for Middle-earth (see models/props), in the order they're handed out
-const HOBBIT_HOMES = ['sbgen_01', 'sbgen_02', 'sbgen_03', 'sbgen_04', 'sbgen_05', 'sbgen_06', 'cbhobbitbldg01', 'cbhobbitbldg02'];
+const HOBBIT_HOMES = ['sbgen_01', 'sbgen_02', 'sbgen_03', 'sbgen_04', 'sbgen_05', 'sbgen_06', 'cbhobbitbldg02'];   // (Bag End is only its front: it needs BFME's own hill behind it)
 const OAK_BUILD = [[/TAVERN/, 14, 10, 5], [/HOUSE_LARGE/, 11, 8, 4.6], [/TWO_FLOORS/, 8, 7, 5.2], [/HOUSE_MEDIUM/, 8, 6, 3.2], [/SHOP/, 6, 6, 3.4], [/WAREHOUSE/, 14, 9, 5.2], [/TRADERBRIDGE/, 4, 12, 0]];
 async function loadOakvale() {
   if (!LOCAL_ASSETS || new URLSearchParams(location.search).get('layout') === 'shire') return;
@@ -5954,6 +6025,15 @@ function applyOakvale(L, D) {
     else if (/SCARECROW/.test(def)) Y.scarecrows.push({ s, x, y: fz, h });
     else if (/CHICKEN/.test(def)) Y.chickens.push({ s, x });
     else if (/HERO_FATHER/.test(def) && !Y.start) Y.start = [s + 3, x];
+  }
+  // the ground under each building made level at Fable's floor height, easing back into the hillside round it, so no house sinks into a slope
+  for (const b of Y.buildings) {
+    if (!b.hgt) continue; const c = Math.cos(b.h), sn = Math.sin(b.h), R_ = Math.max(b.w, b.d) / 2 + 4;
+    for (let j = Math.floor(OAK.cy - b.s - R_); j <= Math.ceil(OAK.cy - b.s + R_); j++) for (let i = Math.floor(OAK.cx - b.x - R_); i <= Math.ceil(OAK.cx - b.x + R_); i++) {
+      if (i < 0 || j < 0 || i >= D.w || j >= D.h) continue; const ds = OAK.cy - j - b.s, dx = OAK.cx - i - b.x;
+      const out = Math.max(Math.abs(ds * c + dx * sn) - b.d / 2 - .8, Math.abs(-ds * sn + dx * c) - b.w / 2 - .8, 0); if (out > 3) continue;   // how far outside its footprint
+      const k = j * D.w + i, e = out / 3; hs[k] = lerp(b.y, hs[k], e * e * (3 - 2 * e));
+    }
   }
   // collision: each building as the box round its turned footprint (a little inside it); the bridge is a deck to walk on
   for (const b of Y.buildings) {
@@ -6008,10 +6088,10 @@ function buildOakvale(L, TH) {
   const hills = [], hillM = ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.meadow.clone(); t.needsUpdate = true; t.repeat.set(6, 6); return t; })(), color: 0x8aa868 }));
   for (let k = 0; k < 60; k++) {
     const side = k % 3, u = rand(0, 1), fx = side === 0 ? u * W : side === 1 ? -rand(6, 30) : W + rand(6, 30), fy = side === 0 ? H + rand(6, 30) : 60 + u * (H - 60);
-    const ey = T_.hs[Math.round(clamp(fy, 0, H - 1)) * W + Math.round(clamp(fx, 0, W - 1))], r = rand(18, 34), p = tw(OAK.cy - fy, OAK.cx - fx, ey - r * .3);
+    const ey = T_.hs[Math.round(clamp(fy, 0, H - 1)) * W + Math.round(clamp(fx, 0, W - 1))], r = rand(18, 34), p = tw(OAK.cy - fy, OAK.cx - fx, ey - r * .45);   // (deep enough that no underside shows)
     hills.push([p.x, p.y, p.z, r, r * rand(.5, .8), r]);
   }
-  instanced(new THREE.SphereGeometry(1, 18, 9, 0, TAU, 0, Math.PI / 2), hillM, hills);
+  instanced(new THREE.SphereGeometry(1, 18, 12), hillM, hills);
   // the buildings: a stone footing down to the ground, plastered walls crossed with dark beams, thatched gable roofs,
   // a door, lit windows and a chimney (warehouses are planked and the trader's bridge is a wooden deck)
   // with Battle for Middle-earth's Shire models, each is a hobbit hole instead: the tavern the Green Dragon, the warehouse
@@ -6019,9 +6099,10 @@ function buildOakvale(L, TH) {
   const homes = propsOf(HOBBIT_HOMES); let bagEnd = false, nHome = 0;
   for (const b of Y.buildings) {
     const low = Math.min(...[[-1, -1], [1, -1], [-1, 1], [1, 1], [0, 0]].map(([a, c]) => terrainAt(b.s + Math.cos(b.h) * a * b.d / 2 - Math.sin(b.h) * c * b.w / 2, b.x + Math.sin(b.h) * a * b.d / 2 + Math.cos(b.h) * c * b.w / 2, true)));
-    const own = /TRADERBRIDGE/.test(b.def) ? 'sbbridge' : /TAVERN/.test(b.def) ? 'sbgrndrg' : /WAREHOUSE/.test(b.def) ? 'sbmill' : /HOUSE_LARGE/.test(b.def) && !bagEnd && PROPS.sbbagend ? 'sbbagend' : homes[nHome++ % Math.max(1, homes.length)];
-    const pr = own && PROPS[own] && propOne(own, b.s, b.x, b.hgt ? low : b.y - .2, b.h, Math.max(b.w, b.d) * (b.hgt ? 1.15 : 1));
-    if (pr) { if (own === 'sbbagend') bagEnd = true; if (b.hgt) { pr.g.updateMatrixWorld(true); Y.chimneys.push(pr.g.localToWorld(new V3(0, PROPS[own].size.y * .95, 0))); } continue; }
+    const own = /TRADERBRIDGE/.test(b.def) ? 'sbbridge' : /TAVERN/.test(b.def) ? 'sbgrndrg' : /WAREHOUSE/.test(b.def) ? 'sbmill' : /HOUSE_LARGE/.test(b.def) && !bagEnd && PROPS.cbhobbitbldg01 ? 'cbhobbitbldg01' : homes[nHome++ % Math.max(1, homes.length)];
+    const pr = own && PROPS[own] && propOne(own, b.s, b.x, b.hgt ? b.y - .1 : b.y - .2, b.h, Math.max(b.w, b.d) * (b.hgt ? 1.15 : 1));
+    if (pr && new URLSearchParams(location.search).get('propinfo')) console.log(`building ${own} at ${b.s.toFixed(0)},${b.x.toFixed(0)},${low.toFixed(1)} facing ${b.h.toFixed(2)}`);
+    if (pr) { if (own === 'cbhobbitbldg01') bagEnd = true; if (b.hgt) { pr.g.updateMatrixWorld(true); Y.chimneys.push(pr.g.localToWorld(new V3(0, PROPS[own].size.y * .95, 0))); } continue; }
     const g = new THREE.Group(); place(g, b.s, b.x, b.y, b.h); scene.add(g);
     if (!b.hgt) {   // the trader's bridge
       part(GEO_BOX, wood, g, 0, -.15, 0, b.w, .3, b.d);
@@ -6120,7 +6201,7 @@ function buildOakvale(L, TH) {
     for (let q = 0; q < 6; q++) { const fa = rand(0, TAU); fruit.push([p.x + Math.cos(fa) * 1, p.y + 2.2 + rand(-.4, .4), p.z + Math.sin(fa) * 1, .1, 0, 0xd8302a]); }
     Y.blocks.push([s - .3, s + .3, x - .3, x + .3, y + 3]);
   }
-  const treeM = propsOf(['sb_tree01', 'sb_tree02', 'sb_tree03', 'sb_tree04', 'ptree01', 'ptree02']);
+  const treeM = propsOf(['sb_tree01', 'sb_tree02', 'sb_tree03', 'sb_tree04']);
   if (treeM.length) { const smallT = PROPS.sb_tree03 ? 'sb_tree03' : treeM[0]; propScatter(smallT, appleT.map(d => [d[0], d[1] - .9, d[2], rand(4.5, 6), rand(0, TAU)])); }   // little trees by the houses
   else { instanced(GEO.cyl, lam(0x6a4a2a), appleT); instanced(GEO.sph, lam(0x5a9a3a), appleC); scatter(GEO.sph, lam(0xffffff), fruit, true); }
   // the shore: a wooden jetty out from where the boats lie, nets drying on poles, and lobster pots
@@ -6212,9 +6293,9 @@ function applyRivendell(L, D) {
     }
     if (!best) { b.len = 0; continue; }
     const ds = Math.cos(best.a), dx = Math.sin(best.a), mid = (best.r1 - best.r2) / 2;
-    Object.assign(b, { h: best.a, len: best.r1 + best.r2 + 2, cs: b.s + ds * mid, cx: b.x + dx * mid });
-    for (let r = -b.len / 2; r <= b.len / 2; r += .6) { const s = b.cs + ds * r, x = b.cx + dx * r; Y.blocks.push([s - 1.1, s + 1.1, x - 1.1, x + 1.1, b.y + .15, 'floor', b.y - .5]); }
-    for (let r = -b.len / 2 + 1.2; r <= b.len / 2 - 1.2; r += .6) for (const sd of [-1, 1]) { const s = b.cs + ds * r - dx * sd * 1.7, x = b.cx + dx * r + ds * sd * 1.7; Y.blocks.push([s - .15, s + .15, x - .15, x + .15, b.y + 1.2, 'wall', b.y + .15]); }
+    Object.assign(b, { h: best.a, len: best.r1 + best.r2 + 2, cs: b.s + ds * mid, cx: b.x + dx * mid, own: [] });
+    for (let r = -b.len / 2; r <= b.len / 2; r += .6) { const s = b.cs + ds * r, x = b.cx + dx * r; const bk = [s - 1.1, s + 1.1, x - 1.1, x + 1.1, b.y + .15, 'floor', b.y - .5]; Y.blocks.push(bk); b.own.push(bk); }
+    for (let r = -b.len / 2 + 1.2; r <= b.len / 2 - 1.2; r += .6) for (const sd of [-1, 1]) { const s = b.cs + ds * r - dx * sd * 1.7, x = b.cx + dx * r + ds * sd * 1.7; const bk = [s - .15, s + .15, x - .15, x + .15, b.y + 1.2, 'wall', b.y + .15]; Y.blocks.push(bk); b.own.push(bk); }
   }
   // how far every spot is from the river, for building along the edge of the gorge
   const dW = new Float32Array(W * H).fill(1e9), q = [];
@@ -6287,8 +6368,8 @@ function buildRivFable(L, TH) {
   }
   // wooded hills round about, so the edge of the land never shows
   const hills = [], hillM = ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.meadow.clone(); t.needsUpdate = true; t.repeat.set(6, 6); return t; })(), color: 0x6a8a58 }));
-  for (let k = 0; k < 70; k++) { const side = k % 4, u = rand(0, 1), s = side === 0 ? S0 - rand(4, 24) : side === 1 ? S1 + rand(4, 24) : S0 + u * (S1 - S0), x = side === 2 ? X0 - rand(4, 24) : side === 3 ? X1 + rand(4, 24) : X0 + u * (X1 - X0); const ey = at(clamp(s, S0, S1), clamp(x, X0, X1)), r = rand(16, 30), p = tw(s, x, ey - r * .25); hills.push([p.x, p.y, p.z, r, r * rand(.6, .9), r]); }
-  instanced(new THREE.SphereGeometry(1, 18, 9, 0, TAU, 0, Math.PI / 2), hillM, hills);
+  for (let k = 0; k < 70; k++) { const side = k % 4, u = rand(0, 1), s = side === 0 ? S0 - rand(4, 24) : side === 1 ? S1 + rand(4, 24) : S0 + u * (S1 - S0), x = side === 2 ? X0 - rand(4, 24) : side === 3 ? X1 + rand(4, 24) : X0 + u * (X1 - X0); const ey = at(clamp(s, S0, S1), clamp(x, X0, X1)), r = rand(16, 30), p = tw(s, x, ey - r * .45); hills.push([p.x, p.y, p.z, r, r * rand(.6, .9), r]); }
+  instanced(new THREE.SphereGeometry(1, 18, 12), hillM, hills);
   // the elves' buildings: Battle for Middle-earth's own if they're there, otherwise pale halls under golden roofs
   const OWN = { hall: ['rivrhall'], house: ['rivelhouse'], tower: ['rivbtower', 'rivrtower', 'rivgtower'], gazebo: ['rivgazebo'] }, SIZE = { hall: [20, 'w'], house: [10, 'w'], tower: [16, 'h'], gazebo: [7, 'w'] };
   const house = (s, x, w, d, y0, h, hd) => {
@@ -6310,7 +6391,19 @@ function buildRivFable(L, TH) {
   for (const b of Y.bridges) {
     if (!b.len) continue;
     const pr = PROPS.rivbridge && propOne('rivbridge', b.cs, b.cx, b.y, b.h, b.len, 'w');
-    if (pr) { pr.g.position.y -= pr.size.y * .8; continue; }
+    if (pr) {
+      // walked on as the model is: its centre level with the bridge's height, its own deck laid into the walkway squares,
+      // and rails at its sides (in place of the plain deck that was there for the built bridge)
+      const tris = propTris(pr.g); let top = -Infinity; for (const tr of tris) for (const p of tr) if (Math.hypot(p[0] - b.cs, p[1] - b.cx) < 2.5 && p[2] > top) top = p[2];
+      const dy = isFinite(top) ? b.y + .1 - top : 0; pr.g.position.y += dy;
+      if (!L.deck) L.deck = newDeck(S0 - 2, X0 - 2, Math.ceil(X1 - X0) + 5, Math.ceil(S1 - S0) + 5);
+      for (const [A, B, C] of tris) deckTri(L.deck, [A[0], A[1], A[2] + dy], [B[0], B[1], B[2] + dy], [C[0], C[1], C[2] + dy]);
+      Y.blocks = L.layout.blocks = Y.blocks.filter(bk => !b.own.includes(bk));
+      if (new URLSearchParams(location.search).get('propinfo')) console.log(`bridge at ${b.cs.toFixed(1)},${b.cx.toFixed(1)} height ${b.y.toFixed(1)} heading ${b.h.toFixed(2)} length ${b.len.toFixed(1)}`);
+      const half = Math.min(pr.size.x, pr.size.z) / 2 - .4, ds = Math.cos(b.h), dx = Math.sin(b.h);
+      for (let r = -b.len / 2 + 1.5; r <= b.len / 2 - 1.5; r += .6) for (const sd of [-1, 1]) { const s = b.cs + ds * r - dx * sd * half, x = b.cx + dx * r + ds * sd * half, dk = deckAt_(L.deck, s, x), y = dk > NO_DECK ? dk : b.y; Y.blocks.push([s - .2, s + .2, x - .2, x + .2, y + 1.1, 'wall', y - 2]); }
+      continue;
+    }
     const g = new THREE.Group(); place(g, b.cs, b.cx, b.y, b.h); scene.add(g);
     part(GEO_BOX, pale, g, 0, -.3, 0, 2.6, .9, b.len);
     for (const sx of [-1, 1]) { part(GEO_BOX, pale, g, sx * 1.6, .55, 0, .3, 1, b.len); for (const z of [-b.len / 2 + .3, b.len / 2 - .3]) { g.updateMatrixWorld(true); lamp(g.localToWorld(new V3(sx * 1.6, 1.4, z)), 1); } }
@@ -6341,7 +6434,7 @@ function buildRivFable(L, TH) {
   const cliffP = propsOf(['prrivcliff01', 'prrivcliff02', 'prrivcliff03', 'prrivcliff04', 'prrivcliff05']), cliffs = cliffP.map(() => []);
   if (cliffP.length) for (let s = S0 + 3; s < S1 - 3; s += 7) for (let x = X0 + 3; x < X1 - 3; x += 7) {
     const ps = s + rand(-2, 2), px = x + rand(-2, 2), gs_ = at(ps + 1, px) - at(ps - 1, px), gx = at(ps, px + 1) - at(ps, px - 1), sl = Math.hypot(gs_, gx) / 2;
-    if (sl < .9) continue; const p = tw(ps, px, at(ps, px) - 1.5); cliffs[Math.abs(ps * 3 + px | 0) % cliffP.length].push([p.x, p.y, p.z, rand(5, 9), -Math.atan2(-gx, -gs_) + rand(-.3, .3)]);
+    if (sl < .9) continue; const p = tw(ps, px, at(ps, px) - 2.5); cliffs[Math.abs(ps * 3 + px | 0) % cliffP.length].push([p.x, p.y, p.z, rand(4, 7), -Math.atan2(-gx, -gs_) + rand(-.3, .3)]);
   }
   cliffP.forEach((n, i) => propScatter(n, cliffs[i] || []));
   // lanterns along the paths
@@ -6419,33 +6512,23 @@ function applyMirkwood(L, D) {
   const inst = (m, vx, vy, vz) => { const a = m[4] / 65536 * TAU, ca = Math.cos(a), sa = Math.sin(a), d = m[5]; return toLvl(m[1] + (vx * ca - vy * sa) * d, m[2] + (vx * sa + vy * ca) * d, m[3] + vz * d); };
   const Y = L.layout = { blocks: [], trunks: [], lanterns: [], glows: [], pods: [], obelisks: [], springs: [], D, inst, toLvl };
   // the walkways: every face of a catwalk, ramp or the arena floor that's turned up, laid into a grid of metre squares
-  const s0 = CY - Wm + 1, x0 = CX - Wm + 1, top = new Float32Array(Wm * Wm).fill(NO_DECK);
+  const s0 = CY - Wm + 1, x0 = CX - Wm + 1, DK = newDeck(s0, x0, Wm, Wm), top = DK.top;
   for (const m of D.meshes) {
     const sh = D.shapes[m[0]]; if (!sh || !MIRK_DECK.test(m[0])) continue;
     const v = sh.v;
-    for (let t = 0; t < sh.k.length; t++) {
-      if (sh.k[t] !== 2) continue;
-      const A = inst(m, v[t * 9], v[t * 9 + 1], v[t * 9 + 2]), B = inst(m, v[t * 9 + 3], v[t * 9 + 4], v[t * 9 + 5]), C = inst(m, v[t * 9 + 6], v[t * 9 + 7], v[t * 9 + 8]);
-      const e1 = [B[0] - A[0], B[1] - A[1], B[2] - A[2]], e2 = [C[0] - A[0], C[1] - A[1], C[2] - A[2]];
-      const n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]], nl = Math.hypot(...n); if (nl < 1e-6 || Math.abs(n[2]) / nl < .6) continue;
-      const d = (B[1] - C[1]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[1] - C[1]); if (Math.abs(d) < 1e-9) continue;
-      const j0 = Math.max(0, Math.ceil(Math.min(A[0], B[0], C[0]) - s0 - .5)), j1 = Math.min(Wm - 1, Math.floor(Math.max(A[0], B[0], C[0]) - s0 + .5));
-      const i0 = Math.max(0, Math.ceil(Math.min(A[1], B[1], C[1]) - x0 - .5)), i1 = Math.min(Wm - 1, Math.floor(Math.max(A[1], B[1], C[1]) - x0 + .5));
-      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-        const ps = s0 + j, px = x0 + i, w1 = ((B[1] - C[1]) * (ps - C[0]) + (C[0] - B[0]) * (px - C[1])) / d, w2 = ((C[1] - A[1]) * (ps - C[0]) + (A[0] - C[0]) * (px - C[1])) / d, w3 = 1 - w1 - w2;
-        if (w1 < -.2 || w2 < -.2 || w3 < -.2) continue; const y = w1 * A[2] + w2 * B[2] + w3 * C[2], k = j * Wm + i; if (y > top[k]) top[k] = y;
-      }
-    }
+    for (let t = 0; t < sh.k.length; t++) if (sh.k[t] === 2) deckTri(DK, inst(m, v[t * 9], v[t * 9 + 1], v[t * 9 + 2]), inst(m, v[t * 9 + 3], v[t * 9 + 4], v[t * 9 + 5]), inst(m, v[t * 9 + 6], v[t * 9 + 7], v[t * 9 + 8]));
   }
-  for (let k = 0; k < top.length; k++) if (top[k] > NO_DECK && top[k] < hs[(CY - (s0 + (k / Wm | 0))) * Wm + (CX - (x0 + k % Wm))] + .3) top[k] = NO_DECK;   // down at the ground, the ground will do
-  L.deck = { s0, x0, w: Wm, h: Wm, top };
-  if (new URLSearchParams(location.search).get('deck')) { let n = 0, lo2 = 1e9, hi2 = -1e9, ex = []; for (let k = 0; k < top.length; k++) if (top[k] > NO_DECK) { n++; lo2 = Math.min(lo2, top[k]); hi2 = Math.max(hi2, top[k]); if (n % 400 === 1) ex.push([s0 + (k / Wm | 0), x0 + k % Wm, top[k].toFixed(1), (top[k] - hs[(CY - (s0 + (k / Wm | 0))) * Wm + (CX - (x0 + k % Wm))]).toFixed(1)].join(',')); } console.log(`walkway: ${n} squares, ${lo2.toFixed(1)}..${hi2.toFixed(1)} up; e.g. (s,x,y,above ground) ${ex.join(' ')}`); }   // &deck=1
+  // down at the ground, the ground will do
+  for (let k = 0; k < top.length; k++) { const g = hs[(CY - (s0 + (k / Wm | 0))) * Wm + (CX - (x0 + k % Wm))] + .3; top[k] = NO_DECK; for (let q = 0; q < DECK_L; q++) { const v = DK.lay[k * DECK_L + q]; if (v < g) DK.lay[k * DECK_L + q] = NO_DECK; else if (v > top[k]) top[k] = v; } }
+  L.deck = DK;
+  if (new URLSearchParams(location.search).get('deck')) { let n = 0, lo2 = 1e9, hi2 = -1e9, ex = []; for (let k = 0; k < top.length; k++) if (top[k] > NO_DECK) { n++; lo2 = Math.min(lo2, top[k]); hi2 = Math.max(hi2, top[k]); if (n % 400 === 1) ex.push([s0 + (k / Wm | 0), x0 + k % Wm, top[k].toFixed(1), (top[k] - hs[(CY - (s0 + (k / Wm | 0))) * Wm + (CX - (x0 + k % Wm))]).toFixed(1)].join(',')); } for (const STEPT of [.95]) { const W_ = DK.w, NL = DECK_L, lay = DK.lay, comp = new Int32Array(lay.length).fill(-1), sizes = [], reach = []; for (let n0 = 0; n0 < lay.length; n0++) { if (lay[n0] <= NO_DECK || comp[n0] >= 0) continue; const id = sizes.length, st = [n0]; comp[n0] = id; let n2 = 0, low = 1e9; while (st.length) { const nn = st.pop(), k = nn / NL | 0, y = lay[nn]; n2++; const i = k % W_, j = k / W_ | 0; for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= W_ || jj >= W_) continue; const kk = jj * W_ + ii; let any = false; for (let q = 0; q < NL; q++) { const m = kk * NL + q; if (lay[m] > NO_DECK && Math.abs(lay[m] - y) < STEPT) { any = true; if (comp[m] < 0) { comp[m] = id; st.push(m); } } } if (!any) low = Math.min(low, y - hs[(CY - (s0 + jj)) * Wm + (CX - (x0 + ii))]); } } sizes.push(n2); reach.push(low); } const ord = sizes.map((n, i) => i).sort((a, b) => sizes[b] - sizes[a]); console.log('step ' + STEPT + ' walkway pieces: ' + sizes.length + '; biggest (squares / step up from the ground at its lowest edge): ' + ord.slice(0, 10).map(i => sizes[i] + '/' + reach[i].toFixed(1)).join(' ')); }
+    console.log(`walkway: ${n} squares, ${lo2.toFixed(1)}..${hi2.toFixed(1)} up; e.g. (s,x,y,above ground) ${ex.join(' ')}`); }   // &deck=1
   const deckAtL = (s, x) => { const i = Math.round(x - x0), j = Math.round(s - s0); return i < 0 || j < 0 || i >= Wm || j >= Wm ? NO_DECK : top[j * Wm + i]; };
   // the giant trees (collision round each trunk), Tokara's lanterns, pods, statues and lights
   const trunkR = (() => { const sh = D.shapes.StaticMesh1; if (!sh) return 2.6 / SC; let n = 0, r = 0; for (let i = 0; i < sh.v.length; i += 3) if (sh.v[i + 2] > -100 && sh.v[i + 2] < 500) { r += Math.hypot(sh.v[i], sh.v[i + 1]); n++; } return n ? r / n : 2.6 / SC; })();
   for (const m of D.meshes) {
     const p = inst(m, 0, 0, 0);
-    if (m[0] === 'StaticMesh1') { const r = trunkR * m[5] * SC * .7; Y.trunks.push({ m, s: p[0], x: p[1], y: p[2], r }); Y.blocks.push([p[0] - r, p[0] + r, p[1] - r, p[1] + r, p[2] + 90, 'wall', p[2] - 20]); }
+    if (m[0] === 'StaticMesh1') { const r = trunkR * m[5] * SC * .45; Y.trunks.push({ m, s: p[0], x: p[1], y: p[2], r }); Y.blocks.push([p[0] - r, p[0] + r, p[1] - r, p[1] + r, p[2] + 90, 'wall', p[2] - 20]); }
     else if (m[0] === 'HanginLight2') Y.lanterns.push({ s: p[0], x: p[1], y: p[2], top: inst(m, 0, 0, 990)[2] });
     else if (m[0] === 'BioPod01LowAR') Y.pods.push({ s: p[0], x: p[1], y: inst(m, 0, 0, 15)[2], size: 145 * m[5] * SC });
     else if (m[0] === 'Obelisk1') Y.obelisks.push({ s: p[0], x: p[1], y: p[2], h: m[4] / 65536 * TAU, size: 157 * m[5] * SC });
@@ -6594,6 +6677,474 @@ THEMES.mirkwood = natTheme({
   orc: MT_ORC,
   scenery(L) { buildMirkwood(L, this); },
 });
+// =====================================================================
+//  EDORAS: the road from the gate in the palisade winds round the hill and up through the town to Meduseld.
+//  Four squares on the way lock behind a golden barrier while the Uruk-hai come over the walls in waves; Lurtz is in
+//  the last, before the hall. Gandalf fights the Kingdom Hearts II way (see KH below). With your own files the town
+//  and hall are Battle for Middle-earth's, and the Uruk-hai, Lurtz and Théoden are its models.
+// =====================================================================
+Object.assign(MODEL_SLOTS, { uruk: { height: 1.95, turn: -Math.PI / 2 }, lurtz: { height: 2.15, turn: -Math.PI / 2 }, theoden: { height: 1.9, turn: -Math.PI / 2 } });
+HEROES.theoden = { h: 1.85, hair: 0xd8c8a0, coat: 0x2a5a2a, legs: 0x3a3020, cloak: 0x7a1a14, beard: 0xd8c8a0, sword: true };
+// the hill, the road and where everything stands (made once, the same every time)
+function edorasLayout() {
+  const N = 181, C = 90, TOP = 24, R0 = 68, R1 = 16, TURNS = 1.15, hs = new Float32Array(N * N), g = new Array(N * N).fill('g');
+  const rnd = (() => { let s = 5; return () => (s = s * 16807 % 2147483647) / 2147483647; })();
+  const bumps = Array.from({ length: 30 }, () => [rnd() * 180 - 90, rnd() * 180 - 90, 6 + rnd() * 14, (rnd() - .5) * 1.6]);
+  // a broad cone up to a level top, and rolling plains round it
+  const hill = (s, x) => { const d = Math.hypot(s, x); let y = TOP * clamp((R0 - d) / (R0 - R1), 0, 1); for (const [bs, bx, br, bh] of bumps) y += bh * Math.exp(-((s - bs) ** 2 + (x - bx) ** 2) / (br * br)); return y; };
+  // the road: in from the south, then round and up the hill on a spiral to the top, climbing as it goes
+  const road = [];
+  for (let s = -88; s < -R0; s += .5) road.push([s, 0, 0]);
+  for (let i = 0; i <= 1400; i++) { const u = i / 1400, a = u * TURNS * TAU, r = R0 - u * (R0 - R1); road.push([-r * Math.cos(a), r * Math.sin(a), TOP * u]); }
+  const wB = new Float32Array(N * N), yR = new Float32Array(N * N), cell = (s, x) => [Math.round(C - s), Math.round(C - x)];
+  const carve = (s, x, y, half, fall, kind) => {
+    const [j0, i0] = cell(s, x), R_ = Math.ceil(half + fall);
+    for (let j = j0 - R_; j <= j0 + R_; j++) for (let i = i0 - R_; i <= i0 + R_; i++) {
+      if (i < 0 || j < 0 || i >= N || j >= N) continue; const d = Math.hypot(C - j - s, C - i - x), e = clamp((d - half) / fall, 0, 1), w = 1 - e * e * (3 - 2 * e), k = j * N + i;
+      if (w > wB[k]) { wB[k] = w; yR[k] = y; } if (kind && d < half - .4) g[k] = kind;
+    }
+  };
+  // the four squares where the Uruk-hai come: inside the gate, on the way up, high on the hill, and before the hall
+  const at = u => road[Math.round(clamp(u, 0, 1) * 1400) + (road.length - 1401)];
+  const plazas = [[.06, 10, [['u', 'u', 'u']], 'THE GATE!'], [.36, 11, [['u', 'u', 'u'], ['u', 'u', 'u', 'u']], 'URUK-HAI IN THE TOWN!'], [.66, 11, [['u', 'u', 'u', 'u'], ['u', 'u', 'u', 'u']], 'THEY ARE EVERYWHERE!'], [1, 12, [['u', 'u', 'u'], ['L', 'u', 'u']], 'LURTZ!']]
+    .map(([u, r, waves, title]) => { const p = at(u); return { s: p[0], x: p[1], y: p[2], r, waves, title, last: u === 1 }; });
+  for (const p of road) carve(p[0], p[1], p[2], 3, 4, 'p');
+  for (const p of plazas) carve(p.s, p.x, p.y, p.r, 4, 's');
+  // the hall on the top, its doors towards the last square; houses beside the road, facing it, each on its own level pad
+  const end = road[road.length - 1], dir = Math.atan2(end[1], end[0]);
+  const hall = { s: Math.cos(dir) * -2, x: Math.sin(dir) * -2, y: TOP, h: dir, w: 12, d: 22 };
+  hall.door = { s: hall.s + Math.cos(dir) * (hall.d / 2 + 1.5), x: hall.x + Math.sin(dir) * (hall.d / 2 + 1.5), y: TOP };
+  carve(hall.s, hall.x, TOP, 13, 4, 's');
+  const houses = []; let last = -99;
+  for (let i = road.length - 1401; i < road.length - 60; i += 4) {
+    const [s, x, y] = road[i], [s2, x2] = road[Math.min(road.length - 1, i + 4)], h = Math.atan2(x2 - x, s2 - s);
+    for (const side of [-1, 1]) {
+      const nh = h + side * Math.PI / 2, hs_ = s + Math.cos(nh) * 9.5, hx = x + Math.sin(nh) * 9.5, r = Math.hypot(hs_, hx);
+      if (r > R0 - 4 || r < R1 + 6 || plazas.some(p => Math.hypot(hs_ - p.s, hx - p.x) < p.r + 9) || houses.some(o => Math.hypot(hs_ - o.s, hx - o.x) < 13) || road.some((q, k) => k % 6 === 0 && Math.hypot(hs_ - q[0], hx - q[1]) < 7.5)) continue;
+      if (rnd() < .25) continue;
+      const hy = TOP * clamp((R0 - r) / (R0 - R1), 0, 1); houses.push({ s: hs_, x: hx, y: hy, h: nh + Math.PI, w: 7, d: 10, k: houses.length }); carve(hs_, hx, hy, 6.5, 4);
+    }
+  }
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = C - j, x = C - i; hs[k] = lerp(hill(s, x), yR[k], wB[k]); }
+  // collision: houses and the hall (the box round each turned footprint, a little inside it), the palisade with its gate
+  const blocks = [], box = (o, top) => { const c = Math.abs(Math.cos(o.h)), sn = Math.abs(Math.sin(o.h)), es = (o.d * c + o.w * sn) / 2 * .85, ex = (o.d * sn + o.w * c) / 2 * .85; blocks.push([o.s - es, o.s + es, o.x - ex, o.x + ex, o.y + top]); };
+  houses.forEach(o => box(o, 6)); box(hall, 12);
+  const wallR = R0 + 3;
+  for (let a = 0; a < TAU; a += .03) { if (Math.abs(angDiff(a, 0)) < .07) continue; const s = -wallR * Math.cos(a), x = wallR * Math.sin(a); blocks.push([s - .5, s + .5, x - .5, x + .5, hill(s, x) + 4, 'wall', hill(s, x) - 3]); }
+  return { field: [-88, 88, -88, 88], start: [-84, 0], terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g }, layout: { blocks, road, plazas, hall, houses, wallR, hill } };
+}
+function edorasContent(L) {
+  const Y = L.layout;
+  // each square's barrier: a ring of walls, down until its Uruk-hai come
+  for (const p of Y.plazas) { p.walls = []; const n = Math.ceil(TAU * p.r / 1.1); for (let k = 0; k < n; k++) { const a = k / n * TAU, s = p.s + Math.cos(a) * (p.r + .5), x = p.x + Math.sin(a) * (p.r + .5), b = solid(s - .6, s + .6, x - .6, x + .6, p.y - 4, p.y + 7, 'wall'); b.on = false; p.walls.push(b); } }
+  for (let i = 0; i < Y.road.length; i += 12) { const [s, x, y] = Y.road[i]; if (Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 1)) continue; addApple(s, x, y + .8); }
+  Y.houses.forEach((o, i) => { if (i % 2) return; const a = o.h + Math.PI, s = o.s + Math.cos(a) * (o.d / 2 + 1.4) + Math.cos(a + Math.PI / 2) * 2.4, x = o.x + Math.sin(a) * (o.d / 2 + 1.4) + Math.sin(a + Math.PI / 2) * 2.4; addCrate(i % 4 ? 'b' : 'q', s, x, 0, o.y + 4); });
+}
+// the town, the hall and the plains round them
+function buildEdoras(L, TH) {
+  const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true);
+  groundMesh(T_, TX.meadow, (k, sl, y) => k === 'p' ? [.92, .76, .54] : k === 's' ? [.98, .93, .84] : sl > 1.2 ? [.7, .66, .58] : y < 1 ? [.86, .78, .48] : [.64, .78, .42]);   // golden on the plains, greener up the hill
+  wideFloor(TX.grass, 0xb8a058, 180, -.3);
+  // the White Mountains behind, snow on their peaks
+  for (let i = 0; i < 16; i++) { const a = rand(-1.3, 1.3), r = rand(320, 520), h = rand(110, 220), m = gradCone(rand(70, 120), h, 6, 0xf4f4fa, 0x5a5a6a); tw(Math.cos(a) * r, Math.sin(a) * r, h / 2 - 14, m.position); scene.add(m); }
+  // the palisade round the foot of the hill, with the gate where the road comes in
+  const wallP = PROPS.rbedorwall ? 'rbedorwall' : null, gateP = PROPS.rbedordoor ? 'rbedordoor' : null, stakes = [], stakeM = lam(0x7a5a38), tips = [];
+  if (wallP) { const len = 8; for (let a = .09; a < TAU - .09; a += len / Y.wallR) { const s = -Y.wallR * Math.cos(a), x = Y.wallR * Math.sin(a); propOne(wallP, s, x, Y.hill(s, x) - .4, a + Math.PI / 2, len); } }
+  else for (let a = 0; a < TAU; a += .016) { if (Math.abs(angDiff(a, 0)) < .07) continue; const s = -Y.wallR * Math.cos(a), x = Y.wallR * Math.sin(a), p = tw(s, x, Y.hill(s, x)), h = rand(3.6, 4.4); stakes.push([p.x, p.y + h / 2 - .5, p.z, .32, h, .32]); tips.push([p.x, p.y + h - .3, p.z, .34, .7, .34]); }
+  if (stakes.length) { instanced(GEO.cyl, stakeM, stakes); instanced(GEO.cone, stakeM, tips); }
+  if (gateP) propOne(gateP, -Y.wallR, 0, 0, 0, 10);
+  else for (const x of [-4.6, 4.6]) { const p = tw(-Y.wallR, x, 0); part(GEO_BOX, stakeM, scene, p.x, p.y + 4, p.z, 1.6, 8, 1.6); part(GEO.cone, lam(0x3a5a2a), scene, p.x, p.y + 8.8, p.z, 1.6, 1.8, 1.6); }
+  // the banners of Rohan along the road: green, a white horse on each
+  const banT = mkTex(32, 64, g => { g.fillStyle = '#2a6a2a'; g.fillRect(0, 0, 32, 64); g.fillStyle = '#f0ead8'; g.beginPath(); g.ellipse(16, 30, 9, 5, -.3, 0, TAU); g.fill(); g.fillRect(8, 33, 2, 9); g.fillRect(21, 33, 2, 9); g.beginPath(); g.ellipse(23, 22, 3, 6, .5, 0, TAU); g.fill(); g.fillStyle = '#c8a040'; g.fillRect(0, 0, 32, 3); g.fillRect(0, 61, 32, 3); }, false);
+  const banM = lam(0xffffff, { side: THREE.DoubleSide }); banM.map = banT;
+  for (let i = 30; i < Y.road.length; i += 70) { const [s, x, y] = Y.road[i], [s2, x2] = Y.road[Math.min(Y.road.length - 1, i + 3)], h = Math.atan2(x2 - x, s2 - s); for (const side of [-1, 1]) { const ps = s + Math.cos(h + side * Math.PI / 2) * 3.6, px = x + Math.sin(h + side * Math.PI / 2) * 3.6, p = tw(ps, px, at(ps, px)); part(GEO.cyl, stakeM, scene, p.x, p.y + 2.4, p.z, .07, 4.8, .07); const b = new THREE.Mesh(new THREE.PlaneGeometry(.9, 1.8), banM); place(b, ps, px, at(ps, px) + 3.5, h); scene.add(b); } }
+  // the houses: Battle for Middle-earth's own (its biggest Edoras pieces) or long timber halls under steep thatch
+  const edoP = Object.keys(PROPS).filter(n => /^predoras/.test(n)).sort((a, b) => PROPS[b].size.x * PROPS[b].size.z - PROPS[a].size.x * PROPS[a].size.z), bigP = edoP.slice(0, Math.ceil(edoP.length / 3)), smallP = edoP.slice(bigP.length);
+  const plank = ps1(new THREE.MeshLambertMaterial({ map: TX.planks, color: 0x8a6440 })), thatch = ps1(new THREE.MeshLambertMaterial({ map: TX.thatch, color: 0xd8b070 })), dark = lam(0x4a3220), goldB = lam(0xd8a830, { emissive: 0x3a2800 });
+  for (const o of Y.houses) {
+    if (bigP.length && propOne(bigP[o.k % bigP.length], o.s, o.x, o.y - .1, o.h, Math.max(o.w, o.d))) { if (smallP.length) { const a = o.h + Math.PI * .75, s = o.s + Math.cos(a) * 6, x = o.x + Math.sin(a) * 6; propOne(smallP[o.k % smallP.length], s, x, at(s, x), rand(0, TAU), 3); } continue; }
+    const g = new THREE.Group(); place(g, o.s, o.x, o.y, o.h); scene.add(g);
+    part(GEO_BOX, dark, g, 0, -.4, 0, o.w + .4, 1, o.d + .4);                                // the stone and timber footing
+    part(GEO_BOX, plank, g, 0, 1.4, 0, o.w, 2.8, o.d);
+    const rise = o.w * .7, slope = Math.hypot(o.w / 2 + .6, rise), ang = Math.atan2(rise, o.w / 2 + .6);
+    for (const sx of [-1, 1]) { const r = part(GEO_BOX, thatch, g, sx * (o.w / 4 + .15), 2.8 + rise / 2, 0, slope, .4, o.d + 1.2); r.rotation.z = -sx * ang; }
+    const gable = new THREE.Shape([new THREE.Vector2(-o.w / 2, 0), new THREE.Vector2(o.w / 2, 0), new THREE.Vector2(0, rise)]);
+    for (const sz of [-1, 1]) { const m = part(new THREE.ShapeGeometry(gable), plank, g, 0, 2.8, sz * o.d / 2); m.material.side = THREE.DoubleSide; }
+    for (const sx of [-1, 1]) { const b = part(GEO_BOX, goldB, g, sx * .55, 2.8 + rise + .3, -o.d / 2 - .65, .16, 1.5, .1); b.rotation.z = sx * .6; }   // crossed gable boards, carved as horses' heads
+    part(GEO_BOX, lam(0x3a2414), g, 0, 1, -o.d / 2 - .05, 1.3, 2, .1);                       // the door, facing the road
+  }
+  // Meduseld on the top: Battle for Middle-earth's own, or a great hall of dark timber under a golden roof, with a porch on pillars
+  { const o = Y.hall;
+    if (!(PROPS.rbgoldhall && propOne('rbgoldhall', o.s, o.x, o.y - .2, o.h + Math.PI, o.d * 1.05))) {
+      const g = new THREE.Group(); place(g, o.s, o.x, o.y, o.h + Math.PI); scene.add(g);
+      part(GEO_BOX, lam(0xb8b0a0), g, 0, .4, 0, o.w + 3, .8, o.d + 3);
+      part(GEO_BOX, plank, g, 0, 3.6, 0, o.w, 5.6, o.d);
+      const rise = o.w * .55, slope = Math.hypot(o.w / 2 + 1, rise), ang = Math.atan2(rise, o.w / 2 + 1), roofM = lam(0xe0b030, { emissive: 0x4a3000 });
+      for (const sx of [-1, 1]) { const r = part(GEO_BOX, roofM, g, sx * (o.w / 4 + .25), 6.4 + rise / 2, 0, slope, .5, o.d + 2); r.rotation.z = -sx * ang; }
+      const gable = new THREE.Shape([new THREE.Vector2(-o.w / 2, 0), new THREE.Vector2(o.w / 2, 0), new THREE.Vector2(0, rise)]);
+      for (const sz of [-1, 1]) { const m = part(new THREE.ShapeGeometry(gable), goldB, g, 0, 6.4, sz * o.d / 2); m.material.side = THREE.DoubleSide; }
+      for (const sx of [-1, -.4, .4, 1]) part(GEO.cyl, goldB, g, sx * o.w * .42, 3.2, -o.d / 2 - 1.6, .3, 6.4, .3);   // the porch
+      part(GEO_BOX, roofM, g, 0, 6.6, -o.d / 2 - 1.6, o.w + .6, .4, 3.6);
+      part(GEO_BOX, lam(0x5a3a1a, { emissive: 0x1a0e04 }), g, 0, 2, -o.d / 2 - .05, 2.6, 4, .12);   // the great doors
+      for (const sx of [-1, 1]) { const b = part(GEO_BOX, goldB, g, sx * .7, 6.4 + rise + .5, -o.d / 2 - 1, .2, 2.2, .14); b.rotation.z = sx * .6; }
+    }
+  }
+  // the well, in the high square
+  { const p = Y.plazas[2], a = Math.atan2(p.x, p.s), s = p.s + Math.cos(a) * (p.r + 3), x = p.x + Math.sin(a) * (p.r + 3);
+    if (!(PROPS.rbwell && propOne('rbwell', s, x, at(s, x), 0, 3))) { const q = tw(s, x, at(s, x)); part(new THREE.CylinderGeometry(1.2, 1.3, 1, 12), lam(0xa8a090), scene, q.x, q.y + .5, q.z); } }
+  // each square's barrier: a ring of golden light, shown while it's locked
+  const barM = new THREE.MeshBasicMaterial({ color: 0xffd060, transparent: true, opacity: .35, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  for (const p of Y.plazas) { const m = new THREE.Mesh(new THREE.CylinderGeometry(p.r + .5, p.r + .5, 6, 40, 1, true), barM); tw(p.s, p.x, p.y + 2.5, m.position); m.visible = false; m.userData.keep = true; scene.add(m); p.vis = m; }
+  // trees and golden grass on the plains, a few trees in the town
+  const treeP = propsOf(['ptreegldfield01', 'ptreegldfield02']), trees = [], trunks = [], crowns = [], tufts = [], shrubs = [];
+  const clearOf = (s, x, r) => !Y.houses.some(o => Math.hypot(s - o.s, x - o.x) < 7 + r) && Math.hypot(s - Y.hall.s, x - Y.hall.x) > 16 && !Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 2 + r) && !Y.road.some((q, k) => k % 5 === 0 && Math.hypot(s - q[0], x - q[1]) < 4 + r);
+  for (let i = 0; i < 1400; i++) {
+    const s = rand(-88, 88), x = rand(-88, 88), d = Math.hypot(s, x), y = at(s, x), p = tw(s, x, y);
+    if (Math.abs(d - Y.wallR) < 4 || !clearOf(s, x, 1)) continue;
+    if (Math.random() < (d > Y.wallR ? .08 : .03)) { if (treeP.length) trees.push([p.x, p.y, p.z, rand(7, 11), rand(0, TAU)]); else { const k = rand(1, 1.5); trunks.push([p.x, p.y + 1.6 * k, p.z, .25 * k, 3.2 * k, .25 * k]); crowns.push([p.x, p.y + 4 * k, p.z, 1.8 * k, 1.5 * k, 1.8 * k]); } L.layout.blocks.push([s - .4, s + .4, x - .4, x + .4, y + 6]); }
+    else { tufts.push([p.x, p.y, p.z, rand(.9, 1.6), rand(0, TAU), d > Y.wallR ? 0xe8d070 : 0xffffff, rand(.8, 1.1)]); if (Math.random() < .1) shrubs.push([p.x, p.y, p.z, rand(.6, 1.1), rand(0, TAU)]); }
+  }
+  treeP.forEach((n, q) => propScatter(n, trees.filter((_, i) => i % treeP.length === q)));
+  if (trunks.length) { instanced(GEO.cyl, lam(0x6a4a2a), trunks); instanced(new THREE.IcosahedronGeometry(1, 1), lam(0x7a9a3a), crowns); }
+  if (PROPS.pshrubgdfield01) propScatter('pshrubgdfield01', shrubs, 'h', true);
+  scatter(tuftGeo(), lam(0xffffff, { vc: true, side: THREE.DoubleSide }), tufts, true);
+  bakeScenery(scene.children.slice(first));
+}
+THEMES.edoras = natTheme({
+  wallTex: TX.turf, floorTex: TX.path, door: 0xc89a40,
+  env: { sky: [0x3a78d0, 0x8ab4e0, 0xf0e4c0, 0xffe0a0], fog: [90, 420], fogC: 0xd0dce0, amb: [0x8a8070, .55], hemi: [0xe8f0ff, 0x6a5a2a, .7], sun: [0xfff0d0, 1], east: [0xffe0a0, .2], cloud: 0xffffff, sunDir: [-50, 80, -70] },
+  orc: { sk: 0x3a3028, ska: 0x4a3c30, ar: 0x1a1a1e, le: 0x2a2018, met: 0x141418, sc: 1.1 },
+  scenery(L) { buildEdoras(L, this); },
+});
+
+// =====================================================================
+//  KH: fighting the way Sora does in Kingdom Hearts II (Edoras, LV.kh)
+//   - Attack: a combo of three cuts and a finisher; each closes in on the nearest enemy; the finisher knocks it flying.
+//     In the air, an air combo: Gandalf hangs in the air while he strikes, and the last blow slams him down.
+//   - Guard (E / GUARD): blocks a blow from the front and knocks the attacker back; with the stick held it's a Dodge Roll.
+//   - Magic (fire button): Thunder, bolts on up to three enemies near you, for a quarter of the MP.
+//   - Reaction command (R, or the green prompt): when an enemy's dizzy, TAKEDOWN finishes it and blasts those round it.
+//   - HP and MP bars; beaten enemies drop green HP orbs, blue MP orbs and apples. Every hit freezes the moment a blink.
+// =====================================================================
+const KH = { hp: 100, max: 100, mp: 100, maxMp: 100, combo: 0, airN: 0, comboT: 0, atk: null, buf: false, hover: 0, guardT: 0, guardCD: 0, rollT: 0, rollV: [0, 0], invT: 0, hitstop: 0,
+  target: null, targetT: 0, react: null, reacting: null, magicCD: 0, bolts: [], sword: null, plaza: null, waveT: 0, theoden: null, ring: null };
+const URUKS = [], ORBS = [];
+const ukLive = u => !u.dead && !u.gone;
+function setupKH() {
+  const on = !!(LV && LV.kh); document.body.classList.toggle('kh', on);
+  if (!KH.sword) { KH.sword = makeSaber(0xcfe6ff); KH.sword.g.position.set(0, -.42, .04); hob.armR.add(KH.sword.g); KH.ring = glowSprite(0x9ad8ff, 3, 0); hob.root.add(KH.ring); KH.ring.position.y = 1; }
+  KH.sword.g.visible = on;
+  for (const u of URUKS.slice()) khRemove(u); for (const o of ORBS) scene.remove(o.sp); ORBS.length = 0;
+  if (KH.theoden) KH.theoden.m.root.visible = KH.theoden.m.shadow.visible = false;
+  if (!on) return;
+  hob.staff.visible = false;
+  document.getElementById('tSpin').firstChild.textContent = 'ATTACK'; document.getElementById('tFire').firstChild.textContent = 'MAGIC'; document.getElementById('tRk').style.display = 'none';
+  if (!KH.theoden) KH.theoden = { m: makeHero('theoden') };
+  for (const p of LV.layout.plazas) { p.done = false; p.wave = -1; }
+  KH.plaza = null; resetKH(true);
+}
+function resetKH(fresh) {
+  Object.assign(KH, { hp: KH.max, mp: KH.maxMp, combo: 0, airN: 0, atk: null, buf: false, hover: 0, guardT: 0, rollT: 0, invT: 1, react: null, reacting: null, bolts: [], target: null });
+  if (KH.plaza) { const p = KH.plaza; for (const u of URUKS.slice()) khRemove(u); khBarrier(p, false); p.wave = -1; KH.plaza = null; }   // a square you fell in starts again
+  for (const o of ORBS) scene.remove(o.sp); ORBS.length = 0;
+}
+function khBarrier(p, on) { for (const b of p.walls || []) b.on = on; if (p.vis) p.vis.visible = on; }
+// the enemy to swing at: the nearest in reach, those in front first
+function khTarget(range) {
+  let best = null, bs = 1e9; const ch = Math.cos(P.heading), sh = Math.sin(P.heading);
+  for (const u of URUKS) { if (!ukLive(u) || u.state === 'spawn') continue; const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx); if (d > range || Math.abs(u.y - P.y) > 3) continue; const sc = d - (ds * ch + dx * sh) / (d || 1) * 1.5; if (sc < bs) { bs = sc; best = u; } }
+  return best;
+}
+function khInput() {
+  if (KH.reacting) return;
+  if (KH.react && (inp.reactP || inp.fireP)) { khReaction(); return; }
+  if (inp.guardP) khGuard();
+  if (inp.spinP) khAttack();
+  if (inp.fireP) khMagic();
+}
+const KH_CLIPS = ['attack_a', 'attack_b', 'attack_c', 'attack_e'];
+function khAttack() {
+  if (KH.rollT > 0) return;
+  if (KH.atk) { if (KH.atk.t > KH.atk.dur * .35) KH.buf = true; return; }   // pressed during a cut: the next comes when this one's done
+  const air = !P.ground, n = air ? KH.airN : KH.combo, fin = n >= 3, tgt = khTarget(air ? 5 : 7.5);
+  const A = KH.atk = { t: 0, dur: fin ? (air ? .5 : .55) : .3, n, fin, air, hit: new Set(), tgt, dash: null };
+  if (tgt) { const ds = tgt.s - P.s, dx = tgt.x - P.x, d = Math.hypot(ds, dx) || 1; P.heading = Math.atan2(dx, ds); if (d > 1.8) { const sp = Math.min(16, (d - 1.3) / (A.dur * .45)); A.dash = [ds / d * sp, dx / d * sp]; } }
+  if (air) { KH.airN = fin ? 4 : n + 1; if (fin) { P.vy = -22; KH.hover = 0; } else { P.vy = Math.max(P.vy, 1.5); KH.hover = .4; } }
+  else KH.combo = fin ? 0 : n + 1;
+  KH.comboT = 1;
+  skinClip(hob, KH_CLIPS[Math.min(n, 3)], A.dur * 1.15); S.saberSwing();
+}
+function khGuard() {
+  if (KH.atk || KH.rollT > 0 || KH.guardCD > 0) return;
+  const len = Math.hypot(inp.x, inp.z); KH.guardCD = .5;
+  if (len > .4 && P.ground) {
+    // a dodge roll: quick, low, and nothing touches you while you're in it
+    const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw), ds = inp.z * c - inp.x * sn, dx = inp.z * sn + inp.x * c, l = Math.hypot(ds, dx) || 1;
+    KH.rollV = [ds / l * 11, dx / l * 11]; KH.rollT = .36; KH.invT = .4; P.heading = Math.atan2(dx, ds); S.whoosh(); dustAt(P.s, P.x, P.y, 6);
+  } else KH.guardT = .5;
+}
+function khMagic() {
+  if (KH.magicCD > 0 || KH.atk) return;
+  if (KH.mp < 25) { S.click(); return; }
+  KH.mp -= 25; KH.magicCD = .7; P.fireAnim = .5; S.zap(); banner('THUNDER', .6);
+  const near = URUKS.filter(u => ukLive(u) && u.state !== 'spawn').map(u => ({ u, d: Math.hypot(u.s - P.s, u.x - P.x) })).filter(o => o.d < 13).sort((a, b) => a.d - b.d).slice(0, 3);
+  if (!near.length) for (let k = 0; k < 3; k++) { const s = P.s + rand(-5, 5), x = P.x + rand(-5, 5); KH.bolts.push({ t: k * .15, s, x }); }
+  near.forEach((o, k) => KH.bolts.push({ t: k * .15, u: o.u }));
+}
+function khReaction() {
+  const u = KH.react; if (!u) return;
+  KH.reacting = { u, t: 0, hit: false }; KH.react = null; KH.atk = null; KH.invT = 1.6;
+  P.vy = 11; P.ground = false; skinClip(hob, 'attack_c', .85); S.saberSwing(); banner('TAKEDOWN!', 1);
+}
+// Gandalf's movement while he fights: a roll carries him, a cut closes in and then roots him, a takedown leaps at its foe
+function khMove(dt) {
+  KH.hover -= dt; KH.guardT -= dt; KH.guardCD -= dt; KH.invT -= dt; KH.comboT -= dt; KH.magicCD -= dt;
+  if (KH.comboT <= 0) KH.combo = 0; if (P.ground && !(KH.atk && KH.atk.air)) KH.airN = 0;
+  if (KH.rollT > 0) { KH.rollT -= dt; P.vs = KH.rollV[0]; P.vx = KH.rollV[1]; return; }
+  const R_ = KH.reacting; if (R_) { const ds = R_.u.s - P.s, dx = R_.u.x - P.x, d = Math.hypot(ds, dx) || 1; P.heading = Math.atan2(dx, ds); const sp = d > 1.2 ? Math.min(12, d / .3) : 0; P.vs = ds / d * sp; P.vx = dx / d * sp; return; }
+  const A = KH.atk; if (!A) return;
+  if (A.tgt && ukLive(A.tgt)) P.heading += angDiff(P.heading, Math.atan2(A.tgt.x - P.x, A.tgt.s - P.s)) * Math.min(1, dt * 20);
+  if (A.dash && A.t < A.dur * .45) { P.vs = A.dash[0]; P.vx = A.dash[1]; } else { P.vs *= .3; P.vx *= .3; }
+}
+function khHit(u, dmg, fin, air) {
+  if (!ukLive(u)) return;
+  u.hp -= dmg; u.flash = .15; u.stag += fin ? 30 : 12; KH.target = u; KH.targetT = 4;
+  KH.hitstop = fin ? .09 : .045; cam.shake = Math.max(cam.shake, fin ? .35 : .15);
+  sparks(tw(u.s, u.x, u.y + 1.2), fin ? 22 : 10, fin ? 7 : 4, [1, 1, 1], [.7, .85, 1]); S.saberHit();
+  const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx) || 1, ns = ds / d, nx = dx / d;
+  if (u.hp <= 0) { Object.assign(u, { state: 'launch', t: 0, vs: ns * 9, vx: nx * 9, vy: 9, dead: true }); gs.kills++; return; }
+  if (fin || air || !(u.armor && (u.state === 'atk' || u.state === 'wind'))) {
+    if (fin || air) Object.assign(u, { state: 'launch', t: 0, vs: ns * (fin ? 8 : 1.5), vx: nx * (fin ? 8 : 1.5), vy: fin ? 8 : 6 });
+    else Object.assign(u, { state: 'flinch', t: 0, vs: ns * 4, vx: nx * 4 });
+  }
+  if (u.stag >= 100) { u.stag = 0; u.dizzy = u.lurtz ? 2.5 : 3.5; }   // dizzy once it's back on its feet
+}
+// a blow on Gandalf: blocked if he's guarding and it comes from in front, otherwise it costs HP and throws him back
+function khHurt(dmg, u) {
+  if (state !== 'play' || KH.invT > 0 || KH.rollT > 0 || KH.reacting || cheats.god) return false;
+  const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx) || 1;
+  if (KH.guardT > 0 && (ds * Math.cos(P.heading) + dx * Math.sin(P.heading)) / d > -.25) {
+    Object.assign(u, { state: 'recoil', t: 0, vs: ds / d * 7, vx: dx / d * 7 }); u.stag += 25; KH.invT = .25; KH.guardT = 0; KH.guardCD = 0;
+    S.clash(); sparks(tw(P.s + ds / d * .8, P.x + dx / d * .8, P.y + 1.2), 20, 6, [1, 1, 1], [.7, .9, 1]); return false;
+  }
+  KH.hp -= dmg; KH.invT = 1; KH.atk = null; KH.combo = 0; S.hurt(); cam.shake = Math.max(cam.shake, .35);
+  P.vs = -ds / d * 8; P.vx = -dx / d * 8; P.vy = 6; P.ground = false; P.launchT = .35;
+  if (KH.hp <= 0) { KH.hp = 0; P.invT = 0; gs.phial = 0; die('hit'); }
+  return true;
+}
+
+// --- the Uruk-hai: they fight like Kingdom Hearts II's Soldier Heartless. They circle you, hopping and strafing, and
+//     take turns: no more than two come at you at once. Each sets itself before it strikes: a two-cut combo up close,
+//     a leaping spin-slash from further off, a charge behind the shield from further still. Lurtz shrugs off light blows.
+function makeUruk(lurtz) {
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body); body.scale.setScalar(lurtz ? 1.12 : 1);
+  const SK = lam(lurtz ? 0x3a2c24 : 0x2e2826), ARM = lam(0x1c1c20, { emissive: 0x050506 }), LEA = lam(0x2a2018), MET = lam(0x7a7a82, { emissive: 0x101014 }), WH = lam(0xe8e4dc);
+  const leg = sx => { const g = new THREE.Group(); g.position.set(sx * .17, .95, 0); body.add(g); part(GEO.cylT, LEA, g, 0, 0, 0, .14, .9, .14); part(GEO_BOX, ARM, g, 0, -.92, .06, .2, .14, .32); return g; };
+  const legs = [leg(1), leg(-1)];
+  part(GEO_BOX, ARM, body, 0, 1.35, 0, .72, .78, .42); part(GEO_BOX, LEA, body, 0, .98, 0, .7, .14, .44);
+  for (const sx of [-1, 1]) part(GEO.sph, MET, body, sx * .44, 1.72, 0, .2, .14, .22);
+  const head = new THREE.Group(); head.position.set(0, 1.95, .02); body.add(head);
+  part(GEO.sph, SK, head, 0, 0, 0, .2, .23, .21);
+  if (!lurtz) part(new THREE.CylinderGeometry(.19, .24, .26, 8), MET, head, 0, .13, 0); else for (let k = 0; k < 6; k++) part(GEO_BOX, SK, head, rand(-.12, .12), .14, -.06, .04, .06, .2);
+  part(GEO_BOX, WH, head, 0, -.02, .19, .16, .14, .03);                                                    // the White Hand of Saruman
+  const eyes = [-.07, .07].map(x => part(GEO.sph, bas(0xffa040), head, x, .03, .2, .03, .02, .02));
+  const arm = sx => { const g = new THREE.Group(); g.position.set(sx * .45, 1.66, 0); body.add(g); part(GEO.cylT, SK, g, 0, 0, 0, .1, .72, .1); return g; };
+  const armR = arm(1), armL = arm(-1);
+  const sword = new THREE.Group(); sword.position.set(0, -.72, .06); armR.add(sword); part(GEO_BOX, MET, sword, 0, 0, .55, .07, .03, 1); part(GEO_BOX, ARM, sword, 0, 0, 0, .28, .06, .06);
+  if (!lurtz) { const sh = part(GEO_BOX, ARM, armL, .08, -.5, .18, .06, .9, .62); part(GEO_BOX, WH, armL, .12, -.5, .18, .02, .18, .14); }
+  else { const bow = part(new THREE.TorusGeometry(.6, .025, 4, 12, Math.PI), LEA, body, 0, 1.4, -.3); bow.rotation.set(0, Math.PI / 2, Math.PI / 2); }
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(.65, 12), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .45, depthWrite: false }));
+  shadow.rotation.x = -Math.PI / 2; scene.add(shadow); scene.add(root);
+  const mats = []; root.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); if (!eyes.includes(o)) mats.push(o); } });
+  const dizzy = glowSprite(0xffe060, 1, 0); dizzy.position.y = 2.6; root.add(dizzy);
+  const M = { root, body, legs, armR, armL, head, eyes, shadow, mats, dizzy }; addSkin(M, lurtz ? 'lurtz' : 'uruk', body, root, [dizzy]); if (M.skin) M.skin.temp = true; return M;
+}
+function spawnUruk(kind, pl, a, delay) {
+  const lurtz = kind === 'L', R1 = pl.r + 5, R2 = pl.r * rand(.35, .7);
+  const u = { m: makeUruk(lurtz), lurtz, armor: lurtz, hp: lurtz ? 80 : 22, max: lurtz ? 80 : 22, name: lurtz ? 'LURTZ' : 'URUK-HAI', r: lurtz ? .7 : .55, plaza: pl, stag: 0, dizzy: 0, flash: 0,
+    h: a + Math.PI, t: -delay, cd: rand(.6, 1.8), vs: 0, vx: 0, vy: 0, seed: rand(0, 6), state: 'spawn',
+    from: [pl.s + Math.cos(a) * R1, pl.x + Math.sin(a) * R1], to: [pl.s + Math.cos(a) * R2, pl.x + Math.sin(a) * R2] };
+  u.s = u.from[0]; u.x = u.from[1]; u.y = landAt(u.s, u.x); u.m.root.visible = u.m.shadow.visible = false; URUKS.push(u); return u;
+}
+function khRemove(u) { scene.remove(u.m.root); scene.remove(u.m.shadow); u.gone = true; const i = URUKS.indexOf(u); if (i >= 0) URUKS.splice(i, 1); }
+function ukMove(u, ds, dx) {
+  const [S0, S1, X0, X1] = LV.field, ns = clamp(u.s + ds, S0 + 1, S1 - 1), nx = clamp(u.x + dx, X0 + 1, X1 - 1), ok = (s, x) => !inSolid({ s, x, y: u.y + .8 }) && Math.abs(landAt(s, x) - u.y) < 1.4;
+  if (ok(ns, u.x)) u.s = ns; if (ok(u.s, nx)) u.x = nx;
+}
+const khTokens = () => URUKS.filter(u => u.state === 'wind' || u.state === 'atk').length;
+function ukUpdate(u, dt) {
+  const m = u.m; u.t += dt; u.cd -= dt; u.flash -= dt;
+  const ds = P.s - u.s, dx = P.x - u.x, d = Math.hypot(ds, dx) || .01, toP = Math.atan2(dx, ds), live = state === 'play', facing = (ds * Math.cos(u.h) + dx * Math.sin(u.h)) / d > .3, dy = Math.abs(P.y - u.y);
+  let walk = 0, onGround = true, armX = -.4;
+  switch (u.state) {
+    case 'spawn': {   // leaping in over the barrier
+      if (u.t < 0) return; m.root.visible = m.shadow.visible = true;
+      const k = clamp(u.t / .8, 0, 1); u.s = lerp(u.from[0], u.to[0], k); u.x = lerp(u.from[1], u.to[1], k); u.y = landAt(u.s, u.x) + Math.sin(k * Math.PI) * 5; onGround = false;
+      if (k >= 1) { u.state = 'stalk'; u.t = 0; dustAt(u.s, u.x, u.y, 6); S.stomp(); } break;
+    }
+    case 'stalk': {   // keep a few steps off, strafing round, now and then a hop
+      u.h += angDiff(u.h, toP) * Math.min(1, dt * 6);
+      const want = 3.2, k = clamp(d - want, -1, 1), side = Math.sin(u.t * 1.1 + u.seed) > 0 ? 1 : -1, sp = u.lurtz ? 3 : 3.6;
+      ukMove(u, (ds / d * k * sp - dx / d * side * 1.7) * dt, (dx / d * k * sp + ds / d * side * 1.7) * dt); walk = 1;
+      if (live && u.cd <= 0 && khTokens() < 2 && dy < 2) {
+        const kind = d < 2.8 ? 'combo' : d < 9 && Math.random() < .55 ? 'leap' : d < 12 ? 'charge' : null;
+        if (kind) { u.state = 'wind'; u.atk = kind; u.t = 0; u.windT = (kind === 'combo' ? .42 : .55) * (u.lurtz ? .8 : 1); S.orcGrunt(); }
+        else u.cd = .5;
+      }
+      break;
+    }
+    case 'wind': {   // setting itself: the sword goes up, the eyes flare
+      u.h += angDiff(u.h, toP) * Math.min(1, dt * 8); armX = -2.8;
+      if (u.t >= u.windT) {
+        u.state = 'atk'; u.t = 0; u.hits = 0; S.whoosh();
+        if (u.atk === 'leap') { u.from = [u.s, u.x]; u.to = [P.s - ds / d * 1.1, P.x - dx / d * 1.1]; u.y0 = u.y; }
+        if (u.atk === 'charge') u.cv = [ds / d * 12, dx / d * 12];
+      }
+      break;
+    }
+    case 'atk': {
+      if (u.atk === 'combo') {
+        if (u.t < .3) ukMove(u, Math.cos(u.h) * 2.6 * dt, Math.sin(u.h) * 2.6 * dt);
+        armX = u.t < .2 ? .8 : u.t < .45 ? -2.6 : .8;
+        for (const [at, n] of [[.15, 1], [.55, 2]]) if (u.t >= at && u.hits < n) { u.hits = n; S.saberSwing(); if (d < 2.4 + u.r && dy < 1.6 && facing) khHurt(u.lurtz ? 14 : 9, u); }
+        if (u.t > .9) { u.state = 'recover'; u.t = 0; }
+      } else if (u.atk === 'leap') {   // up, round, and down with the sword spinning out
+        const k = clamp(u.t / .7, 0, 1); u.s = lerp(u.from[0], u.to[0], k); u.x = lerp(u.from[1], u.to[1], k); u.y = lerp(u.y0, landAt(u.s, u.x), k) + Math.sin(k * Math.PI) * 4.5; onGround = false;
+        m.body.rotation.y = k * TAU * 2; armX = -1.6;
+        if (k >= 1 && !u.hits) { u.hits = 1; m.body.rotation.y = 0; dustAt(u.s, u.x, u.y, 10); S.stomp(); cam.shake = Math.max(cam.shake, .2); if (d < 2.7 && dy < 1.6) khHurt(u.lurtz ? 16 : 12, u); }
+        if (u.t > 1.1) { u.state = 'recover'; u.t = 0; }
+      } else {   // the charge, shield first
+        const s0 = u.s, x0 = u.x; ukMove(u, u.cv[0] * dt, u.cv[1] * dt); walk = 1.6;
+        if (!u.hits && d < 1.4 + u.r && dy < 1.6) { u.hits = 1; khHurt(10, u); }
+        if (u.t > .8 || (Math.hypot(u.s - s0, u.x - x0) < .01 && u.t > .1)) { u.state = 'recover'; u.t = 0; }
+      }
+      break;
+    }
+    case 'recover': if (u.t > .55) { u.state = 'stalk'; u.t = 0; u.cd = rand(1.2, 2.6) * (u.lurtz ? .6 : 1); } break;
+    case 'recoil': case 'flinch': {
+      ukMove(u, u.vs * dt, u.vx * dt); u.vs *= Math.exp(-7 * dt); u.vx *= Math.exp(-7 * dt);
+      if (u.t > (u.state === 'recoil' ? .7 : .35)) { u.state = u.dizzy > 0 ? 'dizzy' : 'stalk'; u.t = 0; u.cd = Math.min(u.cd, .6); } break;
+    }
+    case 'launch': {   // knocked flying
+      u.vy -= 24 * dt; u.y += u.vy * dt; ukMove(u, u.vs * dt, u.vx * dt); onGround = false; m.body.rotation.x = -clamp(u.t * 4, 0, 1.4);
+      const g = landAt(u.s, u.x); if (u.y <= g && u.vy < 0) { u.y = g; dustAt(u.s, u.x, u.y, 6); u.state = u.dead ? 'die' : 'down'; u.t = 0; } break;
+    }
+    case 'down': m.body.rotation.x = -1.4; if (u.t > .9) { u.state = 'getup'; u.t = 0; } break;
+    case 'getup': m.body.rotation.x = -1.4 * (1 - u.t / .4); if (u.t > .4) { m.body.rotation.x = 0; u.state = u.dizzy > 0 ? 'dizzy' : 'stalk'; u.t = 0; } break;
+    case 'dizzy': if (u.t > u.dizzy) { u.dizzy = 0; u.state = 'stalk'; u.t = 0; } break;
+    case 'die': {   // gone in a breath of black smoke, leaving orbs and apples behind
+      m.body.rotation.x = -1.4; m.body.position.y = -u.t * .6;
+      if (!u.dropped) { u.dropped = true; const p = tw(u.s, u.x, u.y + 1); for (let k = 0; k < 3; k++) collectApple(p, k * .08); if (Math.random() < .6) khOrb(u, 'hp'); if (Math.random() < .6) khOrb(u, 'mp'); }
+      if (Math.random() < .5) puff(tw(u.s + rand(-.5, .5), u.x + rand(-.5, .5), u.y + rand(0, .8)), 1, .8, CSM);
+      if (u.t > .9) khRemove(u); return;
+    }
+  }
+  if (onGround) { const g = landAt(u.s, u.x); u.y += clamp(g - u.y, -20 * dt, 12 * dt); }
+  if (u.state !== 'launch' && u.state !== 'down' && u.state !== 'getup' && u.state !== 'die') m.body.rotation.x = 0;
+  // shoulder to shoulder, not inside each other (or Gandalf)
+  for (const o of URUKS) if (o !== u && ukLive(o) && o.state !== 'spawn') { const es = u.s - o.s, ex = u.x - o.x, e = Math.hypot(es, ex); if (e > 0 && e < u.r + o.r + .2) ukMove(u, es / e * .04, ex / e * .04); }
+  if (d < u.r + .5 && u.state !== 'spawn') ukMove(u, -ds / d * .05, -dx / d * .05);
+  // drawing
+  place(m.root, u.s, u.x, u.y, u.h); tw(u.s, u.x, landAt(u.s, u.x) + .03, m.shadow.position);
+  const ph = u.t * 9; m.legs.forEach((l, i) => l.rotation.x = Math.sin(ph + i * Math.PI) * .6 * walk);
+  m.armR.rotation.x = damp(m.armR.rotation.x, armX, 18, dt); m.armL.rotation.x = -.5 + Math.sin(ph) * .2 * walk;
+  if (u.state === 'dizzy') { m.body.rotation.z = Math.sin(u.t * 6) * .15; m.dizzy.material.opacity = .8; m.dizzy.position.set(Math.cos(u.t * 6) * .4, 2.6, Math.sin(u.t * 6) * .4); } else { m.body.rotation.z = 0; m.dizzy.material.opacity = 0; }
+  m.eyes.forEach(e => e.material.color.setHex(u.state === 'wind' ? 0xff2a1a : 0xffa040));
+  m.mats.forEach(o => o.material.emissive && o.material.emissive.setHex(u.flash > 0 ? 0x8a8a8a : 0x050506));
+  skinPlay(m, u.state === 'die' ? 'die' : u.state === 'launch' || u.state === 'down' || u.state === 'flinch' || u.state === 'recoil' || u.state === 'dizzy' ? 'hit' : u.state === 'wind' || u.state === 'atk' ? 'attack' : u.state === 'spawn' ? 'jump' : walk > .5 ? 'walk' : 'idle');
+}
+// green HP orbs and blue MP orbs: they pop out, and fly to Gandalf when he's near
+function khOrb(u, kind) { const sp = glowSprite(kind === 'hp' ? 0x6aff6a : 0x6ab8ff, .7, .95); scene.add(sp); ORBS.push({ s: u.s + rand(-.5, .5), x: u.x + rand(-.5, .5), y: u.y + 1, vy: rand(4, 6), vs: rand(-2, 2), vx: rand(-2, 2), kind, sp, t: 0 }); }
+function updateOrbs(dt) {
+  for (let i = ORBS.length - 1; i >= 0; i--) {
+    const o = ORBS[i]; o.t += dt; const ds = P.s - o.s, dx = P.x - o.x, dy = P.y + 1 - o.y, d = Math.hypot(ds, dx, dy) || .01;
+    if (d < 5 && o.t > .4) { const k = Math.min(1, dt * 12); o.s += ds * k; o.x += dx * k; o.y += dy * k; }
+    else { o.vy -= 18 * dt; o.y += o.vy * dt; o.s += o.vs * dt; o.x += o.vx * dt; const g = landAt(o.s, o.x) + .4; if (o.y < g) { o.y = g; o.vy = Math.abs(o.vy) * .4; o.vs *= .5; o.vx *= .5; } }
+    tw(o.s, o.x, o.y, o.sp.position); o.sp.scale.setScalar(.7 + Math.sin(T * 10 + i) * .08);
+    if (d < .9 || o.t > 20) { if (d < .9) { if (o.kind === 'hp') KH.hp = Math.min(KH.max, KH.hp + 12); else KH.mp = Math.min(KH.maxMp, KH.mp + 20); S.apple(); } scene.remove(o.sp); ORBS.splice(i, 1); }
+  }
+}
+function updateKH(dt) {
+  if (!LV || !LV.kh) return;
+  saberToBone(KH.sword, hob);
+  const play = state === 'play', A = KH.atk;
+  KH.mp = Math.min(KH.maxMp, KH.mp + dt * 2.5);
+  // the cut: it lands in the middle part of the swing, on everything in reach in front (the finisher all round); crates break
+  if (A) {
+    A.t += dt;
+    if (A.t >= A.dur * .28 && A.t <= A.dur * .72) {
+      const reach = A.fin ? 3.3 : 2.6, ch = Math.cos(P.heading), sh = Math.sin(P.heading);
+      for (const u of URUKS) {
+        if (!ukLive(u) || u.state === 'spawn' || A.hit.has(u)) continue; const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx);
+        if (d > reach + u.r || Math.abs(u.y - P.y) > (A.air ? 2.6 : 1.8)) continue; if (!A.fin && d > 1 && (ds * ch + dx * sh) / d < .1) continue;
+        A.hit.add(u); khHit(u, A.fin ? 9 : 5, A.fin, A.air);
+      }
+      for (const c of crates) if (c.alive && Math.hypot(c.s - P.s, c.x - P.x) < 2.2 && Math.abs(c.y - P.y) < 1.6) spinCrate(c);
+    }
+    if (A.air && A.fin && P.ground && !A.slam) { A.slam = true; dustAt(P.s, P.x, P.y, 12); S.stomp(); cam.shake = .3; for (const u of URUKS) if (ukLive(u) && !A.hit.has(u) && Math.hypot(u.s - P.s, u.x - P.x) < 3.6) khHit(u, 7, true); }
+    if (A.t >= A.dur) { KH.atk = null; if (KH.buf) { KH.buf = false; khAttack(); } }
+  }
+  // the takedown: up, over, and down onto it
+  const R_ = KH.reacting;
+  if (R_) {
+    R_.t += dt;
+    if (!R_.hit && (R_.t > .55 && P.ground || R_.t > 1)) {
+      R_.hit = true; const p = tw(P.s, P.x, P.y + .5); sparks(p, 40, 9, [1, 1, .9], [1, .8, .4]); puff(p, 8, 1.4); S.smash(); cam.shake = .6; KH.hitstop = .14;
+      khHit(R_.u, 999, true); for (const u of URUKS) if (u !== R_.u && ukLive(u) && Math.hypot(u.s - P.s, u.x - P.x) < 6) khHit(u, 14, true);
+    }
+    if (R_.t > 1.1) KH.reacting = null;
+  }
+  // thunder: each bolt falls where its foe is, a beat after the last
+  for (let i = KH.bolts.length - 1; i >= 0; i--) {
+    const b = KH.bolts[i]; b.t -= dt; if (b.t > 0) continue; KH.bolts.splice(i, 1);
+    const s = b.u ? b.u.s : b.s, x = b.u ? b.u.x : b.x; boltAt(tw(s, x, landAt(s, x) + (b.u ? 1 : 0)));
+    if (b.u && ukLive(b.u)) khHit(b.u, 9, true);
+  }
+  for (const u of URUKS.slice()) ukUpdate(u, dt);
+  updateOrbs(dt);
+  // the reaction command: a dizzy one close by
+  KH.react = null; if (play && !KH.reacting) { let bd = 4.5; for (const u of URUKS) { if (!ukLive(u) || u.state !== 'dizzy') continue; const d = Math.hypot(u.s - P.s, u.x - P.x); if (d < bd && Math.abs(u.y - P.y) < 2) { bd = d; KH.react = u; } } }
+  KH.targetT -= dt; if (KH.target && (!ukLive(KH.target) || KH.targetT <= 0)) KH.target = null;
+  // the squares: walk into one and it locks, the Uruk-hai come in waves; when the last is beaten it opens again
+  const Y = LV.layout;
+  if (!KH.plaza) { if (play) for (const p of Y.plazas) if (!p.done && Math.hypot(P.s - p.s, P.x - p.x) < p.r - 1.5 && Math.abs(P.y - p.y) < 4) { KH.plaza = p; p.wave = 0; khBarrier(p, true); KH.waveT = .7; banner(p.title, 1.6); S.orcGrunt(); break; } }
+  else {
+    const p = KH.plaza;
+    if (KH.waveT > 0) { KH.waveT -= dt; if (KH.waveT <= 0) { const w = p.waves[p.wave], a0 = rand(0, TAU); w.forEach((k, i) => spawnUruk(k, p, a0 + i / w.length * TAU + rand(-.3, .3), i * .25)); } }
+    else if (!URUKS.some(u => u.plaza === p)) {
+      p.wave++;
+      if (p.wave < p.waves.length) { KH.waveT = 1.2; banner('MORE ARE COMING!', 1.2); }
+      else {
+        p.done = true; khBarrier(p, false); KH.plaza = null; S.check(); gs.cp = { s: p.s, x: p.x, y: p.y, t: gs.time, deaths: 0 };
+        banner(p.last ? 'MEDUSELD IS FREE! GO TO THE KING' : 'THE WAY IS OPEN!', 2.2); KH.hp = Math.min(KH.max, KH.hp + 30);
+      }
+    }
+  }
+  // Théoden, out on the steps of Meduseld once the last square is won: go to him to finish
+  const th = KH.theoden, won = Y.plazas[Y.plazas.length - 1].done;
+  if (th) {
+    th.m.root.visible = th.m.shadow.visible = won;
+    if (won) {
+      const dr = Y.hall.door, h = Math.atan2(P.x - dr.x, P.s - dr.s); place(th.m.root, dr.s, dr.x, landAt(dr.s, dr.x), h); tw(dr.s, dr.x, landAt(dr.s, dr.x) + .03, th.m.shadow.position);
+      th.m.beacon.visible = true; th.m.star.position.y = HEROES.theoden.h + .9 + Math.sin(T * 2) * .15; skinPlay(th.m, 'idle');
+      if (play && Math.hypot(P.s - dr.s, P.x - dr.x) < 2.4) { banner('THÉODEN KING', 2); roamWin('EDORAS IS SAVED!'); }
+    }
+  }
+  // Gandalf's sword arm (built-in Gandalf; your own model swings with its own animations) and his guard's glow
+  const own = !!(hob.skin && hob.skin.obj), pose = R_ ? SP.C1 : A ? (A.t / A.dur < .3 ? SP[['A0', 'B0', 'C0', 'U0'][Math.min(A.n, 3)]] : SP[['A1', 'B1', 'C1', 'U1'][Math.min(A.n, 3)]]) : KH.guardT > 0 ? SP.block : SP.guard;
+  if (state === 'play' || state === 'win') applyPose(hob.armR, hob.body, KH.sword.g, pose, dt, 26, own);
+  KH.ring.material.opacity = KH.guardT > 0 ? .55 : KH.rollT > 0 ? .25 : 0;
+}
+function khHud() {
+  const on = !!(LV && LV.kh) && state !== 'title' && state !== 'map' && state !== 'complete';
+  const hud = document.getElementById('khhud'); hud.style.display = on ? 'flex' : 'none';
+  if (!on) { document.getElementById('khtarget').style.display = document.getElementById('khreact').style.display = 'none'; return; }
+  document.getElementById('khHP').style.width = (KH.hp / KH.max * 100) + '%'; document.getElementById('khMP').style.width = (KH.mp / KH.maxMp * 100) + '%';
+  const tg = KH.target, te = document.getElementById('khtarget'); te.style.display = tg ? 'flex' : 'none';
+  if (tg) { document.getElementById('khTName').textContent = tg.name; document.getElementById('khTHP').style.width = Math.max(0, tg.hp / tg.max * 100) + '%'; }
+  document.getElementById('khreact').style.display = KH.react && state === 'play' ? 'block' : 'none';
+}
+document.getElementById('khreact').addEventListener('pointerdown', e => { e.preventDefault(); hit.TReact = true; });
 THEMES.rivfable = natTheme({
   wallTex: TX.rock, floorTex: TX.moss, tint: [.9, .95, .85], door: 0xd8c890,
   env: { sky: [0x2a5a8a, 0x6a9ab8, 0xf0dcb0, 0xffd090], fog: [70, 320], fogC: 0xb8c8b8, amb: [0x7a7a68, .55], hemi: [0xfff4e0, 0x2a4a22, .72], sun: [0xffe0b0, 1], east: [0xffc070, .3], cloud: 0xffffff, sunDir: [-70, 60, 80] },
@@ -6616,9 +7167,13 @@ showScreen(null); syncPauseBtns();
   if (li >= 0) {
     startGame(li);
     if (q.get('at')) { gs.cp.s = Number(q.get('at')); respawn(true); }   // &at=160 starts 160 along the level
+    if (q.get('propview')) { const n = q.get('propview'), sz = +(q.get('size') || 10); const pr = propOne(n, 8, 0, groundBelow(8, 0, 40), +(q.get('turn') || 0), sz); console.log('propview', n, pr && pr.size.toArray().map(v => v.toFixed(1)).join('x')); DEBUG_CAM = { p: tw(8 - sz * 1.3, sz * .6, sz * .7), l: tw(8, 0, sz * .25) }; }   // &propview=sbbagend&size=12: one scenery model alone, to look at
     if (q.get('pos')) { const [s, x, y] = q.get('pos').split(',').map(Number); Object.assign(gs.cp, { s, x, y: y || 0 }); respawn(true); }   // &pos=s,x,y starts there (open levels)
     if (q.get('spring') && LV.springs && LV.springs[+q.get('spring')]) { const sp = LV.springs[+q.get('spring')]; Object.assign(gs.cp, { s: sp.s, x: sp.x, y: sp.y }); respawn(true); console.log('spring', JSON.stringify(sp)); }   // &spring=0 starts on that web spring
-    if (q.get('sim')) { cheats.god = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (q.get('pos') || q.get('spring')) console.log(`after ${q.get('sim')}s: s ${P.s.toFixed(1)} x ${P.x.toFixed(1)} y ${P.y.toFixed(1)} ground ${P.ground}`); }   // &sim=6 plays 6 seconds first (invincible)
+    if (q.get('walkto')) WALKTO = q.get('walkto').split(',').map(Number);
+    if (q.get('autofight')) AUTOFIGHT = { next: () => { const p = LV.layout.plazas.find(p => !p.done); return p ? [p.s, p.x] : [LV.layout.hall.door.s, LV.layout.hall.door.x]; } };
+    if (q.get('sim')) { cheats.god = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (LV.kh) console.log(`Edoras after ${q.get('sim')}s: squares done ${LV.layout.plazas.filter(p => p.done).length}/${LV.layout.plazas.length}, in ${KH.plaza ? LV.layout.plazas.indexOf(KH.plaza) : '-'} wave ${KH.plaza ? KH.plaza.wave : '-'}, uruks ${URUKS.length} (${URUKS.map(u => u.state + ':' + Math.round(u.hp)).join(' ')}), HP ${Math.round(KH.hp)} MP ${Math.round(KH.mp)}, kills ${gs.kills}, at ${P.s.toFixed(0)},${P.x.toFixed(0)},${P.y.toFixed(1)} (ground ${TERR ? terrainAt(P.s, P.x).toFixed(1) : 'none'}, on ${P.ground} ${P.standOn ? P.standOn.kind + ' ' + [P.standOn.y0, P.standOn.y1].map(v => v && v.toFixed(1)) : ''}), state ${state}`);
+      if (q.get('pos') || q.get('spring')) console.log(`after ${q.get('sim')}s: s ${P.s.toFixed(1)} x ${P.x.toFixed(1)} y ${P.y.toFixed(1)} ground ${P.ground}`); }   // &sim=6 plays 6 seconds first (invincible)
     if (q.get('info')) setTimeout(() => { renderer.info.autoReset = false; renderer.info.reset(); renderer.setRenderTarget(rt); renderer.render(scene, camera); console.log('scene: ' + renderer.info.render.calls + ' draw calls, ' + renderer.info.render.triangles + ' triangles'); renderer.info.autoReset = true; }, 500);   // &info=1 logs how much one frame draws
     if (q.get('cam')) { const [s, x, y, ls, lx, ly] = q.get('cam').split(',').map(Number); DEBUG_CAM = { p: tw(s, x, y), l: tw(ls, lx, ly) }; }   // &cam=s,x,y,ls,lx,ly: a fixed camera in the level
     if (q.get('peek') && balrogs[0]) { const r = balrogs[0].m.root, [x, y, z] = q.get('peek').split(',').map(Number); r.updateMatrixWorld(true); DEBUG_CAM = { p: r.localToWorld(new V3(x, y, z)), l: r.localToWorld(new V3(0, 5, 0)) }; }   // &peek=8,7,12 looks at the Balrog from there
