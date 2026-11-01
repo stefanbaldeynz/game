@@ -5180,7 +5180,7 @@ const MODEL_SLOTS = {
 };
 // which animation plays for each action: the first clip whose name matches (case doesn't matter)
 const ANIM_NAMES = { idle: /idle|stand|breath|ready/i, walk: /walk|run|move|gallop/i, attack: /attack|atk|smash|swing|slash|strike|hit_?a/i, hit: /hurt|damage|stun|flinch|react/i, die: /die|death|dead/i, jump: /jump|fall|air/i };
-const TEXTURE_SLOTS = ['grass', 'rock', 'path', 'turf', 'moss', 'marble', 'floor', 'dark', 'lavaRock', 'wood', 'roof', 'plains', 'metal', 'mosaic'];
+const TEXTURE_SLOTS = ['meadow', 'grass', 'rock', 'path', 'turf', 'moss', 'marble', 'floor', 'dark', 'lavaRock', 'wood', 'roof', 'plains', 'metal', 'mosaic'];
 const LOADED = {}, SKINS = [];
 // a built-in character can be swapped for a loaded model: its own meshes are hidden (except the ones in keep) and the model takes their place
 function addSkin(M, slot, attachTo, hideRoot, keep = [], top) { M.skin = { slot, attachTo, hideRoot, keep, top: top || M.root || hideRoot, obj: null, mixer: null, acts: {}, cur: '' }; SKINS.push(M.skin); if (LOADED[slot]) attachSkin(M.skin); }
@@ -5215,8 +5215,10 @@ function updateSkins(dt) {
 function replaceTex(key, img) {
   const t = TX[key]; if (!t || !t.image || !t.image.getContext) return;
   const c = t.image; c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext('2d').drawImage(img, 0, 0);
-  for (const sc of [scene, mapScene]) sc.traverse(o => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) if (m.map && m.map.image === c) m.map.needsUpdate = true; });
-  t.needsUpdate = true;
+  // a real picture is drawn smooth (and mipmapped), not as blocky pixels; the same goes for every copy of the texture
+  const smooth = m => { m.magFilter = THREE.LinearFilter; m.minFilter = THREE.LinearMipmapLinearFilter; m.generateMipmaps = true; m.anisotropy = Math.min(8, MAX_ANI); m.needsUpdate = true; };
+  for (const sc of [scene, mapScene]) sc.traverse(o => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) if (m.map && m.map.image === c) smooth(m.map); });
+  smooth(t);
 }
 const loadScript = src => new Promise((ok, no) => { const e = document.createElement('script'); e.src = src; e.onload = ok; e.onerror = no; document.head.appendChild(e); });
 const loadImage = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
