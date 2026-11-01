@@ -103,6 +103,7 @@ h2.t small{font-size:.55em;color:#ffe14d}
       <button class="tab" data-t="ride">🦒 Ride</button>
       <button class="tab" data-t="sea">🐬 Sea</button>
       <button class="tab" data-t="sky">🦅 Sky</button>
+      <button class="tab" data-t="dino">🦖 Dino</button>
       <button class="tab" data-t="outfit">👗 Outfit</button>
       <button class="tab" data-t="friend">🐶 Friend</button>
     </div>
@@ -174,7 +175,8 @@ h2.t small{font-size:.55em;color:#ffe14d}
    IYLA'S GAME
    Iyla rides an animal across a little African island and through
    auto-running levels: Serengeti, Desert (rhino boss), Volcano,
-   Under the Sea (shark boss) and Candyland. Milo the sausage dog can
+   Under the Sea (shark boss), Candyland, Eagle Mountains, Dinosaur
+   Valley (triceratops boss) and Dino Land. Milo the sausage dog can
    run along as a spare life. Everything (models, textures, music) is
    made in code in this file.
    ===================================================================== */
@@ -209,12 +211,17 @@ const ANIMALS = {
   eagle: { sky: true, name: 'Eagle', em: '🦅', desc: 'Super high jump and a double jump!', jump: 13.5, hearts: 3, speed: 1.05, steer: 13, magnet: 1.8, camH: 6.2, double: true },
   owl: { sky: true, name: 'Owl', em: '🦉', desc: 'Double jump and 4 hearts', jump: 12, hearts: 4, speed: 0.95, steer: 11, magnet: 1.8, camH: 6.2, double: true },
   parrot: { sky: true, name: 'Parrot', em: '🦜', desc: 'Speedy, double jump, grabs treats from far away', jump: 12, hearts: 3, speed: 1.12, steer: 15, magnet: 2.5, camH: 6, double: true },
+  trex: { dino: true, name: 'T-Rex', em: '🦖', desc: 'ROAR! Stomps right through rocks', jump: 11, hearts: 4, speed: 1, steer: 11, magnet: 1.7, camH: 7.6, smash: true },
+  raptor: { dino: true, name: 'Velociraptor', em: '🦎', desc: 'The speediest dino, with a double jump!', jump: 11.6, hearts: 3, speed: 1.18, steer: 16, magnet: 1.6, camH: 5.6, double: true },
+  stego: { dino: true, name: 'Stegosaurus', em: '🦕', desc: 'Spiky and tough: 5 hearts!', jump: 10.8, hearts: 5, speed: 0.94, steer: 10, magnet: 1.7, camH: 6.4 },
+  brachio: { dino: true, name: 'Brachiosaurus', em: '🦕', desc: 'Super tall! Its long neck grabs treats from far away', jump: 12.4, hearts: 4, speed: 0.96, steer: 10, magnet: 3.2, camH: 11.5 },
 };
-const LAND = Object.keys(ANIMALS).filter(k => !ANIMALS[k].sea && !ANIMALS[k].sky), SEA = Object.keys(ANIMALS).filter(k => ANIMALS[k].sea), SKY = Object.keys(ANIMALS).filter(k => ANIMALS[k].sky);
-if (!ANIMALS[save.animal] || ANIMALS[save.animal].sea || ANIMALS[save.animal].sky) save.animal = 'giraffe';
+const LAND = Object.keys(ANIMALS).filter(k => !ANIMALS[k].sea && !ANIMALS[k].sky && !ANIMALS[k].dino), SEA = Object.keys(ANIMALS).filter(k => ANIMALS[k].sea), SKY = Object.keys(ANIMALS).filter(k => ANIMALS[k].sky), DINO = Object.keys(ANIMALS).filter(k => ANIMALS[k].dino);
+if (!ANIMALS[save.animal] || ANIMALS[save.animal].sea || ANIMALS[save.animal].sky || ANIMALS[save.animal].dino) save.animal = 'giraffe';
 if (!ANIMALS[save.sea] || !ANIMALS[save.sea].sea) save.sea = 'dolphin';
 if (!ANIMALS[save.sky] || !ANIMALS[save.sky].sky) save.sky = 'eagle';
-const rideOf = th => th.sea ? save.sea : th.fly ? save.sky : save.animal;
+if (!ANIMALS[save.dino] || !ANIMALS[save.dino].dino) save.dino = 'trex';
+const rideOf = th => th.sea ? save.sea : th.fly ? save.sky : th.dino ? save.dino : save.animal;
 
 const OUTFITS = [
   { k: 'pink', name: 'Pink Dress', em: '👗', need: 0, top: 0xff5fa8, skirt: 0xff9fd0, shoes: 0xff4f9a },
@@ -273,6 +280,20 @@ const THEMES = {
     hemi: [0xfff0fa, 0xc58fb0, 0.82], fruitEm: '🍬', fruitName: 'sweets', music: 'candy',
     hints: { low: 'Jump the gumdrops!', river: 'Jump over the hot fudge!', bar: 'Jump the candy cane!', tall: 'Giant lolly! Move to dodge it!' },
   },
+  dinos: {
+    key: 'dinos', name: 'Dinosaur Valley', em: '🦖', len: 1250, seed: 6565, boss: 'trike', dino: true,
+    desc: 'Ride a dinosaur through the valley of the volcanoes! Jump the tar pits… and watch out for the Triceratops!',
+    sky: ['#e88a4a', '#f7c27a', '#fff0c8'], fog: 0xf2c890, ground: 'prehistoric', path: 'mudPath', river: 'tar',
+    hemi: [0xfff0d8, 0x8a6a3a, 0.85], fruitEm: '🥚', fruitName: 'dino eggs', music: 'dinos',
+    hints: { low: 'Jump the boulders!', river: 'Jump the sticky tar!', bar: 'Jump the giant bone!', tall: 'Giant tree fern! Move to dodge it!' },
+  },
+  jungle: {
+    key: 'jungle', name: 'Dino Land', em: '🌴', len: 1300, seed: 8787, req: 'dinos', dino: true, meteors: true, meteorColor: 0x8a5a2a,
+    desc: 'A steamy jungle full of dinosaurs! Jump the rivers and the mossy logs, and dodge the falling coconuts.',
+    sky: ['#4ab0d8', '#9fe0e8', '#e8fff0'], fog: 0xa8d8b8, fogNear: 40, fogFar: 125, ground: 'jungle', path: 'junglePath', river: 'jungleRiver',
+    hemi: [0xeaffea, 0x3a6a2a, 0.82], fruitEm: '🍌', fruitName: 'bananas', music: 'jungle',
+    hints: { low: 'Jump the mossy rocks!', river: 'Jump over the river!', bar: 'Jump the mossy log!', tall: 'Giant jungle tree! Move to dodge it!', meteor: 'Coconut! Get off the red circle!' },
+  },
 };
 const isOpen = k => !THEMES[k].req || !!save.done[THEMES[k].req] || !!save.open[k];
 
@@ -301,6 +322,11 @@ function stripes(x, w, h, base, col, period, width) { x.fillStyle = base; x.fill
 function wavyStripes(x, w, h, base, col, n, wd) {
   x.fillStyle = base; x.fillRect(0, 0, w, h); x.fillStyle = col;
   for (let i = 0; i < n; i++) { x.beginPath(); const x0 = i * w / n; for (let y = 0; y <= h; y += 16) x.lineTo(x0 + Math.sin(y * 0.05 + i) * 6, y); for (let y = h; y >= 0; y -= 16) x.lineTo(x0 + wd + Math.sin(y * 0.05 + i) * 6, y); x.fill(); }
+}
+// dinosaur skin: a base colour covered in little overlapping scales
+function dinoScales(x, w, h, base, cols) {
+  x.fillStyle = base; x.fillRect(0, 0, w, h);
+  for (let j = 0; j < 22; j++) for (let i = 0; i < 22; i++) { x.fillStyle = cols[(i * 7 + j * 3) % cols.length]; x.beginPath(); x.arc(i * 12 + (j % 2) * 6, j * 12, rand(4, 6), 0, Math.PI); x.fill(); }
 }
 const PAINT = {
   savanna(x, w, h) {
@@ -369,6 +395,43 @@ const PAINT = {
     x.fillStyle = g; x.fillRect(0, 0, w, h); x.fillStyle = '#e8f2fc';
     for (let i = 0; i < w; i += 16) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i + 8, rand(14, 34)); x.lineTo(i + 16, 0); x.fill(); x.beginPath(); x.moveTo(i, h); x.lineTo(i + 8, h - rand(14, 34)); x.lineTo(i + 16, h); x.fill(); }
   },
+  // dinosaur valley and the jungle
+  prehistoric(x, w, h) {
+    x.fillStyle = '#9aa04e'; x.fillRect(0, 0, w, h);
+    const cols = ['#8a9244', '#b0b45c', '#7a8a3c', '#c2a65a', '#6f8a3a']; x.lineWidth = 2;
+    for (let i = 0; i < 1300; i++) { x.strokeStyle = cols[i % 5]; const px = Math.random() * w, py = Math.random() * h; x.beginPath(); x.moveTo(px, py); x.lineTo(px + rand(-3, 3), py - rand(4, 10)); x.stroke(); }
+    for (let i = 0; i < 40; i++) { x.fillStyle = 'rgba(120,90,50,.35)'; x.beginPath(); x.ellipse(Math.random() * w, Math.random() * h, rand(6, 16), rand(3, 7), Math.random() * 3, 0, TAU); x.fill(); }
+  },
+  mudPath(x, w, h) {
+    speckle(x, w, h, '#a8784a', ['#946640', '#bc8c58', '#8a5a36', '#c49a62'], 600, 1, 3.5);
+    // big three-toed footprints down the path
+    x.fillStyle = 'rgba(80,50,26,.45)';
+    for (const [cx, cy, a] of [[80, 60, 0.15], [176, 190, -0.15]]) { x.save(); x.translate(cx, cy); x.rotate(a); x.beginPath(); x.ellipse(0, 10, 13, 16, 0, 0, TAU); x.fill(); for (const t of [-0.55, 0, 0.55]) { x.save(); x.rotate(t); x.beginPath(); x.ellipse(0, -18, 6, 15, 0, 0, TAU); x.fill(); x.restore(); } x.restore(); }
+  },
+  tar(x, w, h) {
+    x.fillStyle = '#1a1412'; x.fillRect(0, 0, w, h); x.lineWidth = 4;
+    for (let i = 0; i < 26; i++) { const cx = Math.random() * w, cy = Math.random() * h, r = rand(6, 20); x.strokeStyle = 'rgba(90,70,60,.6)'; x.beginPath(); x.arc(cx, cy, r, 0, TAU); x.stroke(); x.fillStyle = 'rgba(160,140,130,.5)'; x.beginPath(); x.arc(cx - r * 0.3, cy - r * 0.3, r * 0.22, 0, TAU); x.fill(); }
+  },
+  jungle(x, w, h) {
+    x.fillStyle = '#3f8a34'; x.fillRect(0, 0, w, h);
+    const cols = ['#357a2c', '#4f9e3a', '#2f6e28', '#5aae44'];
+    for (let i = 0; i < 260; i++) { x.save(); x.translate(Math.random() * w, Math.random() * h); x.rotate(Math.random() * TAU); x.fillStyle = cols[i % 4]; x.beginPath(); x.ellipse(0, 0, rand(6, 12), rand(2.5, 5), 0, 0, TAU); x.fill(); x.restore(); }
+    for (let i = 0; i < 30; i++) { x.fillStyle = ['#ff5fa8', '#ffd84a', '#ffffff', '#ff8a3d'][i % 4]; x.beginPath(); x.arc(Math.random() * w, Math.random() * h, 2.5, 0, TAU); x.fill(); }
+  },
+  junglePath(x, w, h) {
+    speckle(x, w, h, '#8a6a3e', ['#7a5c34', '#9c7a48', '#6a8a3a', '#5a7a30'], 650, 1, 4);
+    for (let i = 0; i < 14; i++) { x.save(); x.translate(Math.random() * w, Math.random() * h); x.rotate(Math.random() * TAU); x.fillStyle = i % 2 ? '#c8a03a' : '#6aa040'; x.beginPath(); x.ellipse(0, 0, 9, 4, 0, 0, TAU); x.fill(); x.restore(); }
+  },
+  jungleRiver(x, w, h) {
+    x.fillStyle = '#2aa6b8'; x.fillRect(0, 0, w, h); x.lineWidth = 3;
+    for (let j = 0; j < 10; j++) { x.strokeStyle = j % 2 ? 'rgba(255,255,255,.45)' : 'rgba(20,110,130,.6)'; x.beginPath(); for (let i = 0; i <= w; i += 8) { const y = j * h / 10 + Math.sin(i / w * TAU * 3 + j) * 4; i ? x.lineTo(i, y) : x.moveTo(i, y); } x.stroke(); }
+    for (let i = 0; i < 9; i++) { const cx = Math.random() * w, cy = Math.random() * h; x.fillStyle = '#4fae3a'; x.beginPath(); x.arc(cx, cy, 11, 0.4, TAU); x.lineTo(cx, cy); x.fill(); if (i % 3 === 0) { x.fillStyle = '#ff8fc8'; x.beginPath(); x.arc(cx + 3, cy - 3, 4, 0, TAU); x.fill(); } }
+  },
+  dinoGreen(x, w, h) { dinoScales(x, w, h, '#58b04a', ['#4a9a3e', '#6cc058', '#3f8a36']); },
+  dinoTeal(x, w, h) { dinoScales(x, w, h, '#5aaed0', ['#4a98bc', '#6cc0e0', '#3f86a8']); for (let i = 0; i < 40; i++) { x.fillStyle = 'rgba(40,90,130,.5)'; x.beginPath(); x.arc(Math.random() * w, Math.random() * h, rand(4, 10), 0, TAU); x.fill(); } },
+  dinoOlive(x, w, h) { dinoScales(x, w, h, '#8aa84a', ['#7a9840', '#9cba58', '#6e8a3a']); },
+  dinoTrike(x, w, h) { dinoScales(x, w, h, '#6a9ab8', ['#5a88a6', '#7aacc8', '#4f7a96']); },
+  raptor(x, w, h) { wavyStripes(x, w, h, '#ee8a3a', '#9a4a1a', 9, 8); },
   ray(x, w, h) { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, 'rgba(255,255,255,.9)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(w * 0.25, 0, w * 0.5, h); },
   glow(x, w, h) { const g = x.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.4, 'rgba(255,255,255,.8)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, w, h); },
   shadow(x, w, h) { const g = x.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, 'rgba(0,0,0,.42)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, w, h); },
@@ -771,11 +834,230 @@ function buildGoat(parent, x, z, ry = 0) {
   part(G.cone, C, head, [0, -0.25, -0.18], [0.06, 0.2, 0.06], [Math.PI, 0, 0]);
   return { g, legs, phase: rand(0, TAU) };
 }
+/* ---------------- the dinosaurs ---------------- */
+// a dinosaur's back leg: a big thigh, a shin and a three-toed foot, hanging from the hip
+function dLeg(parent, x, y, z, len, r, m, claw = 0xfff4dc) {
+  const hip = grp(parent, [x, y, z]);
+  part(G.sph, m, hip, [0, -len * 0.22, 0], [r * 1.35, len * 0.34, r * 1.55]);
+  part(G.cyl, m, hip, [0, -len * 0.62, 0.04], [r * 0.72, len * 0.6, r * 0.72]);
+  part(G.sph, m, hip, [0, -len + 0.1, -0.1], [r * 1.05, r * 0.5, r * 1.5]);
+  for (const t of [-1, 0, 1]) part(G.cone, claw, hip, [t * r * 0.55, -len + 0.08, -0.1 - r * 1.35], [r * 0.2, r * 0.6, r * 0.2], [-Math.PI / 2, 0, 0]);
+  return hip;
+}
+// a big plant-eater's leg: a thick column with round toenails
+function dLegQ(parent, x, y, z, len, r, m, nail = 0xf4ecd8) {
+  const hip = grp(parent, [x, y, z]);
+  part(G.sph, m, hip, [0, -len * 0.18, 0], [r * 1.3, len * 0.3, r * 1.3]);
+  part(G.cyl, m, hip, [0, -len * 0.58, 0], [r, len * 0.8, r]);
+  part(G.cyl, m, hip, [0, -len + 0.12, 0], [r * 1.15, 0.24, r * 1.15]);
+  for (const t of [-1, 0, 1]) part(G.sph, nail, hip, [t * r * 0.6, -len + 0.1, -r * 1.0], [r * 0.25, r * 0.2, r * 0.18]);
+  return hip;
+}
+// a tail of tapering segments, each hanging off the one before so it can swish
+const TAIL_SEG = new THREE.CylinderGeometry(0.8, 1, 1, 12).rotateX(Math.PI / 2).translate(0, 0, 0.5);
+function dTail(parent, p, n, segLen, r0, r1, m, droop = 0.08) {
+  const segs = []; let at = grp(parent, p);
+  for (let i = 0; i < n; i++) {
+    const r = r0 + (r1 - r0) * i / (n - 1);
+    part(TAIL_SEG, m, at, [0, 0, 0], [r, r * 0.95, segLen * 1.02]);
+    part(G.sph, m, at, [0, 0, 0], [r, r * 0.95, r]);
+    if (i) at.rotation.x = droop;
+    segs.push(at); at = grp(at, [0, 0, segLen]);
+  }
+  part(G.sph, m, at, [0, 0, 0], r1 * 0.8);
+  segs.end = at; return segs;
+}
+const swish = (segs, ph, amp) => segs.forEach((s, i) => { s.rotation.y = Math.sin(ph - i * 0.55) * amp * (0.4 + i * 0.15); });
+// big friendly eyes, one on each side of the head
+function dEyes(head, x, y, z, r = 0.14) {
+  for (const s of [-1, 1]) {
+    part(G.sph, 0xffffff, head, [s * x, y, z], [r, r * 1.1, r]);
+    part(G.sph, 0x1a1a1a, head, [s * (x + r * 0.15), y, z - r * 0.55], r * 0.6);
+    part(G.sph, glowM(0xffffff), head, [s * (x + r * 0.08), y + r * 0.35, z - r * 0.98], r * 0.2);
+  }
+}
+function buildTrex() {
+  const g = new THREE.Group(), skin = texMat('dinoGreen', 2, 2), B = 0xd8ec9a, D = 0x2f7a34;
+  const body = grp(g, [0, 2.35, 0]);
+  part(G.sph, skin, body, [0, 0, 0.1], [0.95, 0.92, 1.4], [-0.12, 0, 0]);
+  part(G.sph, B, body, [0, -0.3, -0.25], [0.74, 0.62, 1.05]);
+  for (let i = 0; i < 4; i++) part(G.cone, D, body, [0, 0.82 - i * 0.06, 0.95 + i * 0.32], [0.12, 0.3, 0.16], [-0.3, 0, 0]);   // spines behind the seat
+  const neck = grp(body, [0, 0.45, -1.05]);
+  part(G.sph, skin, neck, [0, 0.12, -0.08], [0.56, 0.62, 0.62]);
+  const head = grp(neck, [0, 0.5, -0.38]);
+  part(G.sph, skin, head, [0, 0.05, -0.2], [0.62, 0.55, 0.78]);
+  part(G.sph, skin, head, [0, -0.08, -0.78], [0.5, 0.4, 0.55]);
+  part(G.sph, D, head, [0, 0.42, -0.25], [0.32, 0.12, 0.45]);
+  dEyes(head, 0.36, 0.22, -0.42, 0.15);
+  for (const s of [-1, 1]) {
+    part(G.sph, D, head, [s * 0.36, 0.42, -0.42], [0.18, 0.06, 0.12], [0, 0, s * 0.3]);
+    part(G.sph, 0x1a3a1a, head, [s * 0.16, 0.05, -1.3], 0.05);
+    for (let i = 0; i < 4; i++) part(G.cone, 0xfffaf0, head, [s * (0.36 - i * 0.04), -0.42, -0.55 - i * 0.2], [0.05, 0.15, 0.05], [Math.PI, 0, 0]);
+  }
+  const jaw = grp(head, [0, -0.32, -0.05]);
+  part(G.sph, B, jaw, [0, -0.06, -0.6], [0.44, 0.17, 0.66]);
+  part(G.sph, 0xd84a5a, jaw, [0, 0.06, -0.6], [0.3, 0.06, 0.5]);
+  const arms = [-1, 1].map(s => {
+    const a = grp(body, [s * 0.55, -0.05, -0.9]);
+    part(G.cyl, skin, a, [0, -0.17, -0.06], [0.09, 0.36, 0.09], [0.5, 0, 0]); part(G.sph, skin, a, [0, -0.34, -0.17], 0.1);
+    for (const t of [-1, 1]) part(G.cone, 0xfff4dc, a, [t * 0.04, -0.44, -0.2], [0.03, 0.1, 0.03], [Math.PI, 0, 0]);
+    return a;
+  });
+  const legs = [-1, 1].map(s => dLeg(g, s * 0.62, 2.15, 0.35, 2.05, 0.3, skin));
+  const tail = dTail(body, [0, 0.05, 1.3], 6, 0.52, 0.6, 0.1, skin); tail[0].rotation.x = 0.12;
+  return {
+    g, body, legs, head: neck, seatY: 3.28, seatZ: 0.25, bodyY: 2.35, runFreq: 9, legAmp: 0.75, shadow: 2.2,
+    extra(ph, k, air) { swish(tail, ph * 0.5, 0.25); jaw.rotation.x = air ? 0.35 : 0.1 + Math.max(0, Math.sin(ph * 0.21)) * 0.3; arms.forEach((a, i) => a.rotation.x = Math.sin(ph * 2 + i) * 0.3); },
+  };
+}
+function buildRaptor() {
+  const g = new THREE.Group(), skin = texMat('raptor', 2, 1), B = 0xfff0d0, F = 0x3ab0c8;
+  const body = grp(g, [0, 1.5, 0]);
+  part(G.sph, skin, body, [0, 0, 0.05], [0.52, 0.55, 1.0]);
+  part(G.sph, B, body, [0, -0.2, -0.1], [0.42, 0.38, 0.8]);
+  const neck = grp(body, [0, 0.25, -0.8]); neck.rotation.x = -0.5;
+  part(G.cyl, skin, neck, [0, 0.35, 0], [0.2, 0.75, 0.2]);
+  const head = grp(neck, [0, 0.75, 0]); head.rotation.x = 0.5;
+  part(G.sph, skin, head, [0, 0, -0.1], [0.3, 0.27, 0.42]);
+  part(G.sph, skin, head, [0, -0.06, -0.48], [0.2, 0.15, 0.32]);
+  dEyes(head, 0.19, 0.08, -0.18, 0.1);
+  // a crest of bright feathers on the head, more on the arms, and a tuft on the tail
+  for (let i = 0; i < 4; i++) part(G.sph, i % 2 ? F : 0x2f7ad8, head, [0, 0.24 - i * 0.02, i * 0.12], [0.05, 0.16 - i * 0.02, 0.08], [-0.5 - i * 0.2, 0, 0]);
+  for (const s of [-1, 1]) for (let i = 0; i < 3; i++) part(G.cone, 0xfffaf0, head, [s * 0.12, -0.2, -0.36 - i * 0.12], [0.03, 0.08, 0.03], [Math.PI, 0, 0]);
+  const arms = [-1, 1].map(s => { const a = grp(body, [s * 0.38, 0.05, -0.62]); part(G.cyl, skin, a, [0, -0.2, -0.05], [0.07, 0.42, 0.07], [0.5, 0, 0]); part(G.sph, F, a, [s * 0.05, -0.2, 0], [0.04, 0.22, 0.14], [0.5, 0, 0]); return a; });
+  const legs = [-1, 1].map(s => { const l = dLeg(g, s * 0.32, 1.35, 0.25, 1.32, 0.17, skin); part(G.cone, 0xfffaf0, l, [0, -1.12, -0.15], [0.05, 0.28, 0.05], [-0.9, 0, 0]); return l; });   // the big sickle claw
+  const tail = dTail(body, [0, 0.05, 0.9], 6, 0.38, 0.32, 0.06, skin, 0.02); tail[0].rotation.x = -0.05;
+  part(G.sph, F, tail.end, [0, 0, 0.1], [0.06, 0.04, 0.3]);
+  return {
+    g, body, legs, neck, neckX: -0.5, seatY: 2.12, seatZ: 0.15, bodyY: 1.5, runFreq: 12, legAmp: 0.95, shadow: 1.5,
+    extra(ph, k, air) { swish(tail, ph * 0.6, 0.12); arms.forEach((a, i) => a.rotation.x = air ? -0.6 : Math.sin(ph + i * Math.PI) * 0.25); },
+  };
+}
+function buildStego() {
+  const g = new THREE.Group(), skin = texMat('dinoOlive', 2, 2), B = 0xe0e0a0;
+  const body = grp(g, [0, 1.75, 0]);
+  part(G.sph, skin, body, [0, 0.05, 0.1], [0.95, 0.95, 1.6]);
+  part(G.sph, B, body, [0, -0.38, 0], [0.75, 0.5, 1.3]);
+  // two rows of plates down the back, leaving room for Iyla in the middle
+  for (let i = 0; i < 10; i++) {
+    const z = -1.4 + i * 0.32; if (z > -0.4 && z < 0.7) continue;
+    const u = (z - 0.1) / 1.6, top = 0.05 + 0.95 * Math.sqrt(Math.max(0, 1 - u * u)), h = 0.22 + 0.3 * (1 - Math.abs(u));
+    for (const s of [-1, 1]) part(G.octa, s > 0 ? 0xff8a3a : 0xffb84a, body, [s * 0.13, top + h * 0.55, z + (s > 0 ? 0.16 : 0)], [0.06, h, h * 0.75], [0, 0, s * 0.15]);
+  }
+  const neck = grp(body, [0, -0.05, -1.45]);
+  part(G.sph, skin, neck, [0, 0, -0.2], [0.36, 0.36, 0.45]);
+  const head = grp(neck, [0, -0.05, -0.55]);
+  part(G.sph, skin, head, [0, 0, -0.1], [0.32, 0.28, 0.45]);
+  part(G.cone, 0xd8c890, head, [0, -0.06, -0.58], [0.12, 0.22, 0.1], [-Math.PI / 2, 0, 0]);
+  dEyes(head, 0.2, 0.1, -0.15, 0.1);
+  const legs = [[-0.55, -0.85, 1.3, 1.25, 0.22], [0.55, -0.85, 1.3, 1.25, 0.22], [-0.6, 0.95, 1.55, 1.5, 0.28], [0.6, 0.95, 1.55, 1.5, 0.28]].map(([x, z, y, l, r]) => dLegQ(g, x, y, z, l, r, skin));
+  const tail = dTail(body, [0, 0.15, 1.6], 5, 0.5, 0.42, 0.1, skin, 0.03); tail[0].rotation.x = 0.25;
+  for (const s of [-1, 1]) for (const k of [0, 1]) part(G.cone, 0xfff4dc, tail.end, [s * 0.12, 0.08, -0.4 + k * 0.32], [0.1, 0.85, 0.1], [0.3, 0, -s * 1.1]);   // the spiky end
+  return {
+    g, body, legs, head: neck, seatY: 2.75, seatZ: 0.15, bodyY: 1.75, runFreq: 10, legAmp: 0.55, shadow: 2.2,
+    extra(ph) { swish(tail, ph * 0.5, 0.3); },
+  };
+}
+function buildBrachio() {
+  const g = new THREE.Group(), skin = texMat('dinoTeal', 2, 2), B = 0xcfeaf0;
+  const body = grp(g, [0, 2.9, 0]);
+  part(G.sph, skin, body, [0, 0.1, 0], [1.1, 1.0, 1.75], [0.18, 0, 0]);
+  part(G.sph, B, body, [0, -0.4, -0.1], [0.85, 0.55, 1.4]);
+  const neck = grp(body, [0, 0.55, -1.35]);
+  part(G.taper, skin, neck, [0, 1.6, 0], [0.34, 3.3, 0.34]);
+  part(G.sph, skin, neck, [0, 0.2, 0], [0.55, 0.6, 0.55]);
+  const head = grp(neck, [0, 3.3, 0]); head.rotation.x = 0.35;
+  part(G.sph, skin, head, [0, 0, -0.15], [0.36, 0.32, 0.55]);
+  part(G.sph, skin, head, [0, 0.28, 0], [0.24, 0.2, 0.28]);
+  dEyes(head, 0.24, 0.12, -0.2, 0.11);
+  part(G.smile, 0x2a4a5a, head, [0, -0.1, -0.66], 0.13, [0, 0, Math.PI]);
+  const legs = [[-0.62, -0.95, 2.55, 2.5, 0.3], [0.62, -0.95, 2.55, 2.5, 0.3], [-0.68, 1.05, 2.3, 2.25, 0.34], [0.68, 1.05, 2.3, 2.25, 0.34]].map(([x, z, y, l, r]) => dLegQ(g, x, y, z, l, r, skin));
+  const tail = dTail(body, [0, -0.05, 1.65], 7, 0.55, 0.45, 0.07, skin, 0.1); tail[0].rotation.x = 0.35;
+  return {
+    g, body, legs, neck, neckX: -0.7, head, seatY: 4.02, seatZ: 0.25, bodyY: 2.9, runFreq: 7, legAmp: 0.45, shadow: 2.8,
+    extra(ph) { swish(tail, ph * 0.4, 0.25); head.rotation.y = Math.sin(ph * 0.3) * 0.25; },
+  };
+}
+// the Triceratops: the boss of Dinosaur Valley
+function buildTrike() {
+  const g = new THREE.Group(), skin = texMat('dinoTrike', 2, 2), H = 0xfff4dc;
+  const body = grp(g, [0, 1.75, 0]);
+  part(G.sph, skin, body, [0, 0, 0.1], [1.05, 0.95, 1.7]);
+  part(G.sph, 0xe8e0c0, body, [0, -0.38, 0], [0.82, 0.5, 1.35]);
+  const head = grp(body, [0, 0.05, -1.7]);
+  part(G.sph, skin, head, [0, 0, -0.2], [0.62, 0.55, 0.75]);
+  part(G.cone, 0xd8c890, head, [0, -0.15, -0.95], [0.22, 0.4, 0.2], [-Math.PI / 2 - 0.3, 0, 0]);
+  // the big frill, with spikes round the edge
+  const frill = grp(head, [0, 0.35, 0.15]); frill.rotation.x = -0.45;
+  part(new THREE.CircleGeometry(1, 24, 0, Math.PI), new THREE.MeshLambertMaterial({ color: 0xff9a3a, side: THREE.DoubleSide }), frill, [0, 0, 0], [1.25, 1.1, 1]);
+  part(new THREE.CircleGeometry(1, 24, 0, Math.PI), new THREE.MeshLambertMaterial({ color: 0xffd060, side: THREE.DoubleSide }), frill, [0, 0, -0.03], [0.85, 0.75, 1]);
+  for (let i = 0; i <= 8; i++) { const a = i / 8 * Math.PI; part(G.cone, H, frill, [Math.cos(a) * 1.25, Math.sin(a) * 1.1, 0], [0.1, 0.32, 0.1], [0, 0, a - Math.PI / 2]); }
+  for (const s of [-1, 1]) part(G.cone, H, head, [s * 0.32, 0.45, -0.45], [0.12, 0.95, 0.12], [-1.1, 0, -s * 0.15]);
+  part(G.cone, H, head, [0, 0, -1.05], [0.09, 0.35, 0.09], [-0.6, 0, 0]);
+  dEyes(head, 0.4, 0.15, -0.35, 0.13);
+  for (const s of [-1, 1]) part(G.box, 0x2a3a4a, head, [s * 0.38, 0.33, -0.44], [0.3, 0.07, 0.08], [0, 0, s * 0.35]);   // cross eyebrows
+  const legs = [[-0.6, -0.95], [0.6, -0.95], [-0.6, 0.95], [0.6, 0.95]].map(([x, z]) => dLegQ(g, x, 1.25, z, 1.25, 0.3, skin));
+  const tail = dTail(body, [0, 0, 1.7], 4, 0.45, 0.35, 0.08, skin, 0.15); tail[0].rotation.x = 0.4;
+  g.scale.setScalar(1.3);
+  return { g, body, legs, head, runFreq: 9, bodyY: 1.75 };
+}
+// a pterodactyl flapping across the sky (scenery)
+function buildPtero(parent, x, y, z) {
+  const g = grp(parent, [x, y, z]), C = 0xc8784a;
+  part(G.sph, C, g, [0, 0, 0], [0.3, 0.3, 0.8]);
+  const head = grp(g, [0, 0.15, -0.75]);
+  part(G.sph, C, head, [0, 0, 0], 0.25); part(G.cone, 0xffd060, head, [0, -0.05, -0.5], [0.08, 0.6, 0.08], [-Math.PI / 2, 0, 0]); part(G.cone, C, head, [0, 0.1, 0.4], [0.07, 0.6, 0.05], [Math.PI / 2 + 0.3, 0, 0]);
+  const wings = [-1, 1].map(s => { const w = grp(g, [s * 0.25, 0.05, -0.1]); part(G.sph, 0xe89a6a, w, [s * 1.3, 0, 0.15], [1.35, 0.05, 0.55]); return w; });
+  return { g, legs: [], extra(ph) { wings.forEach((w, i) => w.rotation.z = (i ? -1 : 1) * Math.sin(ph * 3) * 0.6); } };
+}
+// plants and bits for the dinosaur levels
+function buildFern(parent, x, z, s = 1) {
+  const g = grp(parent, [x, 0, z]); g.scale.setScalar(s); g.rotation.y = rand(0, TAU);
+  for (let i = 0; i < 7; i++) { const p = grp(g, [0, 0, 0]); p.rotation.y = i / 7 * TAU; part(G.sphLo, i % 2 ? 0x3f9a3a : 0x58b046, p, [0, 0.45, -0.75], [0.22, 0.06, 0.95], [-0.45, 0, 0]); }
+  return g;
+}
+function buildTreeFern(parent, x, z, s = 1) {
+  const g = grp(parent, [x, 0, z]); g.scale.setScalar(s); g.rotation.y = rand(0, TAU);
+  part(G.taper, 0x6a4a2a, g, [0, 1.6, 0], [0.32, 3.2, 0.32]);
+  for (let i = 0; i < 5; i++) part(G.sphLo, 0x5a3a20, g, [0, 0.4 + i * 0.65, 0], [0.36 - i * 0.02, 0.12, 0.36 - i * 0.02]);
+  const top = grp(g, [0, 3.2, 0]);
+  for (let i = 0; i < 9; i++) { const p = grp(top, [0, 0, 0]); p.rotation.y = i / 9 * TAU; part(G.sphLo, i % 2 ? 0x3f9a3a : 0x58b046, p, [0, 0.1, -0.9], [0.28, 0.06, 1.0], [-0.35, 0, 0]); }
+  part(G.sphLo, 0x7a5a2a, top, [0, 0.1, 0], 0.35);
+  return g;
+}
+function buildJungleTree(parent, x, z, s = 1) {
+  const g = grp(parent, [x, 0, z]); g.scale.setScalar(s); g.rotation.y = rand(0, TAU);
+  part(G.taper, 0x7a5a3a, g, [0, 4, 0], [0.55, 8, 0.55]);
+  for (let i = 0; i < 4; i++) { const a = i / 4 * TAU + 0.4; part(G.cone, 0x6a4a2e, g, [Math.cos(a) * 0.55, 0.6, Math.sin(a) * 0.55], [0.3, 1.4, 0.3], [-0.5 * Math.sin(a), 0, 0.5 * Math.cos(a)]); }   // roots
+  for (const [px, py, pz, r] of [[0, 8.4, 0, 2.6], [1.6, 7.6, 0.6, 1.9], [-1.5, 7.8, -0.5, 2], [0.3, 9.6, -0.8, 1.8]]) part(G.sphLo, r > 2 ? 0x2f7a2a : 0x3f8f30, g, [px, py, pz], [r, r * 0.7, r]);
+  for (let i = 0; i < 4; i++) { const vx = rand(-1.6, 1.6), vz = rand(-1.6, 1.6), l = rand(2, 4); part(G.cylLo, 0x4a8a2a, g, [vx, 7.2 - l / 2, vz], [0.04, l, 0.04]); }   // vines
+  return g;
+}
+function buildEggNest(parent, x, z, s = 1) {
+  const g = grp(parent, [x, 0, z]); g.scale.setScalar(s);
+  part(G.ring, 0x8a6a3a, g, [0, 0.15, 0], [0.9, 0.9, 1.6], [Math.PI / 2, 0, 0]);
+  [[0, 0], [0.32, 0.2], [-0.3, 0.22], [0.05, -0.32]].forEach(([ex, ez], i) => part(G.sph, shiny([0xf4ecd8, 0xd8f0ff, 0xffe0f0, 0xf4ecd8][i]), g, [ex, 0.32, ez], [0.24, 0.32, 0.24]));
+  return g;
+}
+function buildSkeleton(parent, x, z, s = 1) {   // old bones half sunk in the ground
+  const g = grp(parent, [x, 0, z]); g.scale.setScalar(s); g.rotation.y = rand(0, TAU); const BN = 0xf2e6c8;
+  for (let i = 0; i < 6; i++) { const r = 1.3 - Math.abs(i - 2) * 0.18; part(G.torus, BN, g, [0, 0, -1.5 + i * 0.6], [r, r * 1.1, 0.5]); }
+  part(G.cyl, BN, g, [0, 1.25, 0], [0.12, 4, 0.12], [Math.PI / 2, 0, 0]);
+  part(G.sph, BN, g, [0, 0.5, -2.6], [0.5, 0.4, 0.75]);
+  return g;
+}
+function buildMushrooms(parent, x, z, s = 1) {
+  const g = grp(parent, [x, 0, z]); g.scale.setScalar(s);
+  [[0, 0, 1], [0.35, 0.2, 0.7], [-0.3, 0.25, 0.6]].forEach(([mx, mz, k]) => { part(G.cyl, 0xfff4dc, g, [mx, 0.25 * k, mz], [0.08 * k, 0.5 * k, 0.08 * k]); part(G.hemi, 0xe8303a, g, [mx, 0.5 * k, mz], [0.3 * k, 0.22 * k, 0.3 * k]); part(G.sphLo, 0xffffff, g, [mx + 0.1 * k, 0.66 * k, mz], 0.05 * k); });
+  return g;
+}
+
 function buildRider(kind, outfit, sea) {
   const builders = {
     giraffe: buildGiraffe, hippo: buildHippo, lion: () => buildCat(false), tiger: () => buildCat(true), flamingo: buildFlamingo,
     elephant: buildElephantRide, zebra: () => buildZebra(null, 0, 0, 0, true), dolphin: buildDolphin, shark: () => buildShark(false), whale: buildWhale,
     eagle: () => buildBird('eagle'), owl: () => buildBird('owl'), parrot: () => buildBird('parrot'),
+    trex: buildTrex, raptor: buildRaptor, stego: buildStego, brachio: buildBrachio,
   };
   const a = builders[kind]();
   const iyla = buildIyla(outfit, sea);
@@ -978,6 +1260,16 @@ function makeTreat(key) {
     part(G.cyl, 0xfff4c0, f, [0.03, -0.05, 0], [0.02, 0.9, 0.02], [0, 0, 0.25]);
   } else if (key === 'volcano') {
     part(G.octa, shiny(pick([0xff2a4a, 0x3ad0ff, 0x9a4aff]), 0x400010), f, [0, 0, 0], [0.32, 0.46, 0.32]);
+  } else if (key === 'dinos') {
+    // a spotty dino egg
+    const c = pick([[0xfff4dc, 0x6ac040], [0xd8f0ff, 0x3a8ae0], [0xffe0f0, 0xff5fa8]]);
+    part(G.sph, shiny(c[0], 0x302a20), f, [0, 0, 0], [0.32, 0.42, 0.32]);
+    for (const [x, y, z] of [[0.2, 0.15, -0.2], [-0.22, -0.05, -0.18], [0.05, -0.2, -0.27], [-0.1, 0.25, -0.2]]) part(G.sphLo, shiny(c[1]), f, [x, y, z], [0.08, 0.08, 0.04]);
+  } else if (key === 'jungle') {
+    // a bunch of bananas
+    const m = shiny(0xffd83a, 0x403000);
+    for (let i = 0; i < 3; i++) part(G.sph, m, f, [(i - 1) * 0.13, 0, 0], [0.11, 0.42, 0.11], [0, 0, (i - 1) * 0.35 + 0.3]);
+    part(G.cyl, 0x6a4a2a, f, [0.08, 0.42, 0], [0.04, 0.16, 0.04]);
   } else {
     const m = shiny(pick([0xff8a3d, 0xff5f7a, 0xffd84a]), 0x401800);
     for (let i = 0; i < 5; i++) { const a = i / 5 * TAU; part(G.cone, m, f, [Math.sin(a) * 0.22, Math.cos(a) * 0.22, 0], [0.13, 0.42, 0.08], [0, 0, -a]); }
@@ -1062,6 +1354,8 @@ const SONGS = {
   ocean: { bpm: 104, root: 330, wave: 'sine' },
   mountain: { bpm: 120, root: 349, wave: 'triangle', shaker: true },
   candy: { bpm: 144, root: 392, wave: 'sine', shaker: true },
+  dinos: { bpm: 132, root: 247, wave: 'square', shaker: true },
+  jungle: { bpm: 126, root: 294, wave: 'triangle', shaker: true },
   boss: { bpm: 172, root: 247, wave: 'square', shaker: true, minor: true },
 };
 const MEL = [0, 4, 7, 4, 9, 7, 4, 2, 0, 2, 4, 7, 4, 2, 0, null, 5, 9, 12, 9, 7, 4, 2, 4, 0, 4, 7, 12, 11, 7, 4, null];
@@ -1097,7 +1391,7 @@ function starStr(n) { return '★'.repeat(n) + '☆'.repeat(3 - n); }
    OVERWORLD: a little Africa you ride around. Gates lead to levels.
    ===================================================================== */
 const W = { scene: null, rider: null, pos: new THREE.Vector3(0, 0, 24), face: 0, target: null, cols: [], walk: [], gates: {}, near: null, elephants: [], zebras: [], fx: null, t: 0, milo: null };
-const CANDY_C = { x: 0, z: -30 }, DESERT_C = { x: -33, z: -14 }, MOUNT_C = { x: 25, z: -29 };
+const CANDY_C = { x: 0, z: -30 }, DESERT_C = { x: -33, z: -14 }, MOUNT_C = { x: 25, z: -29 }, DINO_C = { x: -27, z: 28 };
 function heightAt(x, z) { const d = Math.hypot(x - CANDY_C.x, z - CANDY_C.z); return d < 12 ? 2 : d < 16 ? 2 * (16 - d) / 4 : 0; }
 const faceTo = (x, z, tx, tz) => Math.atan2(tx - x, tz - z);
 const GATE_AT = {
@@ -1107,6 +1401,8 @@ const GATE_AT = {
   volcano: [10, 0, 1, faceTo(10, 1, 0, 12)],
   ocean: [26, 0, 26, faceTo(26, 26, 0, 14)],
   mountain: [16, 0, -20, faceTo(16, -20, 0, -5)],
+  dinos: [-17, 0, 31, faceTo(-17, 31, -6, 40)],
+  jungle: [-38, 0, 19, faceTo(-38, 19, -26, 26)],
 };
 
 function buildWorld() {
@@ -1143,6 +1439,7 @@ function buildWorld() {
   const tr = k => W.gates[k].trig;
   stones(0, 24, 0, 12); stones(0, 12, -6, 12); stones(-6, 12, tr('serengeti').x, tr('serengeti').z); stones(0, 12, 0, -13); stones(0, -13, 0, -18.5);
   stones(0, 12, tr('desert').x, tr('desert').z); stones(0, 12, tr('volcano').x, tr('volcano').z); stones(0, 24, tr('ocean').x, tr('ocean').z); stones(0, -13, tr('mountain').x, tr('mountain').z);
+  stones(0, 24, tr('dinos').x, tr('dinos').z); stones(tr('dinos').x, tr('dinos').z, tr('jungle').x, tr('jungle').z);
   // the ocean pier behind the sea gate
   const [ox, , oz, ory] = GATE_AT.ocean; const out = new THREE.Vector3(-Math.sin(ory), 0, -Math.cos(ory));
   for (let i = 0; i < 14; i++) { const d = 1.5 + i * 1.1; part(G.box, 0x9a6a3a, S, [ox + out.x * d, 0.15, oz + out.z * d], [3, 0.2, 1], [0, ory, 0]); }
@@ -1173,6 +1470,14 @@ function buildWorld() {
   part(new THREE.CircleGeometry(5, 32), mat(0x4cb6e8), S, [-22, 0.04, 17], null, [-Math.PI / 2, 0, 0]);
   for (let i = 0; i < 10; i++) { const a = i / 10 * TAU; part(G.rock, 0x8d7f70, S, [-22 + Math.cos(a) * 5.2, 0.15, 17 + Math.sin(a) * 5.2], [0.6, 0.35, 0.6]); }
   W.cols.push({ x: -22, z: 17, r: 4.8 });
+  // the dino corner, bottom left: a patch of jungle, a nest of eggs, and a brachiosaurus munching the trees
+  const DC = DINO_C;
+  part(new THREE.CircleGeometry(8, 40), texMat('jungle', 3, 3), S, [DC.x, 0.035, DC.z], null, [-Math.PI / 2, 0, 0]);
+  [[-5, -1, 0.45], [3, 4, 0.4], [-3, 5, 0.5], [-7, 3, 0.42]].forEach(([dx, dz, s]) => { buildJungleTree(S, DC.x + dx, DC.z + dz, s); W.cols.push({ x: DC.x + dx, z: DC.z + dz, r: 0.6 }); });
+  [[1, -3], [-1, 5.5], [4.5, 0], [-6, -3], [2, 6]].forEach(([dx, dz]) => buildFern(S, DC.x + dx, DC.z + dz, 0.9));
+  buildEggNest(S, DC.x + 1, DC.z + 4, 1); W.cols.push({ x: DC.x + 1, z: DC.z + 4, r: 0.9 });
+  W.brachio = buildBrachio(); W.brachio.g.scale.setScalar(0.75); W.brachio.g.position.set(DC.x - 1.5, 0, DC.z + 1); W.brachio.g.rotation.y = -2.15; S.add(W.brachio.g);
+  W.cols.push({ x: DC.x - 1.5, z: DC.z + 1, r: 2 });
 
   // animals
   W.elephants.push(buildElephant(S, -27, 11, 0.6, 0.9), buildElephant(S, -15, 24, -2.2, 0.75));
@@ -1181,7 +1486,7 @@ function buildWorld() {
 
   // trees
   const rng = mulberry32(11);
-  const keepClear = (x, z) => Math.hypot(x - CANDY_C.x, z - CANDY_C.z) < 19 || Math.hypot(x - MOUNT_C.x, z - MOUNT_C.z) < 15 || Math.hypot(x - V.x, z - V.z) < 11 || Math.hypot(x + 22, z - 17) < 8 || Math.hypot(x - DESERT_C.x, z - DESERT_C.z) < 17
+  const keepClear = (x, z) => Math.hypot(x - CANDY_C.x, z - CANDY_C.z) < 19 || Math.hypot(x - MOUNT_C.x, z - MOUNT_C.z) < 15 || Math.hypot(x - V.x, z - V.z) < 11 || Math.hypot(x + 22, z - 17) < 8 || Math.hypot(x - DESERT_C.x, z - DESERT_C.z) < 17 || Math.hypot(x - DINO_C.x, z - DINO_C.z) < 11
     || Object.values(W.gates).some(g => Math.hypot(x - g.trig.x, z - g.trig.z) < 7) || (Math.abs(x) < 4 && z > -20) || Math.hypot(x, z - 12) < 5;
   for (let i = 0; i < 46; i++) {
     const a = rng() * TAU, r = 10 + rng() * 34; const x = Math.cos(a) * r, z = Math.sin(a) * r;
@@ -1216,6 +1521,8 @@ const GATE_STYLE = {
   volcano: { label: 'VOLCANO', bg: '#3a1a14', fg: '#ff8a3a', post: 0x2a2224, beam: 0x3a2a28, tip: 0xff5a10, ring: 0xff5a10 },
   mountain: { label: 'MOUNTAINS', bg: '#e8f4ff', fg: '#3a5a8a', post: 0x6a7280, beam: 0x8a5a2b, tip: 0xffffff, ring: 0x8fd0ff },
   ocean: { label: 'UNDER THE SEA', bg: '#5fc8ff', fg: '#ffffff', post: 0xff6f61, beam: 0x4fd8c8, tip: 0xffd84a, ring: 0x5fd0ff },
+  dinos: { label: 'DINO VALLEY', bg: '#ffb86b', fg: '#6a2a10', post: 0xf2e6c8, beam: 0xf2e6c8, tip: 0xff8a3a, ring: 0xffb04a },
+  jungle: { label: 'DINO LAND', bg: '#6ad06a', fg: '#ffffff', post: 0x7a5a3a, beam: 0x4a8a2a, tip: 0xffd84a, ring: 0x8be06a },
 };
 function buildGate(S, key, x, y, z, ry) {
   const g = grp(S, [x, y, z]); g.rotation.y = ry;
@@ -1306,6 +1613,7 @@ function updateWorld(dt) {
     m.g.position.y = heightAt(m.g.position.x, m.g.position.z);
     animMilo(m, dt, run);
   }
+  if (W.brachio) { const B = W.brachio; B.neck.rotation.x = -0.3 + Math.sin(t * 0.7) * 0.12; B.extra(t * 2.5); }
   for (const e of W.elephants) { e.phase += dt; e.ears.forEach((ep, i) => ep.rotation.y = (i ? -1 : 1) * Math.sin(e.phase * 2) * 0.25); e.trunk.rotation.x = 0.3 + Math.sin(e.phase * 1.3) * 0.25; }
   for (const c of W.clouds) { c.position.x += dt * 0.8; if (c.position.x > 55) c.position.x = -55; }
   for (const k in W.gates) { const gt = W.gates[k]; gt.ring.material.opacity = 0.5 + Math.sin(t * 4) * 0.3; gt.ring.scale.setScalar(1 + Math.sin(t * 4) * 0.06); gt.lock.rotation.y = Math.sin(t * 2) * 0.3; }
@@ -1328,7 +1636,7 @@ function showGatePop(k) {
   $('popTitle').textContent = th.em + ' ' + th.name;
   $('popDesc').textContent = th.desc;
   const an = ANIMALS[rideOf(th)];
-  $('popRide').textContent = `Riding: ${an.em} ${an.name}` + (th.sea ? ' (change it under Sea)' : th.fly ? ' (change it under Sky)' : '') + (th.boss ? `  ·  Boss: ${th.boss === 'rhino' ? '🦏 Rhino' : '🦈 Giant Shark'}` : '');
+  $('popRide').textContent = `Riding: ${an.em} ${an.name}` + (th.sea ? ' (change it under Sea)' : th.fly ? ' (change it under Sky)' : th.dino ? ' (change it under Dino)' : '') + (th.boss ? `  ·  Boss: ${BOSSES[th.boss].em} ${BOSSES[th.boss].name}` : '');
   const b = save.best[k]; $('popStars').textContent = b ? starStr(b.stars) + `  ${th.fruitEm} ${b.fruit}` : '';
   $('lockMsg').innerHTML = th.req ? `Finish <b>${THEMES[th.req].name}</b> to open this one!` : '';
   $('popLock').style.display = locked ? '' : 'none';
@@ -1489,6 +1797,90 @@ const ST = {
       L.bubbles = true;
     },
   },
+  dinos: {
+    low(g, r) { part(G.rock, 0x8a7a6a, g, [0, 0.6, 0], [1.0, 0.8, 0.9], rand3(r)); part(G.rock, 0x9a8a78, g, [-0.7, 0.25, 0.35], 0.35, rand3(r)); buildFern(g, 0.6, 0.5, 0.45); },
+    bar(g) {   // a giant fossil bone across the path
+      part(G.cyl, 0xf2e6c8, g, [0, 0.55, 0], [0.4, 8.4, 0.4], [0, 0, Math.PI / 2]);
+      for (const s of [-1, 1]) for (const dz of [-0.28, 0.28]) part(G.sph, 0xf2e6c8, g, [s * 4.3, 0.6, dz], 0.5);
+    },
+    tall(g) { buildTreeFern(g, 0, 0, 1.05); },
+    bank: 0x3a2a1a, riverDeco(g, r) { for (let i = 0; i < 6; i++) { const x = (r() < 0.5 ? -1 : 1) * (5.5 + r() * 30); part(G.rock, 0x4a3a2a, g, [x, 0.2, (r() < 0.5 ? -1 : 1) * 1.9], [0.6, 0.4, 0.5], rand3(r)); } for (let i = 0; i < 4; i++) part(G.sphLo, 0x6a5a50, g, [rand(-3.5, 3.5), 0.08, rand(-1, 1)], [0.3, 0.12, 0.3]); },
+    decor(S, x, z, r, L) {
+      const k = r();
+      if (k < 0.24) return buildTreeFern(S, x, z, 0.9 + r() * 0.8);
+      if (k < 0.42) return buildFern(S, x, z, 1 + r() * 1.2);
+      if (k < 0.52) { const o = grp(S, [x, 0, z]); part(G.rock, 0x8a7a6a, o, [0, 0.9, 0], [1.6, 1.3, 1.4], rand3(r)); buildFern(o, 1, 0.8, 0.7); return o; }
+      if (k < 0.6) return buildEggNest(S, x, z, 1 + r() * 0.4);
+      if (k < 0.67) return buildSkeleton(S, x, z, 0.8 + r() * 0.5);
+      if (k < 0.74) { const o = grp(S, [x, 0, z]); part(new THREE.CylinderGeometry(0.8, 3, 3.5, 12), mat(0x5a4038), o, [0, 1.75, 0]); part(new THREE.CircleGeometry(0.8, 12), glowM(0xff6a10), o, [0, 3.52, 0], null, [-Math.PI / 2, 0, 0]); return o; }
+      if (Math.abs(x) > 13) {   // dinosaurs out on the plain
+        const pickB = r(), d = pickB < 0.35 ? buildBrachio() : pickB < 0.7 ? buildStego() : buildTrike();
+        d.g.position.set(x, 0, z); S.add(d.g); if (pickB < 0.35) d.g.scale.setScalar(1.3 + r() * 0.5);
+        L.walkers.push({ ...d, phase: r() * 6, speed: pickB < 0.35 ? 1.6 : 2.4 }); return null;
+      }
+      if (r() < 0.25) L.walkers.push({ ...buildPtero(S, x, 9 + r() * 6, z), phase: r() * 6, speed: 7 + r() * 4 });
+      return null;
+    },
+    tuft: { geo: () => G.coneLo, m: () => mat(0xffffff), cols: [0x7a9a3a, 0x9aaa4a, 0x5a8a34] },
+    curb: () => mat(0x7a5a3a),
+    backdrop(bd, L) {
+      part(G.sph, nf(0xfff0b0), bd, [50, 46, -150], 9);
+      part(new THREE.CylinderGeometry(7, 42, 40, 20), nf(0x6a4a44), bd, [-28, 16, -162]);
+      part(new THREE.CircleGeometry(7, 16), nf(0xff6a20), bd, [-28, 36.1, -162], null, [-Math.PI / 2, 0, 0]);
+      for (let i = 0; i < 4; i++) { const piv = grp(bd, [-28, 0, -162]); piv.rotation.y = -0.5 + i * 0.35; part(G.box, nf(0xff5a10), piv, [0, 18, 26], [1.2, 0.3, 40], [0.95, 0, 0]); }
+      part(new THREE.ConeGeometry(34, 24, 16), nf(0x9a7a6a), bd, [30, 8, -155]);
+      part(new THREE.ConeGeometry(24, 18, 16), nf(0xa88a72), bd, [72, 5, -150]);
+      // big long-necked dinosaurs far away, misty blue
+      const far = nf(0x7a9ab0);
+      [[48, -138, 2.6, 0.4], [-62, -140, 3.2, -0.3]].forEach(([x, z, s, ry]) => {
+        const o = grp(bd, [x, 0, z]); o.scale.setScalar(s); o.rotation.y = ry;
+        part(G.sph, far, o, [0, 2.9, 0], [1.1, 1, 1.8]); part(G.taper, far, o, [0, 5.4, -1.9], [0.3, 4.6, 0.3], [-0.35, 0, 0]); part(G.sph, far, o, [0, 7.6, -2.8], [0.35, 0.3, 0.55]);
+        for (const [lx, lz] of [[-0.6, -1], [0.6, -1], [-0.6, 1], [0.6, 1]]) part(G.cyl, far, o, [lx, 1.2, lz], [0.3, 2.6, 0.3]);
+        part(G.cone, far, o, [0, 2.6, 2.6], [0.4, 3, 0.4], [-1.3, 0, 0]);
+      });
+      for (let i = -6; i <= 6; i++) part(G.sphLo, nf(0x9a9a5a), bd, [i * 25, -2, -135], [16, 7, 4]);
+      L.smokeAt = new THREE.Vector3(-28, 38, -162); L.eruptAt = L.smokeAt;
+    },
+  },
+  jungle: {
+    low(g, r) { part(G.rock, 0x6a7a6a, g, [0, 0.6, 0], [1.0, 0.8, 0.9], rand3(r)); part(G.sph, 0x4f9a3a, g, [0, 1.0, 0], [0.8, 0.25, 0.7]); buildMushrooms(g, 0.6, 0.5, 0.8); },
+    bar(g) {   // a mossy fallen log
+      part(G.cyl, 0x6a4a2a, g, [0, 0.55, 0], [0.55, 9, 0.55], [0, 0, Math.PI / 2]);
+      for (let i = -3; i <= 3; i++) part(G.sphLo, i % 2 ? 0x4f9a3a : 0x3f8a30, g, [i * 1.25, 1.0, 0], [0.55, 0.22, 0.45]);
+      for (const s of [-1, 1]) part(G.cyl, 0xb08a5a, g, [s * 4.51, 0.55, 0], [0.5, 0.03, 0.5], [0, 0, Math.PI / 2]);
+      buildMushrooms(g, 2.2, -0.4, 0.6);
+    },
+    tall(g) { const t = buildJungleTree(g, 0, 0, 0.75); t.rotation.y = 0; },
+    bank: 0x4a3a20, riverDeco(g, r) { for (let i = 0; i < 6; i++) { const x = (r() < 0.5 ? -1 : 1) * (5.5 + r() * 30); part(G.rock, 0x5a6a5a, g, [x, 0.2, (r() < 0.5 ? -1 : 1) * 1.9], [0.6, 0.4, 0.5], rand3(r)); } for (let i = 0; i < 5; i++) part(new THREE.CircleGeometry(0.45, 10, 0.5, TAU - 0.5), mat(0x4fae3a), g, [rand(-12, 12), 0.09, rand(-1.2, 1.2)], null, [-Math.PI / 2, 0, r() * 6]); },
+    decor(S, x, z, r, L) {
+      const k = r();
+      if (k < 0.3) return buildJungleTree(S, x, z, 0.8 + r() * 0.6);
+      if (k < 0.5) return buildFern(S, x, z, 1.2 + r() * 1.4);
+      if (k < 0.6) return buildTreeFern(S, x, z, 1 + r() * 0.7);
+      if (k < 0.66) return buildMushrooms(S, x, z, 1 + r() * 1.5);
+      if (k < 0.72) { const o = grp(S, [x, 0, z]); const c = pick([0xff4f7a, 0xffc93a, 0xc78cff], r); for (let i = 0; i < 5; i++) { const a = i / 5 * TAU; part(G.sph, c, o, [Math.cos(a) * 0.7, 0.25, Math.sin(a) * 0.7], [0.55, 0.12, 0.4], [0, -a, 0]); } part(G.sph, 0xffe060, o, [0, 0.35, 0], 0.3); return o; }   // a giant flower
+      if (Math.abs(x) > 11) {   // dinosaurs wandering through the trees
+        const pickB = r(), d = pickB < 0.3 ? buildBrachio() : pickB < 0.55 ? buildStego() : pickB < 0.8 ? buildRaptor() : buildTrex();
+        d.g.position.set(x, 0, z); S.add(d.g); if (pickB < 0.3) d.g.scale.setScalar(1.4 + r() * 0.4);
+        L.walkers.push({ ...d, phase: r() * 6, speed: pickB < 0.3 ? 1.5 : pickB < 0.55 ? 2.2 : 4 + r() * 2 }); return null;
+      }
+      if (r() < 0.2) L.walkers.push({ ...buildPtero(S, x, 10 + r() * 5, z), phase: r() * 6, speed: 7 + r() * 4 });
+      return null;
+    },
+    tuft: { geo: () => G.coneLo, m: () => mat(0xffffff), cols: [0x3f8a30, 0x58b046, 0x2f7a2a, 0xff5fa8] },
+    curb: () => mat(0x5a7a3a),
+    backdrop(bd, L) {
+      [[-70, 40, 0x4a7a5a], [-25, 52, 0x5a8a6a], [25, 46, 0x4f806a], [70, 38, 0x5a8a6a]].forEach(([x, h, c]) => { part(new THREE.ConeGeometry(h * 0.62, h, 9), nf(c), bd, [x, h / 2 - 2, -158]); part(new THREE.ConeGeometry(h * 0.3, h * 0.3, 9), nf(0xd8f0e0), bd, [x, h - 2 - h * 0.15 + 0.3, -157.6]); });
+      // a waterfall pouring off the cliffs
+      part(G.box, nf(0x4a6a50), bd, [5, 14, -150], [22, 30, 6]);
+      part(G.plane, nf(0xd8f6ff), bd, [5, 14, -146.9], [4, 28, 1]);
+      part(G.sphLo, nf(0xffffff), bd, [5, 0.5, -146], [5, 2, 2]);
+      const far = nf(0x5a8a7a);
+      const o = grp(bd, [-45, 0, -140]); o.scale.setScalar(3); part(G.sph, far, o, [0, 2.9, 0], [1.1, 1, 1.8]); part(G.taper, far, o, [0, 5.4, -1.9], [0.3, 4.6, 0.3], [-0.35, 0, 0]); part(G.sph, far, o, [0, 7.6, -2.8], [0.35, 0.3, 0.55]);
+      for (let i = -7; i <= 7; i++) part(G.sphLo, nf(i % 2 ? 0x2f6a3a : 0x3a7a44), bd, [i * 22, 2, -130], [14, 12, 6]);
+      L.leaves = true;
+    },
+  },
 };
 
 /* =====================================================================
@@ -1579,7 +1971,7 @@ function buildLevel(key) {
   L.fruits.sort((a, b) => b.z - a.z);
   L.total = L.fruits.length;
   // checkpoints
-  const flagC = { serengeti: 0xff7a2a, candy: 0xff6fb8, desert: 0x3ab0a0, volcano: 0xffd84a, ocean: 0xffd84a, mountain: 0x3a8ae0 }[key];
+  const flagC = { serengeti: 0xff7a2a, candy: 0xff6fb8, desert: 0x3ab0a0, volcano: 0xffd84a, ocean: 0xffd84a, mountain: 0x3a8ae0, dinos: 0x6ac040, jungle: 0xffd84a }[key];
   for (const cp of L.cps) {
     cp.flags = [];
     for (const s of [-1, 1]) {
@@ -1633,16 +2025,21 @@ function buildLevel(key) {
   return L;
 }
 
-/* ---------------- bosses: the Rhino and the Giant Shark ---------------- */
+/* ---------------- bosses: the Rhino, the Giant Shark and the Triceratops ---------------- */
+const BOSSES = {
+  rhino: { name: 'Rhino', em: '🦏', build: buildRhino, wave: 0xe8c08a, chase: 'The Rhino is chasing you!', bye: 'Bye bye, Rhino!' },
+  shark: { name: 'Giant Shark', em: '🦈', build: () => { const s = buildShark(true); s.g.scale.setScalar(2.3); return s; }, wave: 0xcff6ff, chase: 'The Giant Shark is after you!', bye: 'Bye bye, Shark!' },
+  trike: { name: 'Triceratops', em: '🦕', build: buildTrike, wave: 0xb8946a, chase: 'The Triceratops is charging!', bye: 'Bye bye, Triceratops!' },
+};
 function makeBoss(kind, S) {
-  const m = kind === 'rhino' ? buildRhino() : (() => { const s = buildShark(true); s.g.scale.setScalar(2.3); return s; })();
+  const BS = BOSSES[kind], m = BS.build();
   m.g.visible = false; S.add(m.g);
   const stripe = part(G.plane, new THREE.MeshBasicMaterial({ color: 0xff2a2a, transparent: true, opacity: 0.35, depthWrite: false }), S, [0, 0.09, 0], [2.2, 1, 1], [-Math.PI / 2, 0, 0]);
   stripe.visible = false;
-  const waveM = new THREE.MeshBasicMaterial({ color: kind === 'rhino' ? 0xe8c08a : 0xcff6ff, transparent: true, opacity: 0.75, depthWrite: false });
+  const waveM = new THREE.MeshBasicMaterial({ color: BS.wave, transparent: true, opacity: 0.75, depthWrite: false });
   const waves = [0, 1].map(() => { const w = grp(S); part(G.box, waveM, w, [0, 0.35, 0], [9, 0.7, 0.5]); part(G.box, waveM, w, [0, 0.8, 0.2], [8, 0.3, 0.3]); w.visible = false; return { g: w, on: false, rel: 0 }; });
   return {
-    kind, m, stripe, waves, name: kind === 'rhino' ? 'Rhino' : 'Giant Shark', em: kind === 'rhino' ? '🦏' : '🦈',
+    kind, m, stripe, waves, name: BS.name, em: BS.em,
     max: 5, hp: 5, state: 'off', rel: 0, x: 0, y: 0, t: 0, n: 0, lane: 0, phase: 0,
   };
 }
@@ -1661,7 +2058,7 @@ function updateBoss(L, dt, speed) {
     case 'off':
       if (L.state === 'run' && L.pz < -L.len - 4) {
         B.state = 'enter'; B.rel = 16; B.x = -6.5; B.m.g.visible = true; B.m.g.rotation.set(0, 0, 0); B.t = 0;
-        banner(B.em + ' ' + B.name + '!', 1500); sfx('roar'); L.shake = 0.5; hint(B.kind === 'rhino' ? 'The Rhino is chasing you!' : 'The Giant Shark is after you!');
+        banner(B.em + ' ' + B.name + '!', 1500); sfx('roar'); L.shake = 0.5; hint(BOSSES[B.kind].chase);
         $('bossName').textContent = B.em + ' ' + B.name.toUpperCase(); bossHP(L); $('bossBar').classList.add('on'); startMusic('boss');
       }
       return;
@@ -1732,7 +2129,7 @@ function updateBoss(L, dt, speed) {
 function bossDefeated(L) {
   const B = L.boss; if (B.state === 'dizzy' || B.state === 'gone') return;
   B.state = 'dizzy'; B.stripe.visible = false; B.y = 0;
-  banner(B.kind === 'rhino' ? 'Bye bye, Rhino!' : 'Bye bye, Shark!', 1600); sfx('win');
+  banner(BOSSES[B.kind].bye, 1600); sfx('win');
   $('bossBar').classList.remove('on');
   L.finishZ = L.pz - 75; L.finG.position.z = L.finishZ; L.finG.visible = true;
   startMusic(L.th.music);
@@ -1753,7 +2150,7 @@ function startLevel(key) {
   const pr = $('prog'); pr.querySelectorAll('.cp').forEach(e => e.remove());
   for (const cp of L.cps) { const d = document.createElement('div'); d.className = 'cp'; d.style.left = (-cp.z / L.progLen * 100) + '%'; if (cp.boss) d.style.background = '#e8203a'; pr.appendChild(d); }
   pr.querySelector('.who').textContent = L.an.em;
-  pr.querySelector('.end').textContent = L.th.boss ? (L.th.boss === 'rhino' ? '🦏' : '🦈') : '🏁';
+  pr.querySelector('.end').textContent = L.th.boss ? BOSSES[L.th.boss].em : '🏁';
   $('miloPill').style.display = L.milo ? '' : 'none';
   $('zones').style.opacity = 1;
   startMusic(L.th.music);
@@ -1824,8 +2221,8 @@ function hitObstacle(L, o) {
   o.hit = true;
   if (o.kind === 'river') {
     L.vy = L.an.jump * 0.85; sfx('sizzle');
-    banner({ candy: 'Sticky!', desert: 'Sinky sand!', ocean: 'Ouch, spiky!', mountain: 'Whoa! Too low!' }[L.key] || 'Hot hot hot!', 900);
-    for (let i = 0; i < 12; i++) L.fx.spawn(L.px + rand(-1, 1), 0.5, L.pz + rand(-1, 1), L.key === 'candy' ? 0x8a4a22 : L.key === 'desert' ? 0xc89a5a : L.sea ? 0x8a3aaa : L.key === 'mountain' ? 0xffffff : 0xff7a10, { vy: rand(3, 6), g: 9, size: 0.45, life: 0.8 });
+    banner({ candy: 'Sticky!', desert: 'Sinky sand!', ocean: 'Ouch, spiky!', mountain: 'Whoa! Too low!', dinos: 'Sticky tar!', jungle: 'Splash!' }[L.key] || 'Hot hot hot!', 900);
+    for (let i = 0; i < 12; i++) L.fx.spawn(L.px + rand(-1, 1), 0.5, L.pz + rand(-1, 1), L.key === 'candy' ? 0x8a4a22 : L.key === 'desert' ? 0xc89a5a : L.sea ? 0x8a3aaa : L.key === 'mountain' ? 0xffffff : L.key === 'dinos' ? 0x2a2420 : L.key === 'jungle' ? 0x9fe8ff : 0xff7a10, { vy: rand(3, 6), g: 9, size: 0.45, life: 0.8 });
   } else { sfx('bonk'); banner('Ouch!', 700); knock(L, o); }
   hurt(L, 'obstacle');
 }
@@ -1910,7 +2307,7 @@ function updateLevel(dt) {
   L.flying = L.flying.filter(o => { const F = o.fly; F.t += dt; F.vy -= 25 * dt; o.g.position.x += F.vx * dt; o.g.position.y += F.vy * dt; o.g.position.z += F.vz * dt; o.g.rotation.z += F.sp * dt; o.g.rotation.x += F.sp * 0.6 * dt; if (F.t > 1.6) { o.g.visible = false; return false; } return true; });
   // ambient effects
   for (const rz of L.riverZs) if (rz < L.pz + 5 && rz > L.pz - 60 && Math.random() < dt * 8) {
-    const c = { candy: 0xa0602c, desert: 0xc89a5a, ocean: 0xffffff }[L.key] || (Math.random() < 0.5 ? 0xffd040 : 0xff6a10);
+    const c = { candy: 0xa0602c, desert: 0xc89a5a, ocean: 0xffffff, dinos: 0x5a4a40, jungle: 0xe8ffff }[L.key] || (Math.random() < 0.5 ? 0xffd040 : 0xff6a10);
     L.fx.spawn(rand(-12, 12), 0.2, rz + rand(-1.4, 1.4), c, { vy: rand(1, 3), vx: 0, vz: 0, g: L.key === 'candy' ? 6 : L.sea ? -1 : 1, size: 0.3, life: 0.9 });
   }
   if (L.smokeAt && Math.random() < dt * 4) { const p = L.backdrop.position; L.fx.spawn(p.x + L.smokeAt.x + rand(-2, 2), L.smokeAt.y, p.z + L.smokeAt.z, 0x777777, { vy: rand(3, 5), vx: rand(0.5, 2), vz: 0, g: 0, size: 6, grow: 2, op: 0.6, life: 3 }); }
@@ -1918,12 +2315,14 @@ function updateLevel(dt) {
   if (L.key === 'volcano' && Math.random() < dt * 6) L.fx.spawn(L.px + rand(-12, 12), rand(6, 12), L.pz - rand(5, 40), 0xff8a30, { vy: rand(-1, 0.5), vx: rand(-0.5, 0.5), g: 0, size: 0.15, life: 2 });
   if (L.snow && Math.random() < dt * 30) L.fx.spawn(L.px + rand(-14, 14), rand(6, 12), L.pz - rand(0, 40), 0xffffff, { vy: -rand(1, 2), vx: rand(-0.6, 0.6), vz: 0, g: 0, size: rand(0.1, 0.22), life: 5, op: 0.9 });
   if (L.bubbles && Math.random() < dt * 14) L.fx.spawn(L.px + rand(-10, 10), rand(0, 3), L.pz - rand(0, 30), 0xe8fbff, { vy: rand(1.5, 3), vx: 0, vz: 0, g: -0.5, size: rand(0.12, 0.3), life: 2.5, op: 0.7 });
+  if (L.leaves && Math.random() < dt * 10) L.fx.spawn(L.px + rand(-14, 14), rand(7, 12), L.pz - rand(0, 40), Math.random() < 0.5 ? 0x6ac040 : 0xc8d040, { vy: -rand(0.8, 1.6), vx: rand(-1, 1), vz: 0, g: 0, size: rand(0.15, 0.28), life: 5, op: 0.9 });
   if (speed > 1 && !air && Math.random() < dt * 14) dustPuff(L);
   for (const w of L.walkers) {
     if (Math.abs(w.g.position.z - L.pz) > 150) continue;
     w.phase += dt * w.speed * 1.2; w.g.position.z -= w.speed * dt;
     w.legs.forEach((l, i) => l.rotation.x = Math.sin(w.phase + (i === 0 || i === 3 ? 0 : Math.PI)) * 0.5);
     if (!w.legs.length) w.g.position.y += Math.sin(w.phase) * dt * 0.5;
+    if (w.extra) w.extra(w.phase, 1, false);
   }
   for (const cp of L.cps) cp.flags.forEach((f, i) => f.rotation.y = Math.sin(L.t * 5 + i) * 0.4);
   // rider
@@ -2005,6 +2404,7 @@ function buildCards() {
   if (selTab === 'ride') LAND.forEach(k => add(k, ANIMALS[k].em, ANIMALS[k].name, ANIMALS[k].desc, k === save.animal, 0, () => pickAnimal(k)));
   if (selTab === 'sky') SKY.forEach(k => add(k, ANIMALS[k].em, ANIMALS[k].name, ANIMALS[k].desc, k === save.sky, 0, () => pickSky(k)));
   if (selTab === 'sea') SEA.forEach(k => add(k, ANIMALS[k].em, ANIMALS[k].name, ANIMALS[k].desc, k === save.sea, 0, () => pickSea(k)));
+  if (selTab === 'dino') DINO.forEach(k => add(k, ANIMALS[k].em, ANIMALS[k].name, ANIMALS[k].desc, k === save.dino, 0, () => pickDino(k)));
   if (selTab === 'outfit') OUTFITS.forEach(o => add(o.k, o.em, o.name, 'Tap to wear', o.k === save.outfit, o.need, () => pickOutfit(o.k)));
   if (selTab === 'friend') {
     add('none', '🙅', 'No friend', 'Ride on your own', save.friend !== 'milo', 0, () => pickFriend(''));
@@ -2013,7 +2413,7 @@ function buildCards() {
   const on = c.querySelector('.card.on'); if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' });
 }
 function previewRide() {
-  const kind = selTab === 'sea' ? save.sea : selTab === 'sky' ? save.sky : save.animal;
+  const kind = selTab === 'sea' ? save.sea : selTab === 'sky' ? save.sky : selTab === 'dino' ? save.dino : save.animal;
   const ry = W.rider ? W.rider.root.rotation.y : 0;
   if (W.rider) W.scene.remove(W.rider.root);
   W.rider = buildRider(kind, save.outfit, false); W.scene.add(W.rider.root); W.rider.root.rotation.y = ry; W.rider.root.position.copy(W.pos);
@@ -2023,6 +2423,7 @@ function previewRide() {
 function pickAnimal(k) { audioInit(); sfx('click'); save.animal = k; persist(); buildCards(); previewRide(); }
 function pickSky(k) { audioInit(); sfx('click'); save.sky = k; persist(); buildCards(); previewRide(); }
 function pickSea(k) { audioInit(); sfx('click'); save.sea = k; persist(); buildCards(); previewRide(); }
+function pickDino(k) { audioInit(); sfx(k === 'trex' ? 'roar' : 'click'); save.dino = k; persist(); buildCards(); previewRide(); }
 function pickOutfit(k) { audioInit(); sfx('click'); save.outfit = k; persist(); buildCards(); previewRide(); }
 function pickFriend(f) { audioInit(); save.friend = f; persist(); if (f) sfx('bark'); else sfx('click'); buildCards(); setMapMilo(); }
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { audioInit(); sfx('click'); selTab = t.dataset.t; buildCards(); previewRide(); }));
@@ -2135,6 +2536,16 @@ function boot() {
   mode = 'title'; show('title', true);
   requestAnimationFrame(frame);
   window.__iyla = { W, get LV() { return LV; }, startLevel, goMap, save, updateLevel, steer, doJump, totalStars };
+  // for testing: ?play=dinos opens a level straight away (&ride=raptor picks the ride, &at=1200 starts further along),
+  // ?menu=dino opens the ride menu on that tab, and ?map=1 goes to the map
+  const q = new URLSearchParams(location.search), ride = q.get('ride');
+  if (ride && ANIMALS[ride]) { const a = ANIMALS[ride]; save[a.sea ? 'sea' : a.sky ? 'sky' : a.dino ? 'dino' : 'animal'] = ride; }
+  if (THEMES[q.get('play')]) {
+    startLevel(q.get('play')); if (q.get('at')) { LV.lastCp = 0; resetRun(LV, -Number(q.get('at'))); }
+    for (let i = 0; i < Number(q.get('sim') || 0) * 60; i++) updateLevel(1 / 60);   // &sim=8 runs the level for 8 seconds first
+  }
+  else if (q.get('menu')) { selTab = q.get('menu'); goSelect(); if (q.get('turn')) W.rider.root.rotation.y = Number(q.get('turn')); if (q.get('clean')) $('select').style.visibility = 'hidden'; }
+  else if (q.get('map')) { goMap(); const [x, z] = q.get('map').split(',').map(Number); if (!isNaN(z)) W.pos.set(x, 0, z); }
 }
 Promise.race([document.fonts ? document.fonts.load('700 80px Fredoka') : Promise.resolve(), new Promise(r => setTimeout(r, 1500))]).catch(() => { }).then(boot);
 </script>
