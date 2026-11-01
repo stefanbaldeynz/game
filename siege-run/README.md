@@ -1,6 +1,6 @@
 # Siege Run
 
-A 3D platformer with a retro PS1 look, set on the walls of Minas Tirith. Three levels:
+A 3D platformer, in HD with sun shadows and glowing fire (or the original retro PS1 look: see The look), set on the walls of Minas Tirith. Three levels:
 
 1. **The First Circle.** Ride Shadowfax through the burning city.
 2. **The Second Circle.** Gandalf on foot along the second rampart.
@@ -12,7 +12,7 @@ The game opens on a map of Middle-earth. Gandalf walks freely across it. Walk hi
 
 | Place | Level | What's there |
 | --- | --- | --- |
-| The Shire | **Hobbiton** | Open country to roam freely, Spyro-style. Hobbit holes round the edges and out in the middle, Bag End on a terraced hill you jump up, the town with its market and well, the Green Dragon by the pool, and Bilbo's party with the Party Tree, the pavilion and fireworks. **Nine Nazgûl** hunt through it: spin into them or hit them with fireworks (three hits each), and get out of the way when a sword goes up. Defeat all nine to finish. |
+| The Shire | **Hobbiton** | Open country to roam freely, Spyro-style, on a golden afternoon. Hobbit holes in grassy hills round the edges and out in the middle, each with a round plank door, glowing round windows, a garden fence, flower boxes, a vegetable patch and a smoking chimney. Bag End at the top of the Hill under the great oak, up grassy banks with stone steps. The town with its thatched, timber-framed cottages, market and well; the Water with its stone bridge, lily pads, reeds and the mill; the Green Dragon across the bridge; and Bilbo's party with the Party Tree, bunting, the pavilion and fireworks. Oak trees, grass and wildflowers everywhere, and butterflies. **Nine Nazgûl** hunt through it: spin into them or hit them with fireworks (three hits each), and get out of the way when a sword goes up. Defeat all nine to finish. |
 | Weathertop | **Weathertop** | A lightsaber duel with **the Witch-king** inside the ruined ring of Amon Sûl (see below). |
 | Rivendell | **Rivendell** | Mossy elven paths just above a green pool, turquoise waterfalls pouring past the gaps, carved ruins wound with vines standing in the water, big leafy plants, golden houses on the heights. Orc scouts, mossy rock islands to jump across, moving and crumbling platforms. |
 | Moria | **The Mines of Moria** | Dark dwarf-halls with columns rising out of a fiery abyss, chains and lanterns hanging from the roof, stalactites. Goblins climbing out of the chasm, then the **Balrog boss** on the Bridge of Khazad-dûm: a plank bridge with rope rails over a sea of mist and rock spires. |
@@ -52,7 +52,7 @@ Gandalf has a blue lightsaber and the Witch-king a red one. Gandalf always faces
 
 ### The Balrog (end of Moria)
 
-On the Bridge of Khazad-dûm, Durin's Bane climbs out of the abyss beside the bridge. A wall of fire blocks the far end until it falls. It has 9 hits (health bar at the bottom):
+On the Bridge of Khazad-dûm, Durin's Bane climbs out of the abyss beside the bridge. It's built like Hellkeep's Balrog: black skin split by glowing cracks of fire, a long horned skull, ragged wings of shadow, a sword of flame in one fist and the whip in the other. A wall of fire blocks the far end until it falls. It has 9 hits (health bar at the bottom):
 
 - **Fireworks** at its head do 1 hit each.
 - When it **smashes its fist** onto the bridge, the fist stays there for a moment: **spin** into it for a hit (spinning protects you from the flames).
@@ -75,7 +75,15 @@ You can swap characters and surfaces for your own files, for example ones taken 
 
 ## Pause menu
 
-Resume, Restart, Quit (back to the Minas Tirith menu), Music, and the two cheats: **Invincible** and **Unlimited rockets**. Cheat buttons light up when on. Keys Z and X still toggle them too.
+Resume, Restart, Quit (back to the Minas Tirith menu), Music, **Look** (HD or retro), and the two cheats: **Invincible** and **Unlimited rockets**. Cheat buttons light up when on. Keys G, Z and X toggle the look and the cheats too.
+
+## The look
+
+The game draws in **HD** by default: the screen's own resolution with anti-aliasing, shadows from the sun that follow Gandalf, and a glow on fire, lava, lanterns and anything bright (strong at night and underground, gentle by day). The **retro** look is the original PS1 style: a low-resolution picture with wobbly snapped vertices and dithered colour. G or the LOOK button in the pause menu switches between them, and the game remembers the choice.
+
+## Testing shortcuts
+
+The address can jump straight into a place: `?play=moria` (or `shire`, `riv`, `rohan`, `mt`, `ungol`, `mordor`, `doom`, `weather`). Add `&at=160` to start further along, `&sim=6` to play 6 seconds first (invincible), `&look=retro` or `&look=hd`, `&cam=s,x,y,ls,lx,ly` for a fixed camera, `&peek=x,y,z` to look at the Balrog, and `&info=1` to log how many draw calls a frame takes.
 
 Everything (graphics, textures, music and sound) is in the one file, `index.html`. three.js loads from the internet.
 
