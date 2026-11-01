@@ -203,9 +203,9 @@ body.touch #bossbar .bar{width:min(50vw,420px)}
   <div class="scr" id="sPause">
     <span class="big">PAUSED</span>
     <div class="press kOnly" style="animation:none">ENTER — RESUME</div>
-    <div class="tbtns"><div data-key="Enter">RESUME</div><div data-key="KeyR">RESTART</div><div data-key="KeyQ">QUIT</div><div data-key="KeyM" id="tMute">MUSIC ON</div></div>
+    <div class="tbtns"><div data-key="Enter">RESUME</div><div data-key="KeyR">RESTART</div><div data-key="KeyQ">QUIT</div><div data-key="KeyM" id="tMute">MUSIC ON</div><div data-key="KeyG" id="tLook">LOOK: HD</div></div>
     <div class="tbtns"><div data-key="KeyZ" id="tGod">INVINCIBLE: OFF</div><div data-key="KeyX" id="tAmmo">UNLIMITED ROCKETS: OFF</div></div>
-    <div class="ctl kOnly"><b>R</b><span>Restart from the beginning</span><b>Q</b><span>Quit to the Minas Tirith menu</span><b>M</b><span>Mute music</span><b>Z / X</b><span>Invincible / unlimited rockets</span></div>
+    <div class="ctl kOnly"><b>R</b><span>Restart from the beginning</span><b>Q</b><span>Quit to the Minas Tirith menu</span><b>M</b><span>Mute music</span><b>G</b><span>HD or retro PS1 look</span><b>Z / X</b><span>Invincible / unlimited rockets</span></div>
   </div>
   <div class="scr" id="sOver">
     <span class="big">GAME OVER</span>
@@ -250,49 +250,87 @@ function place(o, s, x, y, h = 0) { tw(s, x, y, o.position); o.rotation.set(0, -
 const _a = new V3(), _b = new V3(), _c = new V3(), _d = new V3(), _g = new V3();
 
 // =====================================================================
-//  RENDERER — low-res target, vertex snapping, affine textures, dithered 15-bit output
+//  RENDERER — two looks, switched in the pause menu (G):
+//  HD (the default): full screen resolution, anti-aliasing, sun shadows and a glow (bloom) on everything bright.
+//  RETRO: the PS1 look — a low-res picture, vertices snapped to its pixel grid, dithered 15-bit colour.
 // =====================================================================
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
 renderer.setPixelRatio(1);
+let RETRO = (() => { try { return localStorage.getItem('siegeRunLook') === 'retro'; } catch (e) { return false; } })();
+const COARSE = matchMedia('(pointer: coarse)').matches;
 let RW = 320, RH = 240;
-const rt = new THREE.WebGLRenderTarget(RW, RH, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+const rtOpts = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter };
+const rtHD = renderer.capabilities.isWebGL2 && THREE.WebGLMultisampleRenderTarget ? new THREE.WebGLMultisampleRenderTarget(RW, RH, rtOpts) : new THREE.WebGLRenderTarget(RW, RH, rtOpts);
+if (rtHD.samples !== undefined) rtHD.samples = 4;
+const rtLo = new THREE.WebGLRenderTarget(RW, RH, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+let rt = RETRO ? rtLo : rtHD;
 const SNAP = { value: new THREE.Vector2(160, 120) };
-const PSCALE = { value: 200 };
+const PSCALE = { value: 200 }, PMAX = { value: 64 };
+// the glow: the bright parts of the picture, shrunk to a quarter and blurred, then added back on top
+const bloomA = new THREE.WebGLRenderTarget(8, 8, rtOpts), bloomB = new THREE.WebGLRenderTarget(8, 8, rtOpts);
+const QUAD_VS = 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.,1.); }';
+const brightMat = new THREE.ShaderMaterial({
+  uniforms: { tDiffuse: { value: null }, uCut: { value: .62 } }, vertexShader: QUAD_VS, depthTest: false, depthWrite: false,
+  // what's really bright shines: fire, lava, lanterns, glows (saturated colours count, so orange fire glows but green grass doesn't)
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uCut; varying vec2 vUv;
+    void main(){ vec3 c=texture2D(tDiffuse,vUv).rgb; float b=max(dot(c,vec3(.3,.55,.15)),max(c.r,max(c.g,c.b))-.25); gl_FragColor=vec4(c*smoothstep(uCut,.92,b),1.); }`,
+});
+const blurMat = new THREE.ShaderMaterial({
+  uniforms: { tDiffuse: { value: null }, uDir: { value: new THREE.Vector2() } }, vertexShader: QUAD_VS, depthTest: false, depthWrite: false,
+  fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 uDir; varying vec2 vUv;
+    void main(){ vec3 c=texture2D(tDiffuse,vUv).rgb*.227;
+      c+=(texture2D(tDiffuse,vUv+uDir*1.385).rgb+texture2D(tDiffuse,vUv-uDir*1.385).rgb)*.316;
+      c+=(texture2D(tDiffuse,vUv+uDir*3.231).rgb+texture2D(tDiffuse,vUv-uDir*3.231).rgb)*.07;
+      gl_FragColor=vec4(c,1.); }`,
+});
 const scene = new THREE.Scene();
 const FOG = new THREE.Color(0x2c1a48);
 scene.fog = new THREE.Fog(FOG.getHex(), 40, 290);
 const camera = new THREE.PerspectiveCamera(64, 4 / 3, 0.2, 1700);
 
 const post = new THREE.ShaderMaterial({
-  uniforms: { tDiffuse: { value: rt.texture }, uRes: { value: new THREE.Vector2(RW, RH) }, uFlash: { value: 0 }, uIris: { value: 1e4 }, uIrisC: { value: new THREE.Vector2(160, 120) }, uFade: { value: 0 } },
-  vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.,1.); }',
-  fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 uRes, uIrisC; uniform float uFlash, uIris, uFade; varying vec2 vUv;
+  uniforms: { tDiffuse: { value: rt.texture }, tBloom: { value: bloomA.texture }, uBloomK: { value: 1 }, uHD: { value: RETRO ? 0 : 1 }, uRes: { value: new THREE.Vector2(RW, RH) }, uFlash: { value: 0 }, uIris: { value: 1e4 }, uIrisC: { value: new THREE.Vector2(160, 120) }, uFade: { value: 0 } },
+  vertexShader: QUAD_VS,
+  fragmentShader: `uniform sampler2D tDiffuse, tBloom; uniform vec2 uRes, uIrisC; uniform float uFlash, uIris, uFade, uHD, uBloomK; varying vec2 vUv;
     float b2(vec2 a){ a=floor(a); return fract(a.x*.5+a.y*a.y*.75); }
     float bayer4(vec2 a){ return b2(.5*a)*.25+b2(a); }
     void main(){
       vec3 c=texture2D(tDiffuse,vUv).rgb;
+      if(uHD>.5) c+=texture2D(tBloom,vUv).rgb*uBloomK;
       c+=uFlash*vec3(.7,.75,1.);
-      float l=dot(c,vec3(.299,.587,.114)); c=mix(vec3(l),c,1.2);
+      float l=dot(c,vec3(.299,.587,.114)); c=mix(vec3(l),c,uHD>.5?1.12:1.2);
       vec2 px=floor(vUv*uRes);
       if(length(px-uIrisC)>uIris) c=vec3(0.);
       c*=1.-uFade;
-      vec2 q=vUv-.5; c*=1.-.55*dot(q,q);
-      c+=(bayer4(px)-.5)/31.;
-      c=floor(clamp(c,0.,1.)*31.+.5)/31.;
+      vec2 q=vUv-.5; c*=1.-(uHD>.5?.42:.55)*dot(q,q);
+      if(uHD>.5){ c=c/(1.+max(vec3(0.),c-.85)*.6); }   // ease the brightest bits instead of clipping them flat
+      else { c+=(bayer4(px)-.5)/31.; c=floor(clamp(c,0.,1.)*31.+.5)/31.; }
       gl_FragColor=vec4(c,1.);
     }`,
   depthTest: false, depthWrite: false
 });
 const postScene = new THREE.Scene(), postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), post));
+const postQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), post); postScene.add(postQuad);
+// draw one full-screen pass with a material into a target (null = the screen)
+function quadPass(mat, target) { postQuad.material = mat; renderer.setRenderTarget(target); renderer.render(postScene, postCam); postQuad.material = post; }
 
 function resize() {
   const a = innerWidth / innerHeight;
-  if (a >= 1) { RH = 360; RW = Math.round(clamp(360 * a, 360, 840) / 2) * 2; }
-  else { RW = 360; RH = Math.round(clamp(360 / a, 360, 840) / 2) * 2; } // upright phone: a tall picture
+  if (RETRO) {
+    if (a >= 1) { RH = 360; RW = Math.round(clamp(360 * a, 360, 840) / 2) * 2; }
+    else { RW = 360; RH = Math.round(clamp(360 / a, 360, 840) / 2) * 2; } // upright phone: a tall picture
+  } else {
+    // the screen's own resolution, but no more than about 1440p worth of pixels (and less on phones, to keep them smooth)
+    let pr = Math.min(devicePixelRatio || 1, COARSE ? 1.5 : 2);
+    const cap = COARSE ? 1.6e6 : 3.7e6;
+    if (innerWidth * innerHeight * pr * pr > cap) pr = Math.sqrt(cap / (innerWidth * innerHeight));
+    RW = Math.round(innerWidth * pr); RH = Math.round(innerHeight * pr);
+  }
   renderer.setSize(RW, RH, false); rt.setSize(RW, RH);
-  SNAP.value.set(RW / 2, RH / 2);
+  bloomA.setSize(Math.max(8, RW >> 2), Math.max(8, RH >> 2)); bloomB.setSize(Math.max(8, RW >> 2), Math.max(8, RH >> 2));
+  SNAP.value.set(RETRO ? RW / 2 : 1e5, RETRO ? RH / 2 : 1e5);   // HD: snap so finely that nothing moves
+  PMAX.value = RETRO ? 64 : 64 * RH / 360;
   post.uniforms.uRes.value.set(RW, RH);
   // Upright, widen the view upwards and downwards so the sides don't get too narrow.
   const tallFov = (fov) => a >= 1 ? fov : 2 * Math.atan(Math.tan(fov * Math.PI / 360) / Math.sqrt(a)) * 180 / Math.PI;
@@ -302,6 +340,7 @@ function resize() {
   PSCALE.value = RH / (2 * Math.tan(camera.fov * Math.PI / 360));
   const sc = Math.min(innerWidth / RW, innerHeight / RH);
   canvas.style.width = Math.round(RW * sc) + 'px'; canvas.style.height = Math.round(RH * sc) + 'px';
+  canvas.style.imageRendering = RETRO ? '' : 'auto';
 }
 addEventListener('resize', resize);
 
@@ -674,9 +713,9 @@ function playStep(i, t) {
 // =====================================================================
 //  PARTICLES
 // =====================================================================
-const PVS = `attribute vec3 pcol; attribute float psize; attribute float palpha; uniform float uScale; uniform vec2 uSnap; varying vec3 vC; varying float vA;
+const PVS = `attribute vec3 pcol; attribute float psize; attribute float palpha; uniform float uScale, uMax; uniform vec2 uSnap; varying vec3 vC; varying float vA;
 void main(){ vC=pcol; vec4 mv=modelViewMatrix*vec4(position,1.0); float z=max(.1,-mv.z); vA=palpha*smoothstep(.3,2.0,z);
-  gl_PointSize=min(psize*uScale/z, 64.0); vec4 p=projectionMatrix*mv; p.xy=floor(p.xy/p.w*uSnap+.5)/uSnap*p.w; gl_Position=p; }`;
+  gl_PointSize=min(psize*uScale/z, uMax); vec4 p=projectionMatrix*mv; p.xy=floor(p.xy/p.w*uSnap+.5)/uSnap*p.w; gl_Position=p; }`;
 const PFS = `varying vec3 vC; varying float vA; void main(){ vec2 c=gl_PointCoord-.5; float r=length(c); if(r>.5) discard; gl_FragColor=vec4(vC, vA*(1.-r*1.3)); }`;
 class PSys {
   constructor(max, add) {
@@ -686,7 +725,7 @@ class PSys {
     const g = this.g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(this.pos, 3)); g.setAttribute('pcol', new THREE.BufferAttribute(this.col, 3));
     g.setAttribute('psize', new THREE.BufferAttribute(this.siz, 1)); g.setAttribute('palpha', new THREE.BufferAttribute(this.alp, 1));
-    const m = new THREE.ShaderMaterial({ uniforms: { uScale: PSCALE, uSnap: SNAP }, vertexShader: PVS, fragmentShader: PFS, transparent: true, depthWrite: false, blending: add ? THREE.AdditiveBlending : THREE.NormalBlending });
+    const m = new THREE.ShaderMaterial({ uniforms: { uScale: PSCALE, uMax: PMAX, uSnap: SNAP }, vertexShader: PVS, fragmentShader: PFS, transparent: true, depthWrite: false, blending: add ? THREE.AdditiveBlending : THREE.NormalBlending });
     this.pts = new THREE.Points(g, m); this.pts.frustumCulled = false; this.pts.renderOrder = add ? 3 : 2; scene.add(this.pts);
   }
   spawn(x, y, z, vx, vy, vz, life, s0, s1, c0, c1, grav = 0, drag = 0) {
@@ -734,6 +773,34 @@ const amb = new THREE.AmbientLight(0x6a5a92, .6); scene.add(amb);
 const hemi = new THREE.HemisphereLight(0xa094e8, 0x6a2a14, .55); scene.add(hemi);
 const moon = new THREE.DirectionalLight(0xd4ccff, .55); moon.position.set(-60, 120, -40); scene.add(moon);
 const mordorL = new THREE.DirectionalLight(0xff8a50, .38); mordorL.position.set(200, 30, 20); scene.add(mordorL);
+// sun (or moon) shadows, HD only: one shadow map that travels with Gandalf
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+moon.shadow.mapSize.set(COARSE ? 1024 : 2048, COARSE ? 1024 : 2048);
+Object.assign(moon.shadow.camera, { left: -34, right: 34, top: 34, bottom: -34, near: 1, far: 340 });
+moon.shadow.bias = -.0006; moon.shadow.normalBias = .05; scene.add(moon.target);
+const SUN_DIR = moon.position.clone().normalize(), _sunP = new V3();
+function updateSun(focus) { moon.target.position.copy(focus); moon.position.copy(focus).addScaledVector(SUN_DIR, 170); }
+// which meshes catch shadows and which throw them: everything lit, except the huge merged level pieces (too big to throw one)
+function shadowFlags(root) {
+  if (RETRO) return;
+  root.traverse(o => {
+    if (!o.isMesh) return;
+    const m = Array.isArray(o.material) ? o.material[0] : o.material;
+    if (!m || m.isMeshBasicMaterial || m.isShaderMaterial || m.transparent) return;
+    o.receiveShadow = true;
+    if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+    o.castShadow = o.isInstancedMesh || o.geometry.boundingSphere.radius * Math.max(o.scale.x, o.scale.y, o.scale.z) < 40;
+  });
+}
+// switch between the HD and retro looks (G, or the button in the pause menu); remembered on this device
+function setLook(retro) {
+  RETRO = retro; try { localStorage.setItem('siegeRunLook', retro ? 'retro' : 'hd'); } catch (e) { }
+  rt = RETRO ? rtLo : rtHD; post.uniforms.tDiffuse.value = rt.texture; post.uniforms.uHD.value = RETRO ? 0 : 1;
+  renderer.shadowMap.enabled = !RETRO; moon.castShadow = !RETRO;
+  shadowFlags(scene);
+  for (const sc of [scene, mapScene]) sc.traverse(o => { if (o.material) [].concat(o.material).forEach(m => m.needsUpdate = true); });
+  resize();
+}
 const plights = []; for (let i = 0; i < 4; i++) { const l = new THREE.PointLight(0xff9a40, 0, 15, 1.4); scene.add(l); plights.push(l); }
 const tempLights = [];
 
@@ -1017,7 +1084,7 @@ function buildCity() {
 // =====================================================================
 const MT_ENV = { sky: [0x0e0828, 0x3c1c62, 0x6a2c66, 0xff5a1a], fog: [40, 290], amb: [0x6a5a92, .6], hemi: [0xa094e8, 0x6a2a14, .55], sun: [0xd4ccff, .55], east: [0xff8a50, .38], stars: true, cloud: 0xb0a0d0, bolts: true, embers: true };
 const MT_ORC = { sk: 0x627338, ska: 0x86924c, ar: 0x3a3440, le: 0x5a3a20, met: 0x2a262e, sc: 1 };
-let ORC_PAL = MT_ORC, ENV = MT_ENV;
+let ORC_PAL = MT_ORC, ENV = MT_ENV, ENV_BLOOM = 1;
 const THEMES_FALLS = [];   // waterfall textures that scroll every frame
 function natTheme(o) { return Object.assign({ gm: new Geo(), gf: new Geo(), gw: new Geo(), tint: [1, 1, 1] }, o); }
 // a point in the world at a ring angle and radius, measured from the ring's centre
@@ -1469,6 +1536,7 @@ function applyEnv(e) {
   moon.color.setHex(e.sun[0]); moon.intensity = e.sun[1];
   mordorL.color.setHex(e.east[0]); mordorL.intensity = e.east[1];
   starPts.visible = !!e.stars; clouds.visible = e.cloud !== undefined;
+  ENV_BLOOM = e.bloom ?? (e.stars || e.embers ? 1 : .4);   // glow: strong at night and underground, gentle by day
 }
 function buildStatic() {
   initCrateMats(); buildCity();
@@ -2247,6 +2315,7 @@ function loadLevel(li) {
   scene.fog.color.setHex(LV.fog ?? ENV.fogC);
   if (LV.tree) { LV.tree.userData.bloom.visible = false; LV.tree.userData.bloomT = -1; }
   boss.ckpt = false; resetBoss();
+  shadowFlags(scene);
 }
 function newGame(li) {
   Object.assign(gs, { apples: 0, lives: 10, rockets: 8, phial: 0, superT: 0 });
@@ -2321,6 +2390,7 @@ addEventListener('blur', () => { for (const k in keys) keys[k] = false; touchRes
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(true); });
 function onKey(code) {
   if (code === 'KeyM') { musicOn = !musicOn; syncPauseBtns(); return; }
+  if (code === 'KeyG') { setLook(!RETRO); if (state !== 'paused') banner(RETRO ? 'RETRO LOOK' : 'HD LOOK', 1); syncPauseBtns(); return; }
   if (code === 'KeyZ') { cheats.god = !cheats.god; if (state !== 'paused') banner(cheats.god ? 'INVINCIBLE ON' : 'INVINCIBLE OFF', 1); syncPauseBtns(); return; }
   if (code === 'KeyX') { cheats.ammo = !cheats.ammo; if (state !== 'paused') banner(cheats.ammo ? 'UNLIMITED ROCKETS' : 'ROCKETS NORMAL', 1); syncPauseBtns(); return; }
   if (state === 'map') {
@@ -2348,6 +2418,7 @@ function onKey(code) {
 function syncPauseBtns() {
   const set = (id, txt, on) => { const e = document.getElementById(id); e.textContent = txt; e.classList.toggle('on', on); };
   set('tMute', musicOn ? 'MUSIC ON' : 'MUSIC OFF', false);
+  set('tLook', 'LOOK: ' + (RETRO ? 'RETRO' : 'HD'), false);
   set('tGod', 'INVINCIBLE: ' + (cheats.god ? 'ON' : 'OFF'), cheats.god);
   set('tAmmo', 'UNLIMITED ROCKETS: ' + (cheats.ammo ? 'ON' : 'OFF'), cheats.ammo);
 }
@@ -4805,7 +4876,17 @@ function step(dt, noRender) {
   for (const k in hit) hit[k] = false;
   if (!noRender) {
     skyMesh.position.copy(camera.position); clouds.position.copy(camera.position); starPts.position.copy(camera.position);
+    if (!RETRO && !onMap) updateSun(LV && LV.arena ? _sunP.set(CX, Y0, CZ).lerp(tw(P.s, P.x, P.y), .5) : tw(P.s, P.x, P.y, _sunP));
     renderer.setRenderTarget(rt); renderer.render(onMap ? mapScene : scene, onMap ? mapCam : camera);
+    if (!RETRO) {
+      post.uniforms.uBloomK.value = onMap ? .3 : ENV_BLOOM;
+      brightMat.uniforms.tDiffuse.value = rt.texture; quadPass(brightMat, bloomA);
+      const d = blurMat.uniforms.uDir.value, bw = bloomA.width, bh = bloomA.height;
+      for (const k of [1, 2]) {
+        blurMat.uniforms.tDiffuse.value = bloomA.texture; d.set(k / bw, 0); quadPass(blurMat, bloomB);
+        blurMat.uniforms.tDiffuse.value = bloomB.texture; d.set(0, k / bh); quadPass(blurMat, bloomA);
+      }
+    }
     renderer.setRenderTarget(null); renderer.render(postScene, postCam);
   }
 }
@@ -4886,10 +4967,17 @@ async function loadLocalAssets() {
 }
 
 buildStatic();
+renderer.shadowMap.enabled = !RETRO; moon.castShadow = !RETRO;
 setupEntities();
 loadLocalAssets();
 newGame(0); state = 'map'; iris.mode = 'none';
 showScreen(null); syncPauseBtns();
+// ?play=shire (or riv, moria, rohan, mt, ungol, mordor, doom, weather) opens a place straight away, for testing
+{
+  const q = new URLSearchParams(location.search), li = LEVELS.findIndex(L => L.loc === q.get('play'));
+  if (q.get('look')) setLook(q.get('look') === 'retro');   // ?look=retro or ?look=hd
+  if (li >= 0) startGame(li);
+}
 requestAnimationFrame(frame);
 </script>
 </body>
