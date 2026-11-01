@@ -4,3 +4,4 @@
 *.mp3 binary
 *.png binary
 *.jpg binary
+*.wasm binary

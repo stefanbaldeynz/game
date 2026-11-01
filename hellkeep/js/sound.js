@@ -158,6 +158,17 @@ const Sound = (() => {
       tone({ type: 'sawtooth', from: 165, to: 95, duration: 1.4, gain: 0.15 });
       noise({ duration: 1.3, freq: 600, gain: 0.35 });
     },
+    // The Balrog: a deeper, longer roar, and the crack of his whip of fire.
+    balrogRoar() {
+      tone({ type: 'sawtooth', from: 70, to: 38, duration: 2.2, gain: 0.35 });
+      tone({ type: 'sawtooth', from: 104, to: 55, duration: 2.0, gain: 0.2 });
+      tone({ type: 'square', from: 52, to: 30, duration: 2.4, gain: 0.12 });
+      noise({ duration: 2.0, freq: 400, gain: 0.45 });
+    },
+    whipCrack() {
+      noise({ duration: 0.08, freq: 6000, gain: 0.8, type: 'highpass' });
+      noise({ duration: 0.4, freq: 1200, gain: 0.3 });
+    },
     fireball() {
       noise({ duration: 0.5, freq: 900, gain: 0.3 });
       tone({ type: 'sawtooth', from: 200, to: 90, duration: 0.4, gain: 0.1 });

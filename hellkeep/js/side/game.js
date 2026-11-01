@@ -1,18 +1,18 @@
-// Hellkeep rounds 3 and 4: side-on platform rounds in the burning depths.
-// Round 3 climbs down the Brimstone Gorge; round 4 races a motorbike across
-// the lava sea. Grab the Soul Gem at the end of each to finish the round.
+// Hellkeep rounds 1 and 2: side-on platform rounds on the way down into hell.
+// Round 1 races a motorbike across the lava sea; round 2 climbs down the
+// Brimstone Gorge to the fortress. Grab the Soul Gem at the end of each to finish the round.
 //
-// You keep everything from the 3D rounds: the Flak Shotgun, the double jump
-// and the angel wings (double jump, then hold Space to fly). Hellhounds fly in
-// loops spitting fire, and lightning elephants charge along the ledges.
+// You start with the Flak Shotgun, the double jump and the angel wings (double jump,
+// then hold Space to fly). Hellhounds fly in loops spitting fire, and lightning
+// elephants charge along the ledges.
 //
-// The world is drawn small (192 pixels tall, like an old console) and scaled
-// up with crisp pixels. The HUD and menus are the same as the 3D rounds.
+// This file is the game itself: the rules, physics and beasts, worked out on a flat
+// map measured in pixels (one tile = 16 pixels; the view is 192 pixels tall). The
+// world is drawn in 3D by render3d.js. The HUD and menus are the same as the 3D rounds.
 
+const TILE = 16;
 const VIEW_H = 192;
 let VIEW_W = 256;
-const canvas = document.getElementById('view');
-const vctx = canvas.getContext('2d');
 
 // Movement (all per frame, 60 frames a second).
 const GRAVITY = 0.3;
@@ -44,13 +44,13 @@ const DAMAGE = { hound: 15, fireball: 10, elephant: 20, charge: 30, lava: 34 };
 // Enemies.
 const HOUND_W = 18;
 const HOUND_H = 10;
-const HOUND_HP = 3;
-const ELEPHANT_HP = 10;
-const ELEPHANT_WALK = 0.4;
-const ELEPHANT_CHARGE = 3.2;
+const SIDE_HOUND_HP = 3;
+const SIDE_ELEPHANT_HP = 10;
+const SIDE_ELEPHANT_WALK = 0.4;
+const SIDE_ELEPHANT_CHARGE = 3.2;
 
 // ---------- The round ----------
-const ROUND_NUMBER = SIDE_ROUNDS[roundFromHash()] ? roundFromHash() : 3;
+const ROUND_NUMBER = SIDE_ROUNDS[roundFromHash()] ? roundFromHash() : 1;
 const ROUND = SIDE_ROUNDS[ROUND_NUMBER];
 
 // ---------- Page elements ----------
@@ -71,17 +71,12 @@ const hud = {
 overlayRound.textContent = ROUND.title;
 overlayText.textContent = ROUND.intro;
 hud.round.textContent = ROUND.title;
-buildRoundPicker(ROUND_NUMBER);
+buildRoundPicker(ROUND_NUMBER, () => overlayAction());
 
 function resize() {
   // Show more of the world on wide screens; the height stays the same.
   VIEW_W = clamp(Math.round((VIEW_H * innerWidth) / innerHeight), 256, 448);
-  canvas.width = VIEW_W;
-  canvas.height = VIEW_H;
-  vctx.imageSmoothingEnabled = false;
-  skyCache = null;
 }
-let skyCache = null;
 addEventListener('resize', resize);
 resize();
 
@@ -106,8 +101,8 @@ addEventListener('blur', () => {
   for (const k in keys) keys[k] = false;
   if (game.state === 'playing') pause();
 });
-canvas.addEventListener('mousedown', (e) => {
-  if (e.button !== 0) return;
+addEventListener('mousedown', (e) => {
+  if (e.button !== 0 || game.state !== 'playing') return;
   keys.mouse = true;
   pressed.mouse = true;
 });
@@ -275,7 +270,7 @@ function makeHound(cx, cy) {
     h: HOUND_H,
     facing: 1,
     fireT: rand(60, 150),
-    hp: HOUND_HP,
+    hp: SIDE_HOUND_HP,
     hitT: 0,
     alive: true,
   };
@@ -288,12 +283,12 @@ function makeElephant(cx, bottom) {
     y: bottom - 18,
     w: 26,
     h: 18,
-    vx: -ELEPHANT_WALK,
+    vx: -SIDE_ELEPHANT_WALK,
     vy: 0,
     facing: -1,
     mode: 'walk', // walk | windup | charge | stunned
     modeT: 0,
-    hp: ELEPHANT_HP,
+    hp: SIDE_ELEPHANT_HP,
     hitT: 0,
     alive: true,
   };
@@ -326,6 +321,7 @@ function fitHoundLoop(d) {
 
 // ---------- Menus ----------
 function showOverlay(title, text, button) {
+  hideStory(); // the chapter is only for the start of the round
   if (TouchControls.isTouch) button = button.replace(/^Click/, 'Tap');
   overlayTitle.textContent = title;
   overlayRound.textContent = title === 'Paused' ? ROUND.title : '';
@@ -339,7 +335,11 @@ function pause() {
   showOverlay('Paused', 'The depths are waiting.', 'Click to resume');
 }
 
-overlay.addEventListener('click', () => {
+// The menu's play button (and the round picker's button for this round) start, resume,
+// retry or continue, depending on where you are.
+overlayButton.addEventListener('click', overlayAction);
+
+function overlayAction() {
   Sound.init();
   Sound.resume();
   if (game.state === 'won') {
@@ -359,7 +359,8 @@ overlay.addEventListener('click', () => {
   game.state = 'playing';
   overlay.classList.add('hidden');
   for (const k in keys) keys[k] = false;
-});
+  return true;
+}
 
 let messageTimer = 0;
 function showMessage(text, seconds = 2.5) {
@@ -677,7 +678,7 @@ function updateElephant(e) {
   const ahead = (dir) => solidAtPixel(dir > 0 ? e.x + e.w + 2 : e.x - 2, e.y + e.h + 2);
 
   if (e.mode === 'walk') {
-    e.vx = e.facing * ELEPHANT_WALK;
+    e.vx = e.facing * SIDE_ELEPHANT_WALK;
     const dx = p.x + p.w / 2 - (e.x + e.w / 2);
     const sameLevel = Math.abs(p.y + p.h - (e.y + e.h)) < 20;
     if (sameLevel && Math.abs(dx) < 130 && Math.sign(dx) === e.facing && game.state === 'playing' && e.modeT > 40) {
@@ -692,7 +693,7 @@ function updateElephant(e) {
       e.modeT = 0;
     }
   } else if (e.mode === 'charge') {
-    e.vx = e.facing * ELEPHANT_CHARGE;
+    e.vx = e.facing * SIDE_ELEPHANT_CHARGE;
     if (game.frame % 2 === 0) burst(e.x + e.w / 2, e.y + e.h, ['#bff8ff', '#5ab0ff'], 2, 1);
   } else if (e.mode === 'stunned') {
     e.vx = 0;
@@ -705,7 +706,7 @@ function updateElephant(e) {
   const hit = moveBox(e);
   if (e.mode === 'charge') {
     // Charging elephants smash through blocks; a wall stuns them.
-    if (hit.x && smashAt(e.facing > 0 ? e.x + e.w + 2 : e.x - 2, [e.y + 4, e.y + e.h - 4])) e.vx = e.facing * ELEPHANT_CHARGE;
+    if (hit.x && smashAt(e.facing > 0 ? e.x + e.w + 2 : e.x - 2, [e.y + 4, e.y + e.h - 4])) e.vx = e.facing * SIDE_ELEPHANT_CHARGE;
     else if (hit.x) {
       e.mode = 'stunned';
       e.modeT = 0;
@@ -756,7 +757,7 @@ function update() {
   }
 
   for (const e of enemies) {
-    if (!e.alive) continue;
+    if (!e.alive || game.calm) continue;
     if (e.hitT > 0) e.hitT--;
     if (e.type === 'hound') updateHound(e);
     else if (onScreen(e, 80)) updateElephant(e);
@@ -875,7 +876,8 @@ function finish(state) {
   }
   const stats = `Time: ${minutes}:${seconds}. Health left: ${Math.ceil(player.health)}. Beasts put down: ${game.kills} of ${total}.`;
   if (ROUND_NUMBER < TOTAL_ROUNDS) {
-    showOverlay(`Round ${ROUND_NUMBER} complete`, `${stats} Beyond the gorge, a sea of lava...`, `Continue to round ${ROUND_NUMBER + 1}`);
+    const tease = ROUND_NUMBER === 1 ? 'The Soul Gem burns open a crack in the rock...' : 'Far below, the fortress gates...';
+    showOverlay(`Round ${ROUND_NUMBER} complete`, `${stats} ${tease}`, `Continue to round ${ROUND_NUMBER + 1}`);
   } else {
     showOverlay('Hellkeep conquered', `You beat every round! ${stats}`, 'Click to play again from round 1');
   }
@@ -894,252 +896,6 @@ function followCamera(ease) {
 function clampCam(v, max) {
   if (max < 0) return max / 2; // the level is narrower than the screen: centre it
   return Math.max(0, Math.min(max, v));
-}
-
-// ---------- Drawing ----------
-function drawSky() {
-  if (!skyCache) {
-    skyCache = document.createElement('canvas');
-    skyCache.width = VIEW_W;
-    skyCache.height = VIEW_H;
-    const g = skyCache.getContext('2d');
-    const grad = g.createLinearGradient(0, 0, 0, VIEW_H);
-    grad.addColorStop(0, '#070101');
-    grad.addColorStop(0.45, '#2a0603');
-    grad.addColorStop(0.85, '#7a1a06');
-    grad.addColorStop(1, '#c03a08');
-    g.fillStyle = grad;
-    g.fillRect(0, 0, VIEW_W, VIEW_H);
-  }
-  vctx.drawImage(skyCache, 0, 0);
-
-  // Far away: the black towers of the keep, with burning windows.
-  const off = cam.x * 0.15;
-  vctx.globalAlpha = 0.5;
-  for (let i = -1; i < VIEW_W / 40 + 2; i++) {
-    const n = Math.floor(off / 40) + i;
-    const h = 24 + (((n * 37) % 40) + 40) % 40;
-    const x = n * 40 - off;
-    const base = VIEW_H - 20 - cam.y * 0.05;
-    vctx.fillStyle = '#140303';
-    vctx.fillRect(x + 8, base - h, 18, h + 40);
-    vctx.fillRect(x + 6, base - h - 3, 22, 4);
-    vctx.beginPath();
-    vctx.moveTo(x + 6, base - h - 3);
-    vctx.lineTo(x + 17, base - h - 16);
-    vctx.lineTo(x + 28, base - h - 3);
-    vctx.fill();
-    vctx.fillStyle = '#ff7a20';
-    if (n % 2 === 0) vctx.fillRect(x + 15, base - h + 10, 3, 4);
-    if (n % 3 === 0) vctx.fillRect(x + 12, base - h + 18, 2, 3);
-  }
-  vctx.globalAlpha = 1;
-
-  // Drifting smoke.
-  vctx.fillStyle = 'rgba(60, 10, 6, 0.55)';
-  for (let i = 0; i < 6; i++) {
-    const span = VIEW_W + 120;
-    const x = ((((i * 97 + game.frame * 0.1 - cam.x * 0.3) % span) + span) % span) - 60;
-    const y = ((i * 53 - cam.y * 0.3) % (VIEW_H + 60) + VIEW_H + 60) % (VIEW_H + 60) - 30;
-    vctx.beginPath();
-    vctx.ellipse(x, y, 30, 7, 0, 0, Math.PI * 2);
-    vctx.ellipse(x + 18, y - 4, 18, 6, 0, 0, Math.PI * 2);
-    vctx.fill();
-  }
-}
-
-// The lava sea along the bottom, showing through the gaps.
-function drawLava(camX, camY) {
-  const y = rows * TILE - 10 - camY;
-  const glow = vctx.createLinearGradient(0, y - 30, 0, y);
-  glow.addColorStop(0, 'rgba(255, 90, 10, 0)');
-  glow.addColorStop(1, 'rgba(255, 90, 10, 0.45)');
-  vctx.fillStyle = glow;
-  vctx.fillRect(camX, y - 30, VIEW_W, 30);
-  vctx.fillStyle = '#c02a00';
-  vctx.fillRect(camX, y, VIEW_W, 12);
-  vctx.fillStyle = '#ff8a10';
-  for (let x = camX - (camX % 16); x < camX + VIEW_W; x += 16) {
-    const bob = Math.floor((game.frame / 12 + x / 16) % 2);
-    vctx.fillRect(x + bob * 4, y, 8, 2);
-    vctx.fillStyle = '#ffd040';
-    vctx.fillRect(x + 10 - bob * 3, y + 4, 2, 1);
-    vctx.fillStyle = '#ff8a10';
-  }
-}
-
-function drawTiles(camX, camY) {
-  const r0 = Math.floor(camY / TILE);
-  const c0 = Math.floor(camX / TILE);
-  for (let r = r0; r <= r0 + VIEW_H / TILE + 1; r++) {
-    for (let c = c0; c <= c0 + VIEW_W / TILE + 1; c++) {
-      const ch = tileAt(c, r);
-      const x = c * TILE;
-      const y = r * TILE - camY;
-      if (ch === '#') {
-        if (r >= rows) continue;
-        vctx.drawImage(ROCK_TILES[((c * 7 + r * 3) % 2 + 2) % 2], x, y);
-        if (tileAt(c, r - 1) === '.' && r > 0) vctx.drawImage(CRUST, x, y);
-      } else if (ch === 'S') vctx.drawImage(RUNE_TILE, x, y);
-      else if (ch === 'M') vctx.drawImage(SKULL_TILE, x, y);
-      else if (ch === 'B') vctx.drawImage(BRIM_TILE, x, y);
-    }
-  }
-}
-
-function drawSprite(pairOrImg, x, y, facing = 1) {
-  const img = pairOrImg.r ? (facing > 0 ? pairOrImg.r : pairOrImg.l) : pairOrImg;
-  vctx.drawImage(img, Math.round(x), Math.round(y));
-}
-
-// A crackling, jagged bolt of lightning from one point to another.
-function lightning(x1, y1, x2, y2) {
-  const pts = [[x1, y1]];
-  for (let i = 1; i < 5; i++) {
-    const t = i / 5;
-    pts.push([x1 + (x2 - x1) * t + rand(-3, 3), y1 + (y2 - y1) * t + rand(-3, 3)]);
-  }
-  pts.push([x2, y2]);
-  for (const [width, color] of [[3, 'rgba(90, 176, 255, 0.45)'], [1, '#e8fcff']]) {
-    vctx.strokeStyle = color;
-    vctx.lineWidth = width;
-    vctx.beginPath();
-    pts.forEach(([x, y], i) => (i ? vctx.lineTo(x, y) : vctx.moveTo(x, y)));
-    vctx.stroke();
-  }
-}
-
-function drawEnemy(e, camY) {
-  if (e.hitT > 0) vctx.filter = 'brightness(3)';
-  if (e.type === 'hound') {
-    const spr = Math.floor(game.frame / 8) % 2 ? SPRITES.houndA : SPRITES.houndB;
-    drawSprite(spr, e.x + e.w / 2 - 10, e.y + e.h / 2 - 6 - camY, e.facing);
-  } else {
-    const walking = e.mode === 'walk' || e.mode === 'charge';
-    const rate = e.mode === 'charge' ? 4 : 10;
-    const spr = walking && Math.floor(game.frame / rate) % 2 ? SPRITES.elephantB : SPRITES.elephantA;
-    const rear = e.mode === 'windup' ? -2 - Math.min(3, e.modeT / 8) : 0; // rears up before a charge
-    drawSprite(spr, e.x + e.w / 2 - 14, e.y + e.h - 18 - camY + rear, e.facing);
-  }
-  vctx.filter = 'none';
-  if (e.type === 'elephant') {
-    // Lightning crackles over its hide, wildly while it charges.
-    const cx = e.x + e.w / 2;
-    const cy = e.y + e.h / 2 - camY;
-    const arcs = e.mode === 'charge' || e.mode === 'windup' ? 3 : Math.random() < 0.3 ? 1 : 0;
-    for (let i = 0; i < arcs; i++) {
-      const a = rand(0, Math.PI * 2);
-      lightning(cx + rand(-8, 8), cy + rand(-5, 3), cx + Math.cos(a) * rand(14, 22), cy + Math.sin(a) * rand(10, 16));
-    }
-    if (e.mode === 'stunned' && Math.floor(game.frame / 6) % 2) {
-      vctx.fillStyle = '#ffee66';
-      vctx.fillRect(cx - 6, e.y - 4 - camY, 2, 2);
-      vctx.fillRect(cx + 4, e.y - 6 - camY, 2, 2);
-    }
-  }
-}
-
-function drawPlayer(camY) {
-  const p = player;
-  if (game.state === 'dying') vctx.globalAlpha = Math.max(0, 1 - game.endT / 80);
-  else if (p.invuln > 0 && Math.floor(p.invuln / 4) % 2) return;
-
-  const f = p.facing;
-  const bodyX = p.bike ? p.x + 2 : p.x - 1;
-  const bikeY = p.y + p.h - 12 - camY;
-  const bodyY = p.bike ? bikeY - 11 : p.y - 1 - camY;
-
-  // Angel wings on your back: beating while you fly, half open in the air, folded on the ground.
-  let wings = SPRITES.wingsFolded;
-  if (p.flying) wings = Math.floor(p.flapT / 8) % 2 ? SPRITES.wingsDown : SPRITES.wingsUp;
-  else if (!p.onGround) wings = SPRITES.wingsDown;
-  const ww = wings.r.width;
-  const wx = f > 0 ? bodyX + 4 - ww + 4 : bodyX + 8 - 4;
-  drawSprite(wings, wx, bodyY - 1, f);
-
-  let spr = SPRITES.heroStand;
-  if (p.bike || !p.onGround) spr = SPRITES.heroJump;
-  else if (p.walkT > 0 && Math.floor(p.walkT / 7) % 2) spr = SPRITES.heroWalk;
-  drawSprite(spr, bodyX, bodyY, f);
-
-  if (p.bike) {
-    const turning = p.vx > 0.1 && Math.floor(p.x / 6) % 2;
-    drawSprite(turning ? SPRITES.bikeB : SPRITES.bikeA, p.x - 2, bikeY, 1);
-  }
-
-  // The Flak Shotgun, kicking back when it fires.
-  const gunW = SPRITES.flak.r.width;
-  const kick = Math.max(0, p.recoil);
-  const gx = f > 0 ? bodyX + 5 - kick : bodyX + 7 - gunW + kick;
-  drawSprite(SPRITES.flak, gx, bodyY + 8, f);
-  if (game.flash > 0) {
-    const m = muzzle(p);
-    vctx.fillStyle = '#ffd070';
-    vctx.beginPath();
-    vctx.arc(m.x, m.y - camY, 2 + game.flash * 0.8, 0, Math.PI * 2);
-    vctx.fill();
-    vctx.fillStyle = '#7ff6ff';
-    vctx.fillRect(m.x - 1, m.y - camY - 1, 2, 2);
-  }
-  vctx.globalAlpha = 1;
-}
-
-function drawWorld() {
-  const shakeX = game.shake > 0 ? Math.round(rand(-game.shake, game.shake)) : 0;
-  const shakeY = game.shake > 0 ? Math.round(rand(-game.shake, game.shake)) : 0;
-  const camY = Math.round(cam.y) + shakeY;
-  const camX = Math.round(cam.x) + shakeX;
-  drawSky();
-  // Everything below is drawn in round coordinates, shifted by the camera.
-  vctx.save();
-  vctx.translate(-camX, 0);
-  if (ROUND.lava) drawLava(camX, camY);
-  drawTiles(camX, camY);
-
-  if (gem) {
-    const pulse = 0.5 + Math.sin(game.frame * 0.1) * 0.2;
-    vctx.fillStyle = `rgba(255, 60, 40, ${pulse * 0.4})`;
-    vctx.beginPath();
-    vctx.arc(gem.x + 7, gem.y + 5 - camY, 12, 0, Math.PI * 2);
-    vctx.fill();
-    drawSprite(SPRITES.soulGem, gem.x, gem.y - camY);
-  }
-
-  for (const it of items) {
-    const img = it.type === 'health' ? SPRITES.health : SPRITES.shells;
-    drawSprite(img, it.x, it.y + it.h - img.height - camY);
-  }
-
-  for (const e of enemies) if (e.alive) drawEnemy(e, camY);
-  if (game.state !== 'menu') drawPlayer(camY);
-
-  for (const f of fireballs) {
-    const flick = Math.floor(game.frame / 3) % 2;
-    const x = Math.round(f.x);
-    const y = Math.round(f.y - camY);
-    vctx.fillStyle = '#e82000';
-    vctx.fillRect(x - 1, y, 8, 6);
-    vctx.fillStyle = flick ? '#f8a000' : '#f87818';
-    vctx.fillRect(x, y + 1, 6, 4);
-    vctx.fillStyle = '#fff070';
-    vctx.fillRect(x + (f.vx > 0 ? 3 : 1), y + 2, 2, 2);
-  }
-
-  vctx.fillStyle = '#bffcff';
-  for (const s of pellets) vctx.fillRect(Math.round(s.x - s.vx * 0.4), Math.round(s.y - camY), 2, 1);
-
-  for (const pt of particles) {
-    const x = Math.round(pt.x);
-    const y = Math.round(pt.y - camY);
-    vctx.fillStyle = pt.color;
-    if (pt.kind === 'chunk') vctx.fillRect(x - 3, y - 3, 6, 6);
-    else {
-      vctx.globalAlpha = Math.min(1, pt.life / Math.min(pt.max, 20));
-      vctx.fillRect(x, y, 1, 1);
-      vctx.globalAlpha = 1;
-    }
-  }
-  vctx.restore();
 }
 
 // The HUD is the same one as the 3D rounds (see index.html and style.css).
@@ -1180,23 +936,34 @@ function loop(now) {
     for (const k in pressed) delete pressed[k];
     acc -= STEP;
   }
-  drawWorld();
+  SideRender.draw();
   updateHud();
   requestAnimationFrame(loop);
 }
 
-loadRound();
-followCamera(1);
-cam.x = clampCam(player.x + player.w / 2 - (player.bike ? 90 : VIEW_W / 2), cols * TILE - VIEW_W);
-cam.y = clampCam(player.y - VIEW_H * 0.4, rows * TILE - VIEW_H);
+// Set up the round and start the loop (called by render3d.js once it's ready).
+function startSide() {
+  loadRound();
+  followCamera(1);
+  cam.x = clampCam(player.x + player.w / 2 - (player.bike ? 90 : VIEW_W / 2), cols * TILE - VIEW_W);
+  cam.y = clampCam(player.y - VIEW_H * 0.4, rows * TILE - VIEW_H);
 
-// Dev helper, like the 3D rounds: side.html#round=3&preview starts straight away,
-// and &god makes you invincible.
-const previewOptions = new URLSearchParams(location.hash.slice(1));
-if (previewOptions.has('preview')) {
-  game.state = 'playing';
-  overlay.classList.add('hidden');
-  game.godMode = previewOptions.has('god');
+  // Dev helper, like the 3D rounds: side.html#round=3&preview starts straight away,
+  // &god makes you invincible, and &calm keeps the beasts still (for screenshots).
+  const previewOptions = new URLSearchParams(location.hash.slice(1));
+  if (previewOptions.has('preview')) {
+    game.state = 'playing';
+    overlay.classList.add('hidden');
+    game.godMode = previewOptions.has('god');
+    game.calm = previewOptions.has('calm');
+    // &x=..&y=.. puts you somewhere else on the map (in tiles).
+    if (previewOptions.has('x')) player.x = Number(previewOptions.get('x')) * TILE;
+    if (previewOptions.has('y')) player.y = Number(previewOptions.get('y')) * TILE;
+    followCamera(1);
+    cam.x = clampCam(player.x + player.w / 2 - (player.bike ? 90 : VIEW_W / 2), cols * TILE - VIEW_W);
+    cam.y = clampCam(player.y - VIEW_H * 0.4, rows * TILE - VIEW_H);
+  }
+
+  SideRender.init();
+  requestAnimationFrame(loop);
 }
-
-requestAnimationFrame(loop);

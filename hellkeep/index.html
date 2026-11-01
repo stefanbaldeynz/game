@@ -48,10 +48,12 @@
   <div id="overlay">
     <h1 id="overlay-title">Hellkeep</h1>
     <h2 id="overlay-round"></h2>
+    <div id="story" class="hidden"></div>
     <p id="overlay-text">The gates of the castle in hell stand open. Hellhounds wreathed in fire guard every hall. Go in and put them all down.</p>
+    <div id="round-picker"></div>
     <button id="overlay-button" type="button">Click to play</button>
     <p id="asset-note" class="note hidden">Opened straight from your files, so the 3D models are switched off. For the full graphics, start the game with <b>serve.cmd</b> (in the main game folder).</p>
-    <div id="round-picker"></div>
+    <a class="back-link" href="../index.html">&larr; Game select</a>
     <div class="controls keys-only">
       <div><b>WASD</b> move</div>
       <div><b>Mouse</b> look</div>
@@ -76,18 +78,25 @@
 
   <!-- The list of rounds and the round picker (rounds 3 and 4 live in side.html). -->
   <script src="js/roundlist.js"></script>
+  <script src="js/story.js"></script>
 
   <!--
     three.js and its post-processing add-ons (bloom etc.) are loaded as modules from the web.
     Once they're ready, the game's own scripts are loaded one after another, in this order.
   -->
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.149.0/examples/jsm/"
-      }
-    }
+  <script>
+    // Where three.js comes from: the copy in ../lib/three when running through serve.cmd,
+    // or the same version from the internet when index.html is opened straight from the files.
+    (() => {
+      const base = location.protocol === 'file:' ? 'https://cdn.jsdelivr.net/npm/three@0.186.1/' : '../lib/three/';
+      window.THREE_BASE = base;
+      const map = document.createElement('script');
+      map.type = 'importmap';
+      map.textContent = JSON.stringify({
+        imports: { three: `${base}build/three.module.js`, 'three/addons/': `${base}examples/jsm/` },
+      });
+      document.currentScript.after(map);
+    })();
   </script>
   <script type="module">
     import * as THREE from 'three';
@@ -95,29 +104,40 @@
     import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
     import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
     import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+    import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+    import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
+    import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
     import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
-    THREE.ColorManagement.legacyMode = false; // treat colours as sRGB, like the textures
     window.THREE = THREE;
-    window.THREE_ADDONS = { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, RoomEnvironment, SkeletonUtils };
+    window.THREE_ADDONS = { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, GTAOPass, RoomEnvironment, SkeletonUtils };
 
     // The 3D models the game uses, loaded before it starts. To add one, put the .glb
     // in models/ and add a line here; the game finds it as MODELS.<name>.
     const MODEL_FILES = {
       hellhound: 'models/hellhound.glb',
+      elephant: 'models/elephant.glb',
     };
     window.MODELS = {};
-    const button = document.getElementById('overlay-button');
-    if (TouchControls.isTouch) button.textContent = 'Tap to play';
+    if (TouchControls.isTouch) document.getElementById('overlay-button').textContent = 'Tap to play';
     if (location.protocol === 'file:') {
       // Browsers block loading models into a page opened straight from your files.
       // The game still runs, with the old models built from code.
       document.getElementById('asset-note').classList.remove('hidden');
     } else {
-      button.textContent = 'Loading models...';
+      // The loader also understands compressed models: Draco or Meshopt meshes and
+      // KTX2 textures (see the README), so big models stay quick to load.
       const loader = new GLTFLoader();
+      loader.setDRACOLoader(new DRACOLoader().setDecoderPath(`${THREE_BASE}examples/jsm/libs/draco/gltf/`));
+      loader.setMeshoptDecoder(MeshoptDecoder);
+      const ktx2 = new KTX2Loader().setTranscoderPath(`${THREE_BASE}examples/jsm/libs/basis/`);
+      const probe = new THREE.WebGLRenderer(); // KTX2 needs to know which texture formats the graphics card supports
+      ktx2.detectSupport(probe);
+      probe.dispose();
+      loader.setKTX2Loader(ktx2);
       await Promise.all(Object.entries(MODEL_FILES).map(async ([name, url]) => {
         try {
           window.MODELS[name] = await loader.loadAsync(url);
@@ -125,12 +145,11 @@
           console.warn(`Could not load ${url}; using the built-in model instead.`, error);
         }
       }));
-      button.textContent = TouchControls.isTouch ? 'Tap to play' : 'Click to play';
     }
 
     const scripts = [
-      'util', 'rounds', 'textures', 'sound', 'music', 'particles', 'level',
-      'hounds', 'elephants', 'devil', 'wings', 'weapons', 'graphics', 'main',
+      'util', 'themes', 'rounds', 'textures', 'sound', 'music', 'particles', 'level',
+      'hounds', 'elephants', 'devil', 'balrog', 'wings', 'weapons', 'graphics', 'main',
     ];
     for (const name of scripts) {
       await new Promise((resolve, reject) => {

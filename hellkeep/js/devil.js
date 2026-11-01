@@ -1,6 +1,6 @@
-// The devil: round 1's mini boss, a heavy metal demon rocking out by the throne.
+// The devil: the boss of round 4, a heavy metal demon rocking out on his throne in the keep.
 // He blasts fireballs from his Flying V guitar, swings it at you up close,
-// and gets angrier below half health. When he dies he drops a pair of angel wings.
+// and gets angrier below half health.
 
 const DEVIL_HP = 1200;
 const DEVIL_RADIUS = 0.8;
@@ -117,25 +117,35 @@ function makeDevilModel() {
   if (!devilTextures) {
     devilTextures = { skin: Textures.devilSkin(), veins: Textures.devilVeins(), leather: Textures.leather(), patch: Textures.patch() };
   }
-  const skin = new THREE.MeshStandardMaterial({
+  if (!devilTextures.skinNormal) {
+    devilTextures.skinNormal = normalMapFor(devilTextures.skin, 3);
+    devilTextures.leatherNormal = normalMapFor(devilTextures.leather, 4);
+  }
+  // Waxy, scaly demon skin with glowing veins, and creased, sheeny leather.
+  const skin = new THREE.MeshPhysicalMaterial({
     map: devilTextures.skin,
+    normalMap: devilTextures.skinNormal,
     emissive: 0xffffff,
     emissiveMap: devilTextures.veins,
-    roughness: 0.55,
+    roughness: 0.5,
+    sheen: 0.4,
+    sheenColor: new THREE.Color(0xff5a3a),
+    sheenRoughness: 0.6,
   });
-  const leather = new THREE.MeshStandardMaterial({
+  const leather = new THREE.MeshPhysicalMaterial({
     map: devilTextures.leather,
-    bumpMap: devilTextures.leather,
-    bumpScale: 0.5,
-    roughness: 0.35,
-    metalness: 0.15,
+    normalMap: devilTextures.leatherNormal,
+    roughness: 0.38,
+    metalness: 0.1,
+    clearcoat: 0.35,
+    clearcoatRoughness: 0.45,
   });
-  const hair = new THREE.MeshStandardMaterial({ color: 0x0a0808, roughness: 0.45 });
-  const silver = new THREE.MeshStandardMaterial({ color: 0xd8dce2, metalness: 1, roughness: 0.2 });
-  const bone = new THREE.MeshStandardMaterial({ color: 0xd8ccb0, roughness: 0.6 });
+  const hair = new THREE.MeshPhysicalMaterial({ color: 0x0a0808, roughness: 0.4, sheen: 0.8, sheenColor: new THREE.Color(0x553333), sheenRoughness: 0.35 });
+  const silver = new THREE.MeshStandardMaterial({ color: 0xd8dce2, metalness: 1, roughness: 0.18 });
+  const bone = new THREE.MeshStandardMaterial({ color: 0xd8ccb0, roughness: 0.55 });
   const dark = new THREE.MeshStandardMaterial({ color: 0x080606, roughness: 0.6 });
-  const gloss = new THREE.MeshStandardMaterial({ color: 0x0a0a0c, roughness: 0.12, metalness: 0.3 });
-  const eyes = new THREE.MeshBasicMaterial({ color: 0xffd040 });
+  const gloss = new THREE.MeshPhysicalMaterial({ color: 0x0a0a0c, roughness: 0.1, metalness: 0.3, clearcoat: 1, clearcoatRoughness: 0.05 });
+  const eyes = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffd040).multiplyScalar(4) }); // white-hot, so they bloom
   const teeth = new THREE.MeshStandardMaterial({ color: 0xf0e8d8, roughness: 0.4 });
 
   const group = new THREE.Group();
@@ -285,6 +295,8 @@ function makeDevilModel() {
 class Devil {
   constructor(scene, x, z) {
     this.type = 'devil';
+    this.isBoss = true;
+    this.bossName = 'The Devil';
     this.radius = DEVIL_RADIUS;
     this.scene = scene;
     this.x = x;
@@ -361,8 +373,8 @@ class Devil {
     for (let i = 0; i < 160; i++) {
       game.fire.emit(this.x + rand(-0.8, 0.8), rand(0.5, 3.5), this.z + rand(-0.8, 0.8), rand(-5, 5), rand(0, 6), rand(-5, 5), rand(0.6, 1.4), 1);
     }
-    game.dropPickup('wings', this.x, this.z);
-    game.showMessage('The devil is dead! He dropped his stolen ANGEL WINGS', 4);
+    game.dropPickup('health', this.x, this.z);
+    game.showMessage('The devil is dead! The stolen souls are free', 4);
     game.onEnemyKilled(this);
   }
 
@@ -526,10 +538,12 @@ class Devil {
   }
 }
 
-// A fireball the devil throws. Explodes on whatever it hits.
+// A fireball the devil (or the Balrog) throws. Explodes on whatever it hits.
+// flames: the particles it burns with (the Balrog brings his own, so they stay orange on ice).
 class Fireball {
-  constructor(scene, from, velocity) {
+  constructor(scene, from, velocity, flames = game.fire) {
     this.scene = scene;
+    this.flames = flames;
     this.mesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 10), new THREE.MeshBasicMaterial({ color: 0xffb040 }));
     this.mesh.position.set(from.x, from.y, from.z);
     scene.add(this.mesh);
@@ -545,7 +559,7 @@ class Fireball {
     pos.z += this.velocity.z * dt;
     this.life -= dt;
     for (let i = 0; i < 4; i++) {
-      game.fire.emit(pos.x + rand(-0.15, 0.15), pos.y + rand(-0.15, 0.15), pos.z + rand(-0.15, 0.15), rand(-0.5, 0.5), rand(0, 1), rand(-0.5, 0.5), rand(0.2, 0.45), 1);
+      this.flames.emit(pos.x + rand(-0.15, 0.15), pos.y + rand(-0.15, 0.15), pos.z + rand(-0.15, 0.15), rand(-0.5, 0.5), rand(0, 1), rand(-0.5, 0.5), rand(0.2, 0.45), 1);
     }
 
     const p = game.player;
@@ -563,7 +577,7 @@ class Fireball {
       game.damagePlayer(Math.round(FIREBALL_DAMAGE / 2)); // splash
     }
     for (let i = 0; i < 40; i++) {
-      game.fire.emit(pos.x, pos.y, pos.z, rand(-4, 4), rand(-1, 4), rand(-4, 4), rand(0.3, 0.7), 1);
+      this.flames.emit(pos.x, pos.y, pos.z, rand(-4, 4), rand(-1, 4), rand(-4, 4), rand(0.3, 0.7), 1);
     }
     Sound.explosion(0.5);
     this.scene.remove(this.mesh);

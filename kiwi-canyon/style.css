@@ -298,6 +298,22 @@ button.primary:hover:not(:disabled),
   font-weight: 600;
 }
 
+/* Back to the game collection (on the start screen). */
+.back-link {
+  margin-top: 18px;
+  font-size: 15px;
+  color: #f2e6c0;
+  opacity: 0.75;
+  text-decoration: none;
+  padding: 6px 14px;
+  border: 1px solid rgba(242, 230, 192, 0.35);
+  border-radius: 6px;
+}
+
+.back-link:hover {
+  opacity: 1;
+}
+
 /* ---------- Phones and tablets ---------- */
 
 html.touch-device #topbar {

@@ -4,7 +4,8 @@
 const CELL = 4;          // size of one map cell in world units (about metres)
 const WALL_H = 7;        // castle wall and ceiling height
 const ROCK_H = 14;       // height of the rock cliffs around the hellscape
-const CASTLE_ROWS = 19;  // map rows 0-18 are inside the castle and get a ceiling
+const INSIDE_ROWS = ROUND.gate[1] + 1; // map rows down to the castle's south wall are inside it
+const ROOF_ROWS = ROUND.roofRows;       // the rows that have a ceiling (0 = open to the sky)
 
 // The map for the current round comes from rounds.js (see the legend there).
 // North is the top. You start outside in the south and walk north through the gate.
@@ -46,7 +47,15 @@ function isLavaAt(x, z) {
 }
 
 function ceilingAt(x, z) {
-  return cellOf(z) < CASTLE_ROWS ? WALL_H : Infinity;
+  return cellOf(z) < ROOF_ROWS ? WALL_H : Infinity;
+}
+
+// How high you can fly: up to the ceiling, a little over the walls of an open courtyard,
+// or up to the top of the cliffs outside.
+function flyLimitAt(x, z) {
+  const row = cellOf(z);
+  if (row < ROOF_ROWS) return WALL_H;
+  return row < INSIDE_ROWS ? WALL_H + 2 : ROCK_H - 1;
 }
 
 function blockedAt(x, z, radius, avoidLava) {
@@ -156,6 +165,7 @@ function buildLevel(scene) {
   const walls = [];
   const rocks = [];
   const lava = [];
+  const trees = [];
 
   for (let row = 0; row < MAP_H; row++) {
     for (let col = 0; col < MAP_W; col++) {
@@ -170,6 +180,8 @@ function buildLevel(scene) {
       else if (ch === 'H') level.enemies.push({ type: 'hound', x, z });
       else if (ch === 'E') level.enemies.push({ type: 'elephant', x, z });
       else if (ch === 'D') level.enemies.push({ type: 'devil', x, z });
+      else if (ch === 'B') level.enemies.push({ type: 'balrog', x, z });
+      else if (ch === 'Y') trees.push([x, z]);
       else if (ch === 'a') level.pickups.push({ type: 'ammo', x, z });
       else if (ch === 'h') level.pickups.push({ type: 'health', x, z });
       else if (ch === 'f') level.pickups.push({ type: 'rifle', x, z });
@@ -182,26 +194,36 @@ function buildLevel(scene) {
   }
 
   const wallTexture = Textures.castleWall();
-  const wallMaterial = new THREE.MeshStandardMaterial({ map: wallTexture, bumpMap: wallTexture, bumpScale: 0.6, roughness: 0.9 });
+  const wallMaterial = surfaceMaterial(wallTexture, { roughness: 0.88, normal: 3 });
   addCellBoxes(scene, walls, WALL_H, wallMaterial);
   const rockTexture = Textures.rock();
-  const rockMaterial = new THREE.MeshStandardMaterial({ map: rockTexture, bumpMap: rockTexture, bumpScale: 0.8, roughness: 1 });
+  const rockMaterial = surfaceMaterial(rockTexture, { roughness: 0.95, normal: 4, glow: true });
   addCellBoxes(scene, rocks, ROCK_H, rockMaterial);
 
   // Floors and the castle ceiling.
   const width = MAP_W * CELL;
-  const castleDepth = CASTLE_ROWS * CELL;
-  const outsideDepth = (MAP_H - CASTLE_ROWS) * CELL;
-  addPlane(scene, Textures.castleFloor(MAP_W, CASTLE_ROWS), width, castleDepth, width / 2, 0, castleDepth / 2, -Math.PI / 2);
-  addPlane(scene, Textures.ground(MAP_W / 2, (MAP_H - CASTLE_ROWS) / 2), width, outsideDepth, width / 2, 0, castleDepth + outsideDepth / 2, -Math.PI / 2);
+  const castleDepth = INSIDE_ROWS * CELL;
+  const outsideDepth = (MAP_H - INSIDE_ROWS) * CELL;
+  addPlane(scene, surfaceMaterial(Textures.castleFloor(MAP_W, INSIDE_ROWS), { roughness: 0.75, normal: 3 }), width, castleDepth, width / 2, 0, castleDepth / 2, -Math.PI / 2);
+  addPlane(scene, surfaceMaterial(Textures.ground(MAP_W / 2, (MAP_H - INSIDE_ROWS) / 2), { roughness: 0.92, normal: 3.5, glow: true }), width, outsideDepth, width / 2, 0, castleDepth + outsideDepth / 2, -Math.PI / 2);
   // Double-sided so it also looks like a roof if you fly up over the walls.
-  addPlane(scene, Textures.ceiling(MAP_W, CASTLE_ROWS), width, castleDepth, width / 2, WALL_H, castleDepth / 2, Math.PI / 2, THREE.DoubleSide);
+  if (ROOF_ROWS > 0) {
+    const roofDepth = ROOF_ROWS * CELL;
+    addPlane(scene, surfaceMaterial(Textures.ceiling(MAP_W, ROOF_ROWS), { roughness: 0.95, normal: 2, side: THREE.DoubleSide }), width, roofDepth, width / 2, WALL_H, roofDepth / 2, Math.PI / 2);
+  }
+  if (trees.length) addFrozenTrees(scene, trees);
+  if (ROUND.keep) addKeep(scene, wallTexture, wallMaterial);
 
-  // Lava pools: unlit, so they glow.
+  // Lava pools: unlit and brighter than white, so they glow and bloom. Freezing water
+  // is glassy instead: it reflects the room and lets the light through.
   level.lavaTexture = Textures.hazard();
   const lavaGeometry = new THREE.PlaneGeometry(CELL, CELL);
   lavaGeometry.rotateX(-Math.PI / 2);
-  const lavaMesh = new THREE.InstancedMesh(lavaGeometry, new THREE.MeshBasicMaterial({ map: level.lavaTexture }), lava.length);
+  const lavaMaterial = THEME.palette === 'fire'
+    ? new THREE.MeshBasicMaterial({ map: level.lavaTexture, color: new THREE.Color(1, 1, 1).multiplyScalar(2.2) })
+    : new THREE.MeshStandardMaterial({ map: level.lavaTexture, roughness: 0.08, metalness: 0.2, emissive: 0x1a6aa0, emissiveMap: level.lavaTexture, emissiveIntensity: 0.9 });
+  const lavaMesh = new THREE.InstancedMesh(lavaGeometry, lavaMaterial, lava.length);
+  lavaMesh.receiveShadow = THEME.palette !== 'fire';
   const m = new THREE.Matrix4();
   lava.forEach(([col, row], i) => {
     const { x, z } = cellCenter(col, row);
@@ -215,8 +237,51 @@ function buildLevel(scene) {
   addCastleFront(scene, wallTexture, wallMaterial);
   if (ROUND.throne) addThrone(scene, cellCenter(...ROUND.throne));
   addBanners(scene);
-  addSky(scene);
+  level.sky = addSky(scene);
+  level.lavaLights = addLavaLights(scene, lava);
   return level;
+}
+
+// A surface with depth: a normal map from the texture's own brightness and, for
+// fire-themed rock and ground, glowing lava seams that shine and bloom.
+function surfaceMaterial(texture, { roughness = 0.9, normal = 2.5, glow = false, side = THREE.FrontSide } = {}) {
+  const material = new THREE.MeshStandardMaterial({ map: texture, normalMap: normalMapFor(texture, normal), roughness, side });
+  const glowMap = glow ? glowMapFor(texture) : null;
+  if (glowMap) {
+    material.emissive = new THREE.Color(0xffffff);
+    material.emissiveMap = glowMap;
+    material.emissiveIntensity = 1.8;
+  }
+  return material;
+}
+
+// Light rising off each lava (or freezing) pool, so the ground around it glows.
+// One light per pool of joined-up cells, placed over its middle.
+function addLavaLights(scene, cells) {
+  const key = (c, r) => `${c},${r}`;
+  const left = new Set(cells.map(([c, r]) => key(c, r)));
+  const lights = [];
+  for (const [c0, r0] of cells) {
+    if (!left.has(key(c0, r0))) continue;
+    const pool = [];
+    const stack = [[c0, r0]];
+    left.delete(key(c0, r0));
+    while (stack.length) {
+      const [c, r] = stack.pop();
+      pool.push([c, r]);
+      for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        if (left.delete(key(c + dc, r + dr))) stack.push([c + dc, r + dr]);
+      }
+    }
+    const x = pool.reduce((s, [c]) => s + c, 0) / pool.length;
+    const z = pool.reduce((s, [, r]) => s + r, 0) / pool.length;
+    const fire = THEME.palette === 'fire';
+    const light = new THREE.PointLight(fire ? 0xff6a1a : 0x4ab8ff, (fire ? 2.2 : 1.2) * LIGHT_UNITS * Math.sqrt(pool.length), 18, 1.6);
+    light.position.set(x * CELL + CELL / 2, 1, z * CELL + CELL / 2);
+    scene.add(light);
+    lights.push({ light, base: light.intensity, seed: rand(0, 10) });
+  }
+  return lights;
 }
 
 // One box per map cell, all drawn in a single batch.
@@ -230,15 +295,18 @@ function addCellBoxes(scene, cells, height, material) {
   });
   mesh.instanceMatrix.needsUpdate = true;
   mesh.frustumCulled = false;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
   scene.add(mesh);
   return mesh;
 }
 
-function addPlane(scene, texture, width, depth, x, y, z, rotationX, side = THREE.FrontSide) {
-  const material = new THREE.MeshStandardMaterial({ map: texture, bumpMap: texture, bumpScale: 0.4, roughness: 0.95, side });
+function addPlane(scene, material, width, depth, x, y, z, rotationX) {
   const plane = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), material);
   plane.rotation.x = rotationX;
   plane.position.set(x, y, z);
+  plane.receiveShadow = true;
+  plane.castShadow = y > 0; // the ceiling keeps the sky's light out of the castle
   scene.add(plane);
 }
 
@@ -249,13 +317,13 @@ function addBrazier(scene, x, z) {
     brazierMaterials = {
       stone: new THREE.MeshStandardMaterial({ color: 0x3a2a24, roughness: 0.9 }),
       iron: new THREE.MeshStandardMaterial({ color: 0x2a2220, metalness: 0.6, roughness: 0.5 }),
-      coals: new THREE.MeshBasicMaterial({ color: THEME.coals }),
+      coals: new THREE.MeshBasicMaterial({ color: new THREE.Color(THEME.coals).multiplyScalar(3) }), // white-hot, so it blooms
     };
   }
-  addPart(scene, new THREE.CylinderGeometry(0.28, 0.4, 1.1, 10), brazierMaterials.stone, x, 0.55, z);
-  addPart(scene, new THREE.CylinderGeometry(0.6, 0.3, 0.4, 12), brazierMaterials.iron, x, 1.3, z);
+  addPart(scene, new THREE.CylinderGeometry(0.28, 0.4, 1.1, 10), brazierMaterials.stone, x, 0.55, z).receiveShadow = true;
+  addPart(scene, new THREE.CylinderGeometry(0.6, 0.3, 0.4, 12), brazierMaterials.iron, x, 1.3, z).receiveShadow = true;
   addPart(scene, new THREE.CylinderGeometry(0.52, 0.52, 0.05, 12), brazierMaterials.coals, x, 1.48, z);
-  const light = new THREE.PointLight(THEME.brazierLight, 1.6, 22, 1.5);
+  const light = new THREE.PointLight(THEME.brazierLight, 1.6 * LIGHT_UNITS, 22, 1.5);
   light.position.set(x, 2.4, z);
   scene.add(light);
   obstacles.push({ x, z, r: 0.6 });
@@ -267,20 +335,34 @@ function addCastleFront(scene, wallTexture, wallMaterial) {
   const towers = ROUND.towers;
   const merlons = [];
   for (const [col, row, height] of towers) {
-    const texture = wallTexture.clone();
-    texture.needsUpdate = true;
-    texture.repeat.set(1, height / WALL_H);
-    const material = new THREE.MeshStandardMaterial({ map: texture, bumpMap: texture, bumpScale: 0.6, roughness: 0.9 });
+    const material = wallMaterial.clone();
+    material.map = wallTexture.clone();
+    material.normalMap = wallMaterial.normalMap.clone();
+    for (const map of [material.map, material.normalMap]) {
+      map.repeat.set(1, height / WALL_H);
+      map.needsUpdate = true;
+    }
     const { x, z } = cellCenter(col, row);
-    addPart(scene, new THREE.BoxGeometry(CELL + 0.4, height, CELL + 0.4), material, x, height / 2, z);
+    const tower = addPart(scene, new THREE.BoxGeometry(CELL + 0.4, height, CELL + 0.4), material, x, height / 2, z);
+    tower.castShadow = tower.receiveShadow = true;
     for (const [ox, oz] of [[-1.6, -1.6], [1.6, -1.6], [-1.6, 1.6], [1.6, 1.6], [0, -1.6], [0, 1.6], [-1.6, 0], [1.6, 0]]) {
       merlons.push([x + ox, height + 0.5, z + oz]);
     }
   }
   for (let col = 0; col < MAP_W; col++) {
-    if (MAP[18][col] !== '#') continue;
-    const { x, z } = cellCenter(col, 18);
+    if (MAP[ROUND.gate[1]][col] !== '#') continue;
+    const { x, z } = cellCenter(col, ROUND.gate[1]);
     merlons.push([x - 1, WALL_H + 0.5, z + 1.4], [x + 1, WALL_H + 0.5, z + 1.4]);
+  }
+  // An open courtyard shows the tops of its walls: battlements all the way round.
+  if (ROOF_ROWS === 0) {
+    for (let row = 0; row < ROUND.gate[1]; row++) {
+      for (let col = 0; col < MAP_W; col++) {
+        if (MAP[row][col] !== '#') continue;
+        const { x, z } = cellCenter(col, row);
+        for (const [ox, oz] of [[-1.4, -1.4], [1.4, -1.4], [-1.4, 1.4], [1.4, 1.4]]) merlons.push([x + ox, WALL_H + 0.5, z + oz]);
+      }
+    }
   }
   const merlonMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), wallMaterial, merlons.length);
   const m = new THREE.Matrix4();
@@ -290,10 +372,11 @@ function addCastleFront(scene, wallTexture, wallMaterial) {
   });
   merlonMesh.instanceMatrix.needsUpdate = true;
   merlonMesh.frustumCulled = false;
+  merlonMesh.castShadow = merlonMesh.receiveShadow = true;
   scene.add(merlonMesh);
 
   // Arch over the gate with portcullis spikes hanging from it.
-  const gate = cellCenter(12, 18);
+  const gate = cellCenter(...ROUND.gate);
   addPart(scene, new THREE.BoxGeometry(3 * CELL, 2, CELL), wallMaterial, gate.x, WALL_H - 1, gate.z);
   const iron = new THREE.MeshStandardMaterial({ color: 0x1a1412, metalness: 0.7, roughness: 0.5 });
   for (let i = 0; i < 11; i++) {
@@ -318,6 +401,9 @@ function addThrone(scene, { x, z }) {
     horn.rotation.z = -side * 0.5;
   }
   throne.position.set(x, 0, z - 0.6);
+  throne.traverse((part) => {
+    part.castShadow = part.receiveShadow = true;
+  });
   scene.add(throne);
   obstacles.push({ x, z: z - 0.6, r: 1.3 });
 }
@@ -339,4 +425,123 @@ function addSky(scene) {
   );
   sky.position.set((MAP_W * CELL) / 2, 0, (MAP_H * CELL) / 2);
   scene.add(sky);
+  return sky;
+}
+
+// A wall material with its texture stretched to fit a big surface.
+function stretchedWallMaterial(wallTexture, wallMaterial, repeatX, repeatY) {
+  const material = wallMaterial.clone();
+  material.map = wallTexture.clone();
+  material.normalMap = wallMaterial.normalMap.clone();
+  for (const map of [material.map, material.normalMap]) {
+    map.repeat.set(repeatX, repeatY);
+    map.needsUpdate = true;
+  }
+  return material;
+}
+
+// The frozen forest: dead trees glazed in ice, with bare branches clawing at the sky.
+// All the trunks are one batch and all the branches another.
+function addFrozenTrees(scene, spots) {
+  const bark = Textures.rock();
+  const material = new THREE.MeshStandardMaterial({
+    map: bark,
+    normalMap: normalMapFor(bark, 4),
+    color: 0x8aa0b8,
+    roughness: 0.35,  // glazed with ice, so it catches the light
+    metalness: 0.1,
+    emissive: 0x0a2a48,
+  });
+  const trunkGeometry = new THREE.CylinderGeometry(0.28, 0.75, 1, 8);
+  trunkGeometry.translate(0, 0.5, 0);
+  const branchGeometry = new THREE.CylinderGeometry(0.04, 0.2, 1, 5);
+  branchGeometry.translate(0, 0.5, 0);
+  const BRANCHES = 16;
+  const trunks = new THREE.InstancedMesh(trunkGeometry, material, spots.length);
+  const branches = new THREE.InstancedMesh(branchGeometry, material, spots.length * BRANCHES);
+  const m = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  const e = new THREE.Euler();
+  const s = new THREE.Vector3();
+  const p = new THREE.Vector3();
+  spots.forEach(([x0, z0], i) => {
+    const x = x0 + rand(-0.8, 0.8);
+    const z = z0 + rand(-0.8, 0.8);
+    const height = rand(8, 12.5);
+    const lean = new THREE.Euler(rand(-0.08, 0.08), 0, rand(-0.08, 0.08));
+    q.setFromEuler(lean);
+    trunks.setMatrixAt(i, m.compose(p.set(x, 0, z), q, s.set(1, height, 1)));
+    for (let b = 0; b < BRANCHES; b++) {
+      const k = b / (BRANCHES - 1);
+      const y = height * (0.3 + k * 0.65);
+      const length = (1 - k * 0.55) * rand(2.2, 4.4);
+      e.set(rand(0.5, 1.1) * (b === BRANCHES - 1 ? 0.3 : 1), rand(0, Math.PI * 2), 0, 'YXZ');
+      q.setFromEuler(e);
+      const r = 0.22 + (1 - k) * 0.25;
+      branches.setMatrixAt(i * BRANCHES + b, m.compose(p.set(x, y, z).add(new THREE.Vector3(0, 0, -r * 0.5).applyQuaternion(q)), q, s.set(1 - k * 0.4, length, 1 - k * 0.4)));
+    }
+    obstacles.push({ x, z, r: 0.6 });
+  });
+  for (const mesh of [trunks, branches]) {
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.frustumCulled = false;
+    mesh.castShadow = mesh.receiveShadow = true;
+    scene.add(mesh);
+  }
+}
+
+// The keep, towering over the north wall of the courtyard, with its great door in the wall.
+// It's scenery: the way in is round 4.
+function addKeep(scene, wallTexture, wallMaterial) {
+  const width = MAP_W * CELL;
+  const cx = width / 2;
+  const slate = new THREE.MeshStandardMaterial({ color: 0x1a2028, roughness: 0.6, metalness: 0.3 });
+  const glow = new THREE.MeshBasicMaterial({ color: new THREE.Color(THEME.coals).multiplyScalar(2.5) });
+
+  // The great hall block, then a tall tower at each front corner and one in the middle.
+  const hall = { w: 52, h: 26, d: 26 };
+  addPart(scene, new THREE.BoxGeometry(hall.w, hall.h, hall.d), stretchedWallMaterial(wallTexture, wallMaterial, hall.w / 8, hall.h / WALL_H), cx, hall.h / 2, -hall.d / 2 - 0.2);
+  const merlons = [];
+  for (let i = 0; i <= 24; i++) merlons.push([cx - hall.w / 2 + 1 + i * ((hall.w - 2) / 24), hall.h + 0.6, -0.9]);
+  const towers = [[cx - hall.w / 2, 7, 40], [cx + hall.w / 2, 7, 40], [cx, 9, 52]];
+  for (const [x, radius, height] of towers) {
+    const z = x === cx ? -hall.d / 2 : -4;
+    addPart(scene, new THREE.CylinderGeometry(radius, radius * 1.1, height, 20), stretchedWallMaterial(wallTexture, wallMaterial, radius, height / WALL_H), x, height / 2, z);
+    addPart(scene, new THREE.CylinderGeometry(radius * 1.15, radius * 1.15, 1.2, 20), wallMaterial, x, height + 0.6, z);
+    addPart(scene, new THREE.ConeGeometry(radius * 1.2, radius * 2.4, 20), slate, x, height + 1.2 + radius * 1.2, z);
+    // Glowing arrow-slit windows climbing the tower.
+    for (let level = 0; level < 4; level++) {
+      for (let j = -1; j <= 1; j++) {
+        const a = j * 0.5;
+        const y = height * (0.35 + level * 0.15);
+        const slit = addPart(scene, new THREE.PlaneGeometry(0.7, 2.2), glow, x + Math.sin(a) * (radius + 0.05), y, z + Math.cos(a) * (radius + 0.05));
+        slit.rotation.y = a;
+      }
+    }
+  }
+  // Rows of windows across the hall, above the courtyard wall.
+  for (let i = 0; i < 9; i++) {
+    for (const y of [12, 18]) addPart(scene, new THREE.PlaneGeometry(1.2, 3), glow, cx - 20 + i * 5, y, 0.01 - 0.2);
+  }
+  const merlonMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1.4, 1.2, 1.4), wallMaterial, merlons.length);
+  const m = new THREE.Matrix4();
+  merlons.forEach(([x, y, z], i) => merlonMesh.setMatrixAt(i, m.makeTranslation(x, y, z)));
+  merlonMesh.instanceMatrix.needsUpdate = true;
+  scene.add(merlonMesh);
+
+  // The great door, set in the courtyard's north wall: a stone arch, iron-banded doors
+  // and a cold light spilling out under them.
+  const doorZ = CELL + 0.05;
+  const iron = new THREE.MeshStandardMaterial({ color: 0x1a1a1e, metalness: 0.8, roughness: 0.4 });
+  const wood = new THREE.MeshStandardMaterial({ map: Textures.leather(), color: 0x3a3038, roughness: 0.8 });
+  addPart(scene, new THREE.BoxGeometry(7.4, 6.6, 0.5), wallMaterial, cx, 3.3, doorZ + 0.1);
+  for (const side of [-1, 1]) {
+    addPart(scene, new THREE.BoxGeometry(2.6, 5.6, 0.25), wood, cx + side * 1.32, 2.8, doorZ + 0.45);
+    for (const y of [1, 2.8, 4.6]) addPart(scene, new THREE.BoxGeometry(2.5, 0.18, 0.08), iron, cx + side * 1.32, y, doorZ + 0.6);
+    addPart(scene, new THREE.TorusGeometry(0.25, 0.05, 8, 16), iron, cx + side * 0.4, 2.6, doorZ + 0.62);
+  }
+  addPart(scene, new THREE.PlaneGeometry(5, 0.12), glow, cx, 0.06, doorZ + 0.62);
+  const light = new THREE.PointLight(THEME.brazierLight, 3 * LIGHT_UNITS, 16, 1.5);
+  light.position.set(cx, 2, doorZ + 2);
+  scene.add(light);
 }

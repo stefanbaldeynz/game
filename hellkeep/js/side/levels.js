@@ -1,4 +1,4 @@
-// The side-on rounds (3 and 4), drawn as text. One screen is 16 tiles wide
+// The side-on rounds (1 and 2), drawn as text. One screen is 16 tiles wide
 // and 12 tall. A round can be tall (it scrolls down) or wide (it scrolls sideways).
 //
 //   #  hellrock (solid, a glowing ember crust forms on top)
@@ -30,9 +30,12 @@ function joinChunks(height, chunks) {
   return rows;
 }
 
+// The side-on rounds use the hell colour theme (see themes.js).
+const THEME = HELL_THEME;
+
 const SIDE_ROUNDS = {
-  3: {
-    title: 'Round 3 · The Brimstone Gorge',
+  2: {
+    title: 'Round 2 · The Brimstone Gorge',
     intro: 'Climb down the burning gorge to the Soul Gem at the very bottom. Hellhounds fly here, and lightning elephants guard the ledges.',
     map: [
       '##............##',
@@ -126,8 +129,8 @@ const SIDE_ROUNDS = {
       '################',
     ],
   },
-  4: {
-    title: 'Round 4 · Hell Ride',
+  1: {
+    title: 'Round 1 · Hell Ride',
     intro: 'Ride the motorbike across the lava sea to the Soul Gem. Right speeds up, Left slows down. Blast through the rocks, and jump (or fly) the gaps.',
     bike: true,
     lava: true,

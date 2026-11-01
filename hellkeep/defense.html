@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hellkeep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Metal+Mania&family=Oswald:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="siege">
+  <!-- Round 5: The Hellgate Siege. Tower defence with a first-person mode. -->
+  <div id="game"></div>
+  <div id="floaters"></div>
+
+  <div id="hud">
+    <div id="round"></div>
+    <div id="topbar">
+      <div class="stat"><span class="label">Wave</span><span id="wave">0 / 3</span></div>
+      <div class="stat"><span class="label">Lives</span><span id="lives">20</span></div>
+      <div class="stat money"><span class="label">Souls</span><span id="money">40</span></div>
+      <div class="stat"><span class="label">Beasts</span><span id="beasts">0</span></div>
+      <button id="wave-button" type="button" class="hidden"></button>
+    </div>
+
+    <div id="message"></div>
+    <div id="paused-label" class="hidden">Paused · press P to carry on</div>
+
+    <div id="td-panel" class="panel hidden">
+      <div class="hint">Click a spot in the courtyard to build a fire tower: <b id="build-cost">10 souls</b></div>
+      <div class="row">
+        <button id="fps-button" type="button" class="primary">First-person mode [F]</button>
+        <button id="rifle-button" type="button">Upgrade rifle</button>
+        <button id="menu-button" type="button">Menu [Esc]</button>
+      </div>
+      <div class="hint small">Click a tower to upgrade it · click the road to choose where you drop in · WASD pan · wheel zoom · P pause</div>
+    </div>
+
+    <div id="tower-panel" class="panel hidden">
+      <div id="tower-title">Fire tower</div>
+      <div id="tower-stats" class="hint"></div>
+      <div class="row">
+        <button id="upgrade-button" type="button" class="primary">Upgrade</button>
+        <button id="close-tower" type="button">Close</button>
+      </div>
+    </div>
+
+    <div id="fps-hud" class="hidden">
+      <div id="crosshair"></div>
+      <div id="ammo-box" class="panel">
+        <div class="label">Rifle · level <span id="rifle-level">1</span></div>
+        <div id="ammo" class="value">30 / 30</div>
+        <div class="hint small">Click shoot · R reload · Shift sprint · F tower view</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlay">
+    <h1 id="overlay-title">Hellkeep</h1>
+    <h2 id="overlay-round"></h2>
+    <div id="story" class="hidden"></div>
+    <p id="overlay-text"></p>
+    <div id="round-picker"></div>
+    <button id="overlay-button" type="button">Loading...</button>
+    <p id="asset-note" class="note hidden">Opened straight from your files, so the 3D models are switched off. For the full graphics, start the game with <b>serve.cmd</b> (in the main game folder).</p>
+    <a class="back-link" href="../index.html">&larr; Game select</a>
+    <div class="controls">
+      <div><b>Click the courtyard</b> build a fire tower</div>
+      <div><b>Click a tower</b> upgrade it [U]</div>
+      <div><b>N</b> let the next wave come</div>
+      <div><b>F</b> drop onto the road / back up</div>
+      <div><b>WASD + mouse</b> move and aim</div>
+      <div><b>Click / R</b> shoot / reload</div>
+      <div><b>M</b> music · <b>G</b> graphics</div>
+      <div><b>P</b> pause · <b>Esc</b> menu</div>
+    </div>
+  </div>
+
+  <!-- The list of rounds and the round picker. -->
+  <script src="js/roundlist.js"></script>
+  <script src="js/story.js"></script>
+
+  <script>
+    // Where three.js comes from: the copy in ../lib/three when running through serve.cmd,
+    // or the same version from the internet when this page is opened straight from the files.
+    (() => {
+      const base = location.protocol === 'file:' ? 'https://cdn.jsdelivr.net/npm/three@0.186.1/' : '../lib/three/';
+      window.THREE_BASE = base;
+      const map = document.createElement('script');
+      map.type = 'importmap';
+      map.textContent = JSON.stringify({
+        imports: { three: `${base}build/three.module.js`, 'three/addons/': `${base}examples/jsm/` },
+      });
+      document.currentScript.after(map);
+    })();
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+    import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+    import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+    import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+
+    window.THREE = THREE;
+    window.THREE_ADDONS = { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, GTAOPass, RoomEnvironment, SkeletonUtils };
+
+    // The 3D models, loaded before the round starts (see index.html for the full story).
+    const MODEL_FILES = {
+      hellhound: 'models/hellhound.glb',
+      elephant: 'models/elephant.glb',
+    };
+    window.MODELS = {};
+    if (location.protocol === 'file:') {
+      document.getElementById('asset-note').classList.remove('hidden');
+    } else {
+      const loader = new GLTFLoader();
+      loader.setDRACOLoader(new DRACOLoader().setDecoderPath(`${THREE_BASE}examples/jsm/libs/draco/gltf/`));
+      loader.setMeshoptDecoder(MeshoptDecoder);
+      await Promise.all(Object.entries(MODEL_FILES).map(async ([name, url]) => {
+        try {
+          window.MODELS[name] = await loader.loadAsync(url);
+        } catch (error) {
+          console.warn(`Could not load ${url}; using a built-in model instead.`, error);
+        }
+      }));
+    }
+
+    const scripts = [
+      'util', 'themes', 'textures', 'sound', 'music', 'particles', 'hounds', 'elephants', 'devil',
+      'weapons', 'graphics', 'defense/config', 'defense/world', 'defense/beasts', 'defense/towers', 'defense/main',
+    ];
+    for (const name of scripts) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = `js/${name}.js`;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error(`Could not load js/${name}.js`));
+        document.body.appendChild(script);
+      });
+    }
+  </script>
+  <script>
+    // If the 3D engine can't be downloaded, say so instead of showing a blank screen.
+    setTimeout(() => {
+      if (!window.THREE) {
+        document.getElementById('overlay-text').textContent =
+          'Could not load the 3D engine (three.js). Check your internet connection and reload the page.';
+      }
+    }, 8000);
+  </script>
+</body>
+</html>

@@ -39,8 +39,25 @@ const WEAPONS = {
 
 const WEAPON_ORDER = ['pistol', 'shotgun', 'rifle'];
 
+// Brushed and scratched: the streaks catch the light as the gun moves.
+let metalTextures = null;
 function gunMetal(color) {
-  return new THREE.MeshStandardMaterial({ color, metalness: 0.75, roughness: 0.35 });
+  if (!metalTextures) {
+    const brushed = Textures.brushedMetal();
+    brushed.colorSpace = THREE.NoColorSpace; // data, not colour
+    brushed.repeat.set(2, 2);
+    metalTextures = { roughness: brushed, normal: normalMapFor(brushed, 1.2) };
+  }
+  return new THREE.MeshPhysicalMaterial({
+    color,
+    metalness: 0.85,
+    roughness: 0.55, // scaled by the brushed streaks
+    roughnessMap: metalTextures.roughness,
+    normalMap: metalTextures.normal,
+    normalScale: new THREE.Vector2(0.4, 0.4),
+    clearcoat: 0.25,
+    clearcoatRoughness: 0.3,
+  });
 }
 
 function gunWood() {
@@ -89,12 +106,11 @@ function buildShotgun() {
   });
   const engraved = new THREE.MeshStandardMaterial({
     map: flakTextures.engraving,
-    bumpMap: flakTextures.engraving,
-    bumpScale: 0.6,
+    normalMap: flakTextures.engravingNormal || (flakTextures.engravingNormal = normalMapFor(flakTextures.engraving, 3)),
     metalness: 1,
     roughness: 0.3,
   });
-  const glow = new THREE.MeshBasicMaterial({ color: 0x7ff6ff }); // bright enough to bloom
+  const glow = new THREE.MeshBasicMaterial({ color: new THREE.Color(0x7ff6ff).multiplyScalar(2.5) }); // brighter than white, so it blooms
   const dark = new THREE.MeshBasicMaterial({ color: 0x050505 });
   const label = new THREE.MeshBasicMaterial({ map: flakTextures.label, transparent: true });
   const group = new THREE.Group();

@@ -13,7 +13,7 @@ function makeCanvas(width, height, draw, scale = 1) {
 
 function canvasTexture(canvas, repeatX = 1, repeatY = 1) {
   const texture = new THREE.CanvasTexture(canvas);
-  texture.encoding = THREE.sRGBEncoding; // these are colours, not data
+  texture.colorSpace = THREE.SRGBColorSpace; // these are colours, not data
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
   texture.repeat.set(repeatX, repeatY);
   texture.anisotropy = 8;
@@ -23,8 +23,77 @@ function canvasTexture(canvas, repeatX = 1, repeatY = 1) {
 // A plain (non-repeating) colour texture.
 function colorTexture(canvas) {
   const texture = new THREE.CanvasTexture(canvas);
-  texture.encoding = THREE.sRGBEncoding;
+  texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
+}
+
+// A normal map worked out from a texture's brightness: bright parts (bricks, stones)
+// stand out and dark parts (mortar, cracks, grit) sink in, so light rakes across the
+// surface instead of it looking painted on. Same size, wrapping and repeat as the texture.
+function normalMapFor(texture, strength = 2.5) {
+  const canvas = texture.image;
+  const w = canvas.width;
+  const h = canvas.height;
+  const src = canvas.getContext('2d').getImageData(0, 0, w, h).data;
+  const height = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    height[i] = (src[i * 4] * 0.299 + src[i * 4 + 1] * 0.587 + src[i * 4 + 2] * 0.114) / 255;
+  }
+  const out = document.createElement('canvas');
+  out.width = w;
+  out.height = h;
+  const g = out.getContext('2d');
+  const img = g.createImageData(w, h);
+  const at = (x, y) => height[((y + h) % h) * w + ((x + w) % w)];
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      // Slopes across and down (Sobel), wrapping at the edges so tiles join up.
+      const dx = at(x + 1, y - 1) + 2 * at(x + 1, y) + at(x + 1, y + 1) - at(x - 1, y - 1) - 2 * at(x - 1, y) - at(x - 1, y + 1);
+      const dy = at(x - 1, y + 1) + 2 * at(x, y + 1) + at(x + 1, y + 1) - at(x - 1, y - 1) - 2 * at(x, y - 1) - at(x + 1, y - 1);
+      let nx = -dx * strength;
+      let ny = dy * strength; // the picture's rows run down, texture space runs up
+      let nz = 1;
+      const len = Math.hypot(nx, ny, nz);
+      const k = (y * w + x) * 4;
+      img.data[k] = (nx / len * 0.5 + 0.5) * 255;
+      img.data[k + 1] = (ny / len * 0.5 + 0.5) * 255;
+      img.data[k + 2] = (nz / len * 0.5 + 0.5) * 255;
+      img.data[k + 3] = 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+  return dataTextureLike(texture, out);
+}
+
+// The glowing seams in a fire-themed texture (lava cracks), as their own map, so they
+// can shine (and bloom) instead of just being orange paint. Null for the frost theme.
+function glowMapFor(texture) {
+  if (THEME.palette !== 'fire') return null;
+  const canvas = texture.image;
+  const w = canvas.width;
+  const h = canvas.height;
+  const src = canvas.getContext('2d').getImageData(0, 0, w, h);
+  const d = src.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const glow = d[i] > 140 && d[i] - d[i + 2] > 90 && d[i] > d[i + 1] * 1.3;
+    if (!glow) d[i] = d[i + 1] = d[i + 2] = 0;
+  }
+  const out = document.createElement('canvas');
+  out.width = w;
+  out.height = h;
+  out.getContext('2d').putImageData(src, 0, 0);
+  const map = dataTextureLike(texture, out);
+  map.colorSpace = THREE.SRGBColorSpace;
+  return map;
+}
+
+function dataTextureLike(texture, canvas) {
+  const map = new THREE.CanvasTexture(canvas);
+  map.wrapS = texture.wrapS;
+  map.wrapT = texture.wrapT;
+  map.repeat.copy(texture.repeat);
+  map.anisotropy = texture.anisotropy;
+  return map;
 }
 
 // Lots of tiny random squares: grain and grit.
@@ -76,6 +145,22 @@ function cracks(g, w, h, count, color, width) {
 }
 
 const Textures = {
+  // Brushed, scratched gun metal: fine streaks along the barrel and a few nicks.
+  // Grey on purpose: used as a roughness map and turned into a normal map.
+  brushedMetal() {
+    return canvasTexture(makeCanvas(256, 256, (g, w, h) => {
+      g.fillStyle = '#808080';
+      g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 900; i++) {
+        const v = Math.floor(rand(100, 160));
+        g.fillStyle = `rgba(${v}, ${v}, ${v}, ${rand(0.15, 0.5)})`;
+        g.fillRect(rand(-40, w), rand(0, h), rand(30, 160), rand(0.5, 1.5));
+      }
+      cracks(g, w, h, 25, 'rgba(200, 200, 200, 0.5)', 0.6); // bright scratches
+      blotches(g, w, h, 12, ['#5a5a5a', '#a0a0a0'], 8, 26, 0.25); // worn and greasy patches
+    }));
+  },
+
   // Castle bricks in the round's colours. Sized for one wall face (4 wide x 7 tall).
   castleWall() {
     const t = THEME.wall;
