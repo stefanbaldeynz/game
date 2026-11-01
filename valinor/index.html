@@ -2565,7 +2565,7 @@ const LEVELS = [
     floors: [[-16.6, 26, -3.5], [30, 52, -3.5], [52, 66, .2], [70, 96, -3.5], [108, 128, -3.5], [131.5, 152, -3.5], [152, 202, -1.4, 1.4], [202, 1e9, -3.5]],
     pillars: [[99, 100.8, -1.4, 1.4, 0], [103, 104.8, -.6, 2.2, .6]], bars: [],
     open: [[152, 202]], gateS: 200.5,   // the Bridge of Khazad-dûm, and a wall of fire at its far end until the Balrog falls
-    dz: [], balrogs: [{ boss: true, big: 2.1, bx: -16.5, r0: 156, r1: 210, hp: 9, seq: ['smash', 'crack', 'smash', 'sweep', 'smash', 'crack'] }],
+    dz: [], balrogs: [{ boss: true, big: 2.1, bx: -16.5, sink: .63, r0: 156, r1: 210, hp: 9, seq: ['smash', 'crack', 'smash', 'sweep', 'smash', 'crack'] }],
     content() {
       crateList([
         ['b', 6, -1.5], ['b', 6, 1.5], ['q', 12, 0], ['t', 18, 2], ['b', 22, -2], ['r', 24, 2.4], ['b', 34, 2], ['b', 35, 2], ['bo', 40, -2], ['c', 46, 0], ['n', 50, -1], ['b', 56, 2], ['b', 60, 2.6], ['q', 64, 1.5],
@@ -3385,7 +3385,7 @@ function updateDragons(dt) {
     let ts, tx, ty;
     if ((zone || title) && d.away <= 0) {
       const t = T * .22 + d.ph;
-      ts = P.s + (title ? 8 : 24) + Math.sin(t) * 9 + d.ph * 2; tx = -10 + Math.sin(t * 1.4 + d.ph) * 11; ty = 10.5 + Math.sin(t * 2.1) * 2.5 + d.ph * .4;
+      ts = P.s + (title ? 8 : 15) + Math.sin(t) * 7 + d.ph * 1.5; tx = -6.5 + Math.sin(t * 1.4 + d.ph) * 6; ty = 7 + Math.sin(t * 2.1) * 1.8 + d.ph * .3;   // close in, just off the wall
     } else { ts = P.s + 40 + d.ph * 10; tx = -90; ty = 50; }
     const k = d.spitT > 0 ? .4 : 1.1;
     d.s = damp(d.s, ts, k, dt); d.x = damp(d.x, tx, k * .8, dt); d.y = damp(d.y, ty, k, dt);
@@ -3616,6 +3616,7 @@ function poseBalrog(b, dt) {
   const r = b.m.root, M = balrogMats();
   const k = balK(b); r.scale.setScalar(k);
   place(r, b.s, balX(b), b.y + Math.sin(T * 1.3) * .25, Math.PI / 2);
+  { const K = b.m.skin, cfg = MODEL_SLOTS.balrog; if (K && K.obj) K.obj.position.y = -(b.def.sink ?? cfg.sink) * cfg.height; }   // Moria's stands deeper in the abyss
   r.rotation.z = b.stun > 0 ? Math.sin(T * 9) * .08 : Math.sin(T * .9) * .03;
   r.updateMatrixWorld(true);
   const pp = tw(P.s, P.x, P.y + 1); const lp = r.worldToLocal(pp.clone()).sub(b.m.head.position);
@@ -4488,7 +4489,7 @@ function makeSauron() {
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(2.1, 16), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .45, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
   shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
   scene.add(root);
-  return { root, hips, torso, head, cape, legs, arms, mace, mh, ring, ringGlow, shadow };
+  const Sm = { root, hips, torso, head, cape, legs, arms, mace, mh, ring, ringGlow, shadow }; addSkin(Sm, 'sauron', root, root, [ringGlow]); return Sm;   // with your own model, BFME's Sauron
 }
 function showSauron(v) { SAURON.root.visible = SAURON.shadow.visible = v; }
 
@@ -4853,6 +4854,7 @@ function updateBoss(dt) {
 }
 function poseSauron(dt, px, pz) {
   const Sm = SAURON, a = boss.atk, st = boss.state;
+  skinPlay(Sm, st === 'dying' || st === 'dead' ? 'die' : st === 'transform' || boss.hurtT > 0 ? 'hit' : a ? 'attack' : boss.moving || st === 'intro' ? 'walk' : 'idle');
   let tgt, k = 8;
   if (st === 'transform') { tgt = poseRage(); k = 5; }
   else if (st === 'intro') tgt = boss.landed && boss.t < 1.2 ? poseQuake(true) : poseWalk(0, 0);
@@ -5471,7 +5473,7 @@ function updateMap(dt) {
   TX.sea.offset.x += dt * .012; TX.sea.offset.y += dt * .005;
   for (const f of mapFx.fires) { const k = 1 + Math.sin(T * 9 + f.ph) * .15; f.sp.scale.set(f.s * k, f.s * (2 - k), 1); }
   for (const c of mapFx.clouds) { c.position.x += dt * .8; if (c.position.x > 100) c.position.x = -90; }
-  if (BOARD) mapFx.mt.visible = mc.zoom > .02;   // on the board, the little city only appears as the camera flies in
+  if (BOARD || MAP_LOADING) mapFx.mt.visible = mc.zoom > .02;   // on the board, the little city only appears as the camera flies in
   mapFx.eye.material.opacity = .85 + Math.sin(T * 3) * .15; mapFx.doom.material.opacity = .7 + Math.sin(T * 2.3) * .2;
   for (const n of NODES) if (n.lock) n.lock.position.y += Math.sin(T * 2.5 + n.x) * .004;
   // Gandalf walks where he's told
@@ -5491,7 +5493,8 @@ function updateMap(dt) {
     tok.hop += dt * 10; tok.face = Math.atan2(mx, mz);
   } else tok.hop = 0;
   tok.g.position.set(tok.p.x, groundY(tok.p.x, tok.p.z) + .05, tok.p.z);
-  tok.body.position.y = moving ? Math.abs(Math.sin(tok.hop)) * .4 : Math.sin(T * 2.5) * .03;
+  tok.body.position.y = TOK.skin && TOK.skin.obj ? 0 : moving ? Math.abs(Math.sin(tok.hop)) * .4 : Math.sin(T * 2.5) * .03;
+  skinPlay(TOK, moving ? 'walk' : 'idle');
   tok.g.rotation.y = damp(tok.g.rotation.y, tok.g.rotation.y + angDiff(tok.g.rotation.y, moving ? tok.face : 0), 12, dt);
   tok.near = nodeNear();
   const sel = NODES[tok.near];
@@ -5501,7 +5504,7 @@ function updateMap(dt) {
   if (signShown !== tok.near) {
     signShown = tok.near;
     document.getElementById('signName').textContent = sel ? sel.name : 'MIDDLE-EARTH';
-    document.getElementById('signSub').textContent = sel ? (sel.open ? sel.sub : 'LOCKED · COMING SOON') : 'WALK TO A PLACE TO PLAY IT';
+    document.getElementById('signSub').textContent = sel ? (sel.open ? sel.sub : 'LOCKED · COMING SOON') : MAP_LOADING ? 'LOADING THE MAP…' : 'WALK TO A PLACE TO PLAY IT';
     signEl.classList.toggle('locked', !!sel && !sel.open);
     document.getElementById('mapGo').classList.toggle('off', !sel);
   }
@@ -5525,19 +5528,33 @@ function updateMap(dt) {
 //     models/README.md): it replaces the little diorama, each stop moves onto its region, and Gandalf walks over its hills ---
 const STOP_REGION = { shire: 'The_Shire', riv: 'Rhudaur', moria: 'Redhorn_Pass', weather: 'Amon_Sul', rohan: 'Rohan', mt: 'Minas_Tirith', ungol: 'Minas_Morgul', mordor: 'Mordor', doom: 'Mount_Doom' };
 // what's hidden (clouds, smoke and BFME's own markers), what's water, and what's the ground itself (its 20 painted tiles)
-const BOARD_HIDE = /cloud|pick|smoke|sunray|flash|marker|brdr|rallyflag|hero/i, BOARD_WATER = /ocean|water|sea\b|wtr/i, BOARD_GROUND = /^LM_\d\d$/;
+const BOARD_HIDE = /cloud|pick|smoke|sunray|flash|marker|brdr|rallyflag|hero|impassable/i, BOARD_WATER = /ocean|water|sea\b|wtr/i, BOARD_GROUND = /^LM_\d\d(_\d+)?$/;   // (three.js adds _1 when a part shares its name with the node holding it)
+// BFME paints the sea white and see-through on its ground tiles, so the water shows from below: cut just that away
+// (mountains are see-through too on the tiles, for BFME's own 3D peaks, but those stay painted)
+function seaCut(sh) { sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n if (diffuseColor.a < .4 && min(diffuseColor.r, min(diffuseColor.g, diffuseColor.b)) > .8) discard;\n diffuseColor.a = 1.;'); }
 function boardY(x, z) { const B = BOARD, i = clamp((x - B.x0) / B.step, 0, B.W - 1.001), j = clamp((z - B.z0) / B.step, 0, B.H - 1.001), a = i | 0, b = j | 0, u = i - a, v = j - b, h = B.h, W = B.W; return (h[b * W + a] * (1 - u) + h[b * W + a + 1] * u) * (1 - v) + (h[(b + 1) * W + a] * (1 - u) + h[(b + 1) * W + a + 1] * u) * v; }
 function boardLand(x, z) { const B = BOARD, i = Math.round((x - B.x0) / B.step), j = Math.round((z - B.z0) / B.step); return i >= 0 && j >= 0 && i < B.W && j < B.H && B.land[j * B.W + i] === 1; }
+// the little diorama's own pieces, hidden while the board loads and once it's in (the sea can stay while it loads)
+let DIORAMA = null, MAP_LOADING = false;
+function hideDiorama(on, keepSea) {
+  if (!DIORAMA) { const keep = new Set(); for (const o of [tok.g, mapFx.ring, mapFx.mt]) o.traverse(c => keep.add(c)); DIORAMA = []; mapScene.traverse(o => { if ((o.isMesh || o.isSprite || o.isPoints) && !keep.has(o) && o.visible) DIORAMA.push(o); }); }
+  for (const o of DIORAMA) o.visible = !on || (keepSea && o.material && o.material.map === TX.sea);
+  if (on && !keepSea) for (const o of DIORAMA) if (o.parent) o.parent.remove(o);   // the board is in for good: take them out altogether
+}
+// your own Gandalf as the map token, walking and standing with his own animations
+const TOK = { root: tok.g };
+function mapGandalf() { addSkin(TOK, 'gandalf', tok.body, tok.body, [], tok.g); }
 function useBoard(gl, regions) {
-  const keep = new Set(); for (const o of [tok.g, mapFx.ring, mapFx.mt]) o.traverse(c => keep.add(c));
-  mapScene.traverse(o => { if ((o.isMesh || o.isSprite || o.isPoints) && !keep.has(o)) o.visible = false; });
+  hideDiorama(true);
   const obj = gl.scene, pivot = new THREE.Group(); pivot.add(obj); mapScene.add(pivot);
   obj.traverse(o => {
     if (!o.isMesh) return;
     if (BOARD_HIDE.test(o.name)) { o.visible = false; return; }
     const mats = [].concat(o.material);
     // the ground tiles are solid; everything else (the dark haze over impassable mountains, coast mist, lava, the names) stays see-through as BFME made it
-    for (const m of mats) { if (m.map) m.map.encoding = THREE.sRGBEncoding; if (BOARD_GROUND.test(o.name)) { m.transparent = false; m.alphaTest = 0; m.depthWrite = true; } else { m.depthWrite = false; m.alphaTest = .03; o.renderOrder = 1; } }
+    // the ground tiles are solid where there's land and cut away where BFME paints the sea (the water shows through from below);
+    // the water is solid underneath; the rest (haze over impassable mountains, coast mist, lava, the names) stays see-through as BFME made it
+    for (const m of mats) { if (m.map) m.map.encoding = THREE.sRGBEncoding; if (BOARD_GROUND.test(o.name)) { m.transparent = false; m.alphaTest = 0; m.depthWrite = true; m.onBeforeCompile = seaCut; } else if (BOARD_WATER.test(o.name)) { m.transparent = false; m.depthWrite = true; } else { m.depthWrite = false; m.alphaTest = .03; o.renderOrder = 1; } }
   });
   // which way the board's x and y run in the model: whichever way fits the regions inside the board best
   obj.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(obj);
@@ -5573,6 +5590,8 @@ function useBoard(gl, regions) {
   const sea = water.length ? water[water.length >> 1] : low + .2, land = new Uint8Array(W * H);
   for (let i = 0; i < h.length; i++) { land[i] = h[i] > sea + .05 ? 1 : 0; if (h[i] < sea) h[i] = sea; }
   BOARD = { x0: box.min.x, z0: box.min.z, step, W, H, h, land, k };
+  // a sea right out to the edges at the water's height, under the board's own water, so nothing beyond the board shows
+  const far = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), ps1(new THREE.MeshBasicMaterial({ map: TX.sea, color: 0x6a8ab0 }))); far.rotation.x = -Math.PI / 2; far.position.y = sea - .05; mapScene.add(far);
   // the stop markers again, on the board, and Minas Tirith's little city at its new place (the camera flies into it)
   for (const n of NODES) { const y = groundY(n.x, n.z); mcyl(1, 1.15, .3, 16, 0xffc21a, n.x, y + .08, n.z, mapScene, { emissive: 0x6a4000 }); }
   const mtn = NODES.find(n => n.loc === 'mt'); MT.set(mtn.x - 5.2, groundY(mtn.x, mtn.z), mtn.z); mapFx.mt.position.copy(MT);
@@ -5648,7 +5667,8 @@ const MODEL_SLOTS = {
   shelob: { height: 3.2, turn: -Math.PI / 2 }, nazgul: { height: 2.3, turn: -Math.PI / 2 }, orc: { height: 1.45, turn: -Math.PI / 2 },
   frodo: { height: 1.15, turn: -Math.PI / 2 }, sam: { height: 1.15, turn: -Math.PI / 2 }, merry: { height: 1.2, turn: -Math.PI / 2 }, pippin: { height: 1.2, turn: -Math.PI / 2 },
   aragorn: { height: 1.95, turn: -Math.PI / 2 }, legolas: { height: 1.9, turn: -Math.PI / 2 }, gimli: { height: 1.35, turn: -Math.PI / 2 }, boromir: { height: 1.95, turn: -Math.PI / 2 },
-  fellbeast: { height: 4.5, turn: -Math.PI / 2 }, horse: { height: 2.5, turn: -Math.PI / 2, hide: /gandalf/i, anims: { walk: /^run_a/i, jump: /^fly/i } },
+  fellbeast: { height: 7.5, turn: -Math.PI / 2 }, horse: { height: 2.5, turn: -Math.PI / 2, hide: /gandalf/i, anims: { walk: /^run_a/i, jump: /^fly/i } },
+  sauron: { height: 20, turn: -Math.PI / 2 },   // in his own units: the game builds Sauron at .28 scale (about 5.6 tall)
 };
 // which animation plays for each action: the first clip whose name matches (case doesn't matter)
 const ANIM_NAMES = { idle: /idle|stand|breath|ready/i, fly: /fly|glid|hover/i, walk: /walk|wala|run|move|gallop/i, attack: /attack|atk|smash|swing|slash|strike|hit_?a/i, hit: /hurt|damage|stun|flinch|react/i, die: /die|death|dead|dtha/i, jump: /jump|fall|air/i };
@@ -5720,7 +5740,10 @@ const loadScript = src => new Promise((ok, no) => { const e = document.createEle
 const loadImage = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
 async function loadLocalAssets() {
   if (!LOCAL_ASSETS) return;   // the public site never asks for them
-  const got = [];
+  const got = [], only = new URLSearchParams(location.search).get('models');
+  // the War of the Ring board goes first: while it loads the little diorama stays hidden, so the map doesn't change under you
+  const boardOn = (!only || only.split(',').includes('livingmap')) && (await fetch('models/livingmap.glb', { method: 'HEAD' }).catch(() => ({ ok: false }))).ok;
+  if (boardOn) { hideDiorama(true, true); MAP_LOADING = true; }
   for (const key of TEXTURE_SLOTS) for (const ext of ['png', 'jpg', 'jpeg', 'webp']) { try { replaceTex(key, await loadImage(`textures/${key}.${ext}`)); got.push(`textures/${key}.${ext}`); break; } catch (e) { } }
   // Jedi Outcast's lightsaber sounds and blade pictures, for the duel (only if sabers/ has them: saberon.mp3 is the sign)
   if ((await fetch('sabers/saberon.mp3', { method: 'HEAD' }).catch(() => ({ ok: false }))).ok) {
@@ -5732,21 +5755,22 @@ async function loadLocalAssets() {
   try {
     const base = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/';
     await loadScript(base + 'loaders/GLTFLoader.js'); await loadScript(base + 'utils/SkeletonUtils.js');
-  } catch (e) { console.warn('Valinor: could not load the glTF loader, so your own models are off.'); return; }
+  } catch (e) { console.warn('Valinor: could not load the glTF loader, so your own models are off.'); if (boardOn) { hideDiorama(false); MAP_LOADING = false; } return; }
   const loader = new THREE.GLTFLoader();
+  const boardP = boardOn ? Promise.all([loader.loadAsync('models/livingmap.glb'), fetch('models/livingmap.json').then(r => r.json())])
+    .then(([gl, info]) => { useBoard(gl, info.regions); got.push('models/livingmap.glb (the War of the Ring board)'); })
+    .catch(e => { hideDiorama(false); console.warn('Valinor: the War of the Ring board would not load:', e.message); })
+    .finally(() => { MAP_LOADING = false; signShown = null; }) : null;
   // all at once; a missing file is fine (the built-in one stays), a file that's there but won't load is worth saying
   // ?models=balrog,gandalf loads just those, for testing
-  const only = new URLSearchParams(location.search).get('models'), slots = Object.keys(MODEL_SLOTS).filter(s => !only || only.split(',').includes(s));
+  const slots = Object.keys(MODEL_SLOTS).filter(s => !only || only.split(',').includes(s));
   await Promise.all(slots.map(async slot => {
     try { LOADED[slot] = await loader.loadAsync(`models/${slot}.glb`); got.push(`models/${slot}.glb (${LOADED[slot].animations.map(a => a.name).join(', ') || 'no animations'})`); }
     catch (e) { if (e instanceof Error) console.warn(`Valinor: models/${slot}.glb is there but would not load:`, e.message); }
   }));
   for (const K of SKINS) attachSkin(K);
-  // the War of the Ring board, for the map (with livingmap.json saying where its regions are)
-  if (!only || only.split(',').includes('livingmap')) try {
-    const [gl, info] = await Promise.all([loader.loadAsync('models/livingmap.glb'), fetch('models/livingmap.json').then(r => r.json())]);
-    useBoard(gl, info.regions); got.push('models/livingmap.glb (the War of the Ring board)');
-  } catch (e) { if (e instanceof Error && !/404|Unexpected token|JSON/.test(e.message)) console.warn('Valinor: the War of the Ring board would not load:', e.message); }
+  if (LOADED.gandalf) mapGandalf();   // your own Gandalf walks the map too
+  await boardP;
   if (got.length) console.log('Valinor is using your own files:\n  ' + got.join('\n  '));
 }
 
@@ -5828,6 +5852,7 @@ function buildOakvale(L, TH) {
     let c = KC[T_.g[k]] || KC.g; if (sl > 1.1) c = [.72, .7, .66]; const n = .92 + Math.random() * .16; col.set([c[0] * n, c[1] * n, c[2] * n], k * 3);
     if (i < W - 1 && j < H - 1) idx.push(k, k + 1, k + W, k + 1, k + W + 1, k + W);
   }
+  { const c2 = col.slice(); for (let j = 1; j < H - 1; j++) for (let i = 1; i < W - 1; i++) for (let q = 0; q < 3; q++) { const k = (j * W + i) * 3 + q; col[k] = (c2[k] * 4 + c2[k - 3] + c2[k + 3] + c2[k - W * 3] + c2[k + W * 3]) / 8; } }   // soft edges between kinds of ground
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
   const gt = TX.meadow.clone(); gt.needsUpdate = true; gt.wrapS = gt.wrapT = THREE.RepeatWrapping;
   const ground = new THREE.Mesh(geo, ps1(new THREE.MeshLambertMaterial({ map: gt, vertexColors: true }))); ground.receiveShadow = true; ground.userData.keep = true; scene.add(ground);
@@ -5856,7 +5881,10 @@ function buildOakvale(L, TH) {
     }
     const w = b.w, d = b.d, h = b.hgt, ware = /WAREHOUSE/.test(b.def), foot = b.y - low + .3;
     part(GEO_BOX, stone, g, 0, -foot / 2, 0, w + .3, foot, d + .3);
-    part(GEO_BOX, ware ? wood : plaster, g, 0, h / 2, 0, w, h, d);
+    const wall = ware ? wood : ps1(new THREE.MeshLambertMaterial({ map: TX.plaster, color: [0xf4ead4, 0xf0dcb0, 0xf2d8cc, 0xe4ead8, 0xf6f0e4][(b.s * 7 + b.x * 3 & 7) % 5] }));
+    const tall = /TWO_FLOORS|LARGE|TAVERN/.test(b.def) && !ware;
+    if (tall) { part(GEO_BOX, wall, g, 0, h * .25, 0, w, h * .5, d); part(GEO_BOX, wall, g, 0, h * .75, 0, w + .5, h * .5, d + .5); for (let x = -w / 2; x <= w / 2; x += w / 4) part(GEO_BOX, beam, g, x, h * .5 - .05, d / 2 + .15, .2, .25, .4); }   // the upper floor juts out over the lower
+    else part(GEO_BOX, wall, g, 0, h / 2, 0, w, h, d);
     if (!ware) {   // the timber frame
       for (const sx of [-1, 1]) for (const sz of [-1, 1]) part(GEO_BOX, beam, g, sx * (w / 2 + .02), h / 2, sz * (d / 2 + .02), .25, h, .25);
       for (const yy of [.15, h / 2, h - .1]) { part(GEO_BOX, beam, g, 0, yy, d / 2 + .03, w, .2, .06); part(GEO_BOX, beam, g, 0, yy, -d / 2 - .03, w, .2, .06); part(GEO_BOX, beam, g, w / 2 + .03, yy, 0, .06, .2, d); part(GEO_BOX, beam, g, -w / 2 - .03, yy, 0, .06, .2, d); }
@@ -5870,8 +5898,16 @@ function buildOakvale(L, TH) {
     part(GEO_BOX, stone, g, w * .3, h + rise * .8, -d * .15, .8, rise * 1.2 + 1, .8);
     Y.chimneys.push(g.localToWorld(new V3(w * .3, h + rise * 1.45 + .5, -d * .15)));
     // a door in the front, windows either side and round the back, lit warm from inside
-    part(GEO_BOX, lam(0x5a3a22), g, 0, 1.1, d / 2 + .06, 1.3, 2.2, .1);
-    for (const x of [-w / 2 + 1.6, w / 2 - 1.6]) for (const z of [d / 2 + .05, -d / 2 - .05]) part(GEO_BOX, glass, g, x, h * .55, z, 1, .9, .04);
+    part(GEO_BOX, lam(0x5a3a22), g, 0, 1.1, d / 2 + .06, 1.3, 2.2, .1); part(GEO.sph, lam(0xd8b040), g, .45, 1.1, d / 2 + .14, .07, .07, .07);
+    { const pr = part(GEO_BOX, thatch, g, 0, 2.55, d / 2 + .55, 2.2, .14, 1.2); pr.rotation.x = .35; for (const x of [-.95, .95]) part(GEO_BOX, beam, g, x, 1.25, d / 2 + 1, .12, 2.5, .12); }   // a little porch roof on two posts
+    for (let k = 0; k < 2; k++) part(GEO_BOX, stone, g, 0, -.15 - k * .25, d / 2 + .5 + k * .35, 1.8, .3, .4);
+    const shut = lam([0x2e6a4a, 0x3a5a8a, 0x8a3a2a, 0x5a7a3a][(b.s * 3 + b.x & 7) % 4]), fl = [0xff5a7a, 0xffd040, 0xffffff, 0xc070ff];
+    for (const x of [-w / 2 + 1.6, w / 2 - 1.6]) for (const z of [d / 2 + .05, -d / 2 - .05]) {
+      const y = tall ? h * .3 : h * .55, sz = Math.sign(z); part(GEO_BOX, glass, g, x, y, z, 1, .9, .04);
+      for (const sx of [-1, 1]) part(GEO_BOX, shut, g, x + sx * .68, y, z + sz * .04, .34, .95, .05);   // shutters
+      part(GEO_BOX, lam(0x6a4a2c), g, x, y - .58, z + sz * .18, 1.1, .2, .3); for (let q = 0; q < 4; q++) part(GEO.sph, lam(fl[(q + (x > 0 ? 1 : 0)) % 4]), g, x - .4 + q * .27, y - .42, z + sz * .2, .1, .1, .1);   // and a flower box
+      if (tall) part(GEO_BOX, glass, g, x, h * .78, z + sz * .25, .9, .8, .04);
+    }
     if (/TAVERN/.test(b.def)) { const sg = new THREE.Group(); sg.position.set(w / 2 - 1, h * .7, d / 2 + .9); g.add(sg); part(GEO_BOX, beam, sg, 0, .5, -.4, .1, .1, 1); part(GEO_BOX, lam(0x2a5a8a), sg, 0, 0, 0, .1, .8, .9); }
   }
   // fences: posts and rails, across the way they face; broken ones lean and lose a rail
@@ -5911,6 +5947,39 @@ function buildOakvale(L, TH) {
     else if (k === 'f' && Math.random() < .9) blooms.push([p.x, p.y + .2, p.z, .12, 0, [0xff4a5a, 0xffe040, 0xffffff][(Math.random() * 3) | 0]]);
     if (k !== 'p' && k !== 's' && k !== 'c' && Math.random() < .7) tufts.push([p.x, p.y, p.z, rand(.8, 1.5), rand(0, TAU), 0xffffff, rand(.8, 1.1)]);
   }
+  // hedgerows: wherever a crop field meets grass, a low hedge along the edge
+  const hedges = [];
+  for (let s = S0; s < S1; s += 1.2) for (let x = X0; x < X1; x += 1.2) {
+    if (kindAt(s, x) !== 'c') continue; const y = terrainAt(s, x, true); if (y < T_.sea) continue;
+    if (['g', 't', 'f', 'b'].some((k, q) => [[1.2, 0], [-1.2, 0], [0, 1.2], [0, -1.2]].some(([ds, dx]) => kindAt(s + ds, x + dx) === k)) && free(s, x, .3)) { const p = tw(s, x, y); hedges.push([p.x, p.y + .45, p.z, .75, .6, .75]); }
+  }
+  instanced(GEO.sph, lam(0x3e6a2a), hedges);
+  // little apple orchards on the grass near the houses: short round trees with red fruit
+  const appleT = [], appleC = [], fruit = [];
+  for (const b of Y.buildings) for (let k = 0; k < 6; k++) {
+    const a = rand(0, TAU), r = Math.max(b.w, b.d) * .7 + rand(4, 9), s = b.s + Math.cos(a) * r, x = b.x + Math.sin(a) * r;
+    if (kindAt(s, x) !== 'g' || !free(s, x, 1.5)) continue; const y = terrainAt(s, x, true); if (y < T_.sea + .5) continue;
+    const p = tw(s, x, y); appleT.push([p.x, p.y + .9, p.z, .14, 1.8, .14]); appleC.push([p.x, p.y + 2.2, p.z, 1.1, .85, 1.1]);
+    for (let q = 0; q < 6; q++) { const fa = rand(0, TAU); fruit.push([p.x + Math.cos(fa) * 1, p.y + 2.2 + rand(-.4, .4), p.z + Math.sin(fa) * 1, .1, 0, 0xd8302a]); }
+    Y.blocks.push([s - .3, s + .3, x - .3, x + .3, y + 3]);
+  }
+  instanced(GEO.cyl, lam(0x6a4a2a), appleT); instanced(GEO.sph, lam(0x5a9a3a), appleC); scatter(GEO.sph, lam(0xffffff), fruit, true);
+  // the shore: a wooden jetty out from where the boats lie, nets drying on poles, and lobster pots
+  if (Y.boats.length) {
+    const bs = Y.boats.reduce((a, b) => a + b.s, 0) / Y.boats.length, bx = Y.boats.reduce((a, b) => a + b.x, 0) / Y.boats.length;
+    let ds = 0; for (let k = 1; k < 40; k++) if (terrainAt(bs - k, bx, true) < T_.sea - .3) { ds = -1; break; } else if (terrainAt(bs + k, bx, true) < T_.sea - .3) { ds = 1; break; }   // which way the water is
+    if (ds) {
+      const jetty = new THREE.Group(); place(jetty, bs, bx + 3, T_.sea + .5, ds > 0 ? 0 : Math.PI); scene.add(jetty);
+      part(GEO_BOX, wood, jetty, 0, 0, 7, 2.4, .2, 14);
+      for (let z = 0; z <= 14; z += 2.3) for (const x of [-1.1, 1.1]) part(GEO.cyl, beam, jetty, x, -1, z, .14, 2.4, .14);
+      for (let k = 0; k < 4; k++) part(GEO_BOX, lam(0x7a5a38), jetty, rand(-.8, .8), .35, 2 + k * 3.2, .45, .45, .45);   // lobster pots
+      Y.blocks.push(ds > 0 ? [bs, bs + 14, bx + 1.8, bx + 4.2, T_.sea + .6, 'floor', T_.sea - 1] : [bs - 14, bs, bx + 1.8, bx + 4.2, T_.sea + .6, 'floor', T_.sea - 1]);
+    }
+    const net = new THREE.MeshLambertMaterial({ color: 0x8a7a5a, transparent: true, opacity: .6, side: THREE.DoubleSide });
+    for (let k = 0; k < 2; k++) { const s = bs - ds * (5 + k * 3), x = bx - 4 + k * 2, y = terrainAt(s, x, true), p = tw(s, x, y); for (const o of [-1.2, 1.2]) part(GEO.cyl, beam, scene, p.x + o, p.y + 1, p.z, .07, 2, .07); part(new THREE.PlaneGeometry(2.4, 1.3), net, scene, p.x, p.y + 1.2, p.z); }
+  }
+  // a low mist drifting in off the sea
+  for (let k = 0; k < 30; k++) { const m = glowSprite(0xe8f0f4, rand(16, 30), .22); const s = rand(OAK.cy - H, OAK.cy - H + 70), x = rand(OAK.cx - W, OAK.cx); m.position.copy(tw(s, x, T_.sea + rand(.8, 2.5))); m.scale.y *= .3; m.userData.keep = true; scene.add(m); }
   oaks.forEach(o => scatter(o.g, lam(0xffffff, { vc: true }), o.list));
   instanced(GEO.sph, lam(0x4a7a34), bushes);
   scatter(new THREE.IcosahedronGeometry(1, 0), lam(0xffffff), crops, true);
@@ -5929,7 +5998,7 @@ newGame(0); state = 'map'; iris.mode = 'none';
 showScreen(null); syncPauseBtns();
 // ?play=shire (or riv, moria, rohan, mt, ungol, mordor, doom, weather) opens a place straight away, for testing
 {
-  const q = new URLSearchParams(location.search), li = LEVELS.findIndex(L => L.loc === q.get('play'));
+  const q = new URLSearchParams(location.search), li = /^\d+$/.test(q.get('play') || '') ? Number(q.get('play')) : LEVELS.findIndex(L => L.loc === q.get('play'));   // or ?play=2 for the third level in the list
   if (q.get('look')) setLook(q.get('look') === 'retro');   // ?look=retro or ?look=hd
   if (li >= 0) {
     startGame(li);
