@@ -295,7 +295,8 @@ const THEMES = {
     hints: { low: 'Jump the mossy rocks!', river: 'Jump over the river!', bar: 'Jump the mossy log!', tall: 'Giant jungle tree! Move to dodge it!', meteor: 'Coconut! Get off the red circle!' },
   },
 };
-const isOpen = k => !THEMES[k].req || !!save.done[THEMES[k].req] || !!save.open[k];
+// every level is open from the start (req still says which level comes before, for the story)
+const isOpen = k => true;
 
 /* ---------------- renderer ---------------- */
 const renderer = new THREE.WebGLRenderer({ antialias: true });

@@ -40,18 +40,18 @@ Everything (models, textures, music and sound) is in the one file, `index.html`.
 
 ### The levels
 
-| Level | Where on the map | What's in it | Opens after |
-| --- | --- | --- | --- |
-| 🌍 Serengeti Stampede | Wooden gate on the savanna | Lava streams, rocks, logs, termite mounds | Open from the start |
-| 🏜️ Desert Dash | The desert with the pyramids (west) | Quicksand, cactus, fallen pillars, camels. **Boss: the Rhino** | Serengeti |
-| 🍭 Candyland | The pink plateau at the top | Hot fudge, gumdrops, candy canes, giant lollies | Serengeti |
-| 🐠 Under the Sea | The gate by the pier (south-east) | Coral, spiky urchins, an old mast, fish and a sunken ship. **Boss: the Giant Shark** | Serengeti |
-| 🏔️ Eagle Mountains | The snowy mountain (top right) | Fly a bird over canyons, snowy rocks and logs, dodge pine trees and falling snowballs. Collect golden feathers | Open from the start |
-| 🌋 Volcano Run | At the foot of the volcano | Lots of lava, obsidian spikes, and fireballs falling from the sky (red circles show where) | Desert |
-| 🦖 Dinosaur Valley | The bone gate in the dino corner (bottom left) | Tar pits, giant fossil bones, boulders and tree ferns, with volcanoes, nests of eggs and dinosaurs roaming the plain. Collect dino eggs. **Boss: the Triceratops** | Open from the start |
-| 🌴 Dino Land | The jungle gate past the dino corner | A steamy jungle: rivers, mossy logs, giant jungle trees, and coconuts falling from the trees (red circles show where). Dinosaurs wander through the trees. Collect bananas | Dinosaur Valley |
+| Level | Where on the map | What's in it |
+| --- | --- | --- |
+| 🌍 Serengeti Stampede | Wooden gate on the savanna | Lava streams, rocks, logs, termite mounds |
+| 🏜️ Desert Dash | The desert with the pyramids (west) | Quicksand, cactus, fallen pillars, camels. **Boss: the Rhino** |
+| 🍭 Candyland | The pink plateau at the top | Hot fudge, gumdrops, candy canes, giant lollies |
+| 🐠 Under the Sea | The gate by the pier (south-east) | Coral, spiky urchins, an old mast, fish and a sunken ship. **Boss: the Giant Shark** |
+| 🏔️ Eagle Mountains | The snowy mountain (top right) | Fly a bird over canyons, snowy rocks and logs, dodge pine trees and falling snowballs. Collect golden feathers |
+| 🌋 Volcano Run | At the foot of the volcano | Lots of lava, obsidian spikes, and fireballs falling from the sky (red circles show where) |
+| 🦖 Dinosaur Valley | The bone gate in the dino corner (bottom left) | Tar pits, giant fossil bones, boulders and tree ferns, with volcanoes, nests of eggs and dinosaurs roaming the plain. Collect dino eggs. **Boss: the Triceratops** |
+| 🌴 Dino Land | The jungle gate past the dino corner | A steamy jungle: rivers, mossy logs, giant jungle trees, and coconuts falling from the trees (red circles show where). Dinosaurs wander through the trees. Collect bananas |
 
-Grown-up trick: tap the 🔒 in a locked level's pop-up 5 times to open it early.
+Every level is open from the start, so you can play any of them whenever you like.
 
 ### Boss fights
 
