@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Wacky Wings</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,6 +19,25 @@
   <script src="js/track.js"></script>
   <script src="js/art.js"></script>
   <script src="js/audio.js"></script>
+  <script src="../shared/touch-controls.js"></script>
   <script src="js/game.js"></script>
+  <script>
+    TouchControls.setup({
+      stick: { left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown' },
+      buttons: [
+        { label: 'GAS', key: 'ArrowUp' },
+        { label: 'THROW', key: ' ' },
+        { label: 'BRAKE', key: 'ArrowDown' },
+      ],
+      top: [{ label: 'II', key: 'p', tap: true }, { label: '♪', key: 'm', tap: true }],
+      menu: () => state.mode === 'select' || state.mode === 'podium' || state.paused,
+      menuKey: () => (state.paused ? 'p' : 'Enter'),
+      menuButtons: [
+        { label: '◀', key: 'ArrowLeft', tap: true, show: () => state.mode === 'select' },
+        { label: '▶', key: 'ArrowRight', tap: true, show: () => state.mode === 'select' },
+      ],
+      menuHint: () => (state.mode === 'select' ? 'Pick a bird with the arrows, then tap to race' : ''),
+    });
+  </script>
 </body>
 </html>

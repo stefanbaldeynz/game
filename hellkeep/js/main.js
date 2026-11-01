@@ -299,6 +299,7 @@ function dropPickup(type, x, z) {
 
 // ---------- Input ----------
 
+const TOUCH = TouchControls.isTouch;
 const keys = {};
 
 addEventListener('keydown', (e) => {
@@ -358,25 +359,67 @@ function overlayAction() {
   Sound.init();
   Sound.resume();
   Music.start(ROUND_NUMBER);
+  if (TOUCH) {
+    // Phones can't lock the mouse: start straight away and look around by dragging.
+    startPlaying();
+    return;
+  }
   const request = renderer.domElement.requestPointerLock();
   if (request && request.catch) request.catch(() => {});
   return true;
 }
 
+function startPlaying() {
+  if (game.state !== 'menu' && game.state !== 'paused') return;
+  if (game.state === 'menu') {
+    const jumpName = TOUCH ? 'JUMP' : 'Space';
+    const tip = game.wings ? ` Double jump, then hold ${jumpName} to fly with your angel wings.` : ` ${jumpName} to jump, twice to double jump.`;
+    showMessage(ROUND.intro + tip, 5);
+  }
+  game.state = 'playing';
+  overlay.classList.add('hidden');
+}
+
+function pauseGame() {
+  if (game.state !== 'playing') return;
+  game.state = 'paused';
+  game.mouseDown = false;
+  showOverlay('Paused', 'The castle is waiting.', 'Click to resume');
+}
+
 document.addEventListener('pointerlockchange', () => {
   const locked = document.pointerLockElement === renderer.domElement;
-  if (locked && (game.state === 'menu' || game.state === 'paused')) {
-    if (game.state === 'menu') {
-      const tip = game.wings ? ' Double jump, then hold Space to fly with your angel wings.' : ' Space to jump, twice to double jump.';
-      showMessage(ROUND.intro + tip, 5);
-    }
-    game.state = 'playing';
-    overlay.classList.add('hidden');
-  } else if (!locked && game.state === 'playing') {
-    game.state = 'paused';
-    game.mouseDown = false;
-    showOverlay('Paused', 'The castle is waiting.', 'Click to resume');
-  }
+  if (locked) startPlaying();
+  else pauseGame();
+});
+
+// ---------- Touch controls (phones and tablets) ----------
+
+const TOUCH_LOOK = 0.0055; // radians turned per pixel dragged
+TouchControls.setup({
+  stick: { up: 'w', down: 's', left: 'a', right: 'd', sprint: 'Shift' },
+  look: (dx, dy) => {
+    if (game.state !== 'playing') return;
+    const p = game.player;
+    p.yaw -= dx * TOUCH_LOOK;
+    p.pitch = clamp(p.pitch - dy * TOUCH_LOOK, -1.4, 1.4);
+  },
+  buttons: [
+    {
+      label: 'FIRE',
+      onDown: () => { if (game.state === 'playing') game.mouseDown = true; },
+      onUp: () => { game.mouseDown = false; game.triggerReady = true; },
+    },
+    { label: 'JUMP', key: ' ' },
+    { label: 'GUN', onDown: () => game.state === 'playing' && cycleWeapon(1), show: () => WEAPON_ORDER.filter((w) => game.owned[w]).length > 1 },
+  ],
+  top: [
+    { label: 'II', onDown: pauseGame },
+    { label: '♪', key: 'm', tap: true },
+    { label: 'FX', key: 'g', tap: true },
+  ],
+  topSide: 'right',
+  hidden: () => game.state !== 'playing',
 });
 
 window.addEventListener('resize', () => {
@@ -871,6 +914,7 @@ function showMessage(text, seconds = 2.5) {
 
 function showOverlay(title, text, button) {
   hideStory(); // the chapter is only for the start of the round
+  if (TOUCH) button = button.replace(/^Click/, 'Tap');
   overlayTitle.textContent = title;
   overlayRound.textContent = '';
   overlayText.textContent = text;

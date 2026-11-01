@@ -30,6 +30,10 @@ Open `index.html` in Chrome or Edge and click to start. The game needs an intern
 | Shift | Sprint |
 | **F** or **Esc** | Back to tower view |
 
+## On a phone or tablet
+
+In tower view, tap the rim to build and tap a tower to upgrade it. Drag with one finger to look around the map and pinch to zoom. The **Pause** and **First-person mode** buttons are in the panel at the bottom. In first person, the left thumb moves (push it all the way to sprint), drag the right side of the screen to look, and use **FIRE**, **RELOAD** and **TOWER VIEW** on the right.
+
 ## The rules
 
 - You start with **$30**, which is enough for 3 towers.

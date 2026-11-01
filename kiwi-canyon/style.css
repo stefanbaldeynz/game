@@ -313,3 +313,92 @@ button.primary:hover:not(:disabled),
 .back-link:hover {
   opacity: 1;
 }
+
+/* ---------- Phones and tablets ---------- */
+
+html.touch-device #topbar {
+  top: max(6px, env(safe-area-inset-top));
+  gap: 5px;
+}
+
+html.touch-device .stat {
+  min-width: 58px;
+  padding: 3px 8px;
+  font-size: 16px;
+}
+
+html.touch-device .label {
+  font-size: 9px;
+}
+
+html.touch-device button {
+  font-size: 14px;
+  padding: 9px 12px;
+}
+
+html.touch-device #message {
+  top: calc(max(6px, env(safe-area-inset-top)) + 54px);
+  font-size: 15px;
+}
+
+html.touch-device #paused-label {
+  font-size: 22px;
+}
+
+html.touch-device .panel {
+  bottom: max(8px, env(safe-area-inset-bottom));
+  padding: 8px 10px;
+}
+
+html.touch-device #td-panel {
+  left: max(8px, env(safe-area-inset-left));
+  max-width: min(400px, calc(100% - 16px));
+}
+
+html.touch-device #tower-panel {
+  right: max(8px, env(safe-area-inset-right));
+  min-width: 0;
+  max-width: min(300px, calc(100% - 16px));
+  bottom: auto;
+  top: calc(max(6px, env(safe-area-inset-top)) + 90px);
+}
+
+html.touch-device .hint {
+  font-size: 13px;
+}
+
+html.touch-device .hint.small {
+  font-size: 11px;
+}
+
+/* First person: the stick and buttons take the bottom corners, so the ammo moves up. */
+html.touch-device #ammo-box {
+  bottom: auto;
+  top: calc(max(6px, env(safe-area-inset-top)) + 54px);
+  right: max(8px, env(safe-area-inset-right));
+}
+
+html.touch-device #ammo {
+  font-size: 24px;
+}
+
+html.touch-device #overlay {
+  justify-content: safe center;
+  overflow-y: auto;
+  touch-action: pan-y;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+}
+
+html.touch-device #overlay h1 {
+  font-size: clamp(36px, 10vmin, 90px);
+}
+
+html.touch-device #overlay p {
+  font-size: 15px;
+  margin: 8px 0;
+}
+
+html.touch-device .howto {
+  font-size: 13px;
+  margin-bottom: 14px;
+}

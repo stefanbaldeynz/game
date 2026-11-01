@@ -42,3 +42,22 @@ canvas {
 .back-link:hover {
   opacity: 1;
 }
+
+/* Phones and tablets: the arena fills the whole screen (game.js gives it the screen's shape). */
+html.touch-device body {
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+html.touch-device h1 {
+  display: none;
+}
+
+html.touch-device canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  border-radius: 0;
+}

@@ -2,12 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Kiwi Canyon</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="../shared/touch-controls.js"></script>
 </head>
 <body>
   <div id="game"></div>
@@ -26,12 +30,14 @@
     <div id="paused-label" class="hidden">Paused · press P to carry on</div>
 
     <div id="td-panel" class="panel hidden">
-      <div class="hint">Click a grassy spot on the canyon rim to build a tower: <b id="build-cost">$10</b></div>
+      <div class="hint"><span class="keys-only">Click</span><span class="touch-only">Tap</span> a grassy spot on the canyon rim to build a tower: <b id="build-cost">$10</b></div>
       <div class="row">
         <button id="fps-button" type="button" class="primary">First-person mode [F]</button>
         <button id="rifle-button" type="button">Upgrade rifle</button>
+        <button id="pause-button" type="button" class="touch-only">Pause</button>
       </div>
-      <div class="hint small">Click a tower to upgrade it · click the canyon floor to choose where you drop in · WASD pan · wheel zoom · P pause</div>
+      <div class="hint small keys-only">Click a tower to upgrade it · click the canyon floor to choose where you drop in · WASD pan · wheel zoom · P pause</div>
+      <div class="hint small touch-only">Tap a tower to upgrade it · tap the canyon floor to choose where you drop in · drag to look around · pinch to zoom</div>
     </div>
 
     <div id="tower-panel" class="panel hidden">
@@ -48,7 +54,7 @@
       <div id="ammo-box" class="panel">
         <div class="label">Rifle · level <span id="rifle-level">1</span></div>
         <div id="ammo">30 / 30</div>
-        <div class="hint small">Click shoot · R reload · Shift sprint · F tower view</div>
+        <div class="hint small keys-only">Click shoot · R reload · Shift sprint · F tower view</div>
       </div>
     </div>
   </div>
@@ -57,8 +63,10 @@
     <h1 id="overlay-title">Kiwi Canyon</h1>
     <p id="overlay-text">Waves of kiwis are marching through the canyon. Build towers on the rim, upgrade them, and jump down into the canyon with your rifle to help. Don't let them through!</p>
     <ul class="howto">
-      <li><b>Tower view:</b> click the grassy rim to build a tower. Click a tower to upgrade it, up to 3 times.</li>
-      <li><b>F</b> jumps you into the canyon in first person. <b>F</b> or <b>Esc</b> takes you back up.</li>
+      <li class="keys-only"><b>Tower view:</b> click the grassy rim to build a tower. Click a tower to upgrade it, up to 3 times.</li>
+      <li class="keys-only"><b>F</b> jumps you into the canyon in first person. <b>F</b> or <b>Esc</b> takes you back up.</li>
+      <li class="touch-only"><b>Tower view:</b> tap the grassy rim to build a tower. Tap a tower to upgrade it, up to 3 times. Drag to look around, pinch to zoom.</li>
+      <li class="touch-only"><b>First-person mode</b> drops you into the canyon: left thumb moves (push far to sprint), drag the right side to look, <b>FIRE</b> to shoot. <b>Tower view</b> takes you back up.</li>
       <li>Every kiwi you stop earns <b>$1</b>, plus a bonus for each wave you clear.</li>
       <li><b>10 waves.</b> Every wave the kiwis get tougher. Each kiwi that escapes costs a life.</li>
     </ul>

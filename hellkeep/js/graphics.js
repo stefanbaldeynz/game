@@ -117,7 +117,10 @@ function createGraphics(renderer, scene, camera, weaponScene, weaponCamera) {
 
   function loadSetting() {
     try {
-      return localStorage.getItem('hellkeepGraphics') !== 'low';
+      const saved = localStorage.getItem('hellkeepGraphics');
+      // Phones start on low graphics so the game runs smoothly; G (or FX) switches.
+      if (saved === null) return !(window.TouchControls && TouchControls.isTouch);
+      return saved !== 'low';
     } catch {
       return true;
     }

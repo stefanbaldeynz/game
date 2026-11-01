@@ -44,3 +44,22 @@ canvas {
 .back-link:hover {
   opacity: 1;
 }
+
+/* Phones and tablets: fill the screen; the touch controls sit below or beside the canvas. */
+html.touch-device body {
+  min-height: 100dvh;
+  justify-content: flex-start;
+  padding-top: max(4px, env(safe-area-inset-top));
+  overflow: hidden;
+}
+
+html.touch-device canvas {
+  max-width: calc(100vw - 14px);
+  max-height: calc(100dvh - 14px);
+}
+
+@media (orientation: landscape) {
+  html.touch-device body {
+    justify-content: center;
+  }
+}

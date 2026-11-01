@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Stefan's Game Collection</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,7 +49,8 @@
       border: 1px solid rgba(255, 255, 255, 0.12);
       transition: transform 0.15s, box-shadow 0.15s;
     }
-    a.card:hover {
+    a.card:hover,
+    a.card:active {
       transform: translateY(-4px);
       box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
     }
@@ -63,14 +67,28 @@
     .gem h2 { color: #40d8ff; }
     .wings { background: linear-gradient(160deg, #2a5a1c, #1a2a5a); }
     .wings h2 { color: #f8d030; }
+    .siege { background: linear-gradient(160deg, #3a1a52, #140a24); }
+    .siege h2 { color: #ffc21a; }
     .coin { background: linear-gradient(160deg, #3a3354, #17142a); }
+    .iyla { background: linear-gradient(160deg, #c2387e, #3a1a52); }
+    .iyla h2 { color: #ffe14d; }
     .coin h2 { color: #f5c542; }
   </style>
 </head>
 <body>
   <h1>Game Collection</h1>
-  <p class="sub">Pick a game. They all run right here in the browser.</p>
+  <p class="sub">Pick a game. They all run right here in the browser, on a computer or a phone.</p>
   <div class="games">
+    <a class="card iyla" href="iylas-game/index.html">
+      <span class="tag">3D runner · 6 levels</span>
+      <h2>Iyla's Game</h2>
+      <p>Ride a giraffe, elephant, tiger, dolphin and more across Africa: the Serengeti, the desert, a volcano, under the sea, the snowy mountains on an eagle, and Candyland. Beat the Rhino and the Giant Shark, with Milo the sausage dog by your side.</p>
+    </a>
+    <a class="card siege" href="siege-run/index.html">
+      <span class="tag">3D platformer · 11 levels</span>
+      <h2>Siege Run</h2>
+      <p>Roam Middle-earth from Hobbiton to Mount Doom: hunt the nine Nazgûl, duel the Witch-king with lightsabers, beat the Balrog, outrun Shelob and climb ahead of the lava.</p>
+    </a>
     <a class="card astro" href="astro-blaster/index.html">
       <span class="tag">Arcade shooter · 2D</span>
       <h2>Astro Blaster</h2>

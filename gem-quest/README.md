@@ -25,6 +25,10 @@ No build tools or installs: open `index.html` in a browser to play.
 
 On the motorbike, the bike rolls forward on its own: **Right** speeds up and **Left** slows down. After you lose a life, it waits until you press Right or Jump. Z / J fires magic if you have it.
 
+## On a phone or tablet
+
+Touch controls appear by themselves: the left thumb moves (the stick appears wherever you put your thumb), **JUMP** and **PUNCH** (or **MAGIC** on the motorbike) sit under the right thumb, and **II** and **♪** at the top pause and switch the sound. On the title screen the side arrows pick the level; tap anywhere else to start.
+
 ## How it plays
 
 - You have 3 lives. Touching a dragon, a scorpion or fire costs a life, and you come back at the last safe spot you stood on.
