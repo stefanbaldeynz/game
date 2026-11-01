@@ -272,9 +272,10 @@ const bloomA = new THREE.WebGLRenderTarget(8, 8, rtOpts), bloomB = new THREE.Web
 const QUAD_VS = 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.,1.); }';
 const brightMat = new THREE.ShaderMaterial({
   uniforms: { tDiffuse: { value: null }, uCut: { value: .62 } }, vertexShader: QUAD_VS, depthTest: false, depthWrite: false,
-  // what's really bright shines: fire, lava, lanterns, glows (saturated colours count, so orange fire glows but green grass doesn't)
+  // what's brightly coloured shines: fire, lava, lanterns, sabers. White and grey things (robes, marble, pale stone) don't,
+  // however bright they are, and neither do mid colours like grass
   fragmentShader: `uniform sampler2D tDiffuse; uniform float uCut; varying vec2 vUv;
-    void main(){ vec3 c=texture2D(tDiffuse,vUv).rgb; float b=max(dot(c,vec3(.3,.55,.15)),max(c.r,max(c.g,c.b))-.25); gl_FragColor=vec4(c*smoothstep(uCut,.92,b),1.); }`,
+    void main(){ vec3 c=texture2D(tDiffuse,vUv).rgb; float hi=max(c.r,max(c.g,c.b)), lo=min(c.r,min(c.g,c.b)); float b=hi-lo*.45; gl_FragColor=vec4(c*smoothstep(uCut,.95,b),1.); }`,
 });
 const blurMat = new THREE.ShaderMaterial({
   uniforms: { tDiffuse: { value: null }, uDir: { value: new THREE.Vector2() } }, vertexShader: QUAD_VS, depthTest: false, depthWrite: false,
@@ -453,6 +454,10 @@ TX.glow = mkTex(32, 32, g => { for (let r = 16; r > 0; r -= 2) { g.fillStyle = `
 TX.cloud = mkTex(128, 32, g => {
   for (let i = 0; i < 70; i++) { const x = sr() * 128, y = 6 + sr() * 18, rw = 6 + sr() * 16, rh = 2 + sr() * 4; g.fillStyle = `rgba(${120 + sr() * 50 | 0},${90 + sr() * 30 | 0},${150 + sr() * 40 | 0},${.18 + sr() * .25})`; for (const dx of [0, -128, 128]) { g.beginPath(); g.ellipse(x + dx, y, rw, rh, 0, 0, TAU); g.fill(); } }
 });
+TX.dayCloud = mkTex(128, 32, g => {   // soft white clouds for daytime skies (the one above is tinted for the burning city)
+  for (let i = 0; i < 46; i++) { const x = sr() * 128, y = 8 + sr() * 16, r = 5 + sr() * 9; for (const dx of [0, -128, 128]) { const gr = g.createRadialGradient(x + dx, y, 0, x + dx, y, r); gr.addColorStop(0, `rgba(255,255,255,${.3 + sr() * .3})`); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.fillRect(x + dx - r, y - r, r * 2, r * 2); } }
+});
+TX.dayCloud.repeat.set(4, 1);
 TX.swirl = mkTex(32, 16, g => { for (let x = -16; x < 32; x += 6) { g.fillStyle = 'rgba(255,255,255,.75)'; for (let y = 0; y < 16; y++) g.fillRect(x + y, y, 2, 1); } });
 TX.door = mkTex(64, 64, g => {
   g.fillStyle = '#1c2230'; g.fillRect(0, 0, 64, 64);
@@ -789,7 +794,7 @@ function shadowFlags(root) {
     if (!m || m.isMeshBasicMaterial || m.isShaderMaterial || m.transparent) return;
     o.receiveShadow = true;
     if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
-    o.castShadow = o.isInstancedMesh || o.geometry.boundingSphere.radius * Math.max(o.scale.x, o.scale.y, o.scale.z) < 40;
+    o.castShadow = !o.userData.noCast && (o.userData.cast || o.isInstancedMesh || o.geometry.boundingSphere.radius * Math.max(o.scale.x, o.scale.y, o.scale.z) < 40);
   });
 }
 // switch between the HD and retro looks (G, or the button in the pause menu); remembered on this device
@@ -1115,6 +1120,107 @@ function instanced(geo, mat, list) {   // list of [x, y, z, sx, sy, sz, rotY]
 }
 function wallPlane(w, h, mat, s, y) { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); place(m, s, 3.44, y, -Math.PI / 2); scene.add(m); return m; }
 function flag(s, x, colr, h = 4) { const g = new THREE.Group(); place(g, s, x, 0); part(GEO.cyl, lam(0x4a3018), g, 0, h / 2, 0, .06, h, .06); const f = part(new THREE.PlaneGeometry(1.2, .8), lam(colr, { side: THREE.DoubleSide }), g, .6, h - .5, 0); f.rotation.y = Math.PI / 2; scene.add(g); return g; }
+// ---- Hobbiton's look: a meadow, thatch, plaster, plank doors and round windows, painted smooth so they hold up close ----
+const smoothTex = t => { t.magFilter = THREE.LinearFilter; return worldTex(t); };
+TX.meadow = smoothTex(mkTex(128, 128, g => {
+  g.fillStyle = '#6a9438'; g.fillRect(0, 0, 128, 128);
+  for (let i = 0; i < 26; i++) {   // soft lighter and darker patches (drawn nine times over so the tile repeats seamlessly)
+    const x = sr() * 128, y = sr() * 128, r = 10 + sr() * 22, c = sr() < .5 ? '84,122,40' : '128,156,56';
+    for (const dx of [-128, 0, 128]) for (const dy of [-128, 0, 128]) { const gr = g.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, r); gr.addColorStop(0, `rgba(${c},.45)`); gr.addColorStop(1, `rgba(${c},0)`); g.fillStyle = gr; g.fillRect(x + dx - r, y + dy - r, r * 2, r * 2); }
+  }
+  const cols = ['#4f7a2a', '#86ae48', '#5f8a32', '#9cbc58', '#3f6a24', '#a8c060']; g.lineWidth = 1.2;
+  for (let i = 0; i < 2600; i++) { const x = sr() * 128, y = sr() * 128, h = 2 + sr() * 4; g.strokeStyle = cols[i % cols.length]; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (sr() - .5) * 2, y - h); g.stroke(); }
+  for (let i = 0; i < 40; i++) { g.fillStyle = ['#fff6d0', '#ffe060', '#f4a0c0'][i % 3]; g.fillRect(sr() * 128 | 0, sr() * 128 | 0, 1.5, 1.5); }
+}));
+TX.thatch = smoothTex(mkTex(64, 64, g => {
+  g.fillStyle = '#b48a44'; g.fillRect(0, 0, 64, 64);
+  for (let i = 0; i < 700; i++) { g.fillStyle = ['#9a7034', '#c8a058', '#d8b468', '#8a6028'][i % 4]; g.fillRect(sr() * 64 | 0, sr() * 64 | 0, 1, 3 + sr() * 5 | 0); }
+  for (let y = 0; y < 64; y += 16) { g.fillStyle = 'rgba(70,45,15,.35)'; g.fillRect(0, y, 64, 2); }
+}));
+TX.plaster = smoothTex(mkTex(64, 64, g => { g.fillStyle = '#efe4c8'; g.fillRect(0, 0, 64, 64); for (let i = 0; i < 500; i++) { g.fillStyle = sr() < .5 ? 'rgba(180,160,120,.25)' : 'rgba(255,255,240,.3)'; g.fillRect(sr() * 64 | 0, sr() * 64 | 0, 2, 2); } }));
+TX.planks = smoothTex(mkTex(64, 64, g => {   // grey planks: the door's own colour shows through
+  for (let i = 0; i < 8; i++) { const v = 200 + sr() * 40 | 0; g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(i * 8, 0, 8, 64); g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(i * 8, 0, 1, 64); }
+  for (let k = 0; k < 120; k++) { g.fillStyle = 'rgba(0,0,0,.08)'; g.fillRect(sr() * 64 | 0, sr() * 64 | 0, 1, 4); }
+}));
+TX.roundWin = smoothTex(mkTex(64, 64, g => {
+  const gr = g.createRadialGradient(32, 32, 4, 32, 32, 34); gr.addColorStop(0, '#fff2b8'); gr.addColorStop(1, '#d8a050'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+  g.fillStyle = '#4a3018'; g.fillRect(29, 0, 6, 64); g.fillRect(0, 29, 64, 6);
+}, false));
+
+// ---- shapes built once and drawn many times ----
+// join many geometries (already moved into place) into one: position, normal, and uv and colour if they all have them
+function mergeGeos(geos) {
+  let n = 0; for (const g of geos) n += g.attributes.position.count;
+  const hasUv = geos.every(g => g.attributes.uv), hasCol = geos.every(g => g.attributes.color);
+  const A = s => new THREE.BufferAttribute(new Float32Array(n * s), s);
+  const pos = A(3), nor = A(3), uv = hasUv && A(2), col = hasCol && A(3);
+  let k = 0;
+  for (const g of geos) {
+    pos.array.set(g.attributes.position.array, k * 3); if (g.attributes.normal) nor.array.set(g.attributes.normal.array, k * 3);
+    if (uv) uv.array.set(g.attributes.uv.array, k * 2); if (col) col.array.set(g.attributes.color.array, k * 3);
+    k += g.attributes.position.count;
+  }
+  const out = new THREE.BufferGeometry(); out.setAttribute('position', pos); out.setAttribute('normal', nor);
+  if (uv) out.setAttribute('uv', uv); if (col) out.setAttribute('color', col);
+  out.computeBoundingSphere(); return out;
+}
+// bake scenery: every still mesh under these objects is merged with the others that share its material and its
+// patch of ground (40 across), so a whole village is drawn in a few dozen calls. Mark anything that moves userData.keep.
+function bakeScenery(objs, chunk = 40) {
+  const groups = new Map();
+  for (const root of objs) {
+    root.updateMatrixWorld(true);
+    root.traverse(o => {
+      if (!o.isMesh || o.isInstancedMesh || Array.isArray(o.material) || o.matrixWorld.determinant() < 0) return;
+      for (let p = o; p; p = p.parent) if (p.userData.keep) return;
+      o.getWorldPosition(_g); const key = o.material.uuid + '|' + Math.floor(_g.x / chunk) + '|' + Math.floor(_g.z / chunk);
+      let e = groups.get(key); if (!e) groups.set(key, e = { mat: o.material, list: [] }); e.list.push(o);
+    });
+  }
+  for (const { mat, list } of groups.values()) {
+    if (list.length < 2) continue;
+    const geos = list.map(o => { const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone(); g.applyMatrix4(o.matrixWorld); return g; });
+    const m = new THREE.Mesh(mergeGeos(geos), mat); m.userData.cast = true; scene.add(m);
+    geos.forEach(g => g.dispose()); list.forEach(o => o.parent.remove(o));
+  }
+}
+function tintGeo(g, fn) {   // fn(x, y, z) -> THREE.Color for each vertex
+  const p = g.attributes.position, a = new Float32Array(p.count * 3);
+  for (let i = 0; i < p.count; i++) { const c = fn(p.getX(i), p.getY(i), p.getZ(i)); a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; }
+  g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g;
+}
+// an oak: a stout trunk with two branches and a crown of leafy clumps, lighter on top and shadowed underneath
+function oakGeo(seed) {
+  const R = (() => { let s = seed * 9301 + 49297; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+  const parts = [], bark = new THREE.Color(0x5a4028), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color();
+  const put = (geo, x, y, z, sx, sy, sz, rx, rz, colFn) => { const g = geo.index ? geo.toNonIndexed() : geo; g.applyMatrix4(m4.compose(_g.set(x, y, z), q.setFromEuler(new THREE.Euler(rx, 0, rz)), _sc.set(sx, sy, sz))); parts.push(tintGeo(g, colFn)); };
+  put(new THREE.CylinderGeometry(.3, .5, 3.4, 8), 0, 1.7, 0, 1, 1, 1, 0, 0, (x, y) => c.copy(bark).multiplyScalar(.75 + y * .08));
+  for (const side of [-1, 1]) put(new THREE.CylinderGeometry(.1, .2, 2, 6), side * .55, 3.1, 0, 1, 1, 1, 0, -side * .8, () => c.copy(bark));
+  const leafA = new THREE.Color(0x3f6e28), leafB = new THREE.Color(0x76a23e);
+  for (let i = 0; i < 8; i++) {
+    const a = i / 8 * TAU + R() * .6, d = i ? .9 + R() * .9 : 0, r = i ? 1.15 + R() * .7 : 1.8, cx = Math.cos(a) * d, cz = Math.sin(a) * d, cy = 4.3 + (i ? (R() - .3) * 1.4 : .6);
+    const base = leafA.clone().lerp(leafB, R() * .7);
+    put(new THREE.IcosahedronGeometry(1, 1), cx, cy, cz, r, r * .85, r, R() * 3, R() * 3, (x, y) => c.copy(base).multiplyScalar(.62 + .45 * clamp((y - cy) / r * .5 + .5, 0, 1)));
+  }
+  return mergeGeos(parts);
+}
+// a tuft of grass: five thin blades, dark at the root and sunlit at the tip (normals point up, so it's lit like the ground)
+function tuftGeo() {
+  const pos = [], col = [], base = [.34, .5, .18], tip = [.72, .84, .4];
+  for (let i = 0; i < 5; i++) {
+    const a = i / 5 * TAU + rand(-.3, .3), lean = rand(.1, .22), h = rand(.22, .4), w = .06, dx = Math.cos(a), dz = Math.sin(a);
+    pos.push(dz * w, 0, -dx * w, -dz * w, 0, dx * w, dx * lean, h, dz * lean); col.push(...base, ...base, ...tip);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(pos.map((_, i) => i % 3 === 1 ? 1 : 0), 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(new Array(pos.length / 3 * 2).fill(0), 2));
+  return g;
+}
+// many copies of one shape: list of [x, y, z, scale, rotY, color?]; returns the InstancedMesh
+function scatter(geo, mat, list, noCast) {
+  const im = new THREE.InstancedMesh(geo, mat, list.length), Q = new THREE.Quaternion(), c = new THREE.Color();
+  list.forEach((d, i) => { Q.setFromAxisAngle(UPV, d[4] || 0); _m4.compose(_g.set(d[0], d[1], d[2]), Q, _sc.setScalar(d[3])); im.setMatrixAt(i, _m4); if (d[5] !== undefined) im.setColorAt(i, c.setHex(d[5]).multiplyScalar(d[6] || 1)); });
+  im.frustumCulled = false; im.userData.noCast = !!noCast; scene.add(im); return im;
+}
 const THEMES = {
   mt: { gm: GM, gf: GF, tint: MARBLE_T, env: MT_ENV, orc: MT_ORC },
 
@@ -1334,82 +1440,128 @@ const THEMES = {
     },
   }),
 
-  // Hobbiton: open green country to roam, hobbit holes everywhere, the town, the party field and the Green Dragon
+  // Hobbiton on a golden afternoon: rolling green country, hobbit holes everywhere, Bag End on its hill under the oak,
+  // the town and its market, the Water with its stone bridge and mill, the Green Dragon, and Bilbo's party field
   hobbiton: natTheme({
-    wallTex: TX.marble, floorTex: TX.grass, tint: [1, .97, .9], door: 0x3a8a3a,
-    env: { sky: [0x2a7ae0, 0x6ab0f0, 0xd0ecff, 0xfff4c8], fog: [70, 360], fogC: 0xc4e0f4, amb: [0x8a8a7a, .6], hemi: [0xeaf6ff, 0x4a7a2a, .8], sun: [0xfff2d8, 1], east: [0xffe0a0, .2], cloud: 0xffffff },
+    wallTex: TX.rock, floorTex: TX.meadow, tint: [1, .97, .9], door: 0x3a8a3a,
+    env: { sky: [0x3f86d8, 0x8cc0ec, 0xf2ecd2, 0xffd8a0], fog: [70, 340], fogC: 0xd2e2dc, amb: [0x8a8070, .42], hemi: [0xdcecff, 0x5a6a30, .62], sun: [0xffe6c0, 1.05], east: [0xffc890, .16], cloud: 0xffffff, sunDir: [-60, 75, -85] },
     orc: MT_ORC,
     scenery(L) {
-      const Y = L.layout, G = this.gf, M = this.gm;
-      const grassT = [.9, 1.15, .8], stoneT = [1, .96, .86];
-      wideFloor(TX.grass, 0x9ad070, 160, -1.2);
-      // the field itself (with the pool cut out), and grassy hills all round beyond the edge
+      const Y = L.layout, G = this.gf, M = this.gm, first = scene.children.length;
+      const grassT = [.82, .9, .7], bankT = [.62, .72, .5], stoneT = [.92, .86, .76];
       const [S0, S1, X0, X1] = L.field, P0 = Y.pool;
-      const pieces = [[S0, P0[0], X0, X1], [P0[1], S1, X0, X1], [P0[0], P0[1], X0, P0[2]], [P0[0], P0[1], P0[3], X1]];
-      for (const [a, b, c, d] of pieces) cbox(G, a, b, c, d, -1.2, 0, { f: 't', tint: grassT, seg: 3, k: .5 });
-      cbox(M, P0[0], P0[1], P0[2], P0[3], -1.2, -.55, { f: 't', tint: [.55, .6, .5] });
-      cbox(G, P0[0], P0[1], P0[2], P0[3], -.55, 0, { f: 'oiaz', tint: [.6, .8, .5], seg: 3 });
-      const pool = new THREE.Mesh(new THREE.PlaneGeometry(P0[3] - P0[2], P0[1] - P0[0]), new THREE.MeshBasicMaterial({ map: TX.sea, color: 0x8ad8e8, transparent: true, opacity: .8 }));
-      pool.rotation.x = -Math.PI / 2; tw((P0[0] + P0[1]) / 2, (P0[2] + P0[3]) / 2, -.18, pool.position); scene.add(pool);
-      const hills = [];
+      wideFloor(TX.meadow, 0x9ab878, 90, -1.2);
+      // the field (with the Water cut out of it) and the Water's banks and bed
+      for (const [a, b, c, d] of [[S0, P0[0], X0, X1], [P0[1], S1, X0, X1], [P0[0], P0[1], X0, P0[2]], [P0[0], P0[1], P0[3], X1]]) cbox(G, a, b, c, d, -1.2, 0, { f: 't', tint: grassT, seg: 3, k: .2 });
+      cbox(M, P0[0], P0[1], P0[2], P0[3], -1.2, -.55, { f: 't', tint: [.35, .38, .3] });
+      cbox(G, P0[0], P0[1], P0[2], P0[3], -.55, 0, { f: 'oiaz', tint: bankT, seg: 3, k: .2 });
+      const water = new THREE.Mesh(new THREE.PlaneGeometry(P0[3] - P0[2], P0[1] - P0[0]), new THREE.MeshPhongMaterial({ map: TX.sea, color: 0x3f7f86, specular: 0xfff0d0, shininess: 70, transparent: true, opacity: .9 }));
+      water.rotation.x = -Math.PI / 2; tw((P0[0] + P0[1]) / 2, (P0[2] + P0[3]) / 2, -.18, water.position); water.userData.keep = true; scene.add(water);
+      // rolling hills all round beyond the hedge, dotted with trees and a few far-off hobbit holes
+      const hillM = ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.meadow.clone(); t.needsUpdate = true; t.repeat.set(6, 6); return t; })(), color: 0x9ab870 })), hills = [], farTrees = [];
       for (let i = 0; i < 70; i++) { const a = i / 70 * TAU, r = rand(72, 110), p = tw(Math.cos(a) * r, Math.sin(a) * r, -1.2), sz = rand(14, 30); hills.push([p.x, p.y, p.z, sz, sz * rand(.35, .6), sz]); }
-      instanced(new THREE.SphereGeometry(1, 14, 7, 0, TAU, 0, Math.PI / 2), ps1(new THREE.MeshLambertMaterial({ map: TX.grass, color: 0x8ac860 })), hills);
+      instanced(new THREE.SphereGeometry(1, 20, 9, 0, TAU, 0, Math.PI / 2), hillM, hills);
+      const hillY = p => hills.reduce((y, h) => { const d = Math.hypot(p.x - h[0], p.z - h[2]); return d < h[3] ? Math.max(y, h[1] + h[4] * Math.sqrt(1 - (d / h[3]) ** 2)) : y; }, Y0 - 1.2);
+      for (let i = 0; i < 90; i++) { const a = rand(0, TAU), r = rand(66, 96), p = tw(Math.cos(a) * r, Math.sin(a) * r, 0); farTrees.push([p.x, hillY(p) - .3, p.z, rand(1.1, 2), rand(0, TAU)]); }
       // a hedge right round the field
-      for (const [a, b, c, d] of [[S0 - 1.5, S0, X0 - 1.5, X1 + 1.5], [S1, S1 + 1.5, X0 - 1.5, X1 + 1.5], [S0, S1, X0 - 1.5, X0], [S0, S1, X1, X1 + 1.5]]) cbox(G, a, b, c, d, 0, 2.6, { tint: [.45, .75, .35], seg: 3 });
-      // paths of packed earth between the places
-      const pathM = ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.path.clone(); t.needsUpdate = true; t.repeat.set(2, 12); return t; })(), color: 0xd8b888 }));
-      // (in short sections, so the retro vertex wobble can't stretch a path across the screen)
-      const path = (s0, x0, s1, x1, w = 3) => { const l = Math.hypot(s1 - s0, x1 - x0), m = new THREE.Mesh(new THREE.PlaneGeometry(w, l, 1, Math.ceil(l / 2.5)), pathM); m.rotation.set(-Math.PI / 2, 0, 0); m.rotation.order = 'YXZ'; m.rotation.y = -Math.atan2(x1 - x0, s1 - s0); tw((s0 + s1) / 2, (x0 + x1) / 2, .02, m.position); scene.add(m); };
-      path(-60, 0, 30, 0, 4); path(0, 0, 4, 30); path(4, 30, 4, 44); path(0, 0, 6, -24); path(-30, 0, -36, 28); path(30, 0, 42, 0, 3);
-      // hobbit holes: round doors and windows in grassy mounds, with chimneys and little gardens
-      const moundM = ps1(new THREE.MeshLambertMaterial({ map: TX.grass, color: 0xa8e080 })), frameM = lam(0x7a5430), knobM = lam(0xf0d040, { emissive: 0x403000 }), winM = bas(0xffe9a0);
-      const doorCols = [0x2e8a3a, 0xd8a020, 0xb83a2a, 0x2a6ac0, 0x8a3ab0];
-      const smial = (s, x, f, r, y0, col) => {
-        const g = new THREE.Group(); place(g, s, x, y0, f); scene.add(g);
-        const m = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 9, 0, TAU, 0, Math.PI / 2), moundM); m.scale.y = .62; g.add(m);
-        const surf = (x, y) => Math.sqrt(Math.max(0, r * r * (1 - (y / (.62 * r)) ** 2) - x * x));   // how far out the mound is at (x, y)
-        // a stone front wall dug into the hillside, grass on top, with the round door and windows in it
-        const zf = surf(0, .1) + .04, zb = surf(0, 2.1) - .3, fw = 4.2;
-        part(GEO_BOX, lam(0xd8ccb0), g, 0, 1.05, (zf + zb) / 2, fw, 2.1, zf - zb);
-        part(GEO_BOX, moundM, g, 0, 2.2, (zf + zb) / 2 + .1, fw + .3, .3, zf - zb + .3);
-        part(new THREE.CircleGeometry(.86, 18), frameM, g, 0, .9, zf + .01);
-        part(new THREE.CircleGeometry(.72, 18), lam(col), g, 0, .9, zf + .02);
-        part(GEO.sph, knobM, g, 0, .9, zf + .08, .09, .09, .09);
-        for (const sx of [-1, 1]) { part(new THREE.CircleGeometry(.4, 12), frameM, g, sx * 1.45, 1.15, zf + .01); part(new THREE.CircleGeometry(.31, 12), winM, g, sx * 1.45, 1.15, zf + .02); }
-        part(GEO.cyl, lam(0x8a7a6a), g, r * .35, r * .62 + .3, -r * .2, .22, .9, .22); L.layout.chimneys.push(tw(s, x, 0).add(_a.set(0, y0 + r * .62 + .9, 0)));
-        for (let k = 0; k < 6; k++) { const a = (k / 5 - .5) * 1.4; part(GEO.sph, lam([0xff6a8a, 0xffe060, 0xffffff, 0xb070ff][k % 4]), g, Math.sin(a) * (r + .5), .25, Math.cos(a) * (r + .5), .22, .22, .22); }
+      for (const [a, b, c, d] of [[S0 - 1.5, S0, X0 - 1.5, X1 + 1.5], [S1, S1 + 1.5, X0 - 1.5, X1 + 1.5], [S0, S1, X0 - 1.5, X0], [S0, S1, X1, X1 + 1.5]]) cbox(G, a, b, c, d, 0, 2.6, { tint: [.36, .52, .26], seg: 3, k: .35 });
+      // paths of packed earth between the places (in short sections, so the retro vertex wobble can't stretch them)
+      const pathM = ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.path.clone(); t.needsUpdate = true; t.repeat.set(2, 12); return t; })(), color: 0xc8b090 }));
+      const paths = [];
+      const path = (s0, x0, s1, x1, w = 3) => { paths.push([s0, x0, s1, x1, w]); const l = Math.hypot(s1 - s0, x1 - x0), m = new THREE.Mesh(new THREE.PlaneGeometry(w, l, 1, Math.ceil(l / 2.5)), pathM); m.rotation.set(-Math.PI / 2, 0, 0); m.rotation.order = 'YXZ'; m.rotation.y = -Math.atan2(x1 - x0, s1 - s0); tw((s0 + s1) / 2, (x0 + x1) / 2, .02, m.position); scene.add(m); };
+      path(-60, 0, 30, 0, 4); path(0, 0, 4, 30); path(4, 30, 4, 44); path(0, 0, 6, -24); path(-30, 2, -38, 9); path(-38, 24.6, -38, 31); path(30, 0, 42, 0, 3);
+      const onPath = (s, x, r) => paths.some(([s0, x0, s1, x1, w]) => { const ds = s1 - s0, dx = x1 - x0, t = clamp(((s - s0) * ds + (x - x0) * dx) / (ds * ds + dx * dx), 0, 1); return Math.hypot(s - s0 - ds * t, x - x0 - dx * t) < w / 2 + r; });
+      // shared bits
+      const stoneM = ps1(new THREE.MeshLambertMaterial({ map: TX.rock, color: 0xd8ccb4 })), frameM = lam(0x6a4628), knobM = lam(0xf0c840, { emissive: 0x3a2a00 }), winM = new THREE.MeshBasicMaterial({ map: TX.roundWin });
+      const plankM = col => ps1(new THREE.MeshLambertMaterial({ map: TX.planks, color: col })), plasterM = ps1(new THREE.MeshLambertMaterial({ map: TX.plaster })), thatchM = ps1(new THREE.MeshLambertMaterial({ map: TX.thatch, color: 0xe0c890 }));
+      const beam = lam(0x5a3a20), white = lam(0xf4f0e6), flowers = [0xff6a8a, 0xffd040, 0xffffff, 0xb070ff, 0xff8a40];
+      const moundM = ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.meadow.clone(); t.needsUpdate = true; t.repeat.set(2, 2); return t; })(), color: 0xa8c888 }));
+      const lantern = (g, x, y, z) => { part(GEO_BOX, beam, g, x, y, z, .18, .26, .18); const s = glowSprite(0xffc070, 1, .7); s.position.set(x, y, z + .05); g.add(s); };
+      const fence = (g, x0, z0, x1, z1) => {   // a little picket fence between two points
+        const n = Math.max(2, Math.round(Math.hypot(x1 - x0, z1 - z0) / .32)), ang = Math.atan2(x1 - x0, z1 - z0);
+        for (let i = 0; i <= n; i++) part(GEO_BOX, white, g, lerp(x0, x1, i / n), .32, lerp(z0, z1, i / n), .08, .64, .05).rotation.y = ang;
+        for (const y of [.2, .48]) { const r = part(GEO_BOX, white, g, (x0 + x1) / 2, y, (z0 + z1) / 2, .04, .05, Math.hypot(x1 - x0, z1 - z0)); r.rotation.y = ang; }
+      };
+      const veg = (g, x, z, w, d) => {   // a vegetable patch: dark earth in rows of cabbages, with pumpkins at the end
+        part(GEO_BOX, lam(0x5a3c22), g, x, .04, z, w, .08, d);
+        for (let i = 0; i < 3; i++) for (let j = 0; j < 4; j++) part(GEO.sph, lam(0x7ab048), g, x - w / 2 + (j + .5) * w / 4, .16, z - d / 2 + (i + .5) * d / 3, .16, .13, .16);
+        part(GEO.sph, lam(0xe8822a), g, x + w / 2 + .3, .2, z, .25, .2, .25);
+      };
+      // hobbit holes: a round plank door with a brass knob in the middle, round windows, a stone front with a lantern,
+      // a garden fence and gate, flower boxes, a vegetable patch, and a chimney poking out of the grass with smoke rising
+      const doorCols = [0x2e8a3a, 0xd8a020, 0xb83a2a, 0x2a6ac0, 0x8a3ab0, 0x3a9a8a];
+      const smial = (s, x, f, r, y0, col, big) => {
+        const g = new THREE.Group(); place(g, s, x, y0, f); scene.add(g); g.updateMatrixWorld(true);
+        const MH = big ? .78 : .9, m = new THREE.Mesh(new THREE.SphereGeometry(r, 22, 10, 0, TAU, 0, Math.PI / 2), moundM); m.scale.y = MH; g.add(m);
+        const surf = (x, y) => Math.sqrt(Math.max(0, r * r * (1 - (y / (MH * r)) ** 2) - x * x));
+        const zf = surf(0, .1) + .04, zb = surf(0, 2.1) - .3, fw = big ? 5 : 4.4, dr = big ? 1.05 : .88;
+        part(GEO_BOX, stoneM, g, 0, 1.1, (zf + zb) / 2, fw, 2.2, zf - zb);
+        part(GEO_BOX, moundM, g, 0, 2.28, (zf + zb) / 2 + .1, fw + .4, .36, zf - zb + .4);
+        part(new THREE.CircleGeometry(dr + .14, 24), frameM, g, 0, dr + .06, zf + .01);
+        part(new THREE.CircleGeometry(dr, 24), plankM(col), g, 0, dr + .06, zf + .02);
+        part(GEO.sph, knobM, g, 0, dr + .06, zf + .1, .1, .1, .1);
+        part(GEO_BOX, stoneM, g, 0, .06, zf + .5, 1.8, .12, .9);   // the doorstep
+        for (const sx of [-1, 1]) {
+          part(new THREE.CircleGeometry(.5, 16), frameM, g, sx * 1.55, 1.25, zf + .01); part(new THREE.CircleGeometry(.4, 16), winM, g, sx * 1.55, 1.25, zf + .02);
+          part(GEO_BOX, frameM, g, sx * 1.55, .68, zf + .14, .9, .14, .26);
+          for (let k = 0; k < 4; k++) part(GEO.sph, lam(flowers[(k + (sx > 0 ? 2 : 0)) % 5]), g, sx * 1.55 - .3 + k * .2, .82, zf + .14, .1, .1, .1);
+        }
+        lantern(g, dr + .5, 1.9, zf + .12);
+        part(GEO.cyl, stoneM, g, r * .35, r * MH * .8 + .35, -r * .2, .24, 1.6, .24); part(GEO_BOX, stoneM, g, r * .35, r * MH * .8 + 1.2, -r * .2, .6, .14, .6);
+        L.layout.chimneys.push(g.localToWorld(new V3(r * .35, r * MH * .8 + 1.35, -r * .2)));
+        // the front garden: a fence round it with a gap for the gate, a path of stepping stones, and a vegetable patch
+        const fz = zf + 2.2, fx = fw / 2 + .4;
+        fence(g, -fx, zf + .2, -fx, fz); fence(g, fx, zf + .2, fx, fz); fence(g, -fx, fz, -.8, fz); fence(g, .8, fz, fx, fz);
+        for (let k = 0; k < 3; k++) part(new THREE.CylinderGeometry(.32, .34, .06, 10), stoneM, g, (k % 2 - .5) * .2, .03, zf + 1 + k * .55);
+        veg(g, -fx + 1.1, zf + 1.35, 1.6, 1.1);
+        for (let k = 0; k < 7; k++) { const a = (k / 6 - .5) * 1.6; part(GEO.sph, lam(flowers[k % 5]), g, Math.sin(a) * (r + .45), .22, Math.cos(a) * (r + .45) - .4, .2, .2, .2); }
         return g;
       };
       Y.homes.forEach(([s, x, f, r], i) => smial(s, x, f, r, 0, doorCols[i % doorCols.length]));
-      // Bag End on top of the Hill, with its green door, the oak above, and the notice on the gate
-      for (const [a, b, c, d, top] of Y.terraces) { cbox(G, a, b, c, d, top - .4, top, { f: 't', tint: grassT, seg: 3, k: .5 }); cbox(M, a, b, c, d, 0, top - .4, { f: 'oiaz', tint: stoneT, seg: 2 }); }
-      const be = Y.bagEnd, beg = smial(be[0], be[1], be[2], be[3], be[4], 0x2e8a3a);
-      part(GEO.cyl, lam(0x6a4420), beg, -1.2, be[3] * .62 + 2, -1.2, .45, 4.5, .45);
-      for (const [x, y, z, r] of [[-1.2, 5.6, -1.2, 2.8], [.6, 5, -.4, 2], [-2.6, 5, -2, 2.1]]) part(GEO.sph, lam(0x3e8a2a), beg, x, be[3] * .62 + y, z, r, r * .8, r);
+      // Bag End: grassy banks up the Hill with stone steps in the middle, the green door at the top under the great oak,
+      // a bench, and the notice on the gate
+      for (const [a, b, c, d, top] of Y.terraces) {
+        cbox(G, a, b, c, d, top - .4, top, { f: 't', tint: grassT, seg: 3, k: .2 });
+        cbox(G, a, b, c, d, 0, top - .4, { f: 'oiaz', tint: bankT, seg: 2, k: .2 });
+        const st = new THREE.Group(); place(st, a, 0, 0); scene.add(st); part(GEO_BOX, stoneM, st, 0, top - .65, -.35, 2.2, 1.3, .7);
+      }
+      const be = Y.bagEnd, beg = smial(be[0], be[1], be[2], be[3], be[4], 0x2e7a34, true);
+      const benchG = new THREE.Group(); beg.add(benchG); benchG.position.set(2.9, 0, be[3] * .9);
+      part(GEO_BOX, beam, benchG, 0, .45, 0, 1.6, .1, .45); for (const sx of [-.65, .65]) part(GEO_BOX, beam, benchG, sx, .22, 0, .1, .45, .4);
       const noteT = mkTex(128, 64, g => { g.fillStyle = '#e8dcb8'; g.fillRect(0, 0, 128, 64); g.fillStyle = '#3a2410'; g.font = 'bold 13px serif'; g.textAlign = 'center'; ['NO ADMITTANCE', 'EXCEPT ON', 'PARTY BUSINESS'].forEach((t, i) => g.fillText(t, 64, 18 + i * 17)); }, false);
       const note = new THREE.Mesh(new THREE.PlaneGeometry(1.6, .8), new THREE.MeshLambertMaterial({ map: noteT })); place(note, 41.6, 2.4, 2.6 + .9, Math.PI); scene.add(note);
       { const post = new THREE.Mesh(GEO.cyl, frameM); place(post, 41.6, 2.4, 2.6 + .4); post.scale.set(.06, .9, .06); post.position.y -= .1; scene.add(post); }
-      // cottages: whitewashed walls, steep thatched roofs, round-topped doors
-      const wallM = ps1(new THREE.MeshLambertMaterial({ map: TX.marble, color: 0xf4ead4 })), thatch = lam(0xc89a48), beam = lam(0x6a4426);
-      const cottage = ([s, x, w, d, h, f], big) => {
-        const g = new THREE.Group(); place(g, s, x, 0, f); scene.add(g);
-        part(GEO_BOX, wallM, g, 0, h / 2, 0, w, h, d);
-        for (const sx of [-1, 1]) { const r = part(GEO_BOX, thatch, g, sx * w * .27, h + w * .2, 0, w * .62, .3, d + .7); r.rotation.z = -sx * .62; }
-        part(GEO_BOX, beam, g, 0, h - .1, d / 2 + .02, w + .1, .18, .05); for (const sx of [-1, 1]) part(GEO_BOX, beam, g, sx * (w / 2 - .05), h / 2, d / 2 + .02, .16, h, .05);
-        part(GEO_BOX, lam(0x5a3a1e), g, 0, .8, d / 2 + .03, 1.1, 1.6, .05); part(new THREE.CircleGeometry(.55, 12, 0, Math.PI), lam(0x5a3a1e), g, 0, 1.6, d / 2 + .03);
-        for (const sx of [-1, 1]) part(GEO_BOX, winM, g, sx * w * .3, h * .55, d / 2 + .03, .7, .6, .05);
-        L.layout.chimneys.push(g.localToWorld(new V3(w * .3, h + w * .45, 0)));
+      // cottages: plaster walls with dark timber framing, deep straw thatch, a round-topped door, paned windows and flower boxes
+      const cottage = ([s, x, w, d, h, f]) => {
+        const g = new THREE.Group(); place(g, s, x, 0, f); scene.add(g); g.updateMatrixWorld(true);
+        part(GEO_BOX, plasterM, g, 0, h / 2, 0, w, h, d);
+        part(GEO_BOX, stoneM, g, 0, .3, 0, w + .1, .6, d + .1);
+        for (const sx of [-1, 1]) { const rf = part(GEO_BOX, thatchM, g, sx * w * .27, h + w * .2, 0, w * .66, .5, d + .9); rf.rotation.z = -sx * .62; }
+        part(new THREE.CylinderGeometry(.32, .32, d + .9, 8), thatchM, g, 0, h + w * .4, 0).rotation.x = Math.PI / 2;
+        for (const fz of [d / 2 + .02, -d / 2 - .02]) {
+          part(GEO_BOX, beam, g, 0, h - .1, fz, w + .1, .18, .05); part(GEO_BOX, beam, g, 0, h * .5, fz, w + .1, .14, .05);
+          for (const sx of [-1, -.33, .33, 1]) part(GEO_BOX, beam, g, sx * (w / 2 - .05), h / 2, fz, .16, h, .05);
+        }
+        part(GEO_BOX, plankM(0x6a4426), g, 0, .85, d / 2 + .04, 1.1, 1.7, .05); part(new THREE.CircleGeometry(.55, 12, 0, Math.PI), plankM(0x6a4426), g, 0, 1.7, d / 2 + .04);
+        part(GEO.sph, knobM, g, .35, .95, d / 2 + .1, .07, .07, .07);
+        for (const sx of [-1, 1]) {
+          part(GEO_BOX, frameM, g, sx * w * .3, h * .55, d / 2 + .04, .86, .76, .05); part(GEO_BOX, winM, g, sx * w * .3, h * .55, d / 2 + .07, .7, .6, .02);
+          part(GEO_BOX, frameM, g, sx * w * .3, h * .55 - .46, d / 2 + .16, .9, .14, .24);
+          for (let k = 0; k < 4; k++) part(GEO.sph, lam(flowers[(k + (sx > 0 ? 1 : 3)) % 5]), g, sx * w * .3 - .3 + k * .2, h * .55 - .32, d / 2 + .16, .09, .09, .09);
+        }
+        part(GEO_BOX, stoneM, g, w * .3, h + w * .45, 0, .6, 1.4, .6);
+        L.layout.chimneys.push(g.localToWorld(new V3(w * .3, h + w * .45 + .75, 0)));
         return g;
       };
       for (const h of Y.houses) cottage(h);
       // the Green Dragon: a long inn with a painted sign, lanterns, and tables outside
-      const gd = cottage(Y.greenDragon, true);
+      const gd = cottage(Y.greenDragon);
       const signT = mkTex(128, 96, g => {
         g.fillStyle = '#2a1a0c'; g.fillRect(0, 0, 128, 96); g.fillStyle = '#e8d8b0'; g.fillRect(4, 4, 120, 88);
-        g.fillStyle = '#2a8a2a'; g.beginPath(); g.ellipse(62, 46, 30, 14, -.2, 0, TAU); g.fill();                         // body
-        g.beginPath(); g.moveTo(88, 40); g.quadraticCurveTo(104, 22, 112, 30); g.quadraticCurveTo(104, 34, 94, 48); g.fill();   // neck and head
-        g.beginPath(); g.moveTo(34, 50); g.quadraticCurveTo(14, 64, 20, 76); g.quadraticCurveTo(28, 66, 40, 56); g.fill();     // tail
-        g.beginPath(); g.moveTo(56, 36); g.lineTo(46, 12); g.lineTo(74, 32); g.fill();                                       // wing
+        g.fillStyle = '#2a8a2a'; g.beginPath(); g.ellipse(62, 46, 30, 14, -.2, 0, TAU); g.fill();
+        g.beginPath(); g.moveTo(88, 40); g.quadraticCurveTo(104, 22, 112, 30); g.quadraticCurveTo(104, 34, 94, 48); g.fill();
+        g.beginPath(); g.moveTo(34, 50); g.quadraticCurveTo(14, 64, 20, 76); g.quadraticCurveTo(28, 66, 40, 56); g.fill();
+        g.beginPath(); g.moveTo(56, 36); g.lineTo(46, 12); g.lineTo(74, 32); g.fill();
         g.fillStyle = '#ff5a1a'; g.beginPath(); g.moveTo(114, 30); g.lineTo(124, 24); g.lineTo(122, 34); g.fill();
         g.fillStyle = '#3a2410'; g.font = 'bold 14px serif'; g.textAlign = 'center'; g.fillText('THE GREEN DRAGON', 64, 88);
       }, false);
@@ -1418,30 +1570,65 @@ const THEMES = {
       for (const sx of [-3, 3]) { const lg = glowSprite(0xffc070, 1.6, .9); lg.position.set(sx, 2.6, Y.greenDragon[3] / 2 + .4); gd.add(lg); L.torches.push({ s: Y.greenDragon[0], p: gd.localToWorld(new V3(sx, 2.6, Y.greenDragon[3] / 2 + .6)) }); }
       for (const [s, x] of [[-34, 28], [-42, 28]]) { const t = new THREE.Mesh(GEO.cyl, beam); tw(s, x, .45, t.position); t.scale.set(.8, .1, .8); scene.add(t); const lgs = new THREE.Mesh(GEO.cyl, beam); tw(s, x, .2, lgs.position); lgs.scale.set(.12, .4, .12); scene.add(lgs); }
       // the market: striped stalls round a well
-      const stripeT = mkTex(32, 32, g => { for (let i = 0; i < 4; i++) { g.fillStyle = i % 2 ? '#f4f0e8' : '#d83a2a'; g.fillRect(i * 8, 0, 8, 32); } });
+      const stripeT = mkTex(32, 32, g => { for (let i = 0; i < 4; i++) { g.fillStyle = i % 2 ? '#f4f0e8' : '#c83a2a'; g.fillRect(i * 8, 0, 8, 32); } });
       const stripe = ps1(new THREE.MeshLambertMaterial({ map: stripeT, side: THREE.DoubleSide }));
       for (const [s, x, f] of Y.stalls) { const g = new THREE.Group(); place(g, s, x, 0, f); scene.add(g); part(GEO_BOX, beam, g, 0, .5, 0, 2, 1, 1.2); for (const [a, b] of [[-.9, -.5], [.9, -.5], [-.9, .5], [.9, .5]]) part(GEO.cyl, beam, g, a, 1.2, b, .05, 2.4, .05); const aw = part(GEO_BOX, stripe, g, 0, 2.4, .2, 2.3, .06, 1.7); aw.rotation.x = .25; for (let k = 0; k < 5; k++) part(GEO.sph, lam([0xff4a2a, 0xffc020, 0x6ac040, 0xff8a20][k % 4]), g, -.7 + k * .35, 1.1, 0, .16, .16, .16); }
-      { const w = new THREE.Group(); place(w, Y.well[0], Y.well[1], 0); scene.add(w); part(new THREE.CylinderGeometry(.8, .85, 1.1, 12), wallM, w, 0, .55, 0); part(new THREE.CircleGeometry(.65, 12), bas(0x1a3a5a), w, 0, 1.06, 0).rotation.x = -Math.PI / 2; for (const sx of [-1, 1]) part(GEO.cyl, beam, w, sx * .7, 1.8, 0, .07, 1.6, .07); const rf = part(new THREE.ConeGeometry(1.2, .9, 4), thatch, w, 0, 2.9, 0); rf.rotation.y = Math.PI / 4; }
-      // Bilbo's party: the Party Tree hung with lanterns, a striped pavilion, long tables piled with food, and a banner
+      { const w = new THREE.Group(); place(w, Y.well[0], Y.well[1], 0); scene.add(w); part(new THREE.CylinderGeometry(.8, .85, 1.1, 12), stoneM, w, 0, .55, 0); part(new THREE.CircleGeometry(.65, 12), bas(0x1a3a5a), w, 0, 1.06, 0).rotation.x = -Math.PI / 2; for (const sx of [-1, 1]) part(GEO.cyl, beam, w, sx * .7, 1.8, 0, .07, 1.6, .07); const rf = part(new THREE.ConeGeometry(1.2, .9, 4), thatchM, w, 0, 2.9, 0); rf.rotation.y = Math.PI / 4; }
+      // the stone bridge over the Water to the Green Dragon, and the mill on the bank with its wheel turning in the stream
+      const br = Y.bridge, brG = new THREE.Group(); scene.add(brG);
+      { const [a, b, c, d] = br, deck = new THREE.Mesh(GEO_BOX, stoneM); tw((a + b) / 2, (c + d) / 2, -.12, deck.position); deck.scale.set(d - c, .3, b - a); brG.add(deck);
+        for (const ss of [a + .2, b - .2]) { const p = new THREE.Mesh(GEO_BOX, stoneM); tw(ss, (c + d) / 2, .4, p.position); p.scale.set(d - c, .8, .4); brG.add(p); }
+        for (const xx of [c + 4, (c + d) / 2, d - 4]) { const pier = new THREE.Mesh(GEO_BOX, stoneM); tw((a + b) / 2, xx, -.5, pier.position); pier.scale.set(.9, .8, b - a - .2); brG.add(pier); } }
+      { const mill = new THREE.Group(); place(mill, Y.mill[0], Y.mill[1], 0); scene.add(mill);
+        part(GEO_BOX, stoneM, mill, 0, 1, 0, 3.4, 2, 4.6); part(GEO_BOX, plasterM, mill, 0, 2.9, 0, 3.4, 1.8, 4.6);
+        for (const sx of [-1, 1]) { const rf = part(GEO_BOX, thatchM, mill, sx * .9, 4.3, 0, 2.2, .4, 5.4); rf.rotation.z = -sx * .7; }
+        part(GEO_BOX, plankM(0x6a4426), mill, 1.72, 1, 0, .05, 1.8, 1); part(GEO_BOX, winM, mill, 1.72, 3, 1.2, .04, .6, .6);
+        const wheel = new THREE.Group(); wheel.position.set(-2.2, 1.2, 0); mill.add(wheel); wheel.userData.keep = true;
+        part(new THREE.TorusGeometry(1.6, .12, 6, 20), beam, wheel, 0, 0, 0).rotation.y = Math.PI / 2;
+        for (let k = 0; k < 10; k++) { const p = part(GEO_BOX, beam, wheel, 0, 0, 0, .5, .12, 3.2); p.rotation.x = k / 10 * Math.PI; }
+        part(GEO.cyl, beam, wheel, 0, 0, 0, .25, .9, .25).rotation.z = Math.PI / 2;
+        this.wheel = wheel; }
+      // reeds and lily pads round the Water
+      const reeds = [], pads = [];
+      for (let i = 0; i < 70; i++) { const side = i % 4, s = side < 2 ? rand(P0[0], P0[1]) : side === 2 ? P0[0] + rand(.2, 1) : P0[1] - rand(.2, 1), x = side === 0 ? P0[2] + rand(.2, 1) : side === 1 ? P0[3] - rand(.2, 1) : rand(P0[2], P0[3]); if (s > br[0] - 1 && s < br[1] + 1) continue; const p = tw(s, x, -.2); reeds.push([p.x, p.y, p.z, rand(.7, 1.2), rand(0, 3), 0x6a8a3a, rand(.8, 1.2)]); }
+      for (let i = 0; i < 26; i++) { const s = rand(P0[0] + 1.5, P0[1] - 1.5), x = rand(P0[2] + 1.5, P0[3] - 1.5); if (s > br[0] - 1.5 && s < br[1] + 1.5) continue; const p = tw(s, x, -.16); pads.push([p.x, p.y, p.z, rand(.35, .6), rand(0, TAU), i % 5 ? 0x4f9a3a : 0xf4a0c8]); }
+      const reedGeo = new THREE.ConeGeometry(.05, 1.6, 4).translate(0, .8, 0);
+      scatter(reedGeo, lam(0xffffff), reeds, true); scatter(new THREE.CircleGeometry(1, 10, .4, TAU - .4).rotateX(-Math.PI / 2), lam(0xffffff, { side: THREE.DoubleSide }), pads, true);
+      // Bilbo's party: the great Party Tree hung with lanterns, a striped pavilion, long tables piled with food, a banner and bunting
       const [ts, tx] = Y.partyTree, tb = tw(ts, tx, 0);
-      part(new THREE.CylinderGeometry(1.1, 1.6, 7, 9), lam(0x6a4420), scene, tb.x, 3.5, tb.z);
-      for (const [x, y, z, r] of [[0, 9, 0, 5.5], [3.5, 8, 1.5, 3.8], [-3.5, 8.4, -1, 4], [1, 11, -2, 3.6], [-1.5, 7.6, 3, 3.4]]) part(GEO.sph, lam(0x3e9a2a), scene, tb.x + x, y, tb.z + z, r, r * .82, r);
       for (let k = 0; k < 18; k++) { const a = k / 18 * TAU, g = glowSprite([0xffd070, 0xff8a6a, 0x9ad0ff][k % 3], .8, 1); g.position.set(tb.x + Math.cos(a) * 5.4, 6.2 + Math.sin(k * 1.7) * .4, tb.z + Math.sin(a) * 5.4); scene.add(g); }
-      { const [ps, px, pr] = Y.pavilion, pg = new THREE.Group(); place(pg, ps, px, 0); scene.add(pg); part(new THREE.CylinderGeometry(pr, pr, 3.2, 18, 1, true), stripe, pg, 0, 1.6, 0); part(new THREE.ConeGeometry(pr * 1.15, 2.6, 18), stripe, pg, 0, 4.5, 0); part(GEO.cyl, beam, pg, 0, 6.2, 0, .06, 1.4, .06); const fl = part(new THREE.PlaneGeometry(.9, .5), lam(0xffd020, { side: THREE.DoubleSide }), pg, .45, 6.6, 0); }
+      { const [ps, px, pr] = Y.pavilion, pg = new THREE.Group(); place(pg, ps, px, 0); scene.add(pg); part(new THREE.CylinderGeometry(pr, pr, 3.2, 18, 1, true), stripe, pg, 0, 1.6, 0); part(new THREE.ConeGeometry(pr * 1.15, 2.6, 18), stripe, pg, 0, 4.5, 0); part(GEO.cyl, beam, pg, 0, 6.2, 0, .06, 1.4, .06); part(new THREE.PlaneGeometry(.9, .5), lam(0xffd020, { side: THREE.DoubleSide }), pg, .45, 6.6, 0); }
       const cloth = lam(0xf8f4ec), food = [0xd86a2a, 0xffd060, 0xc83a3a, 0x8ac050, 0xf0e0c0];
       for (const [a, b, c, d, top] of Y.tables) { cbox(M, a, b, c, d, top - .12, top, { tint: [1.3, 1.3, 1.25] }); for (let s = a + .5; s < b - .3; s += 1.1) { const p = tw(s, (c + d) / 2, top + .14); part(GEO.sph, lam(food[(s * 3 | 0) % 5]), scene, p.x, p.y, p.z, .2, .14, .2); } for (const ex of [c + .1, d - .1]) for (const es of [a + .3, b - .3]) { const lg = new THREE.Mesh(GEO.cyl, beam); tw(es, ex, top / 2, lg.position); lg.scale.set(.06, top, .06); scene.add(lg); } }
       const banT = mkTex(256, 32, g => { g.fillStyle = '#f8e8b8'; g.fillRect(0, 0, 256, 32); g.fillStyle = '#b8301a'; g.font = 'bold 20px serif'; g.textAlign = 'center'; g.fillText('HAPPY BIRTHDAY BILBO!', 128, 24); }, false);
       const ban = new THREE.Mesh(new THREE.PlaneGeometry(9, 1.1), new THREE.MeshLambertMaterial({ map: banT, side: THREE.DoubleSide })); place(ban, -8, -22.4, 4, Math.PI); scene.add(ban);
       for (const sx of [-27, -17.8]) { const pp = new THREE.Mesh(GEO.cyl, beam); place(pp, -8, sx, 2.2); pp.scale.set(.08, 4.4, .08); scene.add(pp); }
+      { const flagGeo = new THREE.ConeGeometry(.22, .45, 3).rotateX(Math.PI), A = tw(-8, -27, 4.3), B = tw(ts, tx, 5.2), C = tw(-8, -17.8, 4.3);   // bunting from the banner poles to the tree
+        for (const [p, q] of [[A, B], [C, B]]) for (let k = 1; k < 14; k++) { const u = k / 14, f = new THREE.Mesh(flagGeo, lam([0xe83a3a, 0xffd040, 0x3a8ae8, 0x4ac060, 0xffffff][k % 5], { side: THREE.DoubleSide })); f.position.lerpVectors(p, q, u); f.position.y -= Math.sin(u * Math.PI) * 1.1; scene.add(f); } }
       // low stone walls with grass on top
-      for (const [a, b, c, d, h] of Y.walls) { cbox(M, a, b, c, d, 0, h - .15, { f: 'oiaz', tint: stoneT }); cbox(G, a, b, c, d, h - .15, h, { f: 't', tint: grassT }); }
-      // trees and flowers everywhere there's room
-      const free = (s, x, r) => !Y.blocks.some(b => s > b[0] - r && s < b[1] + r && x > b[2] - r && x < b[3] + r) && !(s > P0[0] - r && s < P0[1] + r && x > P0[2] - r && x < P0[3] + r) && Math.abs(x) > 4 + r * 0;
-      const trunks = [], crowns = [], blooms = [[], [], [], []];
-      for (let i = 0; i < 400 && trunks.length < 46; i++) { const s = rand(S0 + 4, S1 - 4), x = rand(X0 + 4, X1 - 4); if (!free(s, x, 3.5)) continue; const p = tw(s, x, 0), k = rand(1.2, 2); trunks.push([p.x, p.y + k, p.z, .3 * k, 2 * k, .3 * k]); crowns.push([p.x, p.y + 2.6 * k, p.z, 1.5 * k, 1.3 * k, 1.5 * k]); L.layout.blocks.push([s - .4, s + .4, x - .4, x + .4, 6]); }
-      for (let i = 0; i < 900; i++) { const s = rand(S0 + 2, S1 - 2), x = rand(X0 + 2, X1 - 2); if (!free(s, x, .6)) continue; const p = tw(s, x, .12); blooms[i % 4].push([p.x, p.y, p.z, .14, .14, .14]); }
-      instanced(GEO.cyl, lam(0x6a4420), trunks); instanced(GEO.sph, lam(0x4a9a30), crowns);
-      [0xff6a8a, 0xffe060, 0xffffff, 0xb070ff].forEach((c, i) => instanced(GEO.sph, bas(c), blooms[i]));
+      for (const [a, b, c, d, h] of Y.walls) { cbox(M, a, b, c, d, 0, h - .15, { f: 'oiaz', tint: stoneT, k: .5 }); cbox(G, a, b, c, d, h - .15, h, { f: 't', tint: grassT, k: .2 }); }
+      // oaks everywhere there's room (one shape, many copies), the Party Tree and the oak over Bag End
+      const free = (s, x, r) => !Y.blocks.some(b => s > b[0] - r && s < b[1] + r && x > b[2] - r && x < b[3] + r) && !(s > P0[0] - r && s < P0[1] + r && x > P0[2] - r && x < P0[3] + r) && !onPath(s, x, r * .5);
+      const oaks = [oakGeo(1), oakGeo(2), oakGeo(3)].map(g => ({ g, list: [] })), oakM = lam(0xffffff, { vc: true });
+      for (let i = 0; i < 500 && oaks.reduce((n, o) => n + o.list.length, 0) < 48; i++) { const s = rand(S0 + 4, S1 - 4), x = rand(X0 + 4, X1 - 4); if (!free(s, x, 3.5)) continue; const p = tw(s, x, 0), k = rand(.85, 1.3); oaks[i % 3].list.push([p.x, p.y, p.z, k, rand(0, TAU)]); L.layout.blocks.push([s - .5, s + .5, x - .5, x + .5, 6]); }
+      oaks[0].list.push([tb.x, tb.y, tb.z, 2.6, .5]);
+      { const p = tw(be[0] + 1.4, -1.5, be[4] + be[3] * .5); oaks[1].list.push([p.x, p.y, p.z, 1.5, 2]); }
+      farTrees.forEach((t, i) => oaks[i % 3].list.push(t));
+      oaks.forEach(o => scatter(o.g, oakM, o.list));
+      // grass tufts and wildflowers all over the field
+      const tufts = [], blooms = [];
+      for (let i = 0; i < 9000 && tufts.length < 6500; i++) { const s = rand(S0 + 1, S1 - 1), x = rand(X0 + 1, X1 - 1); if (!free(s, x, .5)) continue; const p = tw(s, x, 0); tufts.push([p.x, p.y, p.z, rand(.8, 1.7), rand(0, TAU), 0xffffff, rand(.8, 1.15)]); }
+      for (let i = 0; i < 1600; i++) { const s = rand(S0 + 2, S1 - 2), x = rand(X0 + 2, X1 - 2); if (!free(s, x, .6)) continue; const p = tw(s, x, rand(.12, .3)); blooms.push([p.x, p.y, p.z, rand(.09, .15), 0, flowers[i % 5]]); }
+      scatter(tuftGeo(), lam(0xffffff, { vc: true, side: THREE.DoubleSide }), tufts, true);
+      scatter(new THREE.IcosahedronGeometry(1, 0), lam(0xffffff), blooms, true);
+      // butterflies drifting about the meadow
+      this.flies = [];
+      for (let i = 0; i < 16; i++) {
+        const b = new THREE.Group(); b.userData.keep = true; scene.add(b); const c = [0xffe040, 0xffffff, 0xff8ac8, 0x8ac8ff][i % 4];
+        const wings = [-1, 1].map(sx => { const w = new THREE.Group(); b.add(w); const m = part(new THREE.CircleGeometry(.16, 8), lam(c, { side: THREE.DoubleSide, emissive: 0x302820 }), w, sx * .14, 0, 0); m.rotation.x = -Math.PI / 2; m.scale.set(1, 1.3, 1); return w; });
+        this.flies.push({ b, wings, s: rand(S0 + 8, S1 - 8), x: rand(X0 + 8, X1 - 8), a: rand(0, TAU), ph: rand(0, 6) });
+      }
+      bakeScenery(scene.children.slice(first));
     },
   }),
 
@@ -1537,7 +1724,8 @@ function applyEnv(e) {
   hemi.color.setHex(e.hemi[0]); hemi.groundColor.setHex(e.hemi[1]); hemi.intensity = e.hemi[2];
   moon.color.setHex(e.sun[0]); moon.intensity = e.sun[1];
   mordorL.color.setHex(e.east[0]); mordorL.intensity = e.east[1];
-  starPts.visible = !!e.stars; clouds.visible = e.cloud !== undefined;
+  starPts.visible = !!e.stars; clouds.visible = e.cloud !== undefined; if (e.cloud !== undefined) { cloudMat.color.setHex(e.cloud); cloudMat.map = e.stars || e.embers || e.bolts ? TX.cloud : TX.dayCloud; cloudMat.needsUpdate = true; }
+  SUN_DIR.set(...(e.sunDir || [-60, 120, -40])).normalize(); moon.position.copy(SUN_DIR).multiplyScalar(150);
   ENV_BLOOM = e.bloom ?? (e.stars || e.embers ? 1 : .4);   // glow: strong at night and underground, gentle by day
 }
 function buildStatic() {
@@ -2032,7 +2220,7 @@ function hobbitonLayout() {
   const face = (s, x) => Math.atan2(-x, -s);   // turn to look at the middle of the field
   // Bag End's hill in the north: three grassy tiers to jump up, the smial and its oak on top
   L.terraces = [[32, 58, -17, 17, 1.3], [37, 58, -12.5, 12.5, 2.6], [42, 58, -8, 8, 3.9]];
-  L.bagEnd = [52, 0, 0, 4.4, 3.9];
+  L.bagEnd = [52, 0, Math.PI, 4.4, 3.9];   // facing south, down the Hill
   // hobbit holes dug into mounds all round the edge of the field, and a few out in the middle
   for (let x = -48; x <= 48; x += 16) if (Math.abs(x) > 8) L.homes.push([-55, x, 0, rand(3.4, 4.2)]);
   for (const x of [-46, -30, 30, 46]) L.homes.push([55, x, Math.PI, rand(3.4, 4.2)]);
@@ -2044,21 +2232,25 @@ function hobbitonLayout() {
   // the Green Dragon by the pool, at the south-east corner of the town
   L.greenDragon = [-38, 36, 10, 7.5, 4.4, -Math.PI / 2];
   L.pool = [-48, -28, 10, 24];
+  L.bridge = [-39.6, -36.4, 9.4, 24.6];   // the stone bridge over the Water to the Green Dragon
+  L.mill = [-43.5, 8];                    // the mill on the west bank, its wheel in the Water
   // Bilbo's party in the field to the west: the Party Tree, the pavilion and long tables
   L.partyTree = [6, -30]; L.pavilion = [16, -42, 4.6];
   L.tables = [[-6, 6, -26, -24.8, .85], [-6, 6, -21, -19.8, .85], [10, 18, -24, -22.8, .85]];
   // low stone walls with grass on top along the road up from the south gate
   L.walls = [[-52, -30, 5, 6, .9], [-52, -30, -6, -5, .9], [-22, -6, 5, 6, .9], [-22, -6, -6, -5, .9]];
   // collision boxes: [s0, s1, x0, x1, top, kind]
-  for (const t of L.terraces) L.blocks.push([t[0], t[1], t[2], t[3], t[4], 'floor']);
+  for (const t of L.terraces) { L.blocks.push([t[0], t[1], t[2], t[3], t[4], 'floor']); L.blocks.push([t[0] - .7, t[0], -1.1, 1.1, t[4] - .65, 'floor']); }   // and a stone step up to each
   const sq = (s, x, r, top, base) => L.blocks.push([s - r, s + r, x - r, x + r, top, 'wall', base]);
-  for (const [s, x, , r] of L.homes) sq(s, x, r * .72, r * .55);
-  sq(L.bagEnd[0], L.bagEnd[1], L.bagEnd[3] * .72, L.bagEnd[4] + L.bagEnd[3] * .55, L.bagEnd[4]);
+  for (const [s, x, , r] of L.homes) sq(s, x, r * .72, r * .8);
+  sq(L.bagEnd[0], L.bagEnd[1], L.bagEnd[3] * .72, L.bagEnd[4] + L.bagEnd[3] * .7, L.bagEnd[4]);
   for (const [s, x, w, d, h, f] of [...L.houses, L.greenDragon]) { const side = Math.abs(Math.sin(f)) > .5, hs = (side ? w : d) / 2, hx = (side ? d : w) / 2; L.blocks.push([s - hs, s + hs, x - hx, x + hx, h + 2.5]); }
   sq(L.well[0], L.well[1], .8, 1.1); for (const [s, x] of L.stalls) sq(s, x, 1.1, 2.4);
   sq(L.partyTree[0], L.partyTree[1], 1.3, 12); sq(L.pavilion[0], L.pavilion[1], L.pavilion[2] * .72, 5);
   for (const t of L.tables) L.blocks.push([t[0], t[1], t[2], t[3], t[4], 'floor']);
   for (const w of L.walls) L.blocks.push([w[0], w[1], w[2], w[3], w[4], 'floor']);
+  { const [a, b, c, d] = L.bridge; L.blocks.push([a, b, c, d, 0, 'floor'], [a, a + .4, c, d, .8, 'floor'], [b - .4, b, c, d, .8, 'floor']); }
+  L.blocks.push([L.mill[0] - 2.5, L.mill[0] + 2.5, L.mill[1] - 1.8, L.mill[1] + 1.8, 5]);
   return L;
 }
 const LEVELS = [
@@ -3742,6 +3934,12 @@ function updateHobbiton(dt) {
   const ch = LV.layout.chimneys;
   if (ch.length && Math.random() < dt * 8) { const c = ch[Math.random() * ch.length | 0]; smoke.spawn(c.x, c.y, c.z, rand(-.2, .2), rand(.8, 1.4), rand(-.2, .2), rand(2.5, 4), .5, 1.6, [.8, .8, .82], [.95, .95, .95], -.05, .35); }
   if (state === 'play' && Math.random() < dt * .5) fireworkBurst(tw(rand(-6, 18), rand(-40, -18), rand(14, 22)));
+  const H = THEMES.hobbiton; if (H.wheel) H.wheel.rotation.x += dt * .9;
+  for (const f of H.flies || []) {   // butterflies wander, flutter and bob over the flowers
+    f.a += Math.sin(T * .7 + f.ph) * dt * 1.6; f.s += Math.cos(f.a) * dt * 1.4; f.x += Math.sin(f.a) * dt * 1.4;
+    const [S0, S1, X0, X1] = LV.field; if (f.s < S0 + 3 || f.s > S1 - 3 || f.x < X0 + 3 || f.x > X1 - 3) f.a += Math.PI * dt * 2;
+    place(f.b, f.s, f.x, .8 + Math.sin(T * 2.3 + f.ph) * .35, -f.a); f.wings.forEach((w, i) => w.rotation.z = (i ? -1 : 1) * (.2 + Math.abs(Math.sin(T * 18 + f.ph)) * 1.1));
+  }
 }
 // an open level is finished when its goal is done (no door to run through): fanfare, then the tally
 function roamWin(title) {
@@ -5050,6 +5248,8 @@ showScreen(null); syncPauseBtns();
     startGame(li);
     if (q.get('at')) { gs.cp.s = Number(q.get('at')); respawn(true); }   // &at=160 starts 160 along the level
     if (q.get('sim')) { cheats.god = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); }   // &sim=6 plays 6 seconds first (invincible)
+    if (q.get('info')) setTimeout(() => { renderer.info.autoReset = false; renderer.info.reset(); renderer.setRenderTarget(rt); renderer.render(scene, camera); console.log('scene: ' + renderer.info.render.calls + ' draw calls, ' + renderer.info.render.triangles + ' triangles'); renderer.info.autoReset = true; }, 500);   // &info=1 logs how much one frame draws
+    if (q.get('cam')) { const [s, x, y, ls, lx, ly] = q.get('cam').split(',').map(Number); DEBUG_CAM = { p: tw(s, x, y), l: tw(ls, lx, ly) }; }   // &cam=s,x,y,ls,lx,ly: a fixed camera in the level
     if (q.get('peek') && balrogs[0]) { const r = balrogs[0].m.root, [x, y, z] = q.get('peek').split(',').map(Number); r.updateMatrixWorld(true); DEBUG_CAM = { p: r.localToWorld(new V3(x, y, z)), l: r.localToWorld(new V3(0, 5, 0)) }; }   // &peek=8,7,12 looks at the Balrog from there
   }
 }
