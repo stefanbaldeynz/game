@@ -5865,6 +5865,8 @@ const PROPS = {}, PROP_MATS = new Map();
 // leaves, grass and webs are cut out at the edges of their pictures; everything else is solid (BFME keeps a building's
 // team-colour mask in its alpha, which mustn't punch holes in the walls). Waterfalls are see-through.
 const PROP_CUT = /tree|bush|grass|flower|fern|hedge|shrub|web|wood0|lothlorien|pipeweed|fence|mirk/i, PROP_FLOW = /falls/i;
+// some come out too dark under Valinor's light (BFME lights its own scenery brightly): lit a little by their own picture too
+const PROP_LIFT = [[/^riv/, .4, 0xfff2dc], [/^pt(elvn|lothl)/, .3, 0xfff0d0]];
 // which way each model faces, where it isn't the way the levels expect (doors towards +s)
 const PROP_TURN = {};
 let GLTF = null;
@@ -5877,6 +5879,7 @@ async function loadProps() {
   let names, loader; try { names = await r.json(); loader = await gltfLoader(); } catch (e) { return; }
   await Promise.all(names.map(async n => { try { PROPS[n] = propParts(n, await loader.loadAsync(`models/props/${n}.glb`)); } catch (e) { console.warn(`Valinor: models/props/${n}.glb would not load`); } }));
   console.log(`Valinor: ${Object.keys(PROPS).length} scenery models from models/props/`);
+  if (new URLSearchParams(location.search).get('propinfo')) for (const n in PROPS) console.log('prop ' + n + ' ' + PROPS[n].size.toArray().map(v => v.toFixed(1)).join('x') + ' mirrored ' + PROPS[n].mirrored);
 }
 // a model's meshes, each moved into the model's own frame, stood on the ground (its lowest point at 0) and centred
 function propParts(name, gl) {
@@ -5884,19 +5887,21 @@ function propParts(name, gl) {
   gl.scene.traverse(o => {
     if (!o.isMesh || !o.visible) return;
     const g = o.geometry.clone(); g.applyMatrix4(o.matrixWorld); if (g.attributes.color) g.deleteAttribute('color');
+    if (o.matrixWorld.determinant() < 0) { parts.mirrored = true; const ix = g.index; if (ix) for (let i = 0; i < ix.count; i += 3) { const a = ix.getX(i + 1); ix.setX(i + 1, ix.getX(i + 2)); ix.setX(i + 2, a); } }   // a mirrored part would be inside out
     g.computeBoundingBox(); box.union(g.boundingBox); geos.push(g);
     const ms = [].concat(o.material);
     if (ms.length > 1 && g.groups.length) for (const gr of g.groups) { const sub = g.clone(); sub.clearGroups(); sub.setDrawRange(gr.start, gr.count); geos.push(sub); parts.push({ g: sub, m: propMat(name, ms[gr.materialIndex]) }); }
     else parts.push({ g, m: propMat(name, ms[0]) });
   });
   const c = box.getCenter(new V3()); for (const g of geos) g.translate(-c.x, -box.min.y, -c.z);
-  return { parts, size: box.getSize(new V3()) };
+  return { parts, size: box.getSize(new V3()), mirrored: !!parts.mirrored };
 }
 function propMat(name, m) {
   if (PROP_MATS.has(m.uuid)) return PROP_MATS.get(m.uuid);
   const cut = PROP_CUT.test(name), flow = PROP_FLOW.test(name); if (m.map) m.map.encoding = THREE.sRGBEncoding;
   const out = ps1(new THREE.MeshLambertMaterial({ map: m.map || null, color: m.map ? 0xffffff : m.color ? m.color.getHex() : 0xc8c8c8, side: cut || flow ? THREE.DoubleSide : THREE.FrontSide,
     alphaTest: cut ? .45 : 0, transparent: flow, opacity: flow ? .8 : 1, depthWrite: !flow }));
+  const lift = PROP_LIFT.find(l => l[0].test(name)); if (lift && m.map) { out.color.setHex(lift[2]); out.emissive.setScalar(lift[1]); out.emissiveMap = m.map; }
   PROP_MATS.set(m.uuid, out); return out;
 }
 const propsOf = list => list.filter(n => PROPS[n]);
@@ -6120,7 +6125,7 @@ function buildOakvale(L, TH) {
     for (let q = 0; q < 6; q++) { const fa = rand(0, TAU); fruit.push([p.x + Math.cos(fa) * 1, p.y + 2.2 + rand(-.4, .4), p.z + Math.sin(fa) * 1, .1, 0, 0xd8302a]); }
     Y.blocks.push([s - .3, s + .3, x - .3, x + .3, y + 3]);
   }
-  const treeM = propsOf(['sb_tree01', 'sb_tree02', 'sb_tree03', 'sb_tree04', 'ptree01', 'ptree02']);
+  const treeM = propsOf(['sb_tree01', 'sb_tree02', 'sb_tree03', 'sb_tree04']);
   if (treeM.length) { const smallT = PROPS.sb_tree03 ? 'sb_tree03' : treeM[0]; propScatter(smallT, appleT.map(d => [d[0], d[1] - .9, d[2], rand(4.5, 6), rand(0, TAU)])); }   // little trees by the houses
   else { instanced(GEO.cyl, lam(0x6a4a2a), appleT); instanced(GEO.sph, lam(0x5a9a3a), appleC); scatter(GEO.sph, lam(0xffffff), fruit, true); }
   // the shore: a wooden jetty out from where the boats lie, nets drying on poles, and lobster pots
@@ -6341,7 +6346,7 @@ function buildRivFable(L, TH) {
   const cliffP = propsOf(['prrivcliff01', 'prrivcliff02', 'prrivcliff03', 'prrivcliff04', 'prrivcliff05']), cliffs = cliffP.map(() => []);
   if (cliffP.length) for (let s = S0 + 3; s < S1 - 3; s += 7) for (let x = X0 + 3; x < X1 - 3; x += 7) {
     const ps = s + rand(-2, 2), px = x + rand(-2, 2), gs_ = at(ps + 1, px) - at(ps - 1, px), gx = at(ps, px + 1) - at(ps, px - 1), sl = Math.hypot(gs_, gx) / 2;
-    if (sl < .9) continue; const p = tw(ps, px, at(ps, px) - 1.5); cliffs[Math.abs(ps * 3 + px | 0) % cliffP.length].push([p.x, p.y, p.z, rand(5, 9), -Math.atan2(-gx, -gs_) + rand(-.3, .3)]);
+    if (sl < .9) continue; const p = tw(ps, px, at(ps, px) - 2.5); cliffs[Math.abs(ps * 3 + px | 0) % cliffP.length].push([p.x, p.y, p.z, rand(4, 7), -Math.atan2(-gx, -gs_) + rand(-.3, .3)]);
   }
   cliffP.forEach((n, i) => propScatter(n, cliffs[i] || []));
   // lanterns along the paths
