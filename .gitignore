@@ -9,3 +9,9 @@ siege-run/models/*
 !siege-run/models/README.md
 siege-run/textures/*
 !siege-run/textures/README.md
+siege-run/sabers/*
+!siege-run/sabers/README.md
+siege-run/levels/*
+!siege-run/levels/README.md
+# Hellkeep: your own Balrog (copied there by the BFME converter); the other models in that folder are part of the game
+hellkeep/models/balrog.glb

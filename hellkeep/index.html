@@ -121,6 +121,8 @@
       hellhound: 'models/hellhound.glb',
       elephant: 'models/elephant.glb',
     };
+    // Your own Balrog (from Battle for Middle-earth), only when playing on this computer: git ignores the file
+    if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) MODEL_FILES.balrog = 'models/balrog.glb';
     window.MODELS = {};
     if (TouchControls.isTouch) document.getElementById('overlay-button').textContent = 'Tap to play';
     if (location.protocol === 'file:') {

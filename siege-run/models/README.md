@@ -5,11 +5,14 @@ Put a `.glb` file here with one of these names and Siege Run uses it instead of 
 | File | Who it replaces | Where you meet them |
 | --- | --- | --- |
 | `gandalf.glb` | Gandalf (his staff and lightsaber stay) | Every level |
-| `balrog.glb` | The Balrog | Moria (boss) and the First Circle chase |
+| `balrog.glb` | The Balrog (and Hellkeep's, when it's copied into `hellkeep/models/` too) | Moria (boss, giant and waist-deep in the abyss) and the First Circle chase |
 | `witchking.glb` | The Witch-king (his red lightsaber stays) | Weathertop |
 | `shelob.glb` | Shelob | The Pass of Cirith Ungol |
 | `nazgul.glb` | The nine Nazgûl | Hobbiton |
 | `orc.glb` | Orcs and goblins | Most levels |
+| `fellbeast.glb` | The fell beasts (a Nazgûl on a winged beast) | Minas Tirith, Mordor and Mount Doom |
+| `horse.glb` | Shadowfax | The First Circle and the Ride to Edoras |
+| `frodo.glb`, `sam.glb`, `merry.glb`, `pippin.glb`, `aragorn.glb`, `legolas.glb`, `gimli.glb`, `boromir.glb` | The Fellowship | Rivendell |
 
 **Everything in this folder stays on your computer.** Git ignores it, so it's never pushed to GitHub or the public website. Only this README is in the repository.
 
@@ -18,6 +21,7 @@ Put a `.glb` file here with one of these names and Siege Run uses it instead of 
 - It only works when you start the game with `serve.cmd`. Browsers won't load models into a page opened straight from your files, and the public website never asks for them.
 - The model is scaled to the right height and stood on the ground automatically. If it faces the wrong way, is the wrong size, or is too dark, ask Claude to change its `turn`, `height` or `glow` in `MODEL_SLOTS` in `index.html`. BFME models face sideways, so their slots already have `turn: -Math.PI / 2`.
 - Bodies are drawn solid (BFME keeps its team-colour mask in the transparency channel). Parts named like fire, flame, cloud, flare, glow, light or eyes are drawn as glowing see-through effects instead.
+- Other options in `MODEL_SLOTS`: `sink` (how much of it stays below the ground: the Balrog stands in the abyss), `fx` (the colour its fire and glow cards shine), `hide` (parts to leave out by name, like the Gandalf that comes riding BFME's Shadowfax) and `anims` (which clip to use where the usual names pick the wrong one).
 - To test one model on its own, add `&models=balrog` (or a list, `&models=balrog,gandalf`) to the address.
 - Animations are picked by name, so name your animations (Blender's Action editor) with these words in them:
   - **idle** (or stand, breath, ready): standing still
