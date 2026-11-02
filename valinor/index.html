@@ -72,11 +72,11 @@ body.touch #khtarget{top:calc(max(2.2vh,env(safe-area-inset-top)) + clamp(40px,8
 #khhud .dv{width:min(16vw,150px);height:1.3vh}#khhud .dv i{background:linear-gradient(#fff6b0,#e8b820 55%,#8a6008)}#khhud .dv.full{animation:khpulse .35s infinite alternate;box-shadow:0 0 12px #ffe060,3px 3px 0 #000}#khhud .dv.form i{background:linear-gradient(#fff,#d8e8ff 55%,#8aa0d0)}
 #khtarget.boss{flex-direction:column;align-items:flex-end;gap:.3vh;color:#ffe0c0}#khtarget.boss .bar{width:min(42vw,440px);height:2.4vh}#khtarget.boss i{transition:width .25s}#khTPips{color:#ffd040;letter-spacing:.1em;font-size:.8em;min-height:1em}
 /* Kingdom Hearts II's command menu, bottom left: what each button does now */
-#khcmd{position:absolute;left:max(3vw,env(safe-area-inset-left));bottom:max(4vh,env(safe-area-inset-bottom));display:none;font-size:clamp(12px,2.1vh,19px);color:#fff;-webkit-text-stroke:1px var(--ink);text-shadow:2px 2px 0 #000;pointer-events:none}
-#khcmd .t{background:linear-gradient(90deg,#2aa04a,#1a6a2a 80%,transparent);padding:.1em .8em;margin-bottom:.25em;font-size:.8em;letter-spacing:.12em;transform:skewX(-14deg);width:11em;white-space:nowrap}
-#khcmd .r{display:flex;justify-content:space-between;align-items:center;width:9em;margin:.2em 0;padding:.25em .8em;background:linear-gradient(90deg,#123a7a,#0a1e48 85%);border:2px solid #000;border-radius:4px;box-shadow:3px 3px 0 #000;transform:skewX(-14deg);transition:transform .1s,filter .1s}
+#khcmd{position:absolute;left:max(3vw,env(safe-area-inset-left));bottom:max(4vh,env(safe-area-inset-bottom));display:none;font-size:clamp(10px,1.6vh,15px);color:#fff;-webkit-text-stroke:1px var(--ink);text-shadow:2px 2px 0 #000;pointer-events:none}
+#khcmd .t{background:linear-gradient(90deg,#2aa04a,#1a6a2a 80%,transparent);padding:.1em .8em;margin-bottom:.25em;font-size:.8em;letter-spacing:.12em;transform:skewX(-14deg);width:8.5em;white-space:nowrap}
+#khcmd .r{display:flex;justify-content:space-between;align-items:center;width:7.5em;margin:.15em 0;padding:.18em .7em;background:linear-gradient(90deg,#123a7a,#0a1e48 85%);border:2px solid #000;border-radius:4px;box-shadow:3px 3px 0 #000;transform:skewX(-14deg);transition:transform .1s,filter .1s}
 #khcmd .r.sel{transform:skewX(-14deg) translateX(.7em);background:linear-gradient(90deg,#3a8aff,#1a4ab0 85%);box-shadow:0 0 10px #8ac8ff,3px 3px 0 #000}#khcmd .r.sel::before{content:'▶';position:absolute;left:-1.1em;color:#ffe060}#khcmd .r.open{background:linear-gradient(90deg,#2a5aa0,#122a68 85%)}
-#khcmd .sub{position:absolute;left:10.6em;bottom:0}#khcmd .sub .r{width:10em;background:linear-gradient(90deg,#3a1a6a,#1a0a3a 85%)}#khcmd .sub .r.sel{background:linear-gradient(90deg,#8a4aff,#4a1ab0 85%)}
+#khcmd .khsub{position:absolute;left:9em;bottom:0}#khcmd .khsub .r{width:7.5em;background:linear-gradient(90deg,#3a1a6a,#1a0a3a 85%)}#khcmd .khsub .r.sel{background:linear-gradient(90deg,#8a4aff,#4a1ab0 85%)}
 #khcmd .r.on{filter:brightness(1.7)}#khcmd .r.dim{filter:grayscale(1) brightness(.6)}#khcmd small{font-size:.7em;opacity:.85;margin-left:.6em}#khcmd .t small{font-size:.75em}
 body.touch #khcmd{display:none!important}
 .menu{margin:3.5vh auto 0;display:flex;flex-direction:column;gap:1.1vh;width:min(560px,90vw)}
@@ -2960,15 +2960,18 @@ function readInput() {
   inp.fireP = !!(hit.KeyL || hit.KeyF || hit.Mouse0 || hit.TFire || pad.fireP);
   inp.guardP = !!(hit.KeyE || hit.TGuard || pad.guardP); inp.reactP = !!(hit.KeyR || hit.TReact || pad.reactP);   // Edoras: guard (or roll), and the reaction command
   inp.driveP = !!(hit.KeyQ || hit.TDrive || pad.driveP);   // (and the drive form)
-  if (AUTOFIGHT && LV && LV.kh) { const u = URUKS.find(o => ukLive(o) && o.state !== 'spawn'); WALKTO = u ? [u.s, u.x] : AUTOFIGHT.next(); if (u && Math.hypot(u.s - P.s, u.x - P.x) < 4 + (u.boss ? u.r : 0) && T % .3 < .02 && !KH.sub && KH.cur === 0) hit.KeyK = true; if (u && KH.mp >= 25 && T % 3 < .02) hit.KeyF = true; if (KH.react) hit.KeyR = true; if (KH.drive >= 100) hit.TDrive = true; }   // testing: &autofight=1
+  if (AUTOFIGHT && LV && LV.kh) { const u = URUKS.find(o => ukLive(o) && o.state !== 'spawn'); WALKTO = u ? [u.s, u.x] : AUTOFIGHT.next(); if (u && Math.hypot(u.s - P.s, u.x - P.x) < 4 + (u.boss ? u.r : 0) && T % .3 < .02 && !KH.sub && KH.cur === 0) hit.KeyF = true; if (u && KH.mp >= 25 && T % 3 < .02) hit.KeyQ = true; if (KH.react) hit.KeyR = true; if (KH.drive >= 100) hit.TDrive = true; }   // testing: &autofight=1
   inp.spinP = inp.spinP || !!hit.KeyJ; inp.fireP = inp.fireP || !!hit.KeyF; inp.reactP = inp.reactP || !!hit.KeyR; inp.driveP = inp.driveP || !!hit.KeyQ;
-  if (LV && LV.kh) {   // the Kingdom Hearts levels: I J K L are the face buttons (I the reaction command, J guard, K the command chosen on the menu,
-    // L jump, or back out of a list); Q and E move up and down the menu; F casts the last spell again; Left Shift and / turn the camera
-    const pb = pad.b || [], pp = pad.p || [];
-    inp.cmdP = !!(hit.KeyK || pp[0]); inp.guardP = !!(hit.KeyJ || hit.TGuard || pp[2]); inp.reactP = !!(hit.KeyI || hit.KeyR || hit.TReact || pp[3]);
-    inp.upP = !!(hit.KeyQ || pp[12]); inp.downP = !!(hit.KeyE || pp[13]); inp.backP = !!(hit.KeyL || pp[1]) && !!KH.sub;
-    inp.jump = !!(keys.Space || keys.KeyL || keys.TJump || pb[1]); inp.jumpP = !!(hit.Space || ((hit.KeyL || pp[1]) && !KH.sub) || hit.TJump);
-    inp.spinP = !!(hit.TSpin || hit.Mouse0); inp.fireP = !!(hit.KeyF || hit.TFire); inp.driveP = !!(hit.TDrive || pp[6]);
+  if (LV && LV.kh) {   // the Kingdom Hearts levels: W A S D move; F does the command chosen on the menu; K jumps; Space dodges; J guards; I is the
+    // reaction command; Q and E cast Thunder and Fire; the up and down arrows (or the mouse wheel) move round the menu, L backs out of a
+    // list; Left Shift and / turn the camera
+    const pb = pad.b || [], pp = pad.p || []; let mx = 0, mz = 0;
+    if (keys.KeyA) mx -= 1; if (keys.KeyD) mx += 1; if (keys.KeyW) mz += 1; if (keys.KeyS) mz -= 1;   // (the arrows are the menu's here)
+    inp.x = clamp(mx + pad.x + stick.x, -1, 1); inp.z = clamp(mz + pad.z + stick.z, -1, 1);
+    inp.cmdP = !!(hit.KeyF || pp[0]); inp.guardP = !!(hit.KeyJ || hit.TGuard || pp[2]); inp.reactP = !!(hit.KeyI || hit.KeyR || hit.TReact || pp[3]);
+    inp.upP = !!(hit.ArrowUp || hit.WheelUp || pp[12]); inp.downP = !!(hit.ArrowDown || hit.WheelDown || pp[13]); inp.backP = !!(hit.KeyL || pp[1] || hit.ArrowLeft) && !!KH.sub;
+    inp.jump = !!(keys.KeyK || keys.TJump || pb[1]); inp.jumpP = !!(hit.KeyK || (pp[1] && !KH.sub) || hit.TJump); inp.dodgeP = !!(hit.Space || pp[7]);
+    inp.spinP = !!(hit.TSpin || hit.Mouse0); inp.fireP = !!hit.TFire; inp.thunderP = !!hit.KeyQ; inp.firaP = !!hit.KeyE; inp.driveP = !!(hit.TDrive || pp[6]);
     inp.camT = (keys.Slash || pb[5] ? 1 : 0) - (keys.ShiftLeft || pb[4] ? 1 : 0);
   } else inp.camT = 0;
   if (WALKTO) { const ds = WALKTO[0] - P.s, dx = WALKTO[1] - P.x, d = Math.hypot(ds, dx); if (d > .5) { const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw), us = ds / d, ux = dx / d; inp.z = us * c + ux * sn; inp.x = -us * sn + ux * c; } else inp.x = inp.z = 0; }   // testing: &walkto=s,x
@@ -5529,7 +5532,7 @@ const NODES = [
   { name: 'MOUNT DOOM', x: 62.5, z: 11.5, open: true, loc: 'doom', sub: 'THE CLIMB · OUTRUN THE LAVA' },
   { name: 'WEATHERTOP', x: -34, z: -14, open: true, loc: 'weather', sub: 'DUEL THE WITCH-KING' },   // added last: the road and Minas Tirith go by position in this list
   { name: 'MIRKWOOD', x: 8, z: -24, open: true, loc: 'mirk', sub: 'THE DARK FOREST · SLAY THE SPIDERS' },
-  { name: "HELM'S DEEP", x: 1, z: 22, open: true, loc: 'helm', sub: 'DOWN THE RAMP · BALROG BOSS' },
+  { name: "HELM'S DEEP", x: -14.6, z: 15.8, open: true, loc: 'helm', sub: 'DOWN THE RAMP · BALROG BOSS' },
 ];
 const ROAD = (() => {
   const way = [NODES[0], [-40, -6], [-30, -17], NODES[1], [-18.5, -13], NODES[2], [-5, 3], [1, 11], NODES[3], [21, 17], [31, 14.5], [40, 15.5], NODES[4], [46, 14.5], NODES[5], [54, 3], NODES[6], [62, 0], [65, 6], NODES[7]];
@@ -5673,7 +5676,7 @@ function updateMap(dt) {
 
 // --- your own War of the Ring board (models/livingmap.glb and livingmap.json, from Battle for Middle-earth II: see
 //     models/README.md): it replaces the little diorama, each stop moves onto its region, and Gandalf walks over its hills ---
-const STOP_REGION = { shire: 'The_Shire', riv: 'Rhudaur', moria: 'Redhorn_Pass', weather: 'Amon_Sul', rohan: 'Rohan', mt: 'Minas_Tirith', ungol: 'Minas_Morgul', mordor: 'Mordor', doom: 'Mount_Doom', mirk: 'Mirkwood' };
+const STOP_REGION = { shire: 'The_Shire', riv: 'Rhudaur', moria: 'Redhorn_Pass', weather: 'Amon_Sul', rohan: 'Rohan', mt: 'Minas_Tirith', ungol: 'Minas_Morgul', mordor: 'Mordor', doom: 'Mount_Doom', mirk: 'Mirkwood', helm: 'Helms_Deep' };
 // what's hidden (clouds, smoke and BFME's own markers), what's water, and what's the ground itself (its 20 painted tiles)
 const BOARD_HIDE = /^(.*(cloud|pick|smok|sunray|flash|marker|brdr|rallyflag|hero)|impassable|lm_coast)/i, BOARD_WATER = /ocean|water|sea\b|wtr/i, BOARD_GROUND = /^LM_\d\d(_\d+)?$/;   // (three.js adds _1 when a part shares its name with the node holding it)
 // the tiles' pictures, small, so the map can tell the painted sea (blue) from land where Gandalf may walk
@@ -7640,6 +7643,8 @@ function khInput() {
   if (inp.spinP) khAttack();
   if (inp.cmdP) khCommand();
   if (inp.fireP) khMagic();
+  if (inp.thunderP) khCast('thunder'); if (inp.firaP) khCast('fire');   // (the shortcuts)
+  if (inp.dodgeP) khGuard(true);
 }
 const khFlash = c => KH.cmdT[c] = .25;   // the command menu lights the command just used
 const KH_CLIPS = ['attack_a', 'attack_b', 'attack_c', 'attack_a', 'attack_e'];
@@ -7654,9 +7659,10 @@ function khAttack() {
   KH.comboT = 1; khFlash('A');
   skinClip(hob, KH_CLIPS[Math.min(n, 4)], A.dur * 1.15); S.saberSwing();
 }
-function khGuard() {
+function khGuard(dodge) {   // (dodge: Space always rolls, the way you're pushing or else straight back)
   if (KH.atk || KH.rollT > 0 || KH.guardCD > 0) return;
   const len = Math.hypot(inp.x, inp.z); KH.guardCD = .5; khFlash('G');
+  if (dodge && len <= .4 && P.ground) { const b = P.heading + Math.PI; KH.rollV = [Math.cos(b) * 11, Math.sin(b) * 11]; KH.rollT = .36; KH.invT = .4; S.whoosh(); dustAt(P.s, P.x, P.y, 6); return; }
   if (len > .4 && P.ground) {
     // a dodge roll: quick, low, and nothing touches you while you're in it
     const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw), ds = inp.z * c - inp.x * sn, dx = inp.z * sn + inp.x * c, l = Math.hypot(ds, dx) || 1;
@@ -8080,11 +8086,12 @@ function khHud() {
   const sig = [KH.cur, KH.sub, KH.subCur, Math.floor(KH.mp / 4), KH.items.potion, KH.items.ether, KH.drive >= 100, form, ...KH_MENU.map(c => (KH.cmdT[c.id] || 0) > 0)].join();
   if (sig !== khHud.sig) {
     khHud.sig = sig;
-    document.getElementById('khcmd').innerHTML = `<div class="t">COMMAND<small class="kOnly">Q ▲ E ▼ · K</small></div>` +
+    document.getElementById('khcmd').innerHTML = `<div class="t">COMMAND<small class="kOnly">↑ ↓ · F</small></div>` +
       KH_MENU.map((c, i) => `<div class="r${i === KH.cur && !KH.sub ? ' sel' : i === KH.cur ? ' open' : ''}${dim(c) ? ' dim' : ''}${(KH.cmdT[c.id] || 0) > 0 ? ' on' : ''}">${c.name}${c.sub ? '<small>▸</small>' : ''}</div>`).join('') +
-      (list ? `<div class="sub"><div class="t">${KH_MENU[KH.cur].name}<small class="kOnly">L ◂</small></div>${list.map(subRow).join('')}</div>` : '');
+      (list ? `<div class="khsub"><div class="t">${KH_MENU[KH.cur].name}<small class="kOnly">L ◂</small></div>${list.map(subRow).join('')}</div>` : '');
   }}
 document.getElementById('khreact').addEventListener('pointerdown', e => { e.preventDefault(); hit.TReact = true; });
+addEventListener('wheel', e => { if (LV && LV.kh && state === 'play') hit[e.deltaY < 0 ? 'WheelUp' : 'WheelDown'] = true; }, { passive: true });   // (the mouse wheel moves round the command menu)
 THEMES.rivfable = natTheme({
   wallTex: TX.rock, floorTex: TX.moss, tint: [.9, .95, .85], door: 0xd8c890,
   env: { sky: [0x2a5a8a, 0x6a9ab8, 0xf0dcb0, 0xffd090], fog: [70, 320], fogC: 0xb8c8b8, amb: [0x7a7a68, .55], hemi: [0xfff4e0, 0x2a4a22, .72], sun: [0xffe0b0, 1], east: [0xffc070, .3], cloud: 0xffffff, sunDir: [-70, 60, 80] },
@@ -8104,6 +8111,8 @@ showScreen(null); syncPauseBtns();
 {
   const q = new URLSearchParams(location.search), li = /^\d+$/.test(q.get('play') || '') ? Number(q.get('play')) : LEVELS.findIndex(L => L.loc === q.get('play'));   // or ?play=2 for the third level in the list
   if (q.get('look')) setLook(q.get('look') === 'retro');   // ?look=retro or ?look=hd
+  if (q.get('mapat')) backToMap(q.get('mapat'));   // ?mapat=helm: the map, with Gandalf at that place (testing)
+  if (q.get('mappick')) setTimeout(() => { const [px, py] = q.get('mappick').split(',').map(Number), rc = new THREE.Raycaster(); rc.setFromCamera(new THREE.Vector2(px / innerWidth * 2 - 1, 1 - py / innerHeight * 2), mapCam); const h = rc.intersectObjects(mapScene.children, true)[0]; console.log('mappick', h ? h.point.toArray().map(v => v.toFixed(2)).join(',') : 'none', NODES.map(nd => nd.loc + ':' + (() => { const v = new V3(nd.x, 0, nd.z).project(mapCam); return Math.round((v.x + 1) / 2 * innerWidth) + '/' + Math.round((1 - v.y) / 2 * innerHeight); })()).join(' ')); }, 9000);   // ?mappick=x,y: where on the board that screen point is (testing)
   if (li >= 0) {
     startGame(li);
     if (q.get('at')) { gs.cp.s = Number(q.get('at')); respawn(true); }   // &at=160 starts 160 along the level
@@ -8115,7 +8124,8 @@ showScreen(null); syncPauseBtns();
     if (q.get('autofight')) AUTOFIGHT = { next: () => { const p = LV.layout.plazas.find(p => !p.done), W_ = LV.layout.path;
       if (W_ && p && p.pi !== undefined && Math.hypot(P.s - p.s, P.x - p.x) > p.r - 2) { let bi = 0, bd = 1e9; for (let i = 0; i < W_.length; i += 2) { const d = Math.hypot(W_[i][0] - P.s, W_[i][1] - P.x) + Math.abs(W_[i][2] - P.y); if (d < bd) { bd = d; bi = i; } } const ti = Math.min(p.pi, bi + 14); if (ti < p.pi - 1) return [W_[ti][0], W_[ti][1]]; }   // (along the way, at Helm's Deep)
       const dr = LV.layout.hall && LV.layout.hall.door; return p ? [p.s, p.x] : dr ? [dr.s, dr.x] : [P.s, P.x]; } };
-    if (q.get('sim')) { cheats.god = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (q.get('cast') && LV.kh) { KH.mp = 100; KH.magicCD = 0; KH.atk = null; khCast(q.get('cast')); for (let i = 0; i < 12; i++) step(1 / 60, true); }   // (&cast=thunder: a spell just before the picture)
+    if (q.get('sim')) { cheats.god = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (q.get('menu') && LV.kh) { KH.sub = q.get('menu'); KH.cur = KH_MENU.findIndex(c => c.sub === KH.sub); }   // (&menu=magic: that list open, for testing)
+    if (q.get('cast') && LV.kh) { KH.mp = 100; KH.magicCD = 0; KH.atk = null; khCast(q.get('cast')); for (let i = 0; i < 12; i++) step(1 / 60, true); }   // (&cast=thunder: a spell just before the picture)
     if (LV.kh) console.log(`${LV.name} after ${q.get('sim')}s:${KH.boss ? ` boss ${KH.boss.state}${KH.boss.a ? '/' + KH.boss.a.type + '/' + KH.boss.a.ph : ''} hp ${Math.round(KH.boss.hp)} phase ${KH.boss.phase},` : ''} drive ${Math.round(KH.drive)} form ${KH.form.toFixed(1)}, reactions ${JSON.stringify(KH.rx || {})}, squares done ${LV.layout.plazas.filter(p => p.done).length}/${LV.layout.plazas.length}, in ${KH.plaza ? LV.layout.plazas.indexOf(KH.plaza) : '-'} wave ${KH.plaza ? KH.plaza.wave : '-'}, uruks ${URUKS.length} (${URUKS.map(u => u.state + ':' + Math.round(u.hp)).join(' ')}), HP ${Math.round(KH.hp)} MP ${Math.round(KH.mp)}, kills ${gs.kills}, at ${P.s.toFixed(0)},${P.x.toFixed(0)},${P.y.toFixed(1)} (ground ${TERR ? terrainAt(P.s, P.x).toFixed(1) : 'none'}, on ${P.ground} ${P.standOn ? P.standOn.kind + ' ' + [P.standOn.y0, P.standOn.y1].map(v => v && v.toFixed(1)) : ''}), state ${state}`);
       if (q.get('pos') || q.get('spring')) console.log(`after ${q.get('sim')}s: s ${P.s.toFixed(1)} x ${P.x.toFixed(1)} y ${P.y.toFixed(1)} ground ${P.ground}`); }   // &sim=6 plays 6 seconds first (invincible)
     if (q.get('info')) setTimeout(() => { renderer.info.autoReset = false; renderer.info.reset(); renderer.setRenderTarget(rt); renderer.render(scene, camera); console.log('scene: ' + renderer.info.render.calls + ' draw calls, ' + renderer.info.render.triangles + ' triangles'); renderer.info.autoReset = true; }, 500);   // &info=1 logs how much one frame draws
