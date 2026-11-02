@@ -68,3 +68,13 @@ To make them (Blender and the W3D add-on, as for the characters):
 4. **File → Export → glTF 2.0**, format **glTF Binary (.glb)**, with **Animation** ticked. Save it here with the name from the table.
 
 These models belong to EA and the Tolkien rights holders, so keep them for playing at home and don't share them.
+
+## Sora's moves: `sora/` (Kingdom Hearts II's own animations for Gandalf)
+
+In Edoras and Helm's Deep, Gandalf fights with Sora's own moves from Kingdom Hearts II (the Epic Games PC release): his ground and air combos, guard, dodge roll, spell casts, battle stance, run, jump and flinch. They're fitted onto Battle for Middle-earth's Gandalf (and Gandalf the White) when the level loads, so they need `gandalf.glb` too. To make them (with OpenKH in `C:\Users\Stefan\bfme\openkh`, the .NET 8 runtime and PowerShell 7):
+
+```powershell
+& C:\Users\Stefan\bfme\tools\Export-Sora.ps1
+```
+
+Kingdom Hearts belongs to Square Enix and Disney: like everything here, keep it for playing at home.

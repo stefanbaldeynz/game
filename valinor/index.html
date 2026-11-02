@@ -5894,7 +5894,8 @@ function attachSkin(K) {
 }
 function skinPlay(M, key) {
   const K = M && M.skin; if (!K || !K.mixer || K.cur === key || (K.holdT > T && key !== 'die')) return;   // a one-off clip (skinClip) plays to the end
-  const next = K.acts[key] || (key === 'jump' || key === 'hit' ? K.acts.idle : key === 'attack' ? K.acts.walk || K.acts.idle : K.acts.idle);
+  const A_ = LV && LV.kh && K.khActs && K.khActs[key] ? K.khActs : K.acts;   // (Sora's own, in the Kingdom Hearts levels)
+  const next = A_[key] || (key === 'jump' || key === 'hit' ? K.acts.idle : key === 'attack' ? K.acts.walk || K.acts.idle : K.acts.idle);
   const prev = K.curAct || K.acts[K.cur] || null; if (next === prev) { K.cur = key; return; }
   next.reset().fadeIn(.18).play(); if (prev) prev.fadeOut(.18); K.cur = key; K.curAct = next;
 }
@@ -7575,6 +7576,107 @@ function drawBoss(b, dt, walk) {
 }
 
 // =====================================================================
+//  SORA'S MOVES ON GANDALF (only on your computer): Kingdom Hearts II's own animations for Sora, exported by
+//  Export-Sora.ps1 into models/sora/, fitted onto Battle for Middle-earth's Gandalf when the game loads, so in the
+//  Kingdom Hearts levels Gandalf swings, guards and rolls the way Sora does. Their skeletons differ (Sora stands in a
+//  T-pose facing +z, Gandalf with his arms down facing +x, at a seventh of the size), so the fit goes by direction: each
+//  of Gandalf's limbs points the way Sora's matching bone points, his hips, chest and head turn as Sora's do, and the
+//  sword stays in his right hand. The fitted moves are added to his model as clips named 'kh<entry>' (kh604...).
+// =====================================================================
+const SORA = { list: null, clips: {}, busy: false };
+// Gandalf's bone <- Sora's: 'rot' turns it as Sora's bone turns; 'dir' points it the way Sora's bone points from the first to the
+// second, taking Gandalf's own bone at rest to point from the third name to the fourth
+const SORA_MAP = {
+  ROOT_DUMMY: ['rot', 2], BAT_RIBS: ['rot', 68], BAT_HEAD: ['rot', 141],   // (the hips by his pelvis: his root bone's rest pose isn't upright)
+  BAT_UARMR: ['dir', 170, 171, 'BAT_UARMR', 'BAT_FARMR'], BAT_FARMR: ['dir', 171, 172, 'BAT_FARMR', 'B_HANDR'], B_HANDR: ['dir', 172, 178, 'BAT_FARMR', 'B_HANDR'],
+  BAT_UARML: ['dir', 78, 79, 'BAT_UARML', 'BAT_FARML'], BAT_FARML: ['dir', 79, 80, 'BAT_FARML', 'B_HANDL'], B_HANDL: ['dir', 80, 86, 'BAT_FARML', 'B_HANDL'],
+  BAT_THIGHR: ['dir', 39, 41, 'BAT_THIGHR', 'BAT_CALFR'], BAT_CALFR: ['dir', 41, 42, 'BAT_CALFR', 'B_TOER'], BAT_THIGHL: ['dir', 10, 12, 'BAT_THIGHL', 'BAT_CALFL'], BAT_CALFL: ['dir', 12, 13, 'BAT_CALFL', 'B_TOEL'],
+};
+const SORA_C = new THREE.Matrix4().makeRotationY(Math.PI / 2), SORA_CI = SORA_C.clone().invert();   // (Sora's +z forward to Gandalf's +x)
+// Sora's rest pose, bone by bone (each bone: parent, scale, rotation in X Y Z, translation)
+function soraBind() {
+  const B = SORA.list.bones, W = [];
+  for (let i = 0; i < B.length; i++) {
+    const b = B[i], l = new THREE.Matrix4().makeTranslation(b[7], b[8], b[9]).multiply(new THREE.Matrix4().makeRotationZ(b[6])).multiply(new THREE.Matrix4().makeRotationY(b[5])).multiply(new THREE.Matrix4().makeRotationX(b[4])).multiply(new THREE.Matrix4().makeScale(b[1] || 1, b[2] || 1, b[3] || 1));
+    W[i] = b[0] >= 0 ? W[b[0]].clone().multiply(l) : l;
+  }
+  return W;
+}
+// one exported frame: Sora's bones' world matrices (stored as rows: x, y and z axes, then the position)
+const soraMat = (a, i, out) => { const o = i * 12; return out.set(a[o], a[o + 3], a[o + 6], a[o + 9], a[o + 1], a[o + 4], a[o + 7], a[o + 10], a[o + 2], a[o + 5], a[o + 8], a[o + 11], 0, 0, 0, 1); };
+// fit one of Sora's moves onto a model with Gandalf's skeleton: a clip of his bones' turns (and the hips' rise and fall)
+function soraClip(gl, mot, name) {
+  const root = gl.scene; root.updateMatrixWorld(true);
+  const byName = n => root.getObjectByName(n);
+  const SB = SORA.bind || (SORA.bind = soraBind());
+  // Gandalf at rest: every bone's world matrix, and for the pointed bones the way they point (to their child)
+  const rest = new Map(); root.traverse(o => rest.set(o, o.matrixWorld.clone()));
+  const at = n => { const o = byName(n); return o ? new V3().setFromMatrixPosition(rest.get(o)) : null; }, restDir = {};
+  for (const n in SORA_MAP) { const m = SORA_MAP[n]; if (m[0] !== 'dir') continue; const a = at(m[3]), b = at(m[4]); if (a && b) restDir[n] = b.sub(a).normalize(); }
+  const order = []; root.traverse(o => order.push(o));   // (parents before children)
+  const hipK = (byName('ROOT_DUMMY') ? new V3().setFromMatrixPosition(rest.get(byName('ROOT_DUMMY'))).y : 11.6) / Math.max(1, new V3().setFromMatrixPosition(SB[0]).y);
+  const tracks = {}, times = [], t0 = mot.t[0], M = new THREE.Matrix4(), Ms = new THREE.Matrix4(), q = new THREE.Quaternion(), q2 = new THREE.Quaternion(), pos = new V3(), scl = new V3(), d = new V3(), A = new V3(), Bv = new V3();
+  const restQ = o => { const m = rest.get(o), r = new THREE.Quaternion(); m.decompose(new V3(), r, new V3()); return r; };
+  // the sword and the staff hang off the skeleton's root, not the hands: they're carried along by the hands afterwards
+  const held = [['B_SWORDBONE', 'B_HANDR'], ['B_BOWBONE', 'B_HANDL']].map(([a, b]) => [byName(a), byName(b)]).filter(([a, b]) => a && b).map(([a, b]) => ({ o: a, hand: b, off: rest.get(b).clone().invert().multiply(rest.get(a)) }));
+  for (let f = 0; f < mot.t.length; f++) {
+    times.push((mot.t[f] - t0) / mot.fps); const fm = mot.m[f], neo = new Map();
+    for (const o of order) {
+      const par = o.parent && neo.has(o.parent) ? neo.get(o.parent) : o.parent ? rest.get(o.parent) : new THREE.Matrix4();
+      const local = new THREE.Matrix4().compose(o.position, o.quaternion, o.scale), W = par.clone().multiply(local);   // (as at rest, under its parent's new place)
+      const map = SORA_MAP[o.name];
+      if (map) {
+        W.decompose(pos, q, scl);
+        if (map[0] === 'rot') {   // turn it as Sora's bone has turned from its rest, seen from Gandalf's side
+          soraMat(fm, map[1], Ms); Ms.extractRotation(Ms); const Rb = new THREE.Matrix4().extractRotation(SB[map[1]]);
+          const delta = SORA_C.clone().multiply(Ms).multiply(Rb.invert()).multiply(SORA_CI);
+          q.setFromRotationMatrix(delta).multiply(restQ(o));
+          if (o.name === 'ROOT_DUMMY') { soraMat(fm, 0, Ms); pos.y += (Ms.elements[13] - SB[0].elements[13]) * hipK; }   // (and the hips rise and fall as his do)
+        } else if (restDir[o.name]) {   // point it the way Sora's bone points
+          soraMat(fm, map[1], Ms); A.setFromMatrixPosition(Ms); soraMat(fm, map[2], Ms); Bv.setFromMatrixPosition(Ms);
+          d.subVectors(Bv, A).applyMatrix4(SORA_C); if (d.lengthSq() > 1e-8) { d.normalize(); q2.setFromUnitVectors(restDir[o.name], d); q.copy(q2.multiply(restQ(o))); }
+        }
+        W.compose(pos, q, scl);
+      }
+      neo.set(o, W);
+      if (map) {
+        const L = par.clone().invert().multiply(W), lp = new V3(), lq = new THREE.Quaternion(), ls = new V3(); L.decompose(lp, lq, ls);
+        const tr = tracks[o.name] || (tracks[o.name] = { q: [], p: [] }); tr.q.push(lq.x, lq.y, lq.z, lq.w); tr.p.push(lp.x, lp.y, lp.z);
+      }
+    }
+    for (const h of held) {   // (in the hand, wherever the hand has gone)
+      const W = neo.get(h.hand).clone().multiply(h.off), par = h.o.parent && neo.has(h.o.parent) ? neo.get(h.o.parent) : rest.get(h.o.parent), L = par.clone().invert().multiply(W), lp = new V3(), lq = new THREE.Quaternion(), ls = new V3(); L.decompose(lp, lq, ls);
+      const tr = tracks[h.o.name] || (tracks[h.o.name] = { q: [], p: [] }); tr.q.push(lq.x, lq.y, lq.z, lq.w); tr.p.push(lp.x, lp.y, lp.z);
+    }
+  }
+  const kf = []; for (const n in tracks) { kf.push(new THREE.QuaternionKeyframeTrack(n + '.quaternion', times, tracks[n].q)); if (n === 'ROOT_DUMMY' || n === 'B_SWORDBONE' || n === 'B_BOWBONE') kf.push(new THREE.VectorKeyframeTrack(n + '.position', times, tracks[n].p)); }
+  return new THREE.AnimationClip(name, times[times.length - 1] || .5, kf);
+}
+// which of Sora's moves Gandalf uses for what (entries in his KH II move set): ground combo and finisher, air combo,
+// guard, dodge roll, the spells, and standing, running, jumping and being hit
+const KH_SORA = { ground: [604, 608, 612, 616, 620], air: [644, 648, 652, 656, 656], guard: 164, roll: 724, thunder: 248, fire: 224, cure: 260, idle: 0, walk: 8, jump: 14, hit: 42 };
+const KH_SORA_IDS = [...new Set(Object.values(KH_SORA).flat())];
+// the clip for one of Sora's moves, if it's been fitted onto Gandalf (or the fallback)
+const khc = (id, fb) => SORA.clips[id] ? 'kh' + id : fb;
+// in the Kingdom Hearts levels Gandalf stands, runs, jumps and flinches as Sora does
+function soraActs() {
+  for (const K of [hob.skinG || hob.skin, hob.skinW]) {
+    if (!K || !K.mixer || K.khActs) continue; const gl = LOADED[K.slot], acts = {};
+    for (const k of ['idle', 'walk', 'jump', 'hit']) { const c = gl.animations.find(a => a.name === 'kh' + KH_SORA[k]); if (c) acts[k] = K.mixer.clipAction(c); }
+    K.khActs = acts;
+  }
+}
+// load Sora's rest pose and the moves asked for, fit them onto Gandalf (Grey and White), once
+async function loadSora(ids) {
+  if (!LOCAL_ASSETS || !LOADED.gandalf) return false;
+  if (!SORA.list) { try { SORA.list = await (await fetch('models/sora/sora_list.json')).json(); } catch (e) { return false; } }
+  for (const i of ids) {
+    if (SORA.clips[i]) continue;
+    try { const mot = await (await fetch(`models/sora/m${i}.json`)).json(); for (const s of ['gandalf', 'gandalfw']) if (LOADED[s]) { const c = soraClip(LOADED[s], mot, 'kh' + i); LOADED[s].animations.push(c); } SORA.clips[i] = true; } catch (e) { console.log('sora move ' + i + ': ' + e.message); }
+  }
+  return true;
+}
+// =====================================================================
 //  KH: fighting the way Sora does in Kingdom Hearts II (Edoras and Helm's Deep, LV.kh)
 //   - Attack: a combo of three cuts and a finisher; each closes in on the nearest enemy; the finisher knocks it flying.
 //     In the air, an air combo: Gandalf hangs in the air while he strikes, and the last blow slams him down.
@@ -7609,6 +7711,7 @@ function setupKH() {
   document.getElementById('tSpin').firstChild.textContent = 'ATTACK'; document.getElementById('tFire').firstChild.textContent = 'MAGIC'; document.getElementById('tRk').style.display = 'none';
   if (!KH.theoden) KH.theoden = { m: makeHero('theoden') };
   for (const p of LV.layout.plazas) { p.done = false; p.wave = -1; }
+  if (!SORA.list || KH_SORA_IDS.some(i => !SORA.clips[i])) loadSora(KH_SORA_IDS).then(ok => { if (ok) { soraActs(); if (hob.skin) hob.skin.cur = ''; } });   // (Sora's moves for Gandalf, when they're here)
   KH.plaza = null; KH.drive = 0; KH.items = { potion: 4, ether: 2 }; KH.cur = 0; KH.sub = null; KH.spell = 'thunder'; resetKH(true);
 }
 function resetKH(fresh) {
@@ -7657,17 +7760,17 @@ function khAttack() {
   if (air) { KH.airN = fin ? last + 1 : n + 1; if (fin) { P.vy = -22; KH.hover = 0; } else { P.vy = Math.max(P.vy, tgt && tgt.boss ? 3 : 1.5); KH.hover = .4; } }
   else KH.combo = fin ? 0 : n + 1;
   KH.comboT = 1; khFlash('A');
-  skinClip(hob, KH_CLIPS[Math.min(n, 4)], A.dur * 1.15); S.saberSwing();
+  skinClip(hob, khc(KH_SORA[air ? 'air' : 'ground'][Math.min(n, 4)], KH_CLIPS[Math.min(n, 4)]), A.dur * (SORA.clips[KH_SORA.ground[0]] ? 2.2 : 1.15)); S.saberSwing();   // (Sora's own swing, the follow-through too)
 }
 function khGuard(dodge) {   // (dodge: Space always rolls, the way you're pushing or else straight back)
   if (KH.atk || KH.rollT > 0 || KH.guardCD > 0) return;
   const len = Math.hypot(inp.x, inp.z); KH.guardCD = .5; khFlash('G');
-  if (dodge && len <= .4 && P.ground) { const b = P.heading + Math.PI; KH.rollV = [Math.cos(b) * 11, Math.sin(b) * 11]; KH.rollT = .36; KH.invT = .4; S.whoosh(); dustAt(P.s, P.x, P.y, 6); return; }
+  if (dodge && len <= .4 && P.ground) { const b = P.heading + Math.PI; KH.rollV = [Math.cos(b) * 11, Math.sin(b) * 11]; KH.rollT = .36; KH.invT = .4; S.whoosh(); dustAt(P.s, P.x, P.y, 6); skinClip(hob, khc(KH_SORA.roll), .5); return; }
   if (len > .4 && P.ground) {
     // a dodge roll: quick, low, and nothing touches you while you're in it
     const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw), ds = inp.z * c - inp.x * sn, dx = inp.z * sn + inp.x * c, l = Math.hypot(ds, dx) || 1;
-    KH.rollV = [ds / l * 11, dx / l * 11]; KH.rollT = .36; KH.invT = .4; P.heading = Math.atan2(dx, ds); S.whoosh(); dustAt(P.s, P.x, P.y, 6);
-  } else KH.guardT = .5;
+    KH.rollV = [ds / l * 11, dx / l * 11]; KH.rollT = .36; KH.invT = .4; P.heading = Math.atan2(dx, ds); S.whoosh(); dustAt(P.s, P.x, P.y, 6); skinClip(hob, khc(KH_SORA.roll), .5);
+  } else { KH.guardT = .5; skinClip(hob, khc(KH_SORA.guard), .6); }
 }
 // the spells (MAGIC on the command menu): Thunder is Jedi Outcast's Force lightning, forking from Gandalf's hand to the
 // foes round him; Fire, a fireball that seeks its foe; Cure heals. The White Wizard's are stronger and cheaper.
@@ -7682,17 +7785,17 @@ function khCast(id) {
   if (KH.mp < cost) { S.click(); banner('NOT ENOUGH MP', .6); return false; }
   KH.mp -= cost; KH.magicCD = .7; P.fireAnim = .5; KH.spell = id; banner(form ? sp.w : sp.name, .6); khFlash('M');
   if (id === 'thunder') {
-    const near = khFoes(13, form ? 5 : 3); S.zap(); skinClip(hob, 'attack_c', .5);
+    const near = khFoes(13, form ? 5 : 3); S.zap(); skinClip(hob, khc(KH_SORA.thunder, 'attack_c'), .9);
     if (near.length) P.heading = Math.atan2(near[0].u.x - P.x, near[0].u.s - P.s);
     near.forEach((o, k) => { const u = o.u, at = () => tw(u.s, u.x, u.y + (u.boss ? u.tall * .55 : 1.1)); for (let q = 0; q < 2; q++) khArc(khHand, at, .6); KH.bolts.push({ t: .12 + k * .06, u }); });
     if (form && near.length === 1) KH.bolts.push({ t: .3, u: near[0].u }, { t: .45, u: near[0].u });   // (a lone foe takes them all)
     if (!near.length) for (let k = 0; k < 3; k++) { const a = P.heading + rand(-.6, .6), r = rand(4, 8), p = tw(P.s + Math.cos(a) * r, P.x + Math.sin(a) * r, landAt(P.s + Math.cos(a) * r, P.x + Math.sin(a) * r) + .2); khArc(khHand, () => p, .45); KH.bolts.push({ t: .12, p }); }
   } else if (id === 'fire') {
-    const near = khFoes(16, form ? 3 : 1); S.whoosh(); skinClip(hob, 'attack_b', .4);
+    const near = khFoes(16, form ? 3 : 1); S.whoosh(); skinClip(hob, khc(KH_SORA.fire, 'attack_b'), .8);
     if (near.length) P.heading = Math.atan2(near[0].u.x - P.x, near[0].u.s - P.s);
     if (near.length) near.forEach(o => khFireball(o.u)); else khFireball(null);
   } else {   // Cure: a ring of green light rising round him
-    KH.hp = Math.min(KH.max, KH.hp + (form ? 70 : 45)); S.apple(); const p = tw(P.s, P.x, P.y + .2);
+    KH.hp = Math.min(KH.max, KH.hp + (form ? 70 : 45)); S.apple(); skinClip(hob, khc(KH_SORA.cure), .9); const p = tw(P.s, P.x, P.y + .2);
     for (let k = 0; k < 40; k++) { const a = rand(0, TAU); fx.spawn(p.x + Math.cos(a) * .9, p.y + rand(0, .4), p.z + Math.sin(a) * .9, 0, rand(1.5, 3), 0, rand(.5, .9), .35, .05, [.8, 1, .8], [.3, 1, .4], 0, 1); }
   }
   return true;
@@ -7735,7 +7838,7 @@ function khDrive() {
 // Gandalf the White: Battle for Middle-earth's own (models/gandalfw.glb) takes the Grey's place while the drive form lasts
 function khWhite(on) {
   if (!LOADED.gandalfw || !hob.skin) return;
-  if (!hob.skinW) { hob.skinG = hob.skin; const M2 = { root: hob.root }; addSkin(M2, 'gandalfw', hob.body, [], [], hob.root); hob.skinW = M2.skin; }
+  if (!hob.skinW) { hob.skinG = hob.skin; const M2 = { root: hob.root }; addSkin(M2, 'gandalfw', hob.body, [], [], hob.root); hob.skinW = M2.skin; if (SORA.list) soraActs(); }
   if (hob.skin === (on ? hob.skinW : hob.skinG)) return;
   hob.skin = on ? hob.skinW : hob.skinG; if (hob.skinG.obj) hob.skinG.obj.visible = !on; if (hob.skinW.obj) hob.skinW.obj.visible = on;
   hob.skin.cur = ''; hob.skin.holdT = 0; skinPlay(hob, 'idle');
@@ -8113,6 +8216,7 @@ showScreen(null); syncPauseBtns();
   if (q.get('look')) setLook(q.get('look') === 'retro');   // ?look=retro or ?look=hd
   if (q.get('mapat')) backToMap(q.get('mapat'));   // ?mapat=helm: the map, with Gandalf at that place (testing)
   if (q.get('mappick')) setTimeout(() => { const [px, py] = q.get('mappick').split(',').map(Number), rc = new THREE.Raycaster(); rc.setFromCamera(new THREE.Vector2(px / innerWidth * 2 - 1, 1 - py / innerHeight * 2), mapCam); const h = rc.intersectObjects(mapScene.children, true)[0]; console.log('mappick', h ? h.point.toArray().map(v => v.toFixed(2)).join(',') : 'none', NODES.map(nd => nd.loc + ':' + (() => { const v = new V3(nd.x, 0, nd.z).project(mapCam); return Math.round((v.x + 1) / 2 * innerWidth) + '/' + Math.round((1 - v.y) / 2 * innerHeight); })()).join(' ')); }, 9000);   // ?mappick=x,y: where on the board that screen point is (testing)
+  if (q.get('soramotion')) { const ids = q.get('soramotion').split(',').map(Number), fr = +(q.get('soraf') ?? .5); const go = async () => { if (!LOADED.gandalf || !hob.skin || !hob.skin.obj) { setTimeout(go, 200); return; } await loadSora(ids); const K = hob.skin, clip = LOADED.gandalf.animations.find(a => a.name === 'kh' + ids[0]); if (!clip) { console.log('soramotion: no clip'); return; } K.mixer.stopAllAction(); const act = K.mixer.clipAction(clip); act.play(); act.paused = true; act.time = clip.duration * fr; K.mixer.update(0); K.holdT = 1e9; console.log('soramotion', ids[0], clip.duration.toFixed(2) + 's', clip.tracks.length + ' tracks'); const cv = q.get('soracam') === 'front' ? [3.2, .6] : [.4, 3.2]; DEBUG_CAM = { p: tw(P.s + cv[0], P.x + cv[1], P.y + 1.3), l: tw(P.s, P.x, P.y + .9) }; }; setTimeout(go, 500); }   // &soramotion=604&soraf=.4: one of Sora's moves on Gandalf, held still at that point (testing)
   if (li >= 0) {
     startGame(li);
     if (q.get('at')) { gs.cp.s = Number(q.get('at')); respawn(true); }   // &at=160 starts 160 along the level
