@@ -13,5 +13,7 @@ valinor/sabers/*
 !valinor/sabers/README.md
 valinor/levels/*
 !valinor/levels/README.md
+valinor/fx/*
+!valinor/fx/README.md
 # Hellkeep: your own Balrog (copied there by the BFME converter); the other models in that folder are part of the game
 hellkeep/models/balrog.glb
