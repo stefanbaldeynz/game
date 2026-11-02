@@ -5910,7 +5910,7 @@ const PROPS = {}, PROP_MATS = new Map();
 // team-colour mask in its alpha, which mustn't punch holes in the walls). Waterfalls are see-through.
 const PROP_CUT = /tree|bush|grass|flower|fern|hedge|shrub|web|wood0|lothlorien|pipeweed|fence|mirk/i, PROP_FLOW = /falls/i;
 // some come out too dark under Valinor's light (BFME lights its own scenery brightly): lit a little by their own picture too
-const PROP_LIFT = [[/^riv/, .4, 0xfff2dc], [/^pt(elvn|lothl)/, .3, 0xfff0d0], [/slvrtree/, .45, 0xf4f6ff]];
+const PROP_LIFT = [[/^riv/, .4, 0xfff2dc], [/^pt(elvn|lothl)/, .3, 0xfff0d0], [/slvrtree/, .45, 0xf4f6ff], [/^rb/, .35, 0xfff0d8], [/^predoras/, .25, 0xf0ece4]];   // (Edoras's timber and rocks are dark in their own light too)
 // which way each model faces, where it isn't the way the levels expect (doors towards +s)
 const PROP_TURN = {};
 let GLTF = null;
@@ -6683,7 +6683,7 @@ THEMES.mirkwood = natTheme({
 //  the last, before the hall. Gandalf fights the Kingdom Hearts II way (see KH below). With your own files the town
 //  and hall are Battle for Middle-earth's, and the Uruk-hai, Lurtz and Théoden are its models.
 // =====================================================================
-Object.assign(MODEL_SLOTS, { uruk: { height: 1.95, turn: -Math.PI / 2 }, lurtz: { height: 2.15, turn: -Math.PI / 2 }, theoden: { height: 1.9, turn: -Math.PI / 2 } });
+Object.assign(MODEL_SLOTS, { uruk: { height: 1.95, turn: -Math.PI / 2, hide: /forged/i }, lurtz: { height: 2.15, turn: -Math.PI / 2, hide: /forged/i }, theoden: { height: 1.9, turn: -Math.PI / 2 } });   // (the Uruk-hai come with the red glow of their Forged Blades upgrade on: left out)
 HEROES.theoden = { h: 1.85, hair: 0xd8c8a0, coat: 0x2a5a2a, legs: 0x3a3020, cloak: 0x7a1a14, beard: 0xd8c8a0, sword: true };
 // the hill, the road and where everything stands (made once, the same every time)
 function edorasLayout() {
@@ -6748,21 +6748,19 @@ function buildEdoras(L, TH) {
   // the White Mountains behind, snow on their peaks
   for (let i = 0; i < 16; i++) { const a = rand(-1.3, 1.3), r = rand(320, 520), h = rand(110, 220), m = gradCone(rand(70, 120), h, 6, 0xf4f4fa, 0x5a5a6a); tw(Math.cos(a) * r, Math.sin(a) * r, h / 2 - 14, m.position); scene.add(m); }
   // the palisade round the foot of the hill, with the gate where the road comes in
-  const wallP = PROPS.rbedorwall ? 'rbedorwall' : null, gateP = PROPS.rbedordoor ? 'rbedordoor' : null, stakes = [], stakeM = lam(0x7a5a38), tips = [];
+  const wallP = PROPS.rbedorwall ? 'rbedorwall' : null, gateP = PROPS.rbgate ? 'rbgate' : null, stakes = [], stakeM = lam(0x7a5a38), tips = [];
   if (wallP) { const len = 8; for (let a = .09; a < TAU - .09; a += len / Y.wallR) { const s = -Y.wallR * Math.cos(a), x = Y.wallR * Math.sin(a); propOne(wallP, s, x, Y.hill(s, x) - .4, a + Math.PI / 2, len); } }
   else for (let a = 0; a < TAU; a += .016) { if (Math.abs(angDiff(a, 0)) < .07) continue; const s = -Y.wallR * Math.cos(a), x = Y.wallR * Math.sin(a), p = tw(s, x, Y.hill(s, x)), h = rand(3.6, 4.4); stakes.push([p.x, p.y + h / 2 - .5, p.z, .32, h, .32]); tips.push([p.x, p.y + h - .3, p.z, .34, .7, .34]); }
   if (stakes.length) { instanced(GEO.cyl, stakeM, stakes); instanced(GEO.cone, stakeM, tips); }
-  if (gateP) propOne(gateP, -Y.wallR, 0, 0, 0, 10);
+  if (gateP) { propOne(gateP, -Y.wallR, 0, Y.hill(-Y.wallR, 0) - .3, Math.PI / 2, 15); if (PROPS.rbwatchtow) for (const x of [-11, 11]) { const s = -Y.wallR + 3; propOne('rbwatchtow', s, x, Y.hill(s, x) - .2, Math.PI / 2, 4.5); Y.blocks.push([s - 1.8, s + 1.8, x - 1.8, x + 1.8, Y.hill(s, x) + 12]); } }
   else for (const x of [-4.6, 4.6]) { const p = tw(-Y.wallR, x, 0); part(GEO_BOX, stakeM, scene, p.x, p.y + 4, p.z, 1.6, 8, 1.6); part(GEO.cone, lam(0x3a5a2a), scene, p.x, p.y + 8.8, p.z, 1.6, 1.8, 1.6); }
   // the banners of Rohan along the road: green, a white horse on each
   const banT = mkTex(32, 64, g => { g.fillStyle = '#2a6a2a'; g.fillRect(0, 0, 32, 64); g.fillStyle = '#f0ead8'; g.beginPath(); g.ellipse(16, 30, 9, 5, -.3, 0, TAU); g.fill(); g.fillRect(8, 33, 2, 9); g.fillRect(21, 33, 2, 9); g.beginPath(); g.ellipse(23, 22, 3, 6, .5, 0, TAU); g.fill(); g.fillStyle = '#c8a040'; g.fillRect(0, 0, 32, 3); g.fillRect(0, 61, 32, 3); }, false);
   const banM = lam(0xffffff, { side: THREE.DoubleSide }); banM.map = banT;
   for (let i = 30; i < Y.road.length; i += 70) { const [s, x, y] = Y.road[i], [s2, x2] = Y.road[Math.min(Y.road.length - 1, i + 3)], h = Math.atan2(x2 - x, s2 - s); for (const side of [-1, 1]) { const ps = s + Math.cos(h + side * Math.PI / 2) * 3.6, px = x + Math.sin(h + side * Math.PI / 2) * 3.6, p = tw(ps, px, at(ps, px)); part(GEO.cyl, stakeM, scene, p.x, p.y + 2.4, p.z, .07, 4.8, .07); const b = new THREE.Mesh(new THREE.PlaneGeometry(.9, 1.8), banM); place(b, ps, px, at(ps, px) + 3.5, h); scene.add(b); } }
-  // the houses: Battle for Middle-earth's own (its biggest Edoras pieces) or long timber halls under steep thatch
-  const edoP = Object.keys(PROPS).filter(n => /^predoras/.test(n)).sort((a, b) => PROPS[b].size.x * PROPS[b].size.z - PROPS[a].size.x * PROPS[a].size.z), bigP = edoP.slice(0, Math.ceil(edoP.length / 3)), smallP = edoP.slice(bigP.length);
+  // the houses: long timber halls under steep thatch (Battle for Middle-earth's Edoras pieces are its rocks, set out further down)
   const plank = ps1(new THREE.MeshLambertMaterial({ map: TX.planks, color: 0x8a6440 })), thatch = ps1(new THREE.MeshLambertMaterial({ map: TX.thatch, color: 0xd8b070 })), dark = lam(0x4a3220), goldB = lam(0xd8a830, { emissive: 0x3a2800 });
   for (const o of Y.houses) {
-    if (bigP.length && propOne(bigP[o.k % bigP.length], o.s, o.x, o.y - .1, o.h, Math.max(o.w, o.d))) { if (smallP.length) { const a = o.h + Math.PI * .75, s = o.s + Math.cos(a) * 6, x = o.x + Math.sin(a) * 6; propOne(smallP[o.k % smallP.length], s, x, at(s, x), rand(0, TAU), 3); } continue; }
     const g = new THREE.Group(); place(g, o.s, o.x, o.y, o.h); scene.add(g);
     part(GEO_BOX, dark, g, 0, -.4, 0, o.w + .4, 1, o.d + .4);                                // the stone and timber footing
     part(GEO_BOX, plank, g, 0, 1.4, 0, o.w, 2.8, o.d);
@@ -6795,9 +6793,17 @@ function buildEdoras(L, TH) {
   // each square's barrier: a ring of golden light, shown while it's locked
   const barM = new THREE.MeshBasicMaterial({ color: 0xffd060, transparent: true, opacity: .35, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
   for (const p of Y.plazas) { const m = new THREE.Mesh(new THREE.CylinderGeometry(p.r + .5, p.r + .5, 6, 40, 1, true), barM); tw(p.s, p.x, p.y + 2.5, m.position); m.visible = false; m.userData.keep = true; scene.add(m); p.vis = m; }
-  // trees and golden grass on the plains, a few trees in the town
-  const treeP = propsOf(['ptreegldfield01', 'ptreegldfield02']), trees = [], trunks = [], crowns = [], tufts = [], shrubs = [];
+  // trees and golden grass on the plains, a few trees in the town (Battle for Middle-earth's leafy ones: its 'gldfield' trees are the Gladden Fields' bare ones)
+  const treeP = propsOf(['ptree01', 'ptree02']), trees = [], trunks = [], crowns = [], tufts = [], shrubs = [];
   const clearOf = (s, x, r) => !Y.houses.some(o => Math.hypot(s - o.s, x - o.x) < 7 + r) && Math.hypot(s - Y.hall.s, x - Y.hall.x) > 16 && !Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 2 + r) && !Y.road.some((q, k) => k % 5 === 0 && Math.hypot(s - q[0], x - q[1]) < 4 + r);
+  // Battle for Middle-earth's Edoras rocks: outcrops breaking through the hillside, and boulders out on the plains
+  const rockP = Object.keys(PROPS).filter(n => /^predoras/.test(n));
+  for (let i = 0, n = 0; rockP.length && i < 400 && n < 46; i++) {
+    const s = rand(-86, 86), x = rand(-86, 86), d = Math.hypot(s, x), sz = d > Y.wallR ? rand(5, 11) : rand(3.5, 7);
+    if (Math.abs(d - Y.wallR) < sz / 2 + 4 || Math.abs(s + Y.wallR) < 16 && Math.abs(x) < 16 || !clearOf(s, x, sz / 2 + 1)) continue;
+    const pr = propOne(rockP[n % rockP.length], s, x, at(s, x) - sz * .06, rand(0, TAU), sz); n++;
+    if (pr && pr.size.y > 1.4) { const e = sz * .3; L.layout.blocks.push([s - e, s + e, x - e, x + e, at(s, x) + pr.size.y * .8]); }
+  }
   for (let i = 0; i < 1400; i++) {
     const s = rand(-88, 88), x = rand(-88, 88), d = Math.hypot(s, x), y = at(s, x), p = tw(s, x, y);
     if (Math.abs(d - Y.wallR) < 4 || !clearOf(s, x, 1)) continue;

@@ -25,7 +25,7 @@ Put a `.glb` file here with one of these names and Valinor uses it instead of it
 - **Hobbiton:** Bag End, hobbit holes, the Green Dragon, the mill, the Shire bridge, Shire trees, hedges, fences, bushes, flowers, grass and stones.
 - **Rivendell:** the Last Homely House, elven houses, towers, the gazebo, the bridge, ruined walls, waterfalls, cliffs, mallorns and elven woods.
 - **Mirkwood:** its dark trees, webbed trees, undergrowth, webs, egg sacs, the spider lair and Dol Guldur's tower.
-- **Edoras:** Meduseld, the town's houses, its palisade and gate, the well, and the trees of the fields.
+- **Edoras:** Meduseld, the rocks breaking through its hill, the palisade, the gatehouse and its watchtowers, and the well. (The town's longhouses are Valinor's own: Battle for Middle-earth's Edoras pieces are all rocks. The trees are the Shire's.)
 - **Minas Tirith:** the White Tree in the Citadel.
 
 Each level uses whichever are there and builds its own shapes for the rest. Add `?props=none` to the address to compare with the built ones.
