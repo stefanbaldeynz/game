@@ -18,6 +18,7 @@ The game opens on a map of Middle-earth. Gandalf walks freely across it. Walk hi
 | Mirkwood | **Mirkwood** (on Tokara Forest from Unreal Tournament 2004, if `levels/mirkwood.json` is there: see its README) | A dark forest bowl under giant trees, old plank walkways high in their branches with ramps up to them, Morgul lanterns glowing green on chains, webs strung everywhere, egg sacs, and Dol Guldur's tower black on the rim. **Twelve spiders** hunt you on the forest floor and up on the walkways (they climb): spin into them or hit them with fireworks, two hits each. **Web springs** fling you up to the walkways. Slay them all to free Mirkwood. |
 | Moria | **The Mines of Moria** | Dark dwarf-halls with columns rising out of a fiery abyss, chains and lanterns hanging from the roof, stalactites. Goblins climbing out of the chasm, then the **Balrog boss** on the Bridge of Khazad-dûm: a plank bridge with rope rails over a sea of mist and rock spires. |
 | Edoras | **Edoras** | Up the hill to Meduseld. The road runs in through the gate in the palisade and winds round and up the hill past the longhouses to the Golden Hall. Four squares on the way lock behind a golden barrier while the **Uruk-hai** come over the walls in waves. **Lurtz** comes with the last wave at the top. Win it and **Théoden** comes out onto the steps; go to him to finish. You fight the **Kingdom Hearts II** way (see below). |
+| Helm's Deep | **Helm's Deep** | A Kingdom Hearts level, at night in a storm. Down the great ramp from the Hornburg's broken gate, with Saruman's army filling the coomb below with torches. Four landings on the way lock behind a golden barrier while wave after wave of **orcs**, **Uruk-hai** and **berserkers** come up the ladders over the parapet. At the bottom the Deeping Wall is breached, and out of the fire comes **a Balrog**: a boss fight the Kingdom Hearts II way (see below). |
 | Minas Tirith | Three levels | Flies down into the city and opens its own menu: The First Circle, The Second Circle and The Citadel (Sauron). |
 | Cirith Ungol | **The Pass of Cirith Ungol** | A chase. A narrow pass full of webs, and **Shelob** drops out of them behind you. The camera turns round and you run towards it with the spider at your heels. Jump the webs and the gaps, and don't stop until the end of the pass. |
 | Mordor | **Mordor** | Black rock over a sea of lava, Barad-dûr and the Eye off to the side, fell beasts spitting fire overhead, lots of TNT. |
@@ -33,14 +34,17 @@ Finishing (or quitting) a place brings you back to the map with Gandalf standing
 
 The camera follows Gandalf from high above. He can't walk into the sea.
 
-### Fighting in Edoras (the Kingdom Hearts II way)
+### Fighting in Edoras and Helm's Deep (the Kingdom Hearts II way)
 
 | Button | What it does |
 | --- | --- |
 | Attack (J / Shift / □ / ATTACK) | A combo: three cuts and a finisher. Each cut closes in on the nearest enemy, and the finisher knocks it flying. In the air it's an air combo: Gandalf hangs in the air while he strikes, and the last blow slams him down. |
-| Guard (E / GUARD) | Blocks a blow from in front and knocks the attacker back. With the stick held, it's a **Dodge Roll**: nothing touches you while you roll. |
+| Guard (E / Y / GUARD) | Blocks a blow from in front and knocks the attacker back. With the stick held, it's a **Dodge Roll**: nothing touches you while you roll. |
 | Magic (L / F / ○ / MAGIC) | **Thunder**: bolts on up to three enemies near you, for a quarter of your MP (blue bar). |
-| Reaction command (R, or the green prompt) | When an Uruk is dizzy (stars over its head), **TAKEDOWN** leaps on it and finishes it, and blasts the others round it. |
+| Drive (Q / LT / DRIVE) | When the yellow drive bar is full (every blow fills it), Gandalf becomes **the White Wizard** for about twenty seconds: a combo of five, harder blows, quicker MP, and **Thundaga** on five enemies. |
+| Reaction command (R / Y, or the green prompt) | Appears when its moment comes. **TAKEDOWN**: an enemy is dizzy (stars over its head); leap on it and finish it, blasting the others round it. **REPEL**: a berserker is running at you; swat it back to blow up among its friends. Against the Balrog: **SWORD RUN** and **YOU SHALL NOT PASS!** (below). |
+
+The command menu bottom left (on a computer) shows what each button does now: it lights up as you use one, and greys out what you can't use yet.
 
 - The Uruk-hai fight like Soldier Heartless. They circle you, hopping and strafing, and only two come at you at once. Each one sets itself before it strikes, eyes flaring red:
   - a two-cut combo up close
@@ -48,6 +52,24 @@ The camera follows Gandalf from high above. He can't walk into the sea.
   - a charge behind its shield from further still
 - **Lurtz** shrugs off light blows. Knock him down with finishers, magic or a takedown.
 - Your HP is the green bar. Beaten enemies drop green orbs (HP), blue orbs (MP) and apples. MP also comes back slowly by itself.
+- At Helm's Deep, **orcs** are the Shadows: small, quick and many, and three may come at you at once. **Berserkers** carry a torch: one roars, then runs at you and blows up, hurting anything near it, its own side too. Knock one flying and it goes off where it lands, or REPEL it back into its friends.
+
+#### The Balrog
+
+Its gauge (top right) has four bars, green, yellow, orange and red; the diamonds under it count the bars still to go. Every big blow is marked on the ground in red before it lands.
+
+| It does | What to do |
+| --- | --- |
+| **Whip lash**: a red wedge in front, then the whip sweeps across it low | Jump it, guard it, or get behind |
+| **Sword slam**: a red circle follows you, then the sword comes down on it, and a ring of fire rolls out | Get off the circle, then jump the ring. The sword sticks in the ground: **SWORD RUN** takes Gandalf up its arm for three blows on its head |
+| **Fire breath**: it rears back, then sweeps a cone of fire | Get beside or behind it (guarding doesn't stop fire) |
+| **Leap**: onto a red circle where you are | Roll off the circle |
+| Half its gauge gone, it **blazes up** and calls orcs and a berserker | |
+| **Rain of fire**: fireballs fall on red circles round you | Keep moving |
+| **Charge** across the arena | Stand in its way and press **YOU SHALL NOT PASS!**: it crashes into Gandalf's light and falls to its knees, open to everything you have |
+| Hit it too much at once and it **bursts free** in a ring of fire (Kingdom Hearts II's revenge value) | Back off when it flashes |
+
+The Balrog is Battle for Middle-earth's own when `models/balrog.glb` is there.
 
 ### The duel on Weathertop
 

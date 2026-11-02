@@ -68,6 +68,15 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:'Luck
 body.touch #khhud{bottom:auto;right:auto;left:max(3vw,env(safe-area-inset-left));top:calc(max(2.2vh,env(safe-area-inset-top)) + clamp(40px,8vh,70px));align-items:flex-start}
 body.touch #khtarget{top:calc(max(2.2vh,env(safe-area-inset-top)) + clamp(40px,8vh,70px) + 12vh)}
 #tGuard{right:calc(max(4vw,env(safe-area-inset-right)) + var(--bj) + var(--bs) + 5vh);bottom:max(4vh,env(safe-area-inset-bottom));background:radial-gradient(circle at 35% 30%,#9ad8ff,#1a5aa0 70%);display:none}body.kh #tGuard{display:flex}
+#tDrive{right:calc(max(4vw,env(safe-area-inset-right)) + var(--bj) + var(--bs) + 5vh);bottom:calc(max(4vh,env(safe-area-inset-bottom)) + var(--bs) + 2vh);background:radial-gradient(circle at 35% 30%,#fff6c0,#b88a10 70%);display:none}body.kh #tDrive{display:flex}
+#khhud .dv{width:min(16vw,150px);height:1.3vh}#khhud .dv i{background:linear-gradient(#fff6b0,#e8b820 55%,#8a6008)}#khhud .dv.full{animation:khpulse .35s infinite alternate;box-shadow:0 0 12px #ffe060,3px 3px 0 #000}#khhud .dv.form i{background:linear-gradient(#fff,#d8e8ff 55%,#8aa0d0)}
+#khtarget.boss{flex-direction:column;align-items:flex-end;gap:.3vh;color:#ffe0c0}#khtarget.boss .bar{width:min(42vw,440px);height:2.4vh}#khtarget.boss i{transition:width .25s}#khTPips{color:#ffd040;letter-spacing:.1em;font-size:.8em;min-height:1em}
+/* Kingdom Hearts II's command menu, bottom left: what each button does now */
+#khcmd{position:absolute;left:max(3vw,env(safe-area-inset-left));bottom:max(4vh,env(safe-area-inset-bottom));display:none;font-size:clamp(12px,2.1vh,19px);color:#fff;-webkit-text-stroke:1px var(--ink);text-shadow:2px 2px 0 #000;pointer-events:none}
+#khcmd .t{background:linear-gradient(90deg,#2aa04a,#1a6a2a 80%,transparent);padding:.1em .8em;margin-bottom:.25em;font-size:.8em;letter-spacing:.12em;transform:skewX(-14deg);width:7.5em}
+#khcmd>div:not(.t){display:flex;justify-content:space-between;align-items:center;width:9em;margin:.2em 0;padding:.25em .8em;background:linear-gradient(90deg,#123a7a,#0a1e48 85%);border:2px solid #000;border-radius:4px;box-shadow:3px 3px 0 #000;transform:skewX(-14deg);transition:transform .1s,filter .1s}
+#khcmd>div.on{transform:skewX(-14deg) translateX(.6em);filter:brightness(1.6)}#khcmd>div.dim{filter:grayscale(1) brightness(.6)}#khcmd small{font-size:.7em;opacity:.8}
+body.touch #khcmd{display:none!important}
 .menu{margin:3.5vh auto 0;display:flex;flex-direction:column;gap:1.1vh;width:min(560px,90vw)}
 .mi{display:grid;grid-template-columns:2.1em 1fr;align-items:center;column-gap:.6em;text-align:left;padding:.45em .8em;border:3px solid #000;border-radius:12px;background:rgba(14,4,36,.7);box-shadow:4px 4px 0 #000;cursor:pointer;transition:transform .15s,background .15s}
 .mi b{grid-row:span 2;font-weight:normal;font-size:clamp(26px,4.4vh,44px);color:var(--gold);-webkit-text-stroke:2px var(--ink);text-align:center}
@@ -184,11 +193,13 @@ body.touch #bossbar .bar{width:min(50vw,420px)}
   <div class="tb" id="tSpin" data-k="TSpin">SPIN</div>
   <div class="tb" id="tJump" data-k="TJump">JUMP</div>
   <div class="tb" id="tGuard" data-k="TGuard">GUARD</div>
+  <div class="tb" id="tDrive" data-k="TDrive">DRIVE</div>
 </div>
 <div id="duelhud"><div><b>GANDALF</b><div class="bar"><i id="gHPfill"></i></div></div><div><b>FORCE</b><div class="bar f"><i id="gFfill"></i></div></div><div id="gStance" data-key="KeyC"><b>STANCE</b><span id="gStanceName">MEDIUM</span><small class="kOnly">&nbsp;C</small></div></div>
 <div id="bossbar"><span id="bossName">SAURON</span><div class="bar"><i id="bossfill"></i></div></div>
-<div id="khhud"><div><b>HP</b><div class="bar hp"><i id="khHP"></i></div></div><div><b>MP</b><div class="bar mp"><i id="khMP"></i></div></div></div>
-<div id="khtarget"><span id="khTName">URUK-HAI</span><div class="bar"><i id="khTHP"></i></div></div>
+<div id="khhud"><div><b>HP</b><div class="bar hp"><i id="khHP"></i></div></div><div><b>MP</b><div class="bar mp"><i id="khMP"></i></div></div><div><b>DRIVE</b><div class="bar dv"><i id="khDV"></i></div></div></div>
+<div id="khcmd"><div class="t">COMMAND</div><div id="kcA">ATTACK<small class="kOnly">J</small></div><div id="kcM"><span id="kcMName">THUNDER</span><small class="kOnly">F</small></div><div id="kcG">GUARD<small class="kOnly">E</small></div><div id="kcD">DRIVE<small class="kOnly">Q</small></div></div>
+<div id="khtarget"><span id="khTName">URUK-HAI</span><div class="bar"><i id="khTHP"></i></div><span id="khTPips"></span></div>
 <div id="khreact"><span id="khRName">TAKEDOWN</span><small class="kOnly">R</small></div>
 <div id="mapUI">
   <div id="sign"><div class="rope l"></div><div class="rope r"></div><div class="plank"><b id="signName">MINAS TIRITH</b><i id="signSub"></i></div></div>
@@ -2351,7 +2362,10 @@ function killWarn(w) { if (!w) return; scene.remove(w); w.traverse(o => { if (o.
 // =====================================================================
 const crates = [], orcs = [], apples = [], plats = [], ladders = [];
 const CRATE_MATS = {};
-function crateMat(tex, basic) { return ps1(basic ? new THREE.MeshBasicMaterial({ map: tex }) : new THREE.MeshLambertMaterial({ map: tex, emissive: 0x181008 })); }
+// crates light themselves a little by their own picture (as Hellkeep's do), so they read in the dark, and each kind
+// glows its own colour round it
+function crateMat(tex, basic) { return ps1(basic ? new THREE.MeshBasicMaterial({ map: tex }) : new THREE.MeshLambertMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: .3 })); }
+const CRATE_GLOW = { b: 0xffb048, q: 0xffd84a, bo: 0x7ac8ff, c: 0x8aff8a, l: 0xff8ad0, p: 0xfff0c0, r: 0xff7a4a, n: 0x4aff6a, t: 0xff6a2a };
 function initCrateMats() {
   const one = t => { const m = crateMat(t); return [m, m, m, m, m, m]; };
   CRATE_MATS.b = one(TX.cB); CRATE_MATS.q = one(TX.cQ); CRATE_MATS.bo = one(TX.cBo); CRATE_MATS.c = one(TX.cC); CRATE_MATS.l = one(TX.cL); CRATE_MATS.p = one(TX.cP); CRATE_MATS.r = one(TX.cR);
@@ -2364,6 +2378,7 @@ function addCrate(type, s, x, stack = 0, from = 40) {   // (from: how high up to
   const gy = groundBelow(s, x, from);
   const c = { type, s, x, y: gy + stack, y0: gy + stack, alive: true, bounces: 0, fuse: 0, brokenT: -1, vy: 0, squash: 0, jig: 0, float: stack % 1 !== 0 };
   c.mesh = new THREE.Mesh(GEO_BOX, type === 't' ? CRATE_MATS.t[0] : CRATE_MATS[type]); scene.add(c.mesh);
+  if (CRATE_GLOW[type]) c.mesh.add(glowSprite(CRATE_GLOW[type], 1.9, .4));
   c.box = solid(s - .5, s + .5, x - .5, x + .5, c.y, c.y + 1, 'crate', c);
   crates.push(c); return c;
 }
@@ -2713,6 +2728,15 @@ const LEVELS = [
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { },
   },
+  {
+    // a Kingdom Hearts level: down the ramp from the Hornburg's broken gate in the storm, landing by landing, each locked
+    // behind a golden barrier while wave after wave of orcs, Uruk-hai and berserkers come over the parapet; at the
+    // bottom the Deeping Wall is breached, and a Balrog comes out of the fire (see HELM'S DEEP)
+    straight: true, roam: true, kh: true, name: "HELM'S DEEP", sub: 'THE HORNBURG', loc: 'helm', theme: 'helms', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 55000, CZ: 0, base: -4, wallH: 0,
+    ...helmsLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { helmsContent(this); },
+  },
 ];
 
 for (const L of LEVELS) if (L.lava) L.endY = L.pillars[L.pillars.length - 1][4];   // the climb's last gate stands on the top spire
@@ -2913,6 +2937,7 @@ function pollPad() {
   pad.x = clamp(dz(gp.axes[0] || 0) + (b(15) ? 1 : 0) - (b(14) ? 1 : 0), -1, 1);
   pad.z = clamp(-dz(gp.axes[1] || 0) + (b(12) ? 1 : 0) - (b(13) ? 1 : 0), -1, 1);
   pad.jump = b(0); pad.jumpP = pr(0); pad.spinP = pr(2) || pr(4); pad.fireP = pr(1) || pr(5) || pr(7);
+  pad.guardP = pad.reactP = pr(3); pad.driveP = pr(6);   // (Y: guard, or the reaction command when there is one; LT: drive)
   if (state === 'title') { if (pr(12)) onKey('ArrowUp'); if (pr(13)) onKey('ArrowDown'); if (pr(1)) onKey('Escape'); }
   if (pr(9)) onKey(state === 'paused' ? 'Escape' : 'Enter');
   else if (pr(0) && (state === 'title' || state === 'map' || state === 'gameover' || state === 'complete')) onKey('Enter');
@@ -2930,8 +2955,9 @@ function readInput() {
   inp.spinP = !!(hit.KeyJ || hit.ShiftLeft || hit.ShiftRight || hit.Mouse2 || hit.TSpin || pad.spinP);
   inp.fireP = !!(hit.KeyL || hit.KeyF || hit.Mouse0 || hit.TFire || pad.fireP);
   inp.guardP = !!(hit.KeyE || hit.TGuard || pad.guardP); inp.reactP = !!(hit.KeyR || hit.TReact || pad.reactP);   // Edoras: guard (or roll), and the reaction command
-  if (AUTOFIGHT && LV && LV.kh) { const u = URUKS.find(ukLive); WALKTO = u ? [u.s, u.x] : AUTOFIGHT.next(); if (u && Math.hypot(u.s - P.s, u.x - P.x) < 4 && T % .3 < .02) hit.KeyJ = true; if (u && KH.mp >= 25 && T % 3 < .02) hit.KeyF = true; if (KH.react) hit.KeyR = true; }   // testing: &autofight=1
-  inp.spinP = inp.spinP || !!hit.KeyJ; inp.fireP = inp.fireP || !!hit.KeyF; inp.reactP = inp.reactP || !!hit.KeyR;
+  inp.driveP = !!(hit.KeyQ || hit.TDrive || pad.driveP);   // (and the drive form)
+  if (AUTOFIGHT && LV && LV.kh) { const u = URUKS.find(o => ukLive(o) && o.state !== 'spawn'); WALKTO = u ? [u.s, u.x] : AUTOFIGHT.next(); if (u && Math.hypot(u.s - P.s, u.x - P.x) < 4 + (u.boss ? u.r : 0) && T % .3 < .02) hit.KeyJ = true; if (u && KH.mp >= 25 && T % 3 < .02) hit.KeyF = true; if (KH.react) hit.KeyR = true; if (KH.drive >= 100) hit.KeyQ = true; }   // testing: &autofight=1
+  inp.spinP = inp.spinP || !!hit.KeyJ; inp.fireP = inp.fireP || !!hit.KeyF; inp.reactP = inp.reactP || !!hit.KeyR; inp.driveP = inp.driveP || !!hit.KeyQ;
   if (WALKTO) { const ds = WALKTO[0] - P.s, dx = WALKTO[1] - P.x, d = Math.hypot(ds, dx); if (d > .5) { const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw), us = ds / d, ux = dx / d; inp.z = us * c + ux * sn; inp.x = -us * sn + ux * c; } else inp.x = inp.z = 0; }   // testing: &walkto=s,x
 }
 let WALKTO = null, AUTOFIGHT = null;
@@ -5047,7 +5073,7 @@ function updateAmbient(dt) {
   if (THEMES.riv.bigFall) THEMES.riv.bigFall.offset.y += dt * .6;
   if (THEMES.mordor.lava) THEMES.mordor.lava.offset.x += dt * .01;
   torchSprites.forEach((s, i) => s.scale.set(.7 + Math.sin(T * 13 + i) * .06, 1.15 + Math.sin(T * 11 + i * 2) * .1, 1));
-  clouds.rotation.y += dt * .004;
+  clouds.rotation.y += dt * .004; updateHelms(dt);
   doomGlow.material.opacity = .8 + Math.sin(T * 1.7) * .2;
   // embers rising from the burning city below
   if (ENV.embers) for (let k = 0; k < 2; k++) { tw(P.s + rand(-6, 26), rand(-14, -4), rand(-8, 0), _a); fx.spawn(_a.x, _a.y, _a.z, rand(-.5, .5), rand(1.5, 3), rand(-.5, .5), rand(2, 3.5), .12, .05, [1, .7, .3], [1, .2, .05]); }
@@ -5185,10 +5211,12 @@ function updateCamera(dt) {
   }
   if (LV.roam && !LV.duel) {
     // open country: a chase camera behind Gandalf that slowly swings round to follow where he's heading
-    if (state === 'play') { const mv = Math.hypot(P.vs, P.vx); if (mv > 1) cam.yaw += angDiff(cam.yaw, P.heading) * (1 - Math.exp(-1.7 * dt * Math.min(1, mv / RUN))); }
+    // (in a Kingdom Hearts boss fight it pulls back and turns to keep the boss in view beyond Gandalf)
+    const bo = LV.kh && KH.boss && KH.boss.m.root.visible && KH.boss.state !== 'fall' ? KH.boss : null; cam.bk = damp(cam.bk || 0, bo ? 1 : 0, 2, dt);
+    if (state === 'play') { if (bo) cam.yaw += angDiff(cam.yaw, Math.atan2(bo.x - P.x, bo.s - P.s)) * (1 - Math.exp(-2.4 * dt)); else { const mv = Math.hypot(P.vs, P.vx); if (mv > 1) cam.yaw += angDiff(cam.yaw, P.heading) * (1 - Math.exp(-1.7 * dt * Math.min(1, mv / RUN))); } }
     let tgy = P.ground ? P.y : Math.min(cam.gy, P.y + 1.2); cam.gy = cam.snap ? P.y : damp(cam.gy, tgy, P.ground ? 4 : 2, dt);
-    const D = 7.4, c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw);
-    _a.copy(tw(P.s - c * D, P.x - sn * D, cam.gy + 3.9)); _b.copy(tw(P.s + c * 3, P.x + sn * 3, cam.gy + 1.1));
+    const D = 7.4 + cam.bk * 4.4, c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw);
+    _a.copy(tw(P.s - c * D, P.x - sn * D, cam.gy + 3.9 + cam.bk * 2.2)); _b.copy(tw(P.s + c * 3, P.x + sn * 3, cam.gy + 1.1 + cam.bk * 2.6));
     if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; }
     const k = 1 - Math.exp(-7 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k);
     camera.position.copy(cam.wp);
@@ -5486,6 +5514,7 @@ const NODES = [
   { name: 'MOUNT DOOM', x: 62.5, z: 11.5, open: true, loc: 'doom', sub: 'THE CLIMB · OUTRUN THE LAVA' },
   { name: 'WEATHERTOP', x: -34, z: -14, open: true, loc: 'weather', sub: 'DUEL THE WITCH-KING' },   // added last: the road and Minas Tirith go by position in this list
   { name: 'MIRKWOOD', x: 8, z: -24, open: true, loc: 'mirk', sub: 'THE DARK FOREST · SLAY THE SPIDERS' },
+  { name: "HELM'S DEEP", x: 1, z: 22, open: true, loc: 'helm', sub: 'DOWN THE RAMP · BALROG BOSS' },
 ];
 const ROAD = (() => {
   const way = [NODES[0], [-40, -6], [-30, -17], NODES[1], [-18.5, -13], NODES[2], [-5, 3], [1, 11], NODES[3], [21, 17], [31, 14.5], [40, 15.5], NODES[4], [46, 14.5], NODES[5], [54, 3], NODES[6], [62, 0], [65, 6], NODES[7]];
@@ -5790,7 +5819,7 @@ const LOCAL_ASSETS = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname
 // saberBone: the bone the lightsaber goes on in the Weathertop duel (its sword hand), and saberRot to turn the blade along it.
 const MODEL_SLOTS = {
   gandalf: { height: 1.75, turn: -Math.PI / 2, saberBone: 'B_SWORDBONE' }, balrog: { height: 11, turn: -Math.PI / 2, glow: .35, sink: .45, fx: 0xff7a30, hide: /swordfire/i }, witchking: { height: 2.9, turn: -Math.PI / 2, saberBone: 'B_SWORD', hide: /^mace/i },
-  shelob: { height: 3.2, turn: -Math.PI / 2 }, nazgul: { height: 2.3, turn: -Math.PI / 2 }, orc: { height: 1.45, turn: -Math.PI / 2 },
+  shelob: { height: 3.2, turn: -Math.PI / 2 }, nazgul: { height: 2.3, turn: -Math.PI / 2 }, orc: { height: 1.45, turn: -Math.PI / 2, hide: /^orc[a-f](?![a-z])/i },   // (its six corpses, all on at once, and their picture never came)
   frodo: { height: 1.15, turn: -Math.PI / 2 }, sam: { height: 1.15, turn: -Math.PI / 2 }, merry: { height: 1.2, turn: -Math.PI / 2 }, pippin: { height: 1.2, turn: -Math.PI / 2 },
   aragorn: { height: 1.95, turn: -Math.PI / 2 }, legolas: { height: 1.9, turn: -Math.PI / 2 }, gimli: { height: 1.35, turn: -Math.PI / 2 }, boromir: { height: 1.95, turn: -Math.PI / 2 },
   fellbeast: { height: 7.5, turn: -Math.PI / 2 }, horse: { height: 2.5, turn: -Math.PI / 2, hide: /gandalf/i, anims: { walk: /^run_a/i, jump: /^fly/i } },
@@ -5910,7 +5939,7 @@ const PROPS = {}, PROP_MATS = new Map();
 // team-colour mask in its alpha, which mustn't punch holes in the walls). Waterfalls are see-through.
 const PROP_CUT = /tree|bush|grass|flower|fern|hedge|shrub|web|wood0|lothlorien|pipeweed|fence|mirk/i, PROP_FLOW = /falls/i;
 // some come out too dark under Valinor's light (BFME lights its own scenery brightly): lit a little by their own picture too
-const PROP_LIFT = [[/^riv/, .4, 0xfff2dc], [/^pt(elvn|lothl)/, .3, 0xfff0d0], [/slvrtree/, .45, 0xf4f6ff], [/^rb/, .35, 0xfff0d8], [/^predoras/, .25, 0xf0ece4]];   // (Edoras's timber and rocks are dark in their own light too)
+const PROP_LIFT = [[/^riv/, .4, 0xfff2dc], [/^pt(elvn|lothl)/, .3, 0xfff0d0], [/slvrtree/, .45, 0xf4f6ff], [/^rb/, .35, 0xfff0d8], [/^predoras/, .25, 0xf0ece4], [/^nbhd|^eb_/, .35, 0xf0f2f6]];   // (Edoras's timber and rocks are dark in their own light too)
 // which way each model faces, where it isn't the way the levels expect (doors towards +s)
 const PROP_TURN = {};
 let GLTF = null;
@@ -6238,7 +6267,7 @@ function buildOakvale(L, TH) {
 }
 
 // ground for a level built on a heightmap: one mesh over every corner of its metre squares, coloured by colAt(kind, slope)
-function groundMesh(T_, tex, colAt, rep = 3) {
+function groundMesh(T_, tex, colAt, rep = 3, mat) {   // (mat: make its material from the texture, instead of plain lit paint)
   const W = T_.w, H = T_.h, pos = new Float32Array(W * H * 3), col = new Float32Array(W * H * 3), uv = new Float32Array(W * H * 2), idx = [];
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
     const k = j * W + i, y = T_.hs[k], p = tw(T_.cy - j, T_.cx - i, y, _a); pos.set([p.x, p.y, p.z], k * 3); uv.set([i / rep, j / rep], k * 2);
@@ -6249,7 +6278,7 @@ function groundMesh(T_, tex, colAt, rep = 3) {
   { const c2 = col.slice(); for (let j = 1; j < H - 1; j++) for (let i = 1; i < W - 1; i++) for (let q = 0; q < 3; q++) { const k = (j * W + i) * 3 + q; col[k] = (c2[k] * 4 + c2[k - 3] + c2[k + 3] + c2[k - W * 3] + c2[k + W * 3]) / 8; } }
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
   const t = tex.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  const m = new THREE.Mesh(geo, ps1(new THREE.MeshLambertMaterial({ map: t, vertexColors: true }))); m.receiveShadow = true; m.userData.keep = true; scene.add(m); return m;
+  const m = new THREE.Mesh(geo, mat ? mat(t) : ps1(new THREE.MeshLambertMaterial({ map: t, vertexColors: true }))); m.receiveShadow = true; m.userData.keep = true; scene.add(m); return m;
 }
 
 // =====================================================================
@@ -6683,7 +6712,7 @@ THEMES.mirkwood = natTheme({
 //  the last, before the hall. Gandalf fights the Kingdom Hearts II way (see KH below). With your own files the town
 //  and hall are Battle for Middle-earth's, and the Uruk-hai, Lurtz and Théoden are its models.
 // =====================================================================
-Object.assign(MODEL_SLOTS, { uruk: { height: 1.95, turn: -Math.PI / 2, hide: /forged/i }, lurtz: { height: 2.15, turn: -Math.PI / 2, hide: /forged/i }, theoden: { height: 1.9, turn: -Math.PI / 2 } });   // (the Uruk-hai come with the red glow of their Forged Blades upgrade on: left out)
+Object.assign(MODEL_SLOTS, { uruk: { height: 1.95, turn: -Math.PI / 2, hide: /forged/i }, lurtz: { height: 2.15, turn: -Math.PI / 2, hide: /forged/i }, theoden: { height: 1.9, turn: -Math.PI / 2 }, berserker: { height: 2.05, turn: -Math.PI / 2, hide: /forged/i } });   // (the Uruk-hai come with the red glow of their Forged Blades upgrade on: left out)
 HEROES.theoden = { h: 1.85, hair: 0xd8c8a0, coat: 0x2a5a2a, legs: 0x3a3020, cloak: 0x7a1a14, beard: 0xd8c8a0, sword: true };
 // the hill, the road and where everything stands (made once, the same every time)
 function edorasLayout() {
@@ -6735,8 +6764,7 @@ function edorasLayout() {
 }
 function edorasContent(L) {
   const Y = L.layout;
-  // each square's barrier: a ring of walls, down until its Uruk-hai come
-  for (const p of Y.plazas) { p.walls = []; const n = Math.ceil(TAU * p.r / 1.1); for (let k = 0; k < n; k++) { const a = k / n * TAU, s = p.s + Math.cos(a) * (p.r + .5), x = p.x + Math.sin(a) * (p.r + .5), b = solid(s - .6, s + .6, x - .6, x + .6, p.y - 4, p.y + 7, 'wall'); b.on = false; p.walls.push(b); } }
+  khRings(Y);   // each square's barrier, down until its Uruk-hai come
   for (let i = 0; i < Y.road.length; i += 12) { const [s, x, y] = Y.road[i]; if (Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 1)) continue; addApple(s, x, y + .8); }
   Y.houses.forEach((o, i) => { if (i % 2) return; const a = o.h + Math.PI, s = o.s + Math.cos(a) * (o.d / 2 + 1.4) + Math.cos(a + Math.PI / 2) * 2.4, x = o.x + Math.sin(a) * (o.d / 2 + 1.4) + Math.sin(a + Math.PI / 2) * 2.4; addCrate(i % 4 ? 'b' : 'q', s, x, 0, o.y + 4); });
 }
@@ -6824,65 +6852,680 @@ THEMES.edoras = natTheme({
 });
 
 // =====================================================================
-//  KH: fighting the way Sora does in Kingdom Hearts II (Edoras, LV.kh)
+//  SURFACE MAPS, the way Hellkeep's Brimstone Gorge is lit: each picture gets a normal map worked out from its own light
+//  and dark, so joints, chips and cracks catch the light and torchlight rakes across them; what's hot in a picture (lava
+//  cracks, embers) lights itself and blooms; stone facing up shines wet in the rain; and each surface softly reflects its
+//  level's sky. surf(tex, { ... }) makes such a material. (The retro look keeps its flat PS1 shading.)
+// =====================================================================
+const NRM_MAPS = new Map(), GLOW_MAPS = new Map(), SKY_ENVS = {};
+let PMREM = null;
+function texLike(tex, canvas) { const t = new THREE.CanvasTexture(canvas); t.wrapS = tex.wrapS; t.wrapT = tex.wrapT; t.repeat.copy(tex.repeat); t.magFilter = tex.magFilter; t.minFilter = tex.minFilter; t.generateMipmaps = tex.generateMipmaps; t.anisotropy = tex.anisotropy; return t; }
+// the slopes of the picture's brightness (Sobel), wrapping at the edges so tiles join, as a normal map
+function normalFrom(tex, k = 2.5) {
+  const key = tex.image.id + '|' + tex.uuid + k; if (NRM_MAPS.has(key)) return NRM_MAPS.get(key);
+  const c = tex.image, w = c.width, h = c.height, src = c.getContext('2d').getImageData(0, 0, w, h).data, H = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) H[i] = (src[i * 4] * .299 + src[i * 4 + 1] * .587 + src[i * 4 + 2] * .114) / 255;
+  const at = (x, y) => H[((y + h) % h) * w + ((x + w) % w)];
+  const out = mkCanvas(w, h, g => {
+    const img = g.createImageData(w, h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const dx = at(x + 1, y - 1) + 2 * at(x + 1, y) + at(x + 1, y + 1) - at(x - 1, y - 1) - 2 * at(x - 1, y) - at(x - 1, y + 1);
+      const dy = at(x - 1, y + 1) + 2 * at(x, y + 1) + at(x + 1, y + 1) - at(x - 1, y - 1) - 2 * at(x, y - 1) - at(x + 1, y - 1);
+      const nx = -dx * k, ny = dy * k, l = Math.hypot(nx, ny, 1), q = (y * w + x) * 4;
+      img.data[q] = (nx / l * .5 + .5) * 255; img.data[q + 1] = (ny / l * .5 + .5) * 255; img.data[q + 2] = (1 / l * .5 + .5) * 255; img.data[q + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+  });
+  const t = texLike(tex, out); NRM_MAPS.set(key, t); return t;
+}
+// the hot parts of a picture (bright, and far redder than blue) alone on black, to light themselves
+function glowFrom(tex) {
+  if (GLOW_MAPS.has(tex.uuid)) return GLOW_MAPS.get(tex.uuid);
+  const c = tex.image, w = c.width, h = c.height, img = c.getContext('2d').getImageData(0, 0, w, h), d = img.data;
+  for (let i = 0; i < d.length; i += 4) if (!(d[i] > 140 && d[i] - d[i + 2] > 90 && d[i] > d[i + 1] * 1.3)) d[i] = d[i + 1] = d[i + 2] = 0;
+  const t = texLike(tex, mkCanvas(w, h, g => g.putImageData(img, 0, 0))); GLOW_MAPS.set(tex.uuid, t); return t;
+}
+// a level's sky as soft reflected light (a blurred picture of its colours, top to horizon, dark ground below)
+function skyEnv(e) {
+  if (!e || !e.sky || RETRO) return null; const k = e.sky.join(); if (SKY_ENVS[k]) return SKY_ENVS[k];
+  const [a, b, c, d] = e.sky.map(v => '#' + new THREE.Color(v).getHexString());
+  const cv = mkCanvas(64, 32, g => { const gr = g.createLinearGradient(0, 0, 0, 32); gr.addColorStop(0, a); gr.addColorStop(.3, b); gr.addColorStop(.47, c); gr.addColorStop(.5, d); gr.addColorStop(.56, '#14120f'); gr.addColorStop(1, '#090807'); g.fillStyle = gr; g.fillRect(0, 0, 64, 32); });
+  const t = new THREE.CanvasTexture(cv); t.mapping = THREE.EquirectangularReflectionMapping;
+  PMREM = PMREM || new THREE.PMREMGenerator(renderer); return SKY_ENVS[k] = PMREM.fromEquirectangular(t).texture;
+}
+// o: color, rough(ness), metal, bump (normal strength), sky (an env, for reflections) and env (how much), glow (lights its
+// hot parts), wet (stone facing up shines and darkens), crust (embers smoulder on every surface facing up), tri (the
+// picture laid on by where things are in the world, every tri metres, so walls of any size tile evenly), vc, side
+function surf(tex, o = {}) {
+  const m = new THREE.MeshStandardMaterial({ map: tex, color: o.color ?? 0xffffff, roughness: o.rough ?? .85, metalness: o.metal ?? 0, vertexColors: !!o.vc, side: o.side || THREE.FrontSide });
+  if (!RETRO) { m.normalMap = normalFrom(tex, o.bump ?? 2.5); const e = skyEnv(o.sky); if (e) { m.envMap = e; m.envMapIntensity = o.env ?? .6; } }
+  if (o.glow) { m.emissive.setHex(0xffffff); m.emissiveMap = glowFrom(tex); m.emissiveIntensity = o.glow; }
+  const wet = o.wet || 0, crust = o.crust || 0, tri = o.tri || 0, world = wet || crust || tri;
+  m.onBeforeCompile = sh => {
+    ps1Compile(sh); if (!world) return;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vUpW;\nvarying vec3 vPosW;').replace('#include <project_vertex>', `{
+        vec4 wp = vec4(transformed, 1.0); vec3 wn = objectNormal;
+        #ifdef USE_INSTANCING
+          wp = instanceMatrix * wp; wn = mat3(instanceMatrix) * wn;
+        #endif
+        wp = modelMatrix * wp; wn = normalize(mat3(modelMatrix) * wn); vPosW = wp.xyz; vUpW = wn.y;
+        ${tri ? `vec2 tg = normalize(vec2(-wn.z, wn.x) + 1e-5); vUv = (abs(wn.y) > .7 ? wp.xz : vec2(dot(wp.xz, tg), wp.y)) / ${tri.toFixed(2)};` : ''}
+      }
+      #include <project_vertex>`);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vUpW;\nvarying vec3 vPosW;')
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+        float wetK = smoothstep(.5, .9, vUpW) * ${wet.toFixed(2)};
+        roughnessFactor = mix(roughnessFactor, .14, wetK); diffuseColor.rgb *= 1.0 - wetK * .35;`)
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        float emb = .55 + .45 * sin(vPosW.x * 3.7 + sin(vPosW.x * 1.3 + vPosW.z * 2.1) * 2.5);
+        totalEmissiveRadiance += vec3(1.0, .28, .04) * smoothstep(.6, .95, vUpW) * emb * ${crust.toFixed(2)};`);
+  };
+  m.customProgramCacheKey = () => 'surf' + wet + '|' + crust + '|' + tri;
+  return m;
+}
+// pictures drawn finer than the rest (256 squares, smooth and mipmapped), for surfaces seen up close in a storm
+const hdTex = (w, h, draw) => { const t = mkTex(w, h, draw); t.magFilter = THREE.LinearFilter; return worldTex(t); };
+function grit(g, w, h, n, a) { for (let i = 0; i < n; i++) { const v = sr(); g.fillStyle = v < .5 ? `rgba(0,0,0,${a * sr()})` : `rgba(255,255,255,${a * .7 * sr()})`; g.fillRect(sr() * w | 0, sr() * h | 0, sr() < .2 ? 2 : 1, 1); } }
+// a row of pieces whose widths add up to the picture's, from an offset, so it repeats seamlessly
+function rowOf(w, n, jit) { const ws = Array.from({ length: n }, () => 1 + (sr() - .5) * jit), t = ws.reduce((a, b) => a + b, 0); let x = sr() * w; return ws.map(v => { const p = [x, v / t * w]; x += v / t * w; return p; }); }
+// Helm's Deep's stone: big grey-green blocks, bevelled, chipped and cracked, streaked by rain and mossy in the joints
+TX.hdStone = hdTex(256, 256, g => {
+  g.fillStyle = '#262826'; g.fillRect(0, 0, 256, 256);
+  const rows = 5, bh = 256 / rows;
+  for (let r = 0; r < rows; r++) for (const [x0, bw] of rowOf(256, 4, .7)) {
+    const y = r * bh, b = 108 + sr() * 36 | 0, tn = sr() * 10 - 5, chips = [0, 1, 2].map(() => [4 + sr() * (bw - 8), 4 + sr() * (bh - 8), sr()]), crack = sr() < .35 ? sr() * bw : -1;
+    for (const ox of [0, -256]) {
+      const x = x0 + ox, gr = g.createLinearGradient(0, y, 0, y + bh);
+      gr.addColorStop(0, `rgb(${b + 14 + tn},${b + 16},${b + 14 - tn})`); gr.addColorStop(1, `rgb(${b - 20 + tn},${b - 17},${b - 16 - tn})`);
+      g.fillStyle = gr; g.fillRect(x + 2, y + 2, bw - 3, bh - 3);
+      g.fillStyle = 'rgba(255,255,255,.2)'; g.fillRect(x + 2, y + 2, bw - 3, 2); g.fillRect(x + 2, y + 2, 2, bh - 3);   // the bevel catching the light
+      g.fillStyle = 'rgba(0,0,0,.38)'; g.fillRect(x + 2, y + bh - 3, bw - 3, 2); g.fillRect(x + bw - 3, y + 2, 2, bh - 3);
+      for (const [cx, cy, q] of chips) { if (q < .45) continue; let s = q * 1e4; const lr = () => (s = (s * 9301 + 49297) % 233280) / 233280; g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.moveTo(x + cx, y + cy); for (let k = 0; k < 6; k++) g.lineTo(x + cx + (lr() - .5) * 10, y + cy + (lr() - .5) * 8); g.fill(); }
+      if (crack >= 0) { let s = crack * 77, cx = x + crack, cy = y + 3; const lr = () => (s = (s * 9301 + 49297) % 233280) / 233280; g.strokeStyle = 'rgba(8,8,8,.5)'; g.lineWidth = 1; g.beginPath(); g.moveTo(cx, cy); while (cy < y + bh - 4) { cx += (lr() - .5) * 6; cy += 3 + lr() * 4; g.lineTo(cx, cy); } g.stroke(); }
+    }
+  }
+  for (let i = 0; i < 70; i++) { const x = sr() * 256, y = sr() * 200, l = 20 + sr() * 60, gr = g.createLinearGradient(0, y, 0, y + l); gr.addColorStop(0, 'rgba(14,18,16,.24)'); gr.addColorStop(1, 'rgba(14,18,16,0)'); g.fillStyle = gr; g.fillRect(x, y, 2 + sr() * 4, l); }
+  for (let i = 0; i < 500; i++) { const y = ((sr() * rows | 0) + 1) * bh - 2 + sr() * 3; g.fillStyle = `rgba(${55 + sr() * 30 | 0},${78 + sr() * 30 | 0},36,${.25 + sr() * .3})`; g.fillRect(sr() * 256, y % 256, 2, 1 + sr() * 2); }
+  grit(g, 256, 256, 9000, .18);
+});
+// the ramp's flagstones: worn smooth in the middle, dark in the gaps, puddles lying in the dips
+TX.hdFlag = hdTex(256, 256, g => {
+  g.fillStyle = '#1c1c1c'; g.fillRect(0, 0, 256, 256);
+  for (let r = 0; r < 4; r++) for (const [x0, bw] of rowOf(256, 3, .8)) {
+    const y = r * 64, b = 92 + sr() * 30 | 0, wear = sr();
+    for (const ox of [0, -256]) {
+      const x = x0 + ox; g.fillStyle = `rgb(${b},${b + 2},${b + 3})`; g.fillRect(x + 3, y + 3, bw - 5, 59);
+      const gr = g.createRadialGradient(x + bw / 2, y + 32, 4, x + bw / 2, y + 32, bw * .6); gr.addColorStop(0, `rgba(255,255,255,${.08 + wear * .1})`); gr.addColorStop(1, 'rgba(0,0,0,.18)'); g.fillStyle = gr; g.fillRect(x + 3, y + 3, bw - 5, 59);
+      g.fillStyle = 'rgba(255,255,255,.14)'; g.fillRect(x + 3, y + 3, bw - 5, 1); g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(x + 3, y + 60, bw - 5, 2);
+    }
+  }
+  for (let i = 0; i < 14; i++) { const x = sr() * 256, y = sr() * 256, rx = 8 + sr() * 22, ry = 4 + sr() * 10; g.fillStyle = 'rgba(16,20,26,.45)'; g.beginPath(); g.ellipse(x, y, rx, ry, sr() * 3, 0, TAU); g.fill(); }
+  grit(g, 256, 256, 8000, .2);
+});
+// the rock of the Hornburg and the gorge: layered, cracked, lighter on the ledges
+TX.hdRock = hdTex(256, 256, g => {
+  g.fillStyle = '#4a4a4a'; g.fillRect(0, 0, 256, 256);
+  for (let y = 0; y < 256; y += 2) { const v = 64 + Math.sin(y * .09) * 10 + Math.sin(y * .31 + 1) * 6 + sr() * 8 | 0; g.fillStyle = `rgba(${v},${v},${v + 2},.55)`; g.fillRect(0, y, 256, 2); }
+  for (let i = 0; i < 260; i++) { const x = sr() * 256, y = sr() * 256, r = 3 + sr() * 14, v = sr() < .5 ? 0 : 255; g.fillStyle = `rgba(${v},${v},${v},${.05 + sr() * .08})`; g.beginPath(); g.ellipse(x, y, r * 1.8, r, 0, 0, TAU); g.fill(); }
+  for (let i = 0; i < 26; i++) { let x = sr() * 256, y = sr() * 256; g.strokeStyle = 'rgba(10,10,10,.55)'; g.lineWidth = 1 + sr(); g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 6; k++) { x += (sr() - .5) * 30; y += sr() * 12; g.lineTo(x, y); } g.stroke(); g.strokeStyle = 'rgba(255,255,255,.12)'; g.beginPath(); g.moveTo(x, y - 1); g.stroke(); }
+  grit(g, 256, 256, 9000, .2);
+});
+// the floor of the coomb, churned to mud by ten thousand feet; and the scorched ground where the Balrog broke through
+TX.hdMud = hdTex(128, 128, g => {
+  g.fillStyle = '#3a3626'; g.fillRect(0, 0, 128, 128);
+  for (let i = 0; i < 900; i++) { const v = sr(); g.fillStyle = v < .4 ? '#2a281c' : v < .75 ? '#4a4a2e' : '#3e4a28'; g.fillRect(sr() * 128 | 0, sr() * 128 | 0, 2 + sr() * 3 | 0, 1 + sr() * 2 | 0); }
+  for (let i = 0; i < 8; i++) { g.fillStyle = 'rgba(14,16,20,.5)'; g.beginPath(); g.ellipse(sr() * 128, sr() * 128, 5 + sr() * 10, 3 + sr() * 5, sr() * 3, 0, TAU); g.fill(); }
+  grit(g, 128, 128, 2500, .2);
+});
+TX.hdScorch = hdTex(256, 256, g => {
+  g.fillStyle = '#1a1412'; g.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 300; i++) { const v = 20 + sr() * 30 | 0; g.fillStyle = `rgba(${v + 6},${v},${v - 4},.6)`; g.beginPath(); g.ellipse(sr() * 256, sr() * 256, 4 + sr() * 16, 3 + sr() * 9, sr() * 3, 0, TAU); g.fill(); }
+  for (let i = 0; i < 9; i++) {   // the cracks, glowing: long wandering fissures, a dull red seam with a hot core (drawn again across each edge so they tile)
+    let x = sr() * 256, y = sr() * 256, a = sr() * TAU; const pts = [[x, y]]; for (let k = 0; k < 16; k++) { a += (sr() - .5) * .9; x += Math.cos(a) * 11; y += Math.sin(a) * 11; pts.push([x, y]); }
+    for (const ox of [-256, 0, 256]) for (const oy of [-256, 0, 256]) for (const [w, c] of [[4, 'rgba(120,30,8,.8)'], [2, '#e8601a'], [.8, '#ffd060']]) { g.strokeStyle = c; g.lineWidth = w; g.beginPath(); pts.forEach(([px, py], k) => k ? g.lineTo(px + ox, py + oy) : g.moveTo(px + ox, py + oy)); g.stroke(); }
+  }
+  grit(g, 256, 256, 9000, .2);
+});
+
+// =====================================================================
+//  HELM'S DEEP: a Kingdom Hearts level. Down the great ramp from the Hornburg's broken gate in a storm at night, landing
+//  by landing: each locks behind the golden barrier while wave after wave of orcs, Uruk-hai and berserkers come up the
+//  ladders over the parapet. Below, Saruman's army fills the Deeping Coomb with torches. At the bottom the Deeping Wall
+//  is breached, and out of the fire in the breach comes a Balrog: a boss fight the way Kingdom Hearts II does them.
+// =====================================================================
+function helmsLayout() {
+  const N = 201, C = 100, TOP = 30, hs = new Float32Array(N * N), g = new Array(N * N).fill('g');
+  const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  // the ramp, from the gate down to the coomb, level along its four landings (and steeper between them)
+  const LAND = [.1, .34, .58, .8], LW = .075, M = 1400, ramp = [], wts = []; let acc = 0;
+  for (let i = 0; i <= M; i++) { wts.push(acc); if (LAND.some(l => Math.abs(i / M - l) < LW / 2)) continue; acc++; }
+  for (let i = 0; i <= M; i++) { const u = i / M, k = wts[i] / acc; ramp.push([lerp(-66, 55, u), lerp(6, -7, u) + Math.sin(u * Math.PI) * 7, lerp(TOP, .3, k)]); }
+  const HALF = 4.5, at = u => ramp[Math.round(clamp(u, 0, 1) * M)];
+  const landing = (u, r, waves, title) => { const p = at(u), i = Math.round(u * M), a = Math.atan2(ramp[i + 6][1] - ramp[i - 6][1], ramp[i + 6][0] - ramp[i - 6][0]); return { s: p[0], x: p[1], y: p[2], r, waves, title, u, ladders: [a + 1.2, a + 1.95, a - 1.2, a - 1.95], fromY: p[2] - 6 }; };
+  const plazas = [
+    landing(LAND[0], 8, [['o', 'o', 'o'], ['u', 'o', 'o', 'o']], 'THE GATE IS BROKEN!'),
+    landing(LAND[1], 8, [['o', 'o', 'u', 'u'], ['b', 'o', 'o', 'o'], ['u', 'u', 'b']], 'THEY\'RE COMING UP THE RAMP!'),
+    landing(LAND[2], 8.5, [['u', 'u', 'b', 'o', 'o'], ['o', 'o', 'o', 'o', 'b'], ['u', 'u', 'u', 'b']], 'HOLD THE RAMP!'),
+    landing(LAND[3], 8.5, [['b', 'b', 'u', 'u'], ['u', 'u', 'o', 'o', 'b'], ['b', 'b', 'u', 'u', 'u']], 'BERSERKERS!'),
+  ];
+  // the arena at the bottom, by the breach in the Deeping Wall
+  const arena = { s: 74, x: -12, y: .3, r: 18, waves: [['B']], title: 'THE DEEPING WALL IS BREACHED!', boss: true, last: true, breach: [74, -42] };
+  plazas.push(arena);
+  // the ground: the coomb gently rolling, the walls of the gorge either side and behind, the Hornburg's rock with its cliff
+  const base = (s, x) => {
+    let y = Math.sin(s * .09) * Math.cos(x * .07) * .5 + Math.sin(s * .23 + x * .17) * .25;
+    y += 46 * ss(62, 92, Math.abs(x + 8)) + 40 * ss(86, 100, s);
+    return Math.max(y, TOP * ss(-61, -67, s) + (s < -62 ? Math.sin(x * .3) * .3 : 0));
+  };
+  const wB = new Float32Array(N * N), yR = new Float32Array(N * N), dB = new Float32Array(N * N).fill(1e9), cell = (s, x) => [Math.round(C - s), Math.round(C - x)];
+  const carve = (s, x, y, half, fall, kind, prio) => {   // (prio: a landing, level all over, wins over the ramp running into it)
+    const [j0, i0] = cell(s, x), R_ = Math.ceil(half + fall);
+    for (let j = j0 - R_; j <= j0 + R_; j++) for (let i = i0 - R_; i <= i0 + R_; i++) {
+      if (i < 0 || j < 0 || i >= N || j >= N) continue; const d = Math.hypot(C - j - s, C - i - x), e = clamp((d - half) / fall, 0, 1), w = 1 - e * e * (3 - 2 * e), k = j * N + i;
+      if (w > wB[k] || (w === wB[k] && (prio ? 0 : d) < dB[k])) { wB[k] = w; yR[k] = y; dB[k] = prio ? 0 : d; }   // (the nearest point of the ramp sets the height, so its slope comes out true)
+      if (kind && d < half - .3) g[k] = kind;
+    }
+  };
+  for (let i = 0; i <= M; i += 2) { const p = ramp[i]; carve(p[0], p[1], p[2], HALF + .4, 1.4, 'p'); }
+  for (const p of plazas) carve(p.s, p.x, p.y, p.r + (p.boss ? 2 : .4), p.boss ? 6 : 1.4, p.boss ? 'a' : 's', true);
+  carve(-80, 4, TOP, 15, 3, 'h');   // the courtyard
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = C - j, x = C - i; hs[k] = lerp(base(s, x), yR[k], wB[k]); if (g[k] === 'g' && s < -66 && hs[k] > TOP - 1) g[k] = 'h'; }
+  // the parapets: along both sides of the ramp, and round each landing (open where the ramp runs through)
+  const blocks = [], walls = [], inPlaza = (s, x, pad) => plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + pad);
+  const nearRamp = (s, x, r) => { for (let i = 0; i <= M; i += 6) if (Math.hypot(s - ramp[i][0], x - ramp[i][1]) < r) return true; return false; };
+  for (let i = 10; i <= M; i += 6) {
+    const [s, x, y] = ramp[i], j = Math.min(M, i + 6), q = Math.max(0, i - 6), h = Math.atan2(ramp[j][1] - ramp[q][1], ramp[j][0] - ramp[q][0]);
+    for (const side of [-1, 1]) {
+      const ns = -Math.sin(h) * side, nx = Math.cos(h) * side, ps = s + ns * (HALF + .45), px = x + nx * (HALF + .45);
+      if (inPlaza(ps, px, .4) || Math.hypot(ps - arena.s, px - arena.x) < arena.r + 3) continue;
+      walls.push([ps, px, y, ns, nx]);
+    }
+  }
+  for (const p of plazas) { if (p.boss) continue; for (let a = 0; a < TAU; a += .5 / (p.r + .45)) { const ns = Math.cos(a), nx = Math.sin(a), ps = p.s + ns * (p.r + .45), px = p.x + nx * (p.r + .45); if (nearRamp(ps, px, HALF + .7)) continue; walls.push([ps, px, p.y, ns, nx]); } }
+  for (const [s, x, y] of walls) blocks.push([s - .45, s + .45, x - .45, x + .45, y + 2.4, 'wall', -40]);
+  // the arena's ring of stakes, open to the ramp; the Hornburg's walls round the courtyard, open at the gate
+  const end = ramp[M], ea = Math.atan2(end[1] - arena.x, end[0] - arena.s);
+  for (let a = 0; a < TAU; a += .05) { if (Math.abs(angDiff(a, ea)) < .3) continue; const s = arena.s + Math.cos(a) * (arena.r + 2), x = arena.x + Math.sin(a) * (arena.r + 2); blocks.push([s - .6, s + .6, x - .6, x + .6, 8, 'wall', -40]); }
+  const court = [-97, -66.5, -40, 38], g0 = ramp[0][1];
+  for (let s = court[0]; s <= court[1]; s += .8) for (const x of [court[2], court[3]]) blocks.push([s - .5, s + .5, x - .5, x + .5, TOP + 8, 'wall', -40]);
+  for (let x = court[2]; x <= court[3]; x += .8) { blocks.push([court[0] - .5, court[0] + .5, x - .5, x + .5, TOP + 8, 'wall', -40]); if (Math.abs(x - g0) > HALF) blocks.push([court[1] - .5, court[1] + .5, x - .5, x + .5, TOP + 8, 'wall', -40]); }
+  return { field: [-98, 98, -98, 98], start: [-86, 4], terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g }, layout: { blocks, ramp, HALF, plazas, walls, arena, entryA: ea, court, base } };
+}
+function helmsContent(L) {
+  const Y = L.layout;
+  khRings(Y);
+  for (let i = 40; i < Y.ramp.length - 20; i += 16) { const [s, x, y] = Y.ramp[i]; if (Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 1)) continue; addApple(s, x, y + .8); }
+  for (const p of Y.plazas) { if (p.boss) continue; [[p.ladders[0] - .45, 'b'], [p.ladders[2] + .45, 'q'], [p.ladders[1] + .5, 'b']].forEach(([a, k]) => addCrate(k, p.s + Math.cos(a) * (p.r - 1.6), p.x + Math.sin(a) * (p.r - 1.6), 0, p.y + 4)); }
+}
+// a wall of any length and height as one box, laid with stone by where it stands in the world (so it tiles evenly)
+function stoneBox(list, mat) { const im = instanced(GEO_BOX, mat, list); im.userData.noCast = false; return im; }
+function buildHelms(L, TH) {
+  const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env, TOP = 30;
+  const stone = surf(TX.hdStone, { sky, rough: .82, bump: 3.2, wet: .75, env: .5, tri: 3.2 }), stoneDark = surf(TX.hdStone, { sky, color: 0x8a8a90, rough: .85, bump: 3.2, wet: .6, env: .4, tri: 3.2 });
+  const wW = (s, x, y) => tw(s, x, y);   // (world position of a point on the level)
+  const rotOf = (ns, nx) => Math.atan2(-nx, ns);   // the turn that faces a box's front (+z) along the level's direction (ns, nx)
+  // the ground: rock for the Hornburg and the gorge, mud in the coomb, stone under the ramp, scorched round the arena
+  const grd = surf(TX.hdRock, { sky, vc: true, rough: .92, bump: 2.6, wet: .55, env: .35 });
+  groundMesh(T_, TX.hdRock, (k, sl, y) => k === 'p' || k === 's' ? [.5, .52, .54] : k === 'a' ? [.32, .27, .24] : k === 'h' ? [.6, .6, .62] : sl > 1.2 ? [.58, .58, .62] : y > 6 ? [.5, .5, .52] : [.42, .4, .3], 7, () => grd);
+  wideFloor(TX.hdMud, 0x2a2820, 120, -1.2, 600);
+  // the ramp's flagstones, and the landings', wet and shining in the torchlight
+  const flagM = surf(TX.hdFlag, { sky, rough: .6, bump: 3.4, wet: 1, env: .8 });
+  { const pos = [], uv = [], idx = []; let v = 0, n = 0; const R = Y.ramp;
+    for (let i = 0; i < R.length; i += 4) {
+      const [s, x, y] = R[i], j = Math.min(R.length - 1, i + 4), q = Math.max(0, i - 4), h = Math.atan2(R[j][1] - R[q][1], R[j][0] - R[q][0]);
+      if (i) v += Math.hypot(s - R[i - 4][0], x - R[i - 4][1]);
+      for (const side of [-1, 1]) { const p = tw(s - Math.sin(h) * side * Y.HALF, x + Math.cos(h) * side * Y.HALF, y + .1); pos.push(p.x, p.y, p.z); uv.push((side + 1) / 2 * Y.HALF * 2 / 4, v / 4); }
+      if (n) { const k = n * 2; idx.push(k - 2, k, k - 1, k - 1, k, k + 1); } n++;
+    }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
+    if (geo.attributes.normal.getY(0) < 0) { idx.reverse(); geo.setIndex(idx); geo.computeVertexNormals(); }
+    const m = new THREE.Mesh(geo, flagM); m.receiveShadow = true; m.userData.keep = true; scene.add(m);
+  }
+  for (const p of Y.plazas) {
+    const r = p.boss ? p.r + 1.5 : p.r + .3, geo = new THREE.CircleGeometry(r, 48), uvs = geo.attributes.uv; for (let i = 0; i < uvs.count; i++) uvs.setXY(i, uvs.getX(i) * r / (p.boss ? 6 : 2), uvs.getY(i) * r / (p.boss ? 6 : 2));
+    const m = new THREE.Mesh(geo, p.boss ? surf(TX.hdScorch, { sky, rough: .8, bump: 3, color: 0x7a7070, glow: .18, crust: .06, wet: .5 }) : flagM); m.rotation.x = -Math.PI / 2; tw(p.s, p.x, p.y + .06, m.position); m.receiveShadow = true; m.userData.keep = true; scene.add(m);
+  }
+  // the parapets: each a stone box from the ground below up past the walk, battlements on top
+  const boxes = [], merlons = [];
+  for (const [s, x, y, ns, nx] of Y.walls) {
+    const lo = Math.min(at(s + ns * 1.2, x + nx * 1.2), at(s, x), y) - 1.5, hi = y + 1.05, p = wW(s, x, (lo + hi) / 2);
+    boxes.push([p.x, p.y, p.z, .62, hi - lo, .9, rotOf(ns, nx)]);
+  }
+  for (let k = 0; k < Y.walls.length; k += 3) { const [s, x, y, ns, nx] = Y.walls[k], p = wW(s, x, y + 1.5); merlons.push([p.x, p.y, p.z, .75, .9, .95, rotOf(ns, nx)]); }
+  stoneBox(boxes, stone); stoneBox(merlons, stone);
+  // torches along the parapets
+  for (let k = 6; k < Y.walls.length; k += 22) { const [s, x, y, ns, nx] = Y.walls[k]; addTorch(s - ns * .5, x - nx * .5, y + 1.6); }
+  // the Hornburg: its walls round the courtyard, the gatehouse with its broken gate, and the keep
+  const [c0, c1, x0, x1] = Y.court, g0 = Y.ramp[0][1], hw = [];
+  const wallRun = (sa, xa, sb, xb, top, th) => { const l = Math.hypot(sb - sa, xb - xa), ns = (sb - sa) / l, nx = (xb - xa) / l; for (let d = 0; d < l; d += 4) { const e = Math.min(4, l - d), s = sa + ns * (d + e / 2), x = xa + nx * (d + e / 2), lo = Math.min(at(s, x), TOP) - 8, p = wW(s, x, (lo + top) / 2); hw.push([p.x, p.y, p.z, th, top - lo, e + .05, rotOf(ns, nx)]); for (let q = .7; q < e; q += 1.6) { const pm = wW(sa + ns * (d + q), xa + nx * (d + q), top + .5); hw.push([pm.x, pm.y, pm.z, th + .1, 1, .8, rotOf(ns, nx)]); } } };
+  wallRun(c0, x0, c1, x0, TOP + 7, 2.4); wallRun(c0, x1, c1, x1, TOP + 7, 2.4); wallRun(c0, x0, c0, x1, TOP + 7, 2.4);
+  wallRun(c1, x0, c1, g0 - Y.HALF - 1, TOP + 7, 2.4); wallRun(c1, g0 + Y.HALF + 1, c1, x1, TOP + 7, 2.4);
+  // (Battle for Middle-earth's own Helm's Deep wall, when it's there, in lengths of twelve along each side)
+  if (PROPS.nbhdmainwall) { hw.length = 0; for (const [sa, xa, sb, xb] of [[c0, x0, c1, x0], [c0, x1, c1, x1], [c0, x0, c0, x1], [c1, x0, c1, g0 - Y.HALF - 1], [c1, g0 + Y.HALF + 1, c1, x1]]) { const l = Math.hypot(sb - sa, xb - xa), ns = (sb - sa) / l, nx = (xb - xa) / l, n = Math.max(1, Math.round(l / 12)), e = l / n; for (let k = 0; k < n; k++) propOne('nbhdmainwall', sa + ns * e * (k + .5), xa + nx * e * (k + .5), TOP - .5, Math.atan2(nx, ns), e * 1.04); } }
+  stoneBox(hw, stoneDark);
+  const gt = []; for (const x of [g0 - Y.HALF - 2.6, g0 + Y.HALF + 2.6]) { if (PROPS.rbcasttowr) { propOne('rbcasttowr', c1, x, TOP - .4, Math.PI / 2, 6.5); continue; } const p = wW(c1, x, TOP + 3); gt.push([p.x, p.y + 2, p.z, 5, 14, 5, 0]); for (const [ds, dx] of [[-2, -2], [-2, 2], [2, -2], [2, 2], [0, -2], [0, 2], [-2, 0], [2, 0]]) { const q = wW(c1 + ds, x + dx, TOP + 10.6); gt.push([q.x, q.y, q.z, .9, 1.2, .9, 0]); } }
+  { const p = wW(c1, g0, TOP + 9); gt.push([p.x, p.y, p.z, Y.HALF * 2 + 4, 4, 4, 0]); }   // the arch over the gateway
+  stoneBox(gt, stoneDark);
+  { const wood = surf(TX.wood, { sky, color: 0x5a4030, rough: .7, bump: 2, wet: .5 }), d = new THREE.Group(); place(d, c1 - 1, g0 - Y.HALF + 1, TOP, -.9); scene.add(d); part(GEO_BOX, wood, d, 2, 3, 0, 4.2, 6, .4); const d2 = new THREE.Group(); place(d2, c1 - 1.5, g0 + Y.HALF - 1, TOP + .2, 1.3); scene.add(d2); const f2 = part(GEO_BOX, wood, d2, -2, 1.2, 0, 4.2, 6, .4); f2.rotation.z = 1.35; }   // the gate, broken in: one leaf hanging, one down
+  if (PROPS.rbcastkeep) propOne('rbcastkeep', -84, -24, TOP - .2, Math.PI / 2, 16);
+  else { const k = new THREE.Mesh(new THREE.CylinderGeometry(8, 8.6, 34, 28), stoneDark); tw(-84, -24, TOP + 12, k.position); k.userData.cast = true; scene.add(k); const ring = []; for (let a = 0; a < TAU; a += TAU / 22) { const p = wW(-84 + Math.cos(a) * 7.6, -24 + Math.sin(a) * 7.6, TOP + 29.6); ring.push([p.x, p.y, p.z, 1.2, 1.4, 1, -a]); } stoneBox(ring, stoneDark);
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(7, 6, 28), surf(TX.hdStone, { sky, color: 0x5a6070, rough: .5, wet: 1, tri: 2 })); tw(-84, -24, TOP + 32, roof.position); scene.add(roof); }
+  for (const [s, x] of [[-72, -38], [-72, 36], [-95, -38], [-95, 36]]) { const t = new THREE.Mesh(new THREE.CylinderGeometry(3, 3.3, 14, 18), stoneDark); tw(s, x, TOP + 4, t.position); scene.add(t); }
+  // the Deeping Wall, running out across the coomb from the Hornburg's rock, broken open by the arena
+  const dw = [], DX = -42, br = Y.arena.breach;
+  for (let s = -58; s < 98; s += 6) {
+    const e = 6.05, sc = s + 3; if (Math.abs(sc - br[0]) < 8) continue; const lo = at(sc, DX) - 2, top = Math.max(14, at(sc, DX) + 12), p = wW(sc, DX, (lo + top) / 2);
+    dw.push([p.x, p.y, p.z, 7, top - lo, e, 0]); for (const xx of [DX - 3.2, DX + 3.2]) for (let q = .8; q < e; q += 1.8) { const pm = wW(s + q, xx, top + .55); dw.push([pm.x, pm.y, pm.z, .7, 1.1, .9, 0]); }
+  }
+  // (Battle for Middle-earth's own Deeping Wall, when it's there: lengths of twenty-four, the one by the breach with its culvert)
+  if (PROPS.nbhddeepingw) { dw.length = 0; for (let sc = -46; sc < 100; sc += 24) { if (Math.abs(sc - br[0]) < 14) continue; const drn = PROPS.nbhddeepingwdrn && sc + 24 > br[0] - 14 && sc < br[0]; propOne(drn ? 'nbhddeepingwdrn' : 'nbhddeepingw', sc, DX, Math.min(at(sc - 10, DX), at(sc + 10, DX), at(sc, DX)) - .6, 0, 24.2); } }
+  stoneBox(dw, stone);
+  // the breach: rubble in a spill out into the coomb, and fire in the hole where the Balrog came through
+  const rub = [];
+  for (let i = 0; i < 90; i++) { const s = br[0] + rand(-9, 9), x = DX + rand(-5, 14) * Math.abs(Math.cos(i)), p = wW(s, x, at(s, x) + rand(-.2, .6)), r = rand(.4, 1.6); if (Math.hypot(s - Y.arena.s, x - Y.arena.x) < Y.arena.r + 2) continue; rub.push([p.x, p.y, p.z, r, r * rand(.6, 1), r, rand(0, 6)]); }
+  instanced(new THREE.DodecahedronGeometry(1, 0), stone, rub);
+  for (let i = 0; i < 6; i++) { const g = glowSprite(0xff5a14, rand(6, 10), .55); tw(br[0] + rand(-6, 6), DX + rand(-2, 2), rand(1, 4), g.position); g.userData.keep = true; scene.add(g); }
+  TH.breach = br;
+  // ladders up the landings' parapets, where the enemy comes over
+  const lad = PROPS.eb_ladder ? null : ps1(new THREE.MeshLambertMaterial({ color: 0x4a3420 }));
+  for (const p of Y.plazas) if (!p.boss) for (const a of p.ladders) {
+    const s = p.s + Math.cos(a) * (p.r + 1.4), x = p.x + Math.sin(a) * (p.r + 1.4), lo = at(s, x), hgt = p.y + 1.2 - lo;
+    if (PROPS.eb_ladder) { const pr = propOne('eb_ladder', s, x, lo, a + Math.PI / 2, hgt, 'h'); if (pr) pr.g.rotation.z = .25; continue; }
+    const g = new THREE.Group(); place(g, s, x, lo, a); scene.add(g); g.rotation.x = -.22;
+    for (const sx of [-.4, .4]) part(GEO_BOX, lad, g, sx, hgt / 2, 0, .1, hgt + .6, .1);
+    for (let y = .4; y < hgt; y += .55) part(GEO_BOX, lad, g, 0, y, 0, .8, .07, .07);
+  }
+  // the White Mountains round the coomb, black against the storm
+  for (let i = 0; i < 18; i++) { const a = rand(-Math.PI, Math.PI), r = rand(200, 420), h = rand(90, 200), m = gradCone(rand(60, 110), h, 6, 0x6a7080, 0x14161c); tw(Math.cos(a) * r, Math.sin(a) * r, h / 2 - 20, m.position); scene.add(m); }
+  // Saruman's army, filling the coomb: ranks of dark helmets and pikes, a torch to every few
+  const bodies = [], heads = [], pikes = [], torches = [];
+  for (let i = 0, n = 0; i < 9000 && n < 1500; i++) {
+    const s = rand(-50, 92), x = rand(-72, 60), y = at(s, x);
+    if (y > 2.5 || Math.abs(x - DX) < 6 || nearOf(Y.ramp, s, x, Y.HALF + 7) || Math.hypot(s - Y.arena.s, x - Y.arena.x) < Y.arena.r + 6) continue;
+    n++; const p = wW(s, x, y), h = rand(-.4, .4);
+    bodies.push([p.x, p.y + .75, p.z, .55, 1.4, .36, h]); heads.push([p.x, p.y + 1.62, p.z, .19, .2, .19, h]);
+    if (n % 2) pikes.push([p.x + rand(-.3, .3), p.y + 1.9, p.z + rand(-.3, .3), .035, 3.4, .035, 0]);
+    if (n % 9 === 0) torches.push(wW(s, x, y + 2.3));
+  }
+  const armyM = lam(0x121216), helmM = lam(0x2a2a30, { emissive: 0x050508 });
+  instanced(GEO_BOX, armyM, bodies).userData.noCast = true; instanced(GEO.sph, helmM, heads).userData.noCast = true; instanced(GEO.cyl, armyM, pikes).userData.noCast = true;
+  for (const p of torches) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.fire, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); sp.position.copy(p); sp.scale.set(.6, 1, 1); scene.add(sp); torchSprites.push(sp); const gl = glowSprite(0xff7a2a, 2.6, .35); gl.position.copy(p); scene.add(gl); }
+  // rain, falling round wherever the camera is
+  { const n = 2600, pos = new Float32Array(n * 6), geo = new THREE.BufferGeometry();
+    for (let i = 0; i < n; i++) { const x = rand(-30, 30), y = rand(-4, 26), z = rand(-30, 30); pos.set([x, y, z, x - .15, y - .9, z + .05], i * 6); }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const rain = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xa8bcd8, transparent: true, opacity: .32, depthWrite: false }));
+    rain.frustumCulled = false; rain.visible = false; rain.userData.keep = true; scene.add(rain); TH.rain = rain;
+  }
+  bakeScenery(scene.children.slice(first));
+}
+function nearOf(path, s, x, r) { for (let i = 0; i < path.length; i += 8) if (Math.hypot(s - path[i][0], x - path[i][1]) < r) return true; return false; }
+// each frame at Helm's Deep: the rain, fire flickering in the breach
+function updateHelms(dt) {
+  const H = THEMES.helms, on = !!(LV && LV.theme === 'helms') && state !== 'map' && state !== 'title';
+  if (H.rain) H.rain.visible = on; if (!on) return;
+  const pos = H.rain.geometry.attributes.position, a = pos.array;
+  for (let i = 0; i < a.length; i += 6) { a[i + 1] -= 30 * dt; a[i] -= 5 * dt; a[i + 4] -= 30 * dt; a[i + 3] -= 5 * dt; if (a[i + 1] < -4) { const x = rand(-30, 30), z = rand(-30, 30), y = 26; a.set([x, y, z, x - .15, y - .9, z + .05], i); } }
+  pos.needsUpdate = true; H.rain.position.copy(camera.position);
+  const br = H.breach; if (br && Math.random() < dt * 30) flame(tw(br[0] + rand(-7, 7), -42 + rand(-2, 3), rand(0, 2)), rand(1.5, 3), 2.4);
+}
+THEMES.helms = natTheme({
+  wallTex: TX.hdStone, floorTex: TX.hdFlag, tint: [.8, .82, .86], door: 0x6a6a7a,
+  env: { sky: [0x020308, 0x0a1018, 0x1a2230, 0x3a2a20], fog: [35, 240], fogC: 0x0c1118, amb: [0x4a5870, .75], hemi: [0x8a9ab8, 0x1a1410, .55], sun: [0xa8b8e8, .55], east: [0xff8a40, .3], bolts: true, cloud: 0x3a4250, bloom: 1, sunDir: [40, 90, 60] },
+  orc: MT_ORC,
+  scenery(L) { buildHelms(L, this); },
+});
+
+// --- the Balrog, the Kingdom Hearts II way: a boss with a gauge of four bars, big blows you see coming (a ground marked
+//     in red before each lands), and its moments for reaction commands:
+//       Whip lash: a sweep across the front, low: jump it, or guard.        Sword slam: on the red circle, then a shockwave
+//       to jump; the sword sticks in the ground: SWORD RUN, up its arm to strike its head.   Fire breath: a sweeping
+//       cone; get beside or behind it.   Leap: onto you from afar.   With its gauge half gone it blazes up and calls more:
+//       Rain of fire, falling on red circles; and the Charge across the arena: stand in its way and YOU SHALL NOT PASS!
+//       stops it dead and knocks it to its knees.   Hit it too much at once and it bursts free in a ring of fire
+//       (KH II's revenge value).
+function makeKHBalrog() {
+  const M_ = balrogMats(), skin = M_.rock, root = new THREE.Group(), body = new THREE.Group(); root.add(body); body.scale.setScalar(.8);
+  const legs = [-1, 1].map(sx => { const g = new THREE.Group(); g.position.set(sx * 1.1, 4.4, 0); body.add(g); part(new THREE.CylinderGeometry(.8, .55, 2.4, 10).translate(0, -1.2, 0), skin, g, 0, 0, 0); const kn = new THREE.Group(); kn.position.set(0, -2.3, 0); g.add(kn); part(new THREE.CylinderGeometry(.55, .38, 2.1, 10).translate(0, -1.05, 0), skin, kn, 0, 0, 0); part(GEO_BOX, skin, kn, 0, -2.05, .35, .85, .4, 1.4); for (const x of [-.25, 0, .25]) part(new THREE.ConeGeometry(.08, .4, 6), M_.horn, kn, x, -2.1, 1.1).rotation.x = Math.PI / 2; return { g, kn }; });
+  const torso = new THREE.Group(); torso.position.set(0, 4.5, 0); body.add(torso);
+  part(new THREE.SphereGeometry(1.2, 14, 10), skin, torso, 0, .5, 0, 1.15, 1, .9);
+  part(new THREE.CylinderGeometry(1.55, 1.1, 2, 14), skin, torso, 0, 1.8, 0, 1, 1, .8);
+  part(new THREE.SphereGeometry(1.7, 16, 12), skin, torso, 0, 3, 0, 1.15, .9, .85);
+  for (const sx of [-1, 1]) part(new THREE.SphereGeometry(.95, 12, 10), skin, torso, sx * 1.95, 3.35, 0);
+  for (let i = 0; i < 6; i++) part(new THREE.ConeGeometry(.14, .7 - i * .06, 6), M_.horn, torso, 0, 3.6 - i * .5, -1.3).rotation.x = -.9;
+  const head = new THREE.Group(); head.position.set(0, 4.5, .55); torso.add(head);
+  part(new THREE.SphereGeometry(.8, 14, 12), skin, head, 0, 0, 0, 1, .95, 1.2); part(GEO_BOX, skin, head, 0, -.15, .8, .9, .55, 1);
+  const jaw = new THREE.Group(); jaw.position.set(0, -.45, .3); head.add(jaw); part(GEO_BOX, skin, jaw, 0, -.15, .6, 1.1, .3, 1.3);
+  for (const sx of [-1, 1]) { part(new THREE.SphereGeometry(.12, 8, 6), M_.eyes, head, sx * .35, .25, .92); taperedHorn(head, [[sx * .5, .55, -.05], [sx * 1.3, .8, -.05], [sx * 1.9, 1.2, .35], [sx * 2.1, 1.9, .9], [sx * 1.9, 2.4, 1.3]], .3, .04); }
+  const mouth = glowSprite(0xff8a20, 2.6, .6); mouth.position.set(0, -.6, 1.5); head.add(mouth);
+  const wings = [-1, 1].map(sx => { const wr = new THREE.Group(); wr.position.set(sx * 1.1, 3.5, -.9); torso.add(wr); const w = shadowWing(M_); w.scale.set(sx * 1.5, 1.5, 1.5); wr.add(w); return wr; });
+  const arm = sx => { const g = new THREE.Group(); g.position.set(sx * 2.3, 3.5, 0); torso.add(g); part(new THREE.CylinderGeometry(.62, .46, 2.6, 10).translate(0, -1.3, 0), skin, g, 0, 0, 0); const el = new THREE.Group(); el.position.y = -2.5; g.add(el); part(new THREE.CylinderGeometry(.46, .38, 2.4, 10).translate(0, -1.2, 0), skin, el, 0, 0, 0); part(new THREE.SphereGeometry(.58, 10, 8), skin, el, 0, -2.5, 0); return { g, el }; };
+  const armR = arm(-1), armL = arm(1);
+  const sword = new THREE.Group(); sword.position.y = -2.6; armR.el.add(sword);
+  part(GEO_BOX, M_.iron, sword, 0, 0, 0, 1.6, .22, .3); part(GEO_BOX, M_.blade, sword, 0, -3.4, 0, .5, 6.4, .12); part(new THREE.ConeGeometry(.25, .9, 4), M_.blade, sword, 0, -7, 0, 1, 1, .25).rotation.x = Math.PI;
+  for (let k = 0; k < 3; k++) { const g = glowSprite(0xff9a30, 2.4, .5); g.position.set(0, -1.6 - k * 2, 0); sword.add(g); }
+  const whip = new THREE.Group(); whip.position.y = -2.7; armL.el.add(whip);
+  for (let k = 0; k < 10; k++) part(GEO.cyl, k > 6 ? M_.blade : M_.lava, whip, Math.sin(k * .5) * .3 * k / 10, -.45 - k * .9, 0, .14 - k * .01, .95, .14 - k * .01);
+  const fires = [], fire = (x, y, z, s, parent) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.fire, color: 0xffc080, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); sp.position.set(x, y + s * .35, z); parent.add(sp); fires.push({ sp, s, ph: rand(0, 6) }); };
+  for (const [x, y, z, s] of [[0, 1.2, -.5, 2.6], [.9, 1, -.6, 2], [-.9, 1, -.6, 2]]) fire(x, y, z, s, head);
+  for (const [x, y, z, s] of [[2, 3.9, 0, 2.6], [-2, 3.9, 0, 2.6], [0, 3.6, -1.2, 3.2], [1, 1.5, -.9, 2.2], [-1, 1.5, -.9, 2.2]]) fire(x, y, z, s, torso);
+  const halo = glowSprite(0xff4a10, 22, .32); halo.position.set(0, 6, -1); root.add(halo);
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(3.2, 20), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .5, depthWrite: false })); shadow.rotation.x = -Math.PI / 2;
+  scene.add(root); scene.add(shadow);
+  const M = { root, body, torso, head, jaw, mouth, legs, wings, armR, armL, sword, whip, fires, halo, shadow };
+  addSkin(M, 'balrog', body, root, [halo]); if (M.skin) M.skin.temp = true; return M;
+}
+function spawnKHBalrog(pl, delay = 0) {
+  const b = { m: makeKHBalrog(), boss: true, kind: 'B', name: 'BALROG', hp: 800, max: 800, bars: 4, r: 2.3, tall: 8, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null,
+    state: 'intro', t: -delay - .6, from: [pl.breach[0], pl.breach[1]], to: [pl.s, pl.x - 4], h: 0, kneel: 0, cd: 1.5 };
+  b.s = b.from[0]; b.x = b.from[1]; b.y0 = landAt(b.s, b.x) - 6; b.y = b.y0; b.h = Math.atan2(P.x - b.x, P.s - b.s); b.m.root.visible = b.m.shadow.visible = false;
+  URUKS.push(b); KH.boss = b; Music.mode = 1; return b;
+}
+// a red mark on the ground (a disc, a ring or a wedge between angles a0 and a1, as headings), where a blow is about to land
+function warnMesh(s, x, r0, r1, a0 = 0, a1 = TAU, col = 0xff3a10) {
+  const n = Math.max(10, Math.ceil(Math.abs(a1 - a0) * r1 / .7)), pos = [], idx = [];
+  for (let i = 0; i <= n; i++) { const a = lerp(a0, a1, i / n); for (const r of [r0, r1]) { const ps = s + Math.cos(a) * r, px = x + Math.sin(a) * r, p = tw(ps, px, landAt(ps, px) + .14); pos.push(p.x, p.y, p.z); } if (i < n) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); } }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
+  return new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .4, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+}
+// a flat red disc to move about (the arena is level)
+function flatMark(r) { const m = new THREE.Mesh(new THREE.CircleGeometry(r, 40), new THREE.MeshBasicMaterial({ color: 0xff3a10, transparent: true, opacity: .4, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); m.rotation.x = -Math.PI / 2; return m; }
+const warnPulse = (f, k = 1) => { f.mesh.material.opacity = (.25 + .2 * Math.abs(Math.sin(f.t * 9))) * k; };
+// a shockwave rolling out from a point: a ring of fire along the ground; jump it
+function bossWave(b, s, x, maxR, speed, dmg) {
+  const y = landAt(s, x), ring = new THREE.Mesh(new THREE.RingGeometry(.9, 1, 64), new THREE.MeshBasicMaterial({ color: 0xff7a20, transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+  ring.rotation.x = -Math.PI / 2; tw(s, x, y + .25, ring.position); let hit = false;
+  khFx(ring, f => {
+    const r = .5 + f.t * speed; ring.scale.setScalar(r); ring.material.opacity = .85 * (1 - r / maxR);
+    if (Math.random() < .9) { const a = rand(0, TAU); flame(tw(s + Math.cos(a) * r, x + Math.sin(a) * r, y + .2), .9, 1.2); }
+    const d = Math.hypot(P.s - s, P.x - x); if (!hit && Math.abs(d - r) < .7 && P.y - landAt(P.s, P.x) < .6) { hit = true; khHurt(dmg, { s, x }, { unblock: true, kb: 7 }); }
+    return r < maxR;
+  });
+}
+function bossMove(b, ds, dx) { const pl = b.plaza, ns = b.s + ds, nx = b.x + dx; if (Math.hypot(ns - pl.s, nx - pl.x) < pl.r - 3) { b.s = ns; b.x = nx; } }
+function endBossAtk(b) { if (b.a) { for (const f of b.a.fx || []) f.dead = true; b.a = null; } if (b.state === 'atk') { b.state = 'idle'; b.t = 0; } }
+function bossPick(b, d) {
+  const p2 = b.phase > 1, r = Math.random(); let t;
+  if (d > 11) t = p2 && r < .3 ? 'charge' : p2 && r < .55 ? 'meteor' : r < .8 ? 'leap' : 'breath';
+  else if (d > 6.5) t = r < .4 ? 'slam' : r < .7 ? 'breath' : p2 && r < .85 ? 'charge' : p2 ? 'meteor' : 'leap';
+  else t = r < .5 ? 'whip' : r < .82 ? 'slam' : 'breath';
+  if (t === b.last && Math.random() < .6) t = d > 6.5 ? 'slam' : 'whip';
+  if (BOSS_ATK) t = BOSS_ATK;   // (testing: &bossatk=charge)
+  bossStart(b, t);
+}
+const BOSS_ATK = new URLSearchParams(location.search).get('bossatk');
+const BOSS_WIND = { whip: .85, slam: .95, breath: .8, leap: .5, meteor: 1, charge: 1.1, burst: .4 };
+const BOSS_CLIP = { whip: 'attack_whip_a', slam: 'attack_a', breath: 'attack_fire_a', leap: 'jump_1', meteor: 'roar_b', charge: 'roar_a', burst: 'ignite_tb' };
+function bossStart(b, type) {
+  const f = b.phase > 1 ? .78 : 1, A = b.a = { type, t: 0, ph: 'wind', wT: BOSS_WIND[type] * f, fx: [] }, pl = b.plaza;
+  b.state = 'atk'; b.t = 0; b.last = type; skinClip(b.m, BOSS_CLIP[type], A.wT + .5);
+  const mark = m => { const fx = khFx(m, f2 => { warnPulse(f2); return true; }); A.fx.push(fx); return fx; };
+  if (type === 'whip') { A.h = b.h; mark(warnMesh(b.s, b.x, 1.5, 10.5, A.h - 1.75, A.h + 1.75)); S.orcGrunt(); }
+  if (type === 'slam') { A.tgt = [P.s, P.x]; A.mark = mark(flatMark(3.2)); }
+  if (type === 'breath') { S.roar(); A.h = b.h; mark(warnMesh(b.s, b.x, 1.5, 13, A.h - 1.2, A.h + 1.2, 0xff6a10)); }
+  if (type === 'leap') { const k = clamp(Math.hypot(P.s - pl.s, P.x - pl.x), 0, pl.r - 3.5) / (Math.hypot(P.s - pl.s, P.x - pl.x) || 1); A.tgt = [pl.s + (P.s - pl.s) * k, pl.x + (P.x - pl.x) * k]; A.from = [b.s, b.x]; mark(warnMesh(A.tgt[0], A.tgt[1], 0, 4.5)); }
+  if (type === 'meteor') { S.roar(); banner('RAIN OF FIRE!', 1); A.n = 0; }
+  if (type === 'charge') { S.roar(); A.h = b.h; }
+  if (type === 'burst') { S.roar(); mark(warnMesh(b.s, b.x, 0, 6.5, 0, TAU, 0xffa020)); flashV = Math.max(flashV, .25); }
+}
+function bossAttack(b, dt, d, toP) {
+  const A = b.a; A.t += dt; const src = b, f = b.phase > 1 ? .78 : 1;
+  switch (A.type) {
+    case 'whip':
+      if (A.ph === 'wind') { if (A.t >= A.wT) { A.ph = 'swing'; A.t = 0; A.pa = A.h - 1.75; S.whip(); } break; }
+      if (A.ph === 'swing') {
+        const u = clamp(A.t / .42, 0, 1), ang = A.h - 1.75 + u * 3.5, pa = Math.atan2(P.x - b.x, P.s - b.s), da = angDiff(ang, A.pa), dp = angDiff(pa, A.pa);
+        for (let k = 0; k < 6; k++) { const r = 2 + k * 1.7; flame(tw(b.s + Math.cos(ang) * r, b.x + Math.sin(ang) * r, landAt(b.s, b.x) + .6), 1.1, 1); }
+        if (!A.hit && d < 10.8 && dp >= -.05 && dp <= da + .05 && P.y - landAt(P.s, P.x) < .9) { A.hit = true; khHurt(16, src, { kb: 10 }); }
+        A.pa = ang; if (u >= 1) { A.ph = 'back'; A.t = 0; A.fx.forEach(x => x.dead = true); }
+      } else if (A.t > .6 * f) endBossAtk(b);
+      break;
+    case 'slam':
+      if (A.ph === 'wind') {   // the circle follows you until just before the blow
+        b.h += angDiff(b.h, Math.atan2(A.tgt[1] - b.x, A.tgt[0] - b.s)) * Math.min(1, dt * 4);
+        if (A.t < A.wT - .3) { A.tgt[0] = damp(A.tgt[0], P.s, 6, dt); A.tgt[1] = damp(A.tgt[1], P.x, 6, dt); }
+        const dd = Math.hypot(A.tgt[0] - b.s, A.tgt[1] - b.x); if (dd > 9) { A.tgt[0] = b.s + (A.tgt[0] - b.s) / dd * 9; A.tgt[1] = b.x + (A.tgt[1] - b.x) / dd * 9; }
+        tw(A.tgt[0], A.tgt[1], landAt(A.tgt[0], A.tgt[1]) + .14, A.mark.mesh.position);
+        if (A.t >= A.wT) { A.ph = 'strike'; A.t = 0; S.whoosh(); }
+      } else if (A.ph === 'strike') {
+        if (A.t >= .18) {
+          A.ph = 'stuck'; A.t = 0; A.fx.forEach(x => x.dead = true); const [s, x] = A.tgt, y = landAt(s, x), p = tw(s, x, y + .3);
+          sparks(p, 50, 11, [1, .95, .6], [1, .4, .1], .3); puff(p, 12, 2); S.smash(); cam.shake = Math.max(cam.shake, .7); flashV = Math.max(flashV, .2);
+          if (Math.hypot(P.s - s, P.x - x) < 3.3 && P.y - landAt(P.s, P.x) < 1.5) khHurt(22, { s: b.s, x: b.x }, { kb: 11 });
+          bossWave(b, s, x, 15, 12, 10);
+        }
+      } else if (A.ph === 'stuck') { if (Math.random() < .5) flame(tw(A.tgt[0] + rand(-.5, .5), A.tgt[1] + rand(-.5, .5), landAt(A.tgt[0], A.tgt[1]) + .3), 1, 1.5); if (A.t > 2.3 * (b.phase > 1 ? .8 : 1)) { A.ph = 'pull'; A.t = 0; } }
+      else if (A.t > .5) endBossAtk(b);
+      break;
+    case 'breath':
+      if (A.ph === 'wind') { if (A.t >= A.wT) { A.ph = 'fire'; A.t = 0; S.roar(); } break; }
+      if (A.ph === 'fire') {
+        const u = clamp(A.t / 1.5, 0, 1), ang = A.h - 1.1 + u * 2.2, hp = tw(b.s + Math.cos(b.h) * 2, b.x + Math.sin(b.h) * 2, b.y + 6.2);
+        b.h = ang; for (let k = 0; k < 7; k++) { const r = rand(1, 13), a2 = ang + rand(-.22, .22), gp = tw(b.s + Math.cos(a2) * r, b.x + Math.sin(a2) * r, landAt(b.s, b.x) + rand(.2, 1.6)); flame(_a.copy(hp).lerp(gp, r / 13), .9 + r * .12, 1); }
+        const pa = Math.atan2(P.x - b.x, P.s - b.s); if (d < 13.5 && Math.abs(angDiff(pa, ang)) < .3 && P.y - landAt(P.s, P.x) < 3) khHurt(9, src, { unblock: true, kb: 6 });
+        if (u >= 1) { A.ph = 'end'; A.t = 0; A.fx.forEach(x => x.dead = true); }
+      } else if (A.t > .5) endBossAtk(b);
+      break;
+    case 'leap':
+      if (A.ph === 'wind') { if (A.t >= A.wT) { A.ph = 'air'; A.t = 0; A.y0 = b.y; S.whoosh(); } break; }
+      if (A.ph === 'air') {
+        const k = clamp(A.t / 1, 0, 1); b.s = lerp(A.from[0], A.tgt[0], k); b.x = lerp(A.from[1], A.tgt[1], k); b.y = lerp(A.y0, landAt(b.s, b.x), k) + Math.sin(k * Math.PI) * 9; A.air = true;
+        if (k >= 1) {
+          A.ph = 'land'; A.t = 0; A.air = false; A.fx.forEach(x => x.dead = true); skinClip(b.m, 'land_1', .7); const p = tw(b.s, b.x, b.y + .3);
+          sparks(p, 40, 10, [1, .9, .6], [1, .4, .1], .3); puff(p, 14, 2.4); S.smash(); cam.shake = Math.max(cam.shake, .8);
+          if (Math.hypot(P.s - b.s, P.x - b.x) < 4.5 && P.y - landAt(P.s, P.x) < 1.5) khHurt(20, src, { unblock: true, kb: 12 });
+          bossWave(b, b.s, b.x, 10, 10, 8);
+        }
+      } else if (A.t > .9 * f) endBossAtk(b);
+      break;
+    case 'meteor':
+      if (A.ph === 'wind') { if (A.t >= A.wT) { A.ph = 'rain'; A.t = 0; A.next = 0; } break; }
+      A.next -= dt;
+      if (A.ph === 'rain' && A.next <= 0 && A.n < 9) {   // each fireball: its circle first, then it falls on it
+        A.next = .28; A.n++; const pl = b.plaza, a = rand(0, TAU), r = A.n === 1 ? 0 : rand(.5, 3.8); let s = P.s + Math.cos(a) * r, x = P.x + Math.sin(a) * r; const dd = Math.hypot(s - pl.s, x - pl.x); if (dd > pl.r - 1) { s = pl.s + (s - pl.s) / dd * (pl.r - 1); x = pl.x + (x - pl.x) / dd * (pl.r - 1); }
+        const y = landAt(s, x), ball = glowSprite(0xff8a20, 2.6, 1); scene.add(ball);
+        khFx(warnMesh(s, x, 0, 1.9), fm => { warnPulse(fm); const k = fm.t / .95; tw(s, x, y + (1 - k) * 28, ball.position); if (Math.random() < .8) flame(ball.position, 1.2, -.5);
+          if (k >= 1) { scene.remove(ball); const p = tw(s, x, y + .3); sparks(p, 24, 8, [1, .9, .5], [1, .3, .05], .25); puff(p, 6, 1.4); S.stomp(); cam.shake = Math.max(cam.shake, .25); if (Math.hypot(P.s - s, P.x - x) < 1.9 && P.y - y < 2) khHurt(12, { s, x }, { unblock: true, kb: 7 }); return false; } return true; });
+      }
+      if (A.n >= 9 && A.t > 3.4) endBossAtk(b);
+      break;
+    case 'charge':
+      if (A.ph === 'wind') { b.h += angDiff(b.h, toP) * Math.min(1, dt * 3); A.h = b.h; if (Math.random() < .5) dustAt(b.s + rand(-1, 1), b.x + rand(-1, 1), b.y, 1); if (A.t >= A.wT) { A.ph = 'run'; A.t = 0; S.roar(); } break; }
+      if (A.ph === 'run') {
+        const pl = b.plaza, s0 = b.s, x0 = b.x; bossMove(b, Math.cos(A.h) * 15 * dt, Math.sin(A.h) * 15 * dt); if (Math.random() < .7) dustAt(b.s, b.x, b.y, 2); cam.shake = Math.max(cam.shake, .15);
+        if (!A.hit && d < b.r + .8 && P.y - b.y < 3) { A.hit = true; khHurt(24, src, { unblock: true, kb: 14 }); }
+        if (A.t > 2.2 || (Math.hypot(b.s - s0, b.x - x0) < .01 && A.t > .15)) { A.ph = 'skid'; A.t = 0; dustAt(b.s, b.x, b.y, 10); S.stomp(); }
+      } else if (A.t > .7) endBossAtk(b);
+      break;
+    case 'burst':
+      if (A.ph === 'wind') { if (A.t >= A.wT) { A.ph = 'nova'; A.t = 0; A.fx.forEach(x => x.dead = true); for (let k = 0; k < 40; k++) { const a = k / 40 * TAU; flame(tw(b.s + Math.cos(a) * 4, b.x + Math.sin(a) * 4, b.y + .5), 2.2, 1.6); } S.smash(); cam.shake = .5; flashV = Math.max(flashV, .3); if (d < 6.5 && P.y - b.y < 4) khHurt(14, src, { unblock: true, kb: 13 }); } break; }
+      if (A.t > .5) endBossAtk(b);
+      break;
+  }
+}
+// the moment for a reaction command, if it's now
+function bossReact(b, d) {
+  const A = b.a; if (!A || b.state !== 'atk') return null;
+  if (A.type === 'slam' && A.ph === 'stuck' && A.t > .15 && (Math.hypot(P.s - A.tgt[0], P.x - A.tgt[1]) < 6 || d < b.r + 4)) return 'sword';
+  if (A.type === 'charge' && A.ph === 'run' && d < 9) { const ds = P.s - b.s, dx = P.x - b.x; if ((ds * Math.cos(A.h) + dx * Math.sin(A.h)) / (d || 1) > .75) return 'stand'; }
+  return null;
+}
+// YOU SHALL NOT PASS: Gandalf plants himself in the charge's way; it crashes into his light and goes down
+function bossStand(b) {
+  endBossAtk(b); b.state = 'stun'; b.t = 0; b.stunT = 4;
+  const p = tw(P.s, P.x, P.y + 1.4); sparks(p, 80, 13, [1, 1, 1], [.75, .85, 1], .3); puff(p, 10, 2, [.9, .95, 1]);
+  const dome = glowSprite(0xffffff, 1, .95); dome.position.copy(p); khFx(dome, f => { dome.scale.setScalar(2 + f.t * 26); dome.material.opacity = .95 * (1 - f.t / .7); return f.t < .7; });
+  S.smash(); S.roar(); cam.shake = 1; flashV = Math.max(flashV, .8); KH.hitstop = .28; banner('YOU SHALL NOT PASS!', 2.2); skinClip(hob, 'attack_e', .8);
+  const ds = b.s - P.s, dx = b.x - P.x, d = Math.hypot(ds, dx) || 1; bossMove(b, ds / d * 2.5, dx / d * 2.5);
+  bossHit(b, 60, true, false, true);
+}
+function bossHit(b, dmg, fin, air, react) {
+  if (!ukLive(b)) return;
+  const p = tw(lerp(b.s, P.s, .55), lerp(b.x, P.x, .55), P.y + 1.2);
+  if (b.state === 'intro' || b.state === 'roar') { S.clash(); sparks(p, 8, 4, [1, .8, .5], [1, .4, .1]); return; }   // (it shrugs off blows while it roars)
+  if (KH.form > 0) dmg *= 1.5; if (b.state === 'stun') dmg *= 1.5;
+  b.hp -= dmg; b.flash = .1; if (!react) b.rev += fin ? 20 : 8; KH.target = b; KH.targetT = 6; if (KH.form <= 0) KH.drive = Math.min(100, KH.drive + 2);
+  KH.hitstop = Math.max(KH.hitstop, react ? .12 : fin ? .07 : .035); cam.shake = Math.max(cam.shake, fin ? .3 : .12);
+  sparks(p, fin ? 26 : 12, fin ? 8 : 5, [1, .95, .8], [1, .5, .1]); S.saberHit();
+  if (b.hp <= 0) { bossFall(b); return; }
+  if (b.phase === 1 && b.hp <= b.max * .5) {   // half its gauge gone: it blazes up, and calls more to it
+    b.phase = 2; endBossAtk(b); b.state = 'roar'; b.t = 0; b.addsT = 1.1; skinClip(b.m, 'ignite_ta', 2) || skinClip(b.m, 'roar_a', 2);
+    banner('ITS FIRE BLAZES UP!', 1.8); S.roar(); cam.shake = .7; flashV = Math.max(flashV, .3);
+    for (let k = 0; k < 40; k++) flame(tw(b.s + rand(-2.5, 2.5), b.x + rand(-2.5, 2.5), b.y + rand(0, 8)), 2, 2);
+  }
+}
+function bossFall(b) {
+  b.hp = 0; endBossAtk(b); b.state = 'fall'; b.t = 0; b.dead = true; KH.react = null; skinPlay(b.m, 'die');
+  for (const o of URUKS) if (!o.boss && ukLive(o)) khHit(o, 999, true);
+  banner('THE BALROG FALLS!', 2.4); S.roar(); cam.shake = 1; KH.hitstop = .35; flashV = Math.max(flashV, .6); Music.mode = 0;
+}
+function bossUpdate(b, dt) {
+  const m = b.m; b.t += dt; b.flash -= dt; b.rev = Math.max(0, b.rev - dt * 12);
+  const ds = P.s - b.s, dx = P.x - b.x, d = Math.hypot(ds, dx) || .01, toP = Math.atan2(dx, ds), live = state === 'play', A = b.a, f = b.phase > 1 ? 1.3 : 1;
+  let walk = 0;
+  switch (b.state) {
+    case 'intro': {   // up out of the fire in the breach, and down into the arena
+      if (b.t < 0) return; m.root.visible = m.shadow.visible = true;
+      const k = clamp(b.t / 1.6, 0, 1); b.s = lerp(b.from[0], b.to[0], k); b.x = lerp(b.from[1], b.to[1], k); b.y = lerp(b.y0, landAt(b.s, b.x), k) + Math.sin(k * Math.PI) * 12; b.h += angDiff(b.h, toP) * Math.min(1, dt * 3);
+      if (Math.random() < .9) flame(tw(b.s, b.x, b.y + 2), 2.5, 1.5);
+      if (k >= 1 && !b.landed) { b.landed = true; const p = tw(b.s, b.x, b.y + .3); sparks(p, 60, 12, [1, .9, .6], [1, .4, .1], .3); puff(p, 16, 3); S.smash(); S.roar(); cam.shake = 1.1; skinClip(m, 'roar_a', 1.8); banner('THE BALROG OF MORGOTH!', 2.2); bossWave(b, b.s, b.x, 12, 11, 6); }
+      if (b.t > 3.6) { b.state = 'idle'; b.t = 0; b.cd = .8; }
+      break;
+    }
+    case 'idle': {
+      b.h += angDiff(b.h, toP) * Math.min(1, dt * 2.6);
+      if (d > 6) { bossMove(b, ds / d * 3.4 * f * dt, dx / d * 3.4 * f * dt); walk = 1; }
+      b.cd -= dt; if (live && b.cd <= 0) bossPick(b, d);
+      break;
+    }
+    case 'atk': bossAttack(b, dt, d, toP); if (!b.a) b.cd = rand(.9, 1.8) / f; break;
+    case 'stun': if (b.t > b.stunT) { b.state = 'idle'; b.t = 0; b.cd = .6; } break;
+    case 'roar':
+      if (b.addsT > 0) { b.addsT -= dt; if (b.addsT <= 0) ['o', 'o', 'b', 'o'].forEach((k, i) => spawnUruk(k, b.plaza, rand(0, TAU), i * .3)); }
+      if (b.t > 2.4) { b.state = 'idle'; b.t = 0; b.cd = .5; }
+      break;
+    case 'fall':   // down to its knees, and down into the fire under the coomb
+      if (b.t > 1.2) b.y -= dt * (1 + (b.t - 1.2) * 4);
+      for (let k = 0; k < 4; k++) flame(tw(b.s + rand(-2.5, 2.5), b.x + rand(-2.5, 2.5), landAt(b.s, b.x) + rand(0, 3)), 2.4, 2.4);
+      if (b.t > 3.6) { khRemove(b); return; }
+      break;
+  }
+  // too many blows at once and it bursts free (KH II's revenge value)
+  if (b.rev >= 100 && (b.state === 'idle' || (b.state === 'atk' && b.a && b.a.ph === 'wind' && b.a.type !== 'burst'))) { b.rev = 0; endBossAtk(b); bossStart(b, 'burst'); }
+  // Gandalf can't stand inside it
+  if (d < b.r + .45 && b.state !== 'fall' && b.state !== 'intro' && P.y - b.y < b.tall) { P.s = b.s + ds / d * (b.r + .45); P.x = b.x + dx / d * (b.r + .45); }
+  if (b.state !== 'intro' && b.state !== 'fall' && !(b.a && b.a.air)) b.y = landAt(b.s, b.x);
+  drawBoss(b, dt, walk);
+}
+function drawBoss(b, dt, walk) {
+  const m = b.m, A = b.a; b.kneel = damp(b.kneel, b.state === 'stun' || b.state === 'fall' ? 1 : 0, 5, dt);
+  place(m.root, b.s, b.x, b.y - b.kneel * 1.6, b.h); tw(b.s, b.x, landAt(b.s, b.x) + .05, m.shadow.position);
+  if (m.skin && m.skin.obj) m.skin.obj.position.y = 0;
+  m.body.rotation.x = b.kneel * .35;
+  const ph = T * 5; m.legs.forEach((l, i) => { l.g.rotation.x = Math.sin(ph + i * Math.PI) * .4 * walk - b.kneel * (i ? 1.3 : .2); l.kn.rotation.x = Math.max(0, -Math.sin(ph + i * Math.PI)) * .6 * walk + b.kneel * (i ? 1.5 : .9); });
+  let rX = -.3, lX = -.3, lY = 0, lZ = .3, hX = 0, jaw = .15;
+  if (A) switch (A.type) {
+    case 'slam': rX = A.ph === 'wind' ? -2.9 : A.ph === 'strike' ? lerp(-2.9, -.75, clamp(A.t / .18, 0, 1)) : A.ph === 'stuck' ? -.75 : -.4; break;
+    case 'whip': lX = -1.4; lZ = A.ph === 'wind' ? 1.4 : .25; lY = A.ph === 'swing' ? lerp(1.5, -1.5, clamp(A.t / .42, 0, 1)) : A.ph === 'wind' ? 1.5 : 0; break;
+    case 'breath': hX = A.ph === 'wind' ? -.5 : .3; jaw = A.ph === 'fire' ? .75 : .45; rX = lX = -.7; break;
+    case 'leap': rX = lX = A.ph === 'air' ? -2.5 : -.8; break;
+    case 'meteor': case 'burst': rX = lX = -2.6; lZ = 1; jaw = .65; hX = -.4; break;
+    case 'charge': rX = lX = A.ph === 'run' ? .7 : -.9; hX = .35; break;
+  }
+  if (b.state === 'roar' || (b.state === 'intro' && b.landed)) { rX = lX = -2.3; lZ = 1; jaw = .75; hX = -.45; }
+  m.armR.g.rotation.x = damp(m.armR.g.rotation.x, rX, 12, dt); m.armL.g.rotation.x = damp(m.armL.g.rotation.x, lX, 12, dt); m.armL.g.rotation.y = damp(m.armL.g.rotation.y, lY, 16, dt); m.armL.g.rotation.z = damp(m.armL.g.rotation.z, lZ, 8, dt);
+  m.head.rotation.x = damp(m.head.rotation.x, hX, 6, dt); m.jaw.rotation.x = damp(m.jaw.rotation.x, jaw, 8, dt); m.mouth.material.opacity = .3 + m.jaw.rotation.x;
+  m.wings.forEach((w, i) => { w.rotation.z = (i ? -1 : 1) * (.35 + Math.sin(T * 1.4) * .15 + (b.state === 'roar' ? .45 : 0)); w.rotation.y = (i ? 1 : -1) * .5; });
+  const M_ = balrogMats(), hot = b.phase > 1 ? 1.35 : 1; M_.rock.emissiveIntensity = b.flash > 0 ? 2.4 : (.7 + Math.sin(T * 2.6) * .2) * hot;
+  m.fires.forEach(fi => { const k = (.8 + .25 * Math.sin(T * 9 + fi.ph) + .1 * Math.sin(T * 23 + fi.ph * 2)) * hot; fi.sp.scale.set(fi.s * .6 * k, fi.s * (.85 + .3 * Math.sin(T * 7 + fi.ph)) * hot, 1); });
+  m.halo.material.opacity = (b.phase > 1 ? .48 : .32) + Math.sin(T * 3) * .05;
+  if (m.root.visible && b.state !== 'fall') { m.root.updateMatrixWorld(true); for (let k = 0; k < (b.phase > 1 ? 4 : 2); k++) flame(_a.set(rand(-1.4, 1.4), rand(3, 8.5), rand(-1.2, .6)).applyMatrix4(m.root.matrixWorld), 1.5, 1.6); }
+  skinPlay(m, b.state === 'fall' ? 'die' : b.state === 'stun' ? 'hit' : walk ? 'walk' : 'idle');
+}
+
+// =====================================================================
+//  KH: fighting the way Sora does in Kingdom Hearts II (Edoras and Helm's Deep, LV.kh)
 //   - Attack: a combo of three cuts and a finisher; each closes in on the nearest enemy; the finisher knocks it flying.
 //     In the air, an air combo: Gandalf hangs in the air while he strikes, and the last blow slams him down.
 //   - Guard (E / GUARD): blocks a blow from the front and knocks the attacker back; with the stick held it's a Dodge Roll.
 //   - Magic (fire button): Thunder, bolts on up to three enemies near you, for a quarter of the MP.
-//   - Reaction command (R, or the green prompt): when an enemy's dizzy, TAKEDOWN finishes it and blasts those round it.
-//   - HP and MP bars; beaten enemies drop green HP orbs, blue MP orbs and apples. Every hit freezes the moment a blink.
+//   - Reaction commands (R, or the green prompt), each when its moment comes: TAKEDOWN finishes a dizzy enemy and blasts
+//     those round it; REPEL swats a berserker's charge back into its friends; and the Balrog's own (see below).
+//   - Drive (Q / DRIVE): every blow fills the drive gauge; full, Gandalf becomes the White Wizard for a while: a combo of
+//     five, harder blows, and thunder on five foes.
+//   - HP, MP and drive bars, and KH II's command menu; beaten enemies drop green HP orbs, blue MP orbs and apples.
+//     Every hit freezes the moment a blink.
 // =====================================================================
 const KH = { hp: 100, max: 100, mp: 100, maxMp: 100, combo: 0, airN: 0, comboT: 0, atk: null, buf: false, hover: 0, guardT: 0, guardCD: 0, rollT: 0, rollV: [0, 0], invT: 0, hitstop: 0,
-  target: null, targetT: 0, react: null, reacting: null, magicCD: 0, bolts: [], sword: null, plaza: null, waveT: 0, theoden: null, ring: null };
-const URUKS = [], ORBS = [];
+  target: null, targetT: 0, react: null, reacting: null, magicCD: 0, bolts: [], sword: null, plaza: null, waveT: 0, theoden: null, ring: null, drive: 0, form: 0, boss: null, winT: 0, cmdT: {} };
+const URUKS = [], ORBS = [], KHFX = [];
 const ukLive = u => !u.dead && !u.gone;
+// how each kind fights: Uruk-hai soldiers, Lurtz, the quick little orcs that come in swarms, and berserkers with torches
+const UK_KINDS = {
+  u: { hp: 22, r: .55, name: 'URUK-HAI', speed: 3.6, dmg: 9, slot: 'uruk' },
+  L: { hp: 80, r: .7, name: 'LURTZ', speed: 3, dmg: 14, armor: true, slot: 'lurtz' },
+  o: { hp: 11, r: .45, name: 'ORC', speed: 4.6, dmg: 6, slot: 'orc' },
+  b: { hp: 16, r: .55, name: 'BERSERKER', speed: 3.8, dmg: 18, slot: 'berserker' },
+};
 function setupKH() {
   const on = !!(LV && LV.kh); document.body.classList.toggle('kh', on);
   if (!KH.sword) { KH.sword = makeSaber(0xcfe6ff); KH.sword.g.position.set(0, -.42, .04); hob.armR.add(KH.sword.g); KH.ring = glowSprite(0x9ad8ff, 3, 0); hob.root.add(KH.ring); KH.ring.position.y = 1; }
   KH.sword.g.visible = on;
-  for (const u of URUKS.slice()) khRemove(u); for (const o of ORBS) scene.remove(o.sp); ORBS.length = 0;
+  for (const u of URUKS.slice()) khRemove(u); for (const o of ORBS) scene.remove(o.sp); ORBS.length = 0; khClearFx();
   if (KH.theoden) KH.theoden.m.root.visible = KH.theoden.m.shadow.visible = false;
   if (!on) return;
   hob.staff.visible = false;
   document.getElementById('tSpin').firstChild.textContent = 'ATTACK'; document.getElementById('tFire').firstChild.textContent = 'MAGIC'; document.getElementById('tRk').style.display = 'none';
   if (!KH.theoden) KH.theoden = { m: makeHero('theoden') };
   for (const p of LV.layout.plazas) { p.done = false; p.wave = -1; }
-  KH.plaza = null; resetKH(true);
+  KH.plaza = null; KH.drive = 0; resetKH(true);
 }
 function resetKH(fresh) {
-  Object.assign(KH, { hp: KH.max, mp: KH.maxMp, combo: 0, airN: 0, atk: null, buf: false, hover: 0, guardT: 0, rollT: 0, invT: 1, react: null, reacting: null, bolts: [], target: null });
+  const hadBoss = !!KH.boss;
+  Object.assign(KH, { hp: KH.max, mp: KH.maxMp, combo: 0, airN: 0, atk: null, buf: false, hover: 0, guardT: 0, rollT: 0, invT: 1, react: null, reacting: null, bolts: [], target: null, form: 0, winT: 0 });
   if (KH.plaza) { const p = KH.plaza; for (const u of URUKS.slice()) khRemove(u); khBarrier(p, false); p.wave = -1; KH.plaza = null; }   // a square you fell in starts again
-  for (const o of ORBS) scene.remove(o.sp); ORBS.length = 0;
+  for (const o of ORBS) scene.remove(o.sp); ORBS.length = 0; khClearFx();
+  if (hadBoss) Music.mode = 0;
 }
 function khBarrier(p, on) { for (const b of p.walls || []) b.on = on; if (p.vis) p.vis.visible = on; }
+// each square's barrier: a ring of walls, down until its enemies come
+function khRings(Y) { for (const p of Y.plazas) { p.walls = []; const n = Math.ceil(TAU * p.r / 1.1); for (let k = 0; k < n; k++) { const a = k / n * TAU, s = p.s + Math.cos(a) * (p.r + .5), x = p.x + Math.sin(a) * (p.r + .5), b = solid(s - .6, s + .6, x - .6, x + .6, p.y - 4, p.y + 9, 'wall'); b.on = false; p.walls.push(b); } } }
+// passing flashes: telegraph marks on the ground, shockwaves, meteors; each runs until its upd says it's done
+function khFx(mesh, upd) { if (mesh) scene.add(mesh); const f = { mesh, upd, t: 0 }; KHFX.push(f); return f; }
+function khClearFx() { for (const f of KHFX) if (f.mesh) { scene.remove(f.mesh); f.mesh.geometry && f.mesh.geometry.dispose(); } KHFX.length = 0; }
+function updateKHFx(dt) { for (let i = KHFX.length - 1; i >= 0; i--) { const f = KHFX[i]; f.t += dt; if (f.upd(f, dt) === false || f.dead) { if (f.mesh) { scene.remove(f.mesh); f.mesh.geometry && f.mesh.geometry.dispose(); } KHFX.splice(i, 1); } } }
+// is Gandalf level with it (a tall foe like the Balrog is reached anywhere up its legs and body)
+const khLevel = (u, tol) => u.tall ? P.y > u.y - 1.2 && P.y < u.y + u.tall : Math.abs(u.y - P.y) <= tol;
 // the enemy to swing at: the nearest in reach, those in front first
 function khTarget(range) {
   let best = null, bs = 1e9; const ch = Math.cos(P.heading), sh = Math.sin(P.heading);
-  for (const u of URUKS) { if (!ukLive(u) || u.state === 'spawn') continue; const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx); if (d > range || Math.abs(u.y - P.y) > 3) continue; const sc = d - (ds * ch + dx * sh) / (d || 1) * 1.5; if (sc < bs) { bs = sc; best = u; } }
+  for (const u of URUKS) { if (!ukLive(u) || u.state === 'spawn' || u.state === 'intro') continue; const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx) - (u.boss ? u.r : 0); if (d > range || !khLevel(u, 3)) continue; const sc = d - (ds * ch + dx * sh) / (Math.hypot(ds, dx) || 1) * 1.5; if (sc < bs) { bs = sc; best = u; } }
   return best;
 }
 function khInput() {
   if (KH.reacting) return;
   if (KH.react && (inp.reactP || inp.fireP)) { khReaction(); return; }
+  if (inp.driveP) khDrive();
   if (inp.guardP) khGuard();
   if (inp.spinP) khAttack();
   if (inp.fireP) khMagic();
 }
-const KH_CLIPS = ['attack_a', 'attack_b', 'attack_c', 'attack_e'];
+const khFlash = c => KH.cmdT[c] = .25;   // the command menu lights the command just used
+const KH_CLIPS = ['attack_a', 'attack_b', 'attack_c', 'attack_a', 'attack_e'];
 function khAttack() {
   if (KH.rollT > 0) return;
   if (KH.atk) { if (KH.atk.t > KH.atk.dur * .35) KH.buf = true; return; }   // pressed during a cut: the next comes when this one's done
-  const air = !P.ground, n = air ? KH.airN : KH.combo, fin = n >= 3, tgt = khTarget(air ? 5 : 7.5);
-  const A = KH.atk = { t: 0, dur: fin ? (air ? .5 : .55) : .3, n, fin, air, hit: new Set(), tgt, dash: null };
-  if (tgt) { const ds = tgt.s - P.s, dx = tgt.x - P.x, d = Math.hypot(ds, dx) || 1; P.heading = Math.atan2(dx, ds); if (d > 1.8) { const sp = Math.min(16, (d - 1.3) / (A.dur * .45)); A.dash = [ds / d * sp, dx / d * sp]; } }
-  if (air) { KH.airN = fin ? 4 : n + 1; if (fin) { P.vy = -22; KH.hover = 0; } else { P.vy = Math.max(P.vy, 1.5); KH.hover = .4; } }
+  const form = KH.form > 0, last = form ? 4 : 3, air = !P.ground, n = air ? KH.airN : KH.combo, fin = n >= last, tgt = khTarget(air ? 5 : 7.5);
+  const A = KH.atk = { t: 0, dur: (fin ? (air ? .5 : .55) : .3) * (form ? .8 : 1), n, fin, air, hit: new Set(), tgt, dash: null };
+  if (tgt) { const ds = tgt.s - P.s, dx = tgt.x - P.x, d = Math.hypot(ds, dx) || 1, reach = d - (tgt.boss ? tgt.r : 0); P.heading = Math.atan2(dx, ds); if (reach > 1.8) { const sp = Math.min(16, (reach - 1.3) / (A.dur * .45)); A.dash = [ds / d * sp, dx / d * sp]; } }
+  if (air) { KH.airN = fin ? last + 1 : n + 1; if (fin) { P.vy = -22; KH.hover = 0; } else { P.vy = Math.max(P.vy, tgt && tgt.boss ? 3 : 1.5); KH.hover = .4; } }
   else KH.combo = fin ? 0 : n + 1;
-  KH.comboT = 1;
-  skinClip(hob, KH_CLIPS[Math.min(n, 3)], A.dur * 1.15); S.saberSwing();
+  KH.comboT = 1; khFlash('A');
+  skinClip(hob, KH_CLIPS[Math.min(n, 4)], A.dur * 1.15); S.saberSwing();
 }
 function khGuard() {
   if (KH.atk || KH.rollT > 0 || KH.guardCD > 0) return;
-  const len = Math.hypot(inp.x, inp.z); KH.guardCD = .5;
+  const len = Math.hypot(inp.x, inp.z); KH.guardCD = .5; khFlash('G');
   if (len > .4 && P.ground) {
     // a dodge roll: quick, low, and nothing touches you while you're in it
     const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw), ds = inp.z * c - inp.x * sn, dx = inp.z * sn + inp.x * c, l = Math.hypot(ds, dx) || 1;
@@ -6891,15 +7534,37 @@ function khGuard() {
 }
 function khMagic() {
   if (KH.magicCD > 0 || KH.atk) return;
-  if (KH.mp < 25) { S.click(); return; }
-  KH.mp -= 25; KH.magicCD = .7; P.fireAnim = .5; S.zap(); banner('THUNDER', .6);
-  const near = URUKS.filter(u => ukLive(u) && u.state !== 'spawn').map(u => ({ u, d: Math.hypot(u.s - P.s, u.x - P.x) })).filter(o => o.d < 13).sort((a, b) => a.d - b.d).slice(0, 3);
+  const form = KH.form > 0, cost = form ? 15 : 25;
+  if (KH.mp < cost) { S.click(); return; }
+  KH.mp -= cost; KH.magicCD = .7; P.fireAnim = .5; S.zap(); banner(form ? 'THUNDAGA' : 'THUNDER', .6); khFlash('M');
+  const near = URUKS.filter(u => ukLive(u) && u.state !== 'spawn' && u.state !== 'intro').map(u => ({ u, d: Math.hypot(u.s - P.s, u.x - P.x) - (u.boss ? u.r : 0) })).filter(o => o.d < 13).sort((a, b) => a.d - b.d).slice(0, form ? 5 : 3);
   if (!near.length) for (let k = 0; k < 3; k++) { const s = P.s + rand(-5, 5), x = P.x + rand(-5, 5); KH.bolts.push({ t: k * .15, s, x }); }
   near.forEach((o, k) => KH.bolts.push({ t: k * .15, u: o.u }));
+  if (form && near.length === 1) KH.bolts.push({ t: .3, u: near[0].u }, { t: .45, u: near[0].u });   // (a lone foe takes them all)
 }
+// the White Wizard: Gandalf's drive form, while the gauge runs down
+function khDrive() {
+  if (KH.drive < 100 || KH.form > 0 || KH.reacting) return;
+  KH.atk = null; KH.buf = false;   // (it cuts a combo short)
+  KH.form = 22; KH.drive = 100; KH.hp = Math.min(KH.max, KH.hp + 25); KH.invT = 1; khFlash('D');
+  banner('WHITE WIZARD!', 1.4); S.smash(); cam.shake = .4; KH.hitstop = .12;
+  const p = tw(P.s, P.x, P.y + 1); sparks(p, 50, 9, [1, 1, 1], [.8, .9, 1]); puff(p, 10, 1.4, [.9, .95, 1]);
+  KH.sword.g.traverse(o => { if (o.material && o.material.color) o.userData.c0 = o.userData.c0 ?? o.material.color.getHex(); });
+}
+// the reaction commands: what the green prompt does depends on whose moment it is
+const KH_REACT = { takedown: 'TAKEDOWN', repel: 'REPEL', sword: 'SWORD RUN', stand: 'YOU SHALL NOT PASS!' };
 function khReaction() {
-  const u = KH.react; if (!u) return;
-  KH.reacting = { u, t: 0, hit: false }; KH.react = null; KH.atk = null; KH.invT = 1.6;
+  const R_ = KH.react; if (!R_) return;
+  const u = R_.u; KH.react = null; KH.atk = null; KH.rx = KH.rx || {}; KH.rx[R_.cmd] = (KH.rx[R_.cmd] || 0) + 1;   // (KH.rx: a tally, for testing)
+  if (R_.cmd === 'repel') {   // a backhand that sends the berserker flying back the way it came, to blow up among its friends
+    const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx) || 1; P.heading = Math.atan2(dx, ds);
+    Object.assign(u, { state: 'launch', t: 0, vs: ds / d * 13, vx: dx / d * 13, vy: 8, armed: true });
+    KH.reacting = { u, t: 0, cmd: 'repel', hit: true }; KH.invT = .6; skinClip(hob, 'attack_b', .35); S.saberHit(); S.clash(); KH.hitstop = .1; cam.shake = .3; banner('REPEL!', .8);
+    sparks(tw(P.s + ds / d, P.x + dx / d, P.y + 1.2), 24, 7, [1, 1, 1], [.7, .85, 1]); return;
+  }
+  if (R_.cmd === 'sword') { KH.reacting = { u, t: 0, cmd: 'sword', hits: 0, from: [P.s, P.x, P.y] }; KH.invT = 2.4; P.ground = false; skinClip(hob, 'attack_a', .5); S.whoosh(); banner('SWORD RUN!', 1); return; }
+  if (R_.cmd === 'stand') { KH.reacting = { u, t: 0, cmd: 'stand' }; KH.invT = 2.5; bossStand(u); return; }
+  KH.reacting = { u, t: 0, hit: false, cmd: 'takedown' }; KH.invT = 1.6;
   P.vy = 11; P.ground = false; skinClip(hob, 'attack_c', .85); S.saberSwing(); banner('TAKEDOWN!', 1);
 }
 // Gandalf's movement while he fights: a roll carries him, a cut closes in and then roots him, a takedown leaps at its foe
@@ -6907,34 +7572,47 @@ function khMove(dt) {
   KH.hover -= dt; KH.guardT -= dt; KH.guardCD -= dt; KH.invT -= dt; KH.comboT -= dt; KH.magicCD -= dt;
   if (KH.comboT <= 0) KH.combo = 0; if (P.ground && !(KH.atk && KH.atk.air)) KH.airN = 0;
   if (KH.rollT > 0) { KH.rollT -= dt; P.vs = KH.rollV[0]; P.vx = KH.rollV[1]; return; }
-  const R_ = KH.reacting; if (R_) { const ds = R_.u.s - P.s, dx = R_.u.x - P.x, d = Math.hypot(ds, dx) || 1; P.heading = Math.atan2(dx, ds); const sp = d > 1.2 ? Math.min(12, d / .3) : 0; P.vs = ds / d * sp; P.vx = dx / d * sp; return; }
+  const R_ = KH.reacting;
+  if (R_ && R_.cmd === 'sword') {   // up the Balrog's arm to its head, three blows there, and off
+    const u = R_.u, hs = u.s - Math.cos(u.h) * .3, hx = u.x - Math.sin(u.h) * .3, hy = u.y + u.tall * (u.state === 'stun' ? .55 : .78), k = clamp(R_.t / .6, 0, 1);
+    const ts = lerp(R_.from[0], hs + Math.cos(u.h) * 1.6, k), tx = lerp(R_.from[1], hx + Math.sin(u.h) * 1.6, k), ty = lerp(R_.from[2], hy, k) + Math.sin(k * Math.PI) * 1.5;
+    P.vs = (ts - P.s) / Math.max(dt, .001); P.vx = (tx - P.x) / Math.max(dt, .001); P.vy = (ty - P.y) / Math.max(dt, .001); KH.hover = .2; P.heading = Math.atan2(u.x - P.x, u.s - P.s);
+    if (R_.t > 1.25) { P.vs *= .1; P.vx *= .1; P.vy = 3; } return;
+  }
+  if (R_ && R_.cmd === 'stand') { P.vs = P.vx = 0; P.heading = Math.atan2(R_.u.x - P.x, R_.u.s - P.s); return; }
+  if (R_ && R_.cmd === 'repel') { P.vs *= .5; P.vx *= .5; return; }
+  if (R_) { const ds = R_.u.s - P.s, dx = R_.u.x - P.x, d = Math.hypot(ds, dx) || 1; P.heading = Math.atan2(dx, ds); const sp = d > 1.2 ? Math.min(12, d / .3) : 0; P.vs = ds / d * sp; P.vx = dx / d * sp; return; }
   const A = KH.atk; if (!A) return;
   if (A.tgt && ukLive(A.tgt)) P.heading += angDiff(P.heading, Math.atan2(A.tgt.x - P.x, A.tgt.s - P.s)) * Math.min(1, dt * 20);
   if (A.dash && A.t < A.dur * .45) { P.vs = A.dash[0]; P.vx = A.dash[1]; } else { P.vs *= .3; P.vx *= .3; }
 }
 function khHit(u, dmg, fin, air) {
   if (!ukLive(u)) return;
-  u.hp -= dmg; u.flash = .15; u.stag += fin ? 30 : 12; KH.target = u; KH.targetT = 4;
+  if (u.boss) { bossHit(u, dmg, fin, air); return; }
+  if (KH.form > 0) dmg *= 1.5;
+  u.hp -= dmg; u.flash = .15; u.stag += fin ? 30 : 12; KH.target = u; KH.targetT = 4; KH.drive = Math.min(100, KH.drive + (KH.form > 0 ? 0 : 3));
   KH.hitstop = fin ? .09 : .045; cam.shake = Math.max(cam.shake, fin ? .35 : .15);
   sparks(tw(u.s, u.x, u.y + 1.2), fin ? 22 : 10, fin ? 7 : 4, [1, 1, 1], [.7, .85, 1]); S.saberHit();
   const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx) || 1, ns = ds / d, nx = dx / d;
-  if (u.hp <= 0) { Object.assign(u, { state: 'launch', t: 0, vs: ns * 9, vx: nx * 9, vy: 9, dead: true }); gs.kills++; return; }
+  if (u.hp <= 0) { Object.assign(u, { state: 'launch', t: 0, vs: ns * 9, vx: nx * 9, vy: 9, dead: true }); gs.kills++; KH.drive = Math.min(100, KH.drive + (KH.form > 0 ? 0 : 6)); return; }
   if (fin || air || !(u.armor && (u.state === 'atk' || u.state === 'wind'))) {
     if (fin || air) Object.assign(u, { state: 'launch', t: 0, vs: ns * (fin ? 8 : 1.5), vx: nx * (fin ? 8 : 1.5), vy: fin ? 8 : 6 });
     else Object.assign(u, { state: 'flinch', t: 0, vs: ns * 4, vx: nx * 4 });
   }
-  if (u.stag >= 100) { u.stag = 0; u.dizzy = u.lurtz ? 2.5 : 3.5; }   // dizzy once it's back on its feet
+  if (u.stag >= 100) { u.stag = 0; u.dizzy = u.kind === 'L' ? 2.5 : 3.5; }   // dizzy once it's back on its feet
 }
-// a blow on Gandalf: blocked if he's guarding and it comes from in front, otherwise it costs HP and throws him back
-function khHurt(dmg, u) {
+// a blow on Gandalf: blocked if he's guarding and it comes from in front (unless it can't be: fire, a shockwave, a blast),
+// otherwise it costs HP and throws him back. src is the attacker, or where the blow comes from ({ s, x }).
+function khHurt(dmg, u, o = {}) {
   if (state !== 'play' || KH.invT > 0 || KH.rollT > 0 || KH.reacting || cheats.god) return false;
   const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx) || 1;
-  if (KH.guardT > 0 && (ds * Math.cos(P.heading) + dx * Math.sin(P.heading)) / d > -.25) {
-    Object.assign(u, { state: 'recoil', t: 0, vs: ds / d * 7, vx: dx / d * 7 }); u.stag += 25; KH.invT = .25; KH.guardT = 0; KH.guardCD = 0;
+  if (!o.unblock && KH.guardT > 0 && (ds * Math.cos(P.heading) + dx * Math.sin(P.heading)) / d > -.25) {
+    if (!u.boss && u.state) { Object.assign(u, { state: 'recoil', t: 0, vs: ds / d * 7, vx: dx / d * 7 }); u.stag += 25; }
+    KH.invT = .25; KH.guardT = 0; KH.guardCD = 0;
     S.clash(); sparks(tw(P.s + ds / d * .8, P.x + dx / d * .8, P.y + 1.2), 20, 6, [1, 1, 1], [.7, .9, 1]); return false;
   }
   KH.hp -= dmg; KH.invT = 1; KH.atk = null; KH.combo = 0; S.hurt(); cam.shake = Math.max(cam.shake, .35);
-  P.vs = -ds / d * 8; P.vx = -dx / d * 8; P.vy = 6; P.ground = false; P.launchT = .35;
+  const kb = o.kb ?? 8; P.vs = -ds / d * kb; P.vx = -dx / d * kb; P.vy = 6; P.ground = false; P.launchT = .35;
   if (KH.hp <= 0) { KH.hp = 0; P.invT = 0; gs.phial = 0; die('hit'); }
   return true;
 }
@@ -6942,59 +7620,88 @@ function khHurt(dmg, u) {
 // --- the Uruk-hai: they fight like Kingdom Hearts II's Soldier Heartless. They circle you, hopping and strafing, and
 //     take turns: no more than two come at you at once. Each sets itself before it strikes: a two-cut combo up close,
 //     a leaping spin-slash from further off, a charge behind the shield from further still. Lurtz shrugs off light blows.
-function makeUruk(lurtz) {
-  const root = new THREE.Group(), body = new THREE.Group(); root.add(body); body.scale.setScalar(lurtz ? 1.12 : 1);
-  const SK = lam(lurtz ? 0x3a2c24 : 0x2e2826), ARM = lam(0x1c1c20, { emissive: 0x050506 }), LEA = lam(0x2a2018), MET = lam(0x7a7a82, { emissive: 0x101014 }), WH = lam(0xe8e4dc);
+//     Orcs are the Shadows: small, quick and many, three may come at you at once, a single cut or a pounce.
+//     Berserkers carry a torch and the blasting fire of Orthanc: one roars, then runs at you and blows up, taking
+//     anything near with it (its own side too). Knock one flying and it goes off where it lands.
+function makeUruk(kind) {
+  const lurtz = kind === 'L', orc = kind === 'o', bers = kind === 'b';
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body); body.scale.setScalar(lurtz ? 1.12 : orc ? .8 : bers ? 1.05 : 1);
+  const SK = lam(lurtz ? 0x3a2c24 : orc ? 0x4a4a2c : 0x2e2826), ARM = lam(0x1c1c20, { emissive: 0x050506 }), LEA = lam(0x2a2018), MET = lam(0x7a7a82, { emissive: 0x101014 }), WH = lam(0xe8e4dc);
   const leg = sx => { const g = new THREE.Group(); g.position.set(sx * .17, .95, 0); body.add(g); part(GEO.cylT, LEA, g, 0, 0, 0, .14, .9, .14); part(GEO_BOX, ARM, g, 0, -.92, .06, .2, .14, .32); return g; };
   const legs = [leg(1), leg(-1)];
-  part(GEO_BOX, ARM, body, 0, 1.35, 0, .72, .78, .42); part(GEO_BOX, LEA, body, 0, .98, 0, .7, .14, .44);
-  for (const sx of [-1, 1]) part(GEO.sph, MET, body, sx * .44, 1.72, 0, .2, .14, .22);
+  part(GEO_BOX, bers ? SK : ARM, body, 0, 1.35, 0, .72, .78, .42); part(GEO_BOX, LEA, body, 0, .98, 0, .7, .14, .44);
+  if (!bers) for (const sx of [-1, 1]) part(GEO.sph, MET, body, sx * .44, 1.72, 0, .2, .14, .22);
   const head = new THREE.Group(); head.position.set(0, 1.95, .02); body.add(head);
   part(GEO.sph, SK, head, 0, 0, 0, .2, .23, .21);
-  if (!lurtz) part(new THREE.CylinderGeometry(.19, .24, .26, 8), MET, head, 0, .13, 0); else for (let k = 0; k < 6; k++) part(GEO_BOX, SK, head, rand(-.12, .12), .14, -.06, .04, .06, .2);
+  if (lurtz) for (let k = 0; k < 6; k++) part(GEO_BOX, SK, head, rand(-.12, .12), .14, -.06, .04, .06, .2);
+  else if (!bers) part(new THREE.CylinderGeometry(.19, .24, .26, 8), MET, head, 0, .13, 0);
   part(GEO_BOX, WH, head, 0, -.02, .19, .16, .14, .03);                                                    // the White Hand of Saruman
   const eyes = [-.07, .07].map(x => part(GEO.sph, bas(0xffa040), head, x, .03, .2, .03, .02, .02));
   const arm = sx => { const g = new THREE.Group(); g.position.set(sx * .45, 1.66, 0); body.add(g); part(GEO.cylT, SK, g, 0, 0, 0, .1, .72, .1); return g; };
   const armR = arm(1), armL = arm(-1);
-  const sword = new THREE.Group(); sword.position.set(0, -.72, .06); armR.add(sword); part(GEO_BOX, MET, sword, 0, 0, .55, .07, .03, 1); part(GEO_BOX, ARM, sword, 0, 0, 0, .28, .06, .06);
-  if (!lurtz) { const sh = part(GEO_BOX, ARM, armL, .08, -.5, .18, .06, .9, .62); part(GEO_BOX, WH, armL, .12, -.5, .18, .02, .18, .14); }
-  else { const bow = part(new THREE.TorusGeometry(.6, .025, 4, 12, Math.PI), LEA, body, 0, 1.4, -.3); bow.rotation.set(0, Math.PI / 2, Math.PI / 2); }
+  const sword = new THREE.Group(); sword.position.set(0, -.72, .06); armR.add(sword); part(GEO_BOX, MET, sword, 0, 0, .55, .07, .03, orc ? .7 : 1); part(GEO_BOX, ARM, sword, 0, 0, 0, .28, .06, .06);
+  const keep = [];
+  if (kind === 'u') { part(GEO_BOX, ARM, armL, .08, -.5, .18, .06, .9, .62); part(GEO_BOX, WH, armL, .12, -.5, .18, .02, .18, .14); }
+  else if (lurtz) { const bow = part(new THREE.TorusGeometry(.6, .025, 4, 12, Math.PI), LEA, body, 0, 1.4, -.3); bow.rotation.set(0, Math.PI / 2, Math.PI / 2); }
+  else if (bers) {   // the torch, held high in the off hand
+    const t = new THREE.Group(); t.position.set(0, -.7, .1); armL.add(t); part(GEO.cyl, lam(0x3a2414), t, 0, .2, 0, .05, .9, .05);
+    const fl = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.fire, color: 0xffd090, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); fl.position.y = .85; fl.scale.set(.5, .8, 1); t.add(fl);
+    const gl = glowSprite(0xff8a30, 1.6, .7); gl.position.y = .8; t.add(gl); keep.push(t);
+  }
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(.65, 12), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .45, depthWrite: false }));
   shadow.rotation.x = -Math.PI / 2; scene.add(shadow); scene.add(root);
   const mats = []; root.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); if (!eyes.includes(o)) mats.push(o); } });
   const dizzy = glowSprite(0xffe060, 1, 0); dizzy.position.y = 2.6; root.add(dizzy);
-  const M = { root, body, legs, armR, armL, head, eyes, shadow, mats, dizzy }; addSkin(M, lurtz ? 'lurtz' : 'uruk', body, root, [dizzy]); if (M.skin) M.skin.temp = true; return M;
+  const M = { root, body, legs, armR, armL, head, eyes, shadow, mats, dizzy }; addSkin(M, UK_KINDS[kind].slot, body, root, [dizzy, ...keep]); if (M.skin) M.skin.temp = true; return M;
 }
 function spawnUruk(kind, pl, a, delay) {
-  const lurtz = kind === 'L', R1 = pl.r + 5, R2 = pl.r * rand(.35, .7);
-  const u = { m: makeUruk(lurtz), lurtz, armor: lurtz, hp: lurtz ? 80 : 22, max: lurtz ? 80 : 22, name: lurtz ? 'LURTZ' : 'URUK-HAI', r: lurtz ? .7 : .55, plaza: pl, stag: 0, dizzy: 0, flash: 0,
+  if (kind === 'B') return spawnKHBalrog(pl, delay);
+  const K = UK_KINDS[kind], R2 = pl.r * rand(.35, .7);
+  if (pl.ladders) a = pl.ladders[Math.random() * pl.ladders.length | 0] + rand(-.15, .15);   // up the ladders, over the parapet
+  const R1 = pl.r + (pl.ladders ? 1.2 : 5);
+  const u = { m: makeUruk(kind), kind, lurtz: kind === 'L', armor: !!K.armor, hp: K.hp, max: K.hp, name: K.name, r: K.r, plaza: pl, stag: 0, dizzy: 0, flash: 0,
     h: a + Math.PI, t: -delay, cd: rand(.6, 1.8), vs: 0, vx: 0, vy: 0, seed: rand(0, 6), state: 'spawn',
     from: [pl.s + Math.cos(a) * R1, pl.x + Math.sin(a) * R1], to: [pl.s + Math.cos(a) * R2, pl.x + Math.sin(a) * R2] };
-  u.s = u.from[0]; u.x = u.from[1]; u.y = landAt(u.s, u.x); u.m.root.visible = u.m.shadow.visible = false; URUKS.push(u); return u;
+  u.s = u.from[0]; u.x = u.from[1]; u.y0 = pl.fromY ?? landAt(u.s, u.x); u.y = u.y0; u.m.root.visible = u.m.shadow.visible = false; URUKS.push(u); return u;
 }
-function khRemove(u) { scene.remove(u.m.root); scene.remove(u.m.shadow); u.gone = true; const i = URUKS.indexOf(u); if (i >= 0) URUKS.splice(i, 1); }
+function khRemove(u) {
+  scene.remove(u.m.root); scene.remove(u.m.shadow); u.gone = true; const i = URUKS.indexOf(u); if (i >= 0) URUKS.splice(i, 1);
+  if (u.boss) { (u.m.extra || []).forEach(o => scene.remove(o)); if (KH.boss === u) KH.boss = null; }
+}
 function ukMove(u, ds, dx) {
   const [S0, S1, X0, X1] = LV.field, ns = clamp(u.s + ds, S0 + 1, S1 - 1), nx = clamp(u.x + dx, X0 + 1, X1 - 1), ok = (s, x) => !inSolid({ s, x, y: u.y + .8 }) && Math.abs(landAt(s, x) - u.y) < 1.4;
   if (ok(ns, u.x)) u.s = ns; if (ok(u.s, nx)) u.x = nx;
 }
-const khTokens = () => URUKS.filter(u => u.state === 'wind' || u.state === 'atk').length;
+const khTokens = () => URUKS.filter(u => !u.boss && (u.state === 'wind' || u.state === 'atk')).length;
+// a berserker's blast: everything near it is thrown (and hurt), Gandalf included unless he's well clear or rolling
+function khBoom(u) {
+  const p = tw(u.s, u.x, u.y + .8); sparks(p, 60, 12, [1, .95, .6], [1, .4, .1], .3); puff(p, 14, 2.2); for (let k = 0; k < 14; k++) flame(tw(u.s + rand(-1.5, 1.5), u.x + rand(-1.5, 1.5), u.y + rand(0, 1.5)), 1.8, 2.2);
+  S.smash(); cam.shake = Math.max(cam.shake, .6); flashV = Math.max(flashV, .35);
+  if (Math.hypot(P.s - u.s, P.x - u.x) < 3.6 && Math.abs(P.y - u.y) < 2.5) khHurt(UK_KINDS.b.dmg, u, { kb: 12 });
+  for (const o of URUKS) if (o !== u && ukLive(o) && !o.boss && o.state !== 'spawn' && Math.hypot(o.s - u.s, o.x - u.x) < 3.6) khHit(o, 30, true);
+  if (!u.dead) gs.kills++;
+  Object.assign(u, { hp: 0, dead: true, state: 'die', t: .6, armed: false }); u.m.root.visible = false;
+}
 function ukUpdate(u, dt) {
-  const m = u.m; u.t += dt; u.cd -= dt; u.flash -= dt;
+  if (u.boss) { bossUpdate(u, dt); return; }
+  const m = u.m, K = UK_KINDS[u.kind]; u.t += dt; u.cd -= dt; u.flash -= dt;
   const ds = P.s - u.s, dx = P.x - u.x, d = Math.hypot(ds, dx) || .01, toP = Math.atan2(dx, ds), live = state === 'play', facing = (ds * Math.cos(u.h) + dx * Math.sin(u.h)) / d > .3, dy = Math.abs(P.y - u.y);
   let walk = 0, onGround = true, armX = -.4;
   switch (u.state) {
-    case 'spawn': {   // leaping in over the barrier
+    case 'spawn': {   // leaping in over the barrier (or up a ladder and over the parapet)
       if (u.t < 0) return; m.root.visible = m.shadow.visible = true;
-      const k = clamp(u.t / .8, 0, 1); u.s = lerp(u.from[0], u.to[0], k); u.x = lerp(u.from[1], u.to[1], k); u.y = landAt(u.s, u.x) + Math.sin(k * Math.PI) * 5; onGround = false;
+      const k = clamp(u.t / .8, 0, 1); u.s = lerp(u.from[0], u.to[0], k); u.x = lerp(u.from[1], u.to[1], k); u.y = lerp(u.y0, landAt(u.s, u.x), k) + Math.sin(k * Math.PI) * 5; onGround = false;
       if (k >= 1) { u.state = 'stalk'; u.t = 0; dustAt(u.s, u.x, u.y, 6); S.stomp(); } break;
     }
     case 'stalk': {   // keep a few steps off, strafing round, now and then a hop
       u.h += angDiff(u.h, toP) * Math.min(1, dt * 6);
-      const want = 3.2, k = clamp(d - want, -1, 1), side = Math.sin(u.t * 1.1 + u.seed) > 0 ? 1 : -1, sp = u.lurtz ? 3 : 3.6;
+      const want = u.kind === 'b' ? 5 : 3.2, k = clamp(d - want, -1, 1), side = Math.sin(u.t * 1.1 + u.seed) > 0 ? 1 : -1, sp = K.speed;
       ukMove(u, (ds / d * k * sp - dx / d * side * 1.7) * dt, (dx / d * k * sp + ds / d * side * 1.7) * dt); walk = 1;
-      if (live && u.cd <= 0 && khTokens() < 2 && dy < 2) {
-        const kind = d < 2.8 ? 'combo' : d < 9 && Math.random() < .55 ? 'leap' : d < 12 ? 'charge' : null;
-        if (kind) { u.state = 'wind'; u.atk = kind; u.t = 0; u.windT = (kind === 'combo' ? .42 : .55) * (u.lurtz ? .8 : 1); S.orcGrunt(); }
+      if (live && u.cd <= 0 && dy < 2) {
+        if (u.kind === 'b') { if (d < 14) { u.state = 'wind'; u.atk = 'rush'; u.t = 0; u.windT = .9; S.roar(); } else u.cd = .4; break; }
+        if (khTokens() >= (u.kind === 'o' ? 3 : 2)) { u.cd = .3; break; }
+        const kind = u.kind === 'o' ? (d < 2.4 ? 'combo' : d < 6 ? 'leap' : null) : d < 2.8 ? 'combo' : d < 9 && Math.random() < .55 ? 'leap' : d < 12 ? 'charge' : null;
+        if (kind) { u.state = 'wind'; u.atk = kind; u.t = 0; u.windT = (kind === 'combo' ? .42 : .55) * (u.kind === 'L' ? .8 : u.kind === 'o' ? .7 : 1); S.orcGrunt(); }
         else u.cd = .5;
       }
       break;
@@ -7009,15 +7716,19 @@ function ukUpdate(u, dt) {
       break;
     }
     case 'atk': {
-      if (u.atk === 'combo') {
+      if (u.atk === 'rush') {   // the berserker's run: it steers after you, and goes off when it reaches you (or runs out of fuse)
+        u.h += angDiff(u.h, toP) * Math.min(1, dt * 2.4); ukMove(u, Math.cos(u.h) * 9.5 * dt, Math.sin(u.h) * 9.5 * dt); walk = 2; armX = -2.4;
+        if (Math.random() < .5) flame(tw(u.s, u.x, u.y + 2.2), .6, 1);
+        if ((d < 1.2 + u.r && dy < 1.6) || u.t > 3) khBoom(u);
+      } else if (u.atk === 'combo') {
         if (u.t < .3) ukMove(u, Math.cos(u.h) * 2.6 * dt, Math.sin(u.h) * 2.6 * dt);
         armX = u.t < .2 ? .8 : u.t < .45 ? -2.6 : .8;
-        for (const [at, n] of [[.15, 1], [.55, 2]]) if (u.t >= at && u.hits < n) { u.hits = n; S.saberSwing(); if (d < 2.4 + u.r && dy < 1.6 && facing) khHurt(u.lurtz ? 14 : 9, u); }
-        if (u.t > .9) { u.state = 'recover'; u.t = 0; }
+        for (const [at, n] of u.kind === 'o' ? [[.15, 1]] : [[.15, 1], [.55, 2]]) if (u.t >= at && u.hits < n) { u.hits = n; S.saberSwing(); if (d < 2.4 + u.r && dy < 1.6 && facing) khHurt(K.dmg, u); }
+        if (u.t > (u.kind === 'o' ? .5 : .9)) { u.state = 'recover'; u.t = 0; }
       } else if (u.atk === 'leap') {   // up, round, and down with the sword spinning out
-        const k = clamp(u.t / .7, 0, 1); u.s = lerp(u.from[0], u.to[0], k); u.x = lerp(u.from[1], u.to[1], k); u.y = lerp(u.y0, landAt(u.s, u.x), k) + Math.sin(k * Math.PI) * 4.5; onGround = false;
+        const k = clamp(u.t / .7, 0, 1); u.s = lerp(u.from[0], u.to[0], k); u.x = lerp(u.from[1], u.to[1], k); u.y = lerp(u.y0, landAt(u.s, u.x), k) + Math.sin(k * Math.PI) * (u.kind === 'o' ? 2.5 : 4.5); onGround = false;
         m.body.rotation.y = k * TAU * 2; armX = -1.6;
-        if (k >= 1 && !u.hits) { u.hits = 1; m.body.rotation.y = 0; dustAt(u.s, u.x, u.y, 10); S.stomp(); cam.shake = Math.max(cam.shake, .2); if (d < 2.7 && dy < 1.6) khHurt(u.lurtz ? 16 : 12, u); }
+        if (k >= 1 && !u.hits) { u.hits = 1; m.body.rotation.y = 0; dustAt(u.s, u.x, u.y, 10); S.stomp(); cam.shake = Math.max(cam.shake, .2); if (d < 2.7 && dy < 1.6) khHurt(u.kind === 'L' ? 16 : u.kind === 'o' ? 8 : 12, u); }
         if (u.t > 1.1) { u.state = 'recover'; u.t = 0; }
       } else {   // the charge, shield first
         const s0 = u.s, x0 = u.x; ukMove(u, u.cv[0] * dt, u.cv[1] * dt); walk = 1.6;
@@ -7026,14 +7737,14 @@ function ukUpdate(u, dt) {
       }
       break;
     }
-    case 'recover': if (u.t > .55) { u.state = 'stalk'; u.t = 0; u.cd = rand(1.2, 2.6) * (u.lurtz ? .6 : 1); } break;
+    case 'recover': if (u.t > .55) { u.state = 'stalk'; u.t = 0; u.cd = rand(1.2, 2.6) * (u.kind === 'L' ? .6 : u.kind === 'o' ? .5 : 1); } break;
     case 'recoil': case 'flinch': {
       ukMove(u, u.vs * dt, u.vx * dt); u.vs *= Math.exp(-7 * dt); u.vx *= Math.exp(-7 * dt);
       if (u.t > (u.state === 'recoil' ? .7 : .35)) { u.state = u.dizzy > 0 ? 'dizzy' : 'stalk'; u.t = 0; u.cd = Math.min(u.cd, .6); } break;
     }
     case 'launch': {   // knocked flying
       u.vy -= 24 * dt; u.y += u.vy * dt; ukMove(u, u.vs * dt, u.vx * dt); onGround = false; m.body.rotation.x = -clamp(u.t * 4, 0, 1.4);
-      const g = landAt(u.s, u.x); if (u.y <= g && u.vy < 0) { u.y = g; dustAt(u.s, u.x, u.y, 6); u.state = u.dead ? 'die' : 'down'; u.t = 0; } break;
+      const g = landAt(u.s, u.x); if (u.y <= g && u.vy < 0) { u.y = g; dustAt(u.s, u.x, u.y, 6); if (u.kind === 'b') { khBoom(u); return; } u.state = u.dead ? 'die' : 'down'; u.t = 0; } break;
     }
     case 'down': m.body.rotation.x = -1.4; if (u.t > .9) { u.state = 'getup'; u.t = 0; } break;
     case 'getup': m.body.rotation.x = -1.4 * (1 - u.t / .4); if (u.t > .4) { m.body.rotation.x = 0; u.state = u.dizzy > 0 ? 'dizzy' : 'stalk'; u.t = 0; } break;
@@ -7047,17 +7758,17 @@ function ukUpdate(u, dt) {
   }
   if (onGround) { const g = landAt(u.s, u.x); u.y += clamp(g - u.y, -20 * dt, 12 * dt); }
   if (u.state !== 'launch' && u.state !== 'down' && u.state !== 'getup' && u.state !== 'die') m.body.rotation.x = 0;
-  // shoulder to shoulder, not inside each other (or Gandalf)
-  for (const o of URUKS) if (o !== u && ukLive(o) && o.state !== 'spawn') { const es = u.s - o.s, ex = u.x - o.x, e = Math.hypot(es, ex); if (e > 0 && e < u.r + o.r + .2) ukMove(u, es / e * .04, ex / e * .04); }
+  // shoulder to shoulder, not inside each other (or Gandalf); and out of the Balrog's way
+  for (const o of URUKS) if (o !== u && ukLive(o) && o.state !== 'spawn') { const es = u.s - o.s, ex = u.x - o.x, e = Math.hypot(es, ex); if (e > 0 && e < u.r + o.r + .2) ukMove(u, es / e * (o.boss ? .2 : .04), ex / e * (o.boss ? .2 : .04)); }
   if (d < u.r + .5 && u.state !== 'spawn') ukMove(u, -ds / d * .05, -dx / d * .05);
   // drawing
   place(m.root, u.s, u.x, u.y, u.h); tw(u.s, u.x, landAt(u.s, u.x) + .03, m.shadow.position);
-  const ph = u.t * 9; m.legs.forEach((l, i) => l.rotation.x = Math.sin(ph + i * Math.PI) * .6 * walk);
-  m.armR.rotation.x = damp(m.armR.rotation.x, armX, 18, dt); m.armL.rotation.x = -.5 + Math.sin(ph) * .2 * walk;
+  const ph = u.t * (walk > 1.5 ? 14 : 9); m.legs.forEach((l, i) => l.rotation.x = Math.sin(ph + i * Math.PI) * .6 * Math.min(walk, 1.3));
+  m.armR.rotation.x = damp(m.armR.rotation.x, armX, 18, dt); m.armL.rotation.x = u.kind === 'b' ? -2.6 : -.5 + Math.sin(ph) * .2 * walk;
   if (u.state === 'dizzy') { m.body.rotation.z = Math.sin(u.t * 6) * .15; m.dizzy.material.opacity = .8; m.dizzy.position.set(Math.cos(u.t * 6) * .4, 2.6, Math.sin(u.t * 6) * .4); } else { m.body.rotation.z = 0; m.dizzy.material.opacity = 0; }
-  m.eyes.forEach(e => e.material.color.setHex(u.state === 'wind' ? 0xff2a1a : 0xffa040));
-  m.mats.forEach(o => o.material.emissive && o.material.emissive.setHex(u.flash > 0 ? 0x8a8a8a : 0x050506));
-  skinPlay(m, u.state === 'die' ? 'die' : u.state === 'launch' || u.state === 'down' || u.state === 'flinch' || u.state === 'recoil' || u.state === 'dizzy' ? 'hit' : u.state === 'wind' || u.state === 'atk' ? 'attack' : u.state === 'spawn' ? 'jump' : walk > .5 ? 'walk' : 'idle');
+  m.eyes.forEach(e => e.material.color.setHex(u.state === 'wind' || (u.state === 'atk' && u.atk === 'rush') ? 0xff2a1a : 0xffa040));
+  m.mats.forEach(o => o.material.emissive && o.material.emissive.setHex(u.flash > 0 ? 0x8a8a8a : u.kind === 'b' && u.state === 'atk' ? 0x3a1004 : 0x050506));
+  skinPlay(m, u.state === 'die' ? 'die' : u.state === 'launch' || u.state === 'down' || u.state === 'flinch' || u.state === 'recoil' || u.state === 'dizzy' ? 'hit' : (u.state === 'wind' || u.state === 'atk') && u.atk !== 'rush' ? 'attack' : u.state === 'spawn' ? 'jump' : walk > .5 ? 'walk' : 'idle');
 }
 // green HP orbs and blue MP orbs: they pop out, and fly to Gandalf when he's near
 function khOrb(u, kind) { const sp = glowSprite(kind === 'hp' ? 0x6aff6a : 0x6ab8ff, .7, .95); scene.add(sp); ORBS.push({ s: u.s + rand(-.5, .5), x: u.x + rand(-.5, .5), y: u.y + 1, vy: rand(4, 6), vs: rand(-2, 2), vx: rand(-2, 2), kind, sp, t: 0 }); }
@@ -7073,47 +7784,63 @@ function updateOrbs(dt) {
 function updateKH(dt) {
   if (!LV || !LV.kh) return;
   saberToBone(KH.sword, hob);
-  const play = state === 'play', A = KH.atk;
-  KH.mp = Math.min(KH.maxMp, KH.mp + dt * 2.5);
+  const play = state === 'play', A = KH.atk, form = KH.form > 0;
+  KH.mp = Math.min(KH.maxMp, KH.mp + dt * (form ? 6 : 2.5));
+  for (const c in KH.cmdT) KH.cmdT[c] -= dt;
+  if (form) { KH.form -= dt; KH.drive = KH.form / 22 * 100; if (KH.form <= 0) { KH.form = 0; KH.drive = 0; banner('THE LIGHT FADES', .9); } }
   // the cut: it lands in the middle part of the swing, on everything in reach in front (the finisher all round); crates break
   if (A) {
     A.t += dt;
     if (A.t >= A.dur * .28 && A.t <= A.dur * .72) {
-      const reach = A.fin ? 3.3 : 2.6, ch = Math.cos(P.heading), sh = Math.sin(P.heading);
+      const reach = (A.fin ? 3.3 : 2.6) + (form ? .5 : 0), ch = Math.cos(P.heading), sh = Math.sin(P.heading);
       for (const u of URUKS) {
         if (!ukLive(u) || u.state === 'spawn' || A.hit.has(u)) continue; const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx);
-        if (d > reach + u.r || Math.abs(u.y - P.y) > (A.air ? 2.6 : 1.8)) continue; if (!A.fin && d > 1 && (ds * ch + dx * sh) / d < .1) continue;
+        if (d > reach + u.r || !khLevel(u, A.air ? 2.6 : 1.8)) continue; if (!A.fin && d > 1 + (u.boss ? u.r : 0) && (ds * ch + dx * sh) / d < .1) continue;
         A.hit.add(u); khHit(u, A.fin ? 9 : 5, A.fin, A.air);
       }
       for (const c of crates) if (c.alive && Math.hypot(c.s - P.s, c.x - P.x) < 2.2 && Math.abs(c.y - P.y) < 1.6) spinCrate(c);
     }
-    if (A.air && A.fin && P.ground && !A.slam) { A.slam = true; dustAt(P.s, P.x, P.y, 12); S.stomp(); cam.shake = .3; for (const u of URUKS) if (ukLive(u) && !A.hit.has(u) && Math.hypot(u.s - P.s, u.x - P.x) < 3.6) khHit(u, 7, true); }
+    if (A.air && A.fin && P.ground && !A.slam) { A.slam = true; dustAt(P.s, P.x, P.y, 12); S.stomp(); cam.shake = .3; for (const u of URUKS) if (ukLive(u) && !A.hit.has(u) && Math.hypot(u.s - P.s, u.x - P.x) < 3.6 + (u.boss ? u.r : 0)) khHit(u, 7, true); }
     if (A.t >= A.dur) { KH.atk = null; if (KH.buf) { KH.buf = false; khAttack(); } }
   }
-  // the takedown: up, over, and down onto it
+  // the reaction commands at work
   const R_ = KH.reacting;
   if (R_) {
     R_.t += dt;
-    if (!R_.hit && (R_.t > .55 && P.ground || R_.t > 1)) {
-      R_.hit = true; const p = tw(P.s, P.x, P.y + .5); sparks(p, 40, 9, [1, 1, .9], [1, .8, .4]); puff(p, 8, 1.4); S.smash(); cam.shake = .6; KH.hitstop = .14;
-      khHit(R_.u, 999, true); for (const u of URUKS) if (u !== R_.u && ukLive(u) && Math.hypot(u.s - P.s, u.x - P.x) < 6) khHit(u, 14, true);
-    }
-    if (R_.t > 1.1) KH.reacting = null;
+    if (R_.cmd === 'takedown') {   // up, over, and down onto it
+      if (!R_.hit && (R_.t > .55 && P.ground || R_.t > 1)) {
+        R_.hit = true; const p = tw(P.s, P.x, P.y + .5); sparks(p, 40, 9, [1, 1, .9], [1, .8, .4]); puff(p, 8, 1.4); S.smash(); cam.shake = .6; KH.hitstop = .14;
+        khHit(R_.u, 999, true); for (const u of URUKS) if (u !== R_.u && ukLive(u) && Math.hypot(u.s - P.s, u.x - P.x) < 6) khHit(u, 14, true);
+      }
+      if (R_.t > 1.1) KH.reacting = null;
+    } else if (R_.cmd === 'sword') {   // three blows on the Balrog's head
+      for (const [at, n] of [[.7, 1], [.88, 2], [1.08, 3]]) if (R_.t >= at && R_.hits < n) { R_.hits = n; skinClip(hob, KH_CLIPS[n - 1], .2); S.saberSwing(); if (ukLive(R_.u)) bossHit(R_.u, n === 3 ? 32 : 18, n === 3, true, true); }
+      if (R_.t > 1.5) KH.reacting = null;
+    } else if (R_.t > (R_.cmd === 'stand' ? 1.6 : .4)) KH.reacting = null;
   }
   // thunder: each bolt falls where its foe is, a beat after the last
   for (let i = KH.bolts.length - 1; i >= 0; i--) {
     const b = KH.bolts[i]; b.t -= dt; if (b.t > 0) continue; KH.bolts.splice(i, 1);
-    const s = b.u ? b.u.s : b.s, x = b.u ? b.u.x : b.x; boltAt(tw(s, x, landAt(s, x) + (b.u ? 1 : 0)));
-    if (b.u && ukLive(b.u)) khHit(b.u, 9, true);
+    const s = b.u ? b.u.s : b.s, x = b.u ? b.u.x : b.x; boltAt(tw(s, x, landAt(s, x) + (b.u ? (b.u.boss ? b.u.tall * .7 : 1) : 0)));
+    if (b.u && ukLive(b.u)) khHit(b.u, b.u.boss ? 12 : 9, true);
   }
   for (const u of URUKS.slice()) ukUpdate(u, dt);
-  updateOrbs(dt);
-  // the reaction command: a dizzy one close by
-  KH.react = null; if (play && !KH.reacting) { let bd = 4.5; for (const u of URUKS) { if (!ukLive(u) || u.state !== 'dizzy') continue; const d = Math.hypot(u.s - P.s, u.x - P.x); if (d < bd && Math.abs(u.y - P.y) < 2) { bd = d; KH.react = u; } } }
+  updateOrbs(dt); updateKHFx(dt);
+  // the reaction command: a dizzy one close by, a berserker charging at you, or the Balrog's moment
+  KH.react = null;
+  if (play && !KH.reacting) {
+    let bd = 4.5;
+    for (const u of URUKS) {
+      if (!ukLive(u) || Math.abs(u.y - P.y) > 2.5) continue; const d = Math.hypot(u.s - P.s, u.x - P.x);
+      if (u.boss) { const c = bossReact(u, d); if (c) { KH.react = { u, cmd: c }; break; } continue; }
+      if (d < bd && (u.state === 'dizzy' || (u.state === 'atk' && u.atk === 'rush'))) { bd = d; KH.react = { u, cmd: u.state === 'dizzy' ? 'takedown' : 'repel' }; }
+    }
+  }
   KH.targetT -= dt; if (KH.target && (!ukLive(KH.target) || KH.targetT <= 0)) KH.target = null;
-  // the squares: walk into one and it locks, the Uruk-hai come in waves; when the last is beaten it opens again
+  if (KH.boss && ukLive(KH.boss) && KH.boss.state !== 'intro') { KH.target = KH.boss; KH.targetT = 1; }   // a boss's gauge stays up
+  // the squares: walk into one and it locks, the enemies come in waves; when the last is beaten it opens again
   const Y = LV.layout;
-  if (!KH.plaza) { if (play) for (const p of Y.plazas) if (!p.done && Math.hypot(P.s - p.s, P.x - p.x) < p.r - 1.5 && Math.abs(P.y - p.y) < 4) { KH.plaza = p; p.wave = 0; khBarrier(p, true); KH.waveT = .7; banner(p.title, 1.6); S.orcGrunt(); break; } }
+  if (!KH.plaza) { if (play) for (const p of Y.plazas) if (!p.done && Math.hypot(P.s - p.s, P.x - p.x) < p.r - 1.5 && Math.abs(P.y - p.y) < 4) { KH.plaza = p; p.wave = 0; khBarrier(p, true); KH.waveT = p.boss ? .2 : .7; banner(p.title, 1.6); S.orcGrunt(); break; } }
   else {
     const p = KH.plaza;
     if (KH.waveT > 0) { KH.waveT -= dt; if (KH.waveT <= 0) { const w = p.waves[p.wave], a0 = rand(0, TAU); w.forEach((k, i) => spawnUruk(k, p, a0 + i / w.length * TAU + rand(-.3, .3), i * .25)); } }
@@ -7122,12 +7849,14 @@ function updateKH(dt) {
       if (p.wave < p.waves.length) { KH.waveT = 1.2; banner('MORE ARE COMING!', 1.2); }
       else {
         p.done = true; khBarrier(p, false); KH.plaza = null; S.check(); gs.cp = { s: p.s, x: p.x, y: p.y, t: gs.time, deaths: 0 };
-        banner(p.last ? 'MEDUSELD IS FREE! GO TO THE KING' : 'THE WAY IS OPEN!', 2.2); KH.hp = Math.min(KH.max, KH.hp + 30);
+        banner(p.boss ? "HELM'S DEEP HOLDS!" : p.last ? 'MEDUSELD IS FREE! GO TO THE KING' : 'THE WAY IS OPEN!', 2.2); KH.hp = Math.min(KH.max, KH.hp + 30);
+        if (p.boss) KH.winT = 2.4;
       }
     }
   }
+  if (KH.winT > 0 && play) { KH.winT -= dt; if (KH.winT <= 0) roamWin("HELM'S DEEP HOLDS!"); }
   // Théoden, out on the steps of Meduseld once the last square is won: go to him to finish
-  const th = KH.theoden, won = Y.plazas[Y.plazas.length - 1].done;
+  const th = KH.theoden, won = !!Y.hall && Y.plazas[Y.plazas.length - 1].done;
   if (th) {
     th.m.root.visible = th.m.shadow.visible = won;
     if (won) {
@@ -7136,19 +7865,34 @@ function updateKH(dt) {
       if (play && Math.hypot(P.s - dr.s, P.x - dr.x) < 2.4) { banner('THÉODEN KING', 2); roamWin('EDORAS IS SAVED!'); }
     }
   }
-  // Gandalf's sword arm (built-in Gandalf; your own model swings with its own animations) and his guard's glow
-  const own = !!(hob.skin && hob.skin.obj), pose = R_ ? SP.C1 : A ? (A.t / A.dur < .3 ? SP[['A0', 'B0', 'C0', 'U0'][Math.min(A.n, 3)]] : SP[['A1', 'B1', 'C1', 'U1'][Math.min(A.n, 3)]]) : KH.guardT > 0 ? SP.block : SP.guard;
+  // Gandalf's sword arm (built-in Gandalf; your own model swings with its own animations), his guard's glow, the White Wizard's light
+  const own = !!(hob.skin && hob.skin.obj), pose = R_ ? SP.C1 : A ? (A.t / A.dur < .3 ? SP[['A0', 'B0', 'C0', 'A0', 'U0'][Math.min(A.n, 4)]] : SP[['A1', 'B1', 'C1', 'A1', 'U1'][Math.min(A.n, 4)]]) : KH.guardT > 0 ? SP.block : SP.guard;
   if (state === 'play' || state === 'win') applyPose(hob.armR, hob.body, KH.sword.g, pose, dt, 26, own);
-  KH.ring.material.opacity = KH.guardT > 0 ? .55 : KH.rollT > 0 ? .25 : 0;
+  KH.ring.material.opacity = KH.guardT > 0 ? .55 : KH.rollT > 0 ? .25 : form ? .3 + Math.sin(T * 8) * .1 : 0;
+  KH.ring.material.color.setHex(form ? 0xffffff : 0x9ad8ff); KH.ring.scale.setScalar(form ? 3.6 : 3);
+  if (form && Math.random() < .5) fx.spawn(...tw(P.s + rand(-.4, .4), P.x + rand(-.4, .4), P.y + rand(.2, 1.8)).toArray(), 0, rand(.5, 1.5), 0, rand(.4, .8), .25, .05, [1, 1, 1], [.7, .85, 1], 0, 1);
 }
+const BOSS_COLS = ['#e02a2a', '#ff8a20', '#e8d030', '#40c840'];   // a boss's gauge: the bar on top green, then yellow, orange and red
 function khHud() {
   const on = !!(LV && LV.kh) && state !== 'title' && state !== 'map' && state !== 'complete';
-  const hud = document.getElementById('khhud'); hud.style.display = on ? 'flex' : 'none';
+  const hud = document.getElementById('khhud'); hud.style.display = on ? 'flex' : 'none'; document.getElementById('khcmd').style.display = on ? 'block' : 'none';
   if (!on) { document.getElementById('khtarget').style.display = document.getElementById('khreact').style.display = 'none'; return; }
   document.getElementById('khHP').style.width = (KH.hp / KH.max * 100) + '%'; document.getElementById('khMP').style.width = (KH.mp / KH.maxMp * 100) + '%';
-  const tg = KH.target, te = document.getElementById('khtarget'); te.style.display = tg ? 'flex' : 'none';
-  if (tg) { document.getElementById('khTName').textContent = tg.name; document.getElementById('khTHP').style.width = Math.max(0, tg.hp / tg.max * 100) + '%'; }
-  document.getElementById('khreact').style.display = KH.react && state === 'play' ? 'block' : 'none';
+  const dv = document.getElementById('khDV'); dv.style.width = KH.drive + '%'; dv.parentNode.classList.toggle('full', KH.drive >= 100 && KH.form <= 0); dv.parentNode.classList.toggle('form', KH.form > 0);
+  const tg = KH.target, te = document.getElementById('khtarget'); te.style.display = tg ? 'flex' : 'none'; te.classList.toggle('boss', !!(tg && tg.boss));
+  if (tg) {
+    document.getElementById('khTName').textContent = tg.name; const f = document.getElementById('khTHP'), pips = document.getElementById('khTPips');
+    if (tg.boss) {
+      const per = tg.max / tg.bars, idx = Math.max(0, Math.ceil(Math.max(0, tg.hp) / per) - 1), fill = Math.max(0, tg.hp - idx * per) / per;
+      f.style.width = fill * 100 + '%'; f.style.background = BOSS_COLS[Math.min(idx, 3)]; f.parentNode.style.background = idx > 0 ? BOSS_COLS[Math.min(idx - 1, 3)] : '#200808'; pips.textContent = '◆'.repeat(idx);
+    } else { f.style.width = Math.max(0, tg.hp / tg.max * 100) + '%'; f.style.background = ''; f.parentNode.style.background = ''; pips.textContent = ''; }
+  }
+  const rc = KH.react && state === 'play'; document.getElementById('khreact').style.display = rc ? 'block' : 'none';
+  if (rc) document.getElementById('khRName').textContent = KH_REACT[KH.react.cmd];
+  // the command menu, Kingdom Hearts II's: what each button does now, lit when used, greyed when it can't be
+  const set = (id, c, dim) => { const e = document.getElementById(id); e.classList.toggle('on', (KH.cmdT[c] || 0) > 0); e.classList.toggle('dim', !!dim); };
+  set('kcA', 'A'); set('kcM', 'M', KH.mp < (KH.form > 0 ? 15 : 25)); set('kcG', 'G'); set('kcD', 'D', KH.drive < 100 || KH.form > 0);
+  document.getElementById('kcMName').textContent = KH.form > 0 ? 'THUNDAGA' : 'THUNDER';
 }
 document.getElementById('khreact').addEventListener('pointerdown', e => { e.preventDefault(); hit.TReact = true; });
 THEMES.rivfable = natTheme({
@@ -7178,8 +7922,8 @@ showScreen(null); syncPauseBtns();
     if (q.get('pos')) { const [s, x, y] = q.get('pos').split(',').map(Number); Object.assign(gs.cp, { s, x, y: y || 0 }); respawn(true); }   // &pos=s,x,y starts there (open levels)
     if (q.get('spring') && LV.springs && LV.springs[+q.get('spring')]) { const sp = LV.springs[+q.get('spring')]; Object.assign(gs.cp, { s: sp.s, x: sp.x, y: sp.y }); respawn(true); console.log('spring', JSON.stringify(sp)); }   // &spring=0 starts on that web spring
     if (q.get('walkto')) WALKTO = q.get('walkto').split(',').map(Number);
-    if (q.get('autofight')) AUTOFIGHT = { next: () => { const p = LV.layout.plazas.find(p => !p.done); return p ? [p.s, p.x] : [LV.layout.hall.door.s, LV.layout.hall.door.x]; } };
-    if (q.get('sim')) { cheats.god = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (LV.kh) console.log(`Edoras after ${q.get('sim')}s: squares done ${LV.layout.plazas.filter(p => p.done).length}/${LV.layout.plazas.length}, in ${KH.plaza ? LV.layout.plazas.indexOf(KH.plaza) : '-'} wave ${KH.plaza ? KH.plaza.wave : '-'}, uruks ${URUKS.length} (${URUKS.map(u => u.state + ':' + Math.round(u.hp)).join(' ')}), HP ${Math.round(KH.hp)} MP ${Math.round(KH.mp)}, kills ${gs.kills}, at ${P.s.toFixed(0)},${P.x.toFixed(0)},${P.y.toFixed(1)} (ground ${TERR ? terrainAt(P.s, P.x).toFixed(1) : 'none'}, on ${P.ground} ${P.standOn ? P.standOn.kind + ' ' + [P.standOn.y0, P.standOn.y1].map(v => v && v.toFixed(1)) : ''}), state ${state}`);
+    if (q.get('autofight')) AUTOFIGHT = { next: () => { const p = LV.layout.plazas.find(p => !p.done); const dr = LV.layout.hall && LV.layout.hall.door; return p ? [p.s, p.x] : dr ? [dr.s, dr.x] : [P.s, P.x]; } };
+    if (q.get('sim')) { cheats.god = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (LV.kh) console.log(`${LV.name} after ${q.get('sim')}s:${KH.boss ? ` boss ${KH.boss.state}${KH.boss.a ? '/' + KH.boss.a.type + '/' + KH.boss.a.ph : ''} hp ${Math.round(KH.boss.hp)} phase ${KH.boss.phase},` : ''} drive ${Math.round(KH.drive)} form ${KH.form.toFixed(1)}, reactions ${JSON.stringify(KH.rx || {})}, squares done ${LV.layout.plazas.filter(p => p.done).length}/${LV.layout.plazas.length}, in ${KH.plaza ? LV.layout.plazas.indexOf(KH.plaza) : '-'} wave ${KH.plaza ? KH.plaza.wave : '-'}, uruks ${URUKS.length} (${URUKS.map(u => u.state + ':' + Math.round(u.hp)).join(' ')}), HP ${Math.round(KH.hp)} MP ${Math.round(KH.mp)}, kills ${gs.kills}, at ${P.s.toFixed(0)},${P.x.toFixed(0)},${P.y.toFixed(1)} (ground ${TERR ? terrainAt(P.s, P.x).toFixed(1) : 'none'}, on ${P.ground} ${P.standOn ? P.standOn.kind + ' ' + [P.standOn.y0, P.standOn.y1].map(v => v && v.toFixed(1)) : ''}), state ${state}`);
       if (q.get('pos') || q.get('spring')) console.log(`after ${q.get('sim')}s: s ${P.s.toFixed(1)} x ${P.x.toFixed(1)} y ${P.y.toFixed(1)} ground ${P.ground}`); }   // &sim=6 plays 6 seconds first (invincible)
     if (q.get('info')) setTimeout(() => { renderer.info.autoReset = false; renderer.info.reset(); renderer.setRenderTarget(rt); renderer.render(scene, camera); console.log('scene: ' + renderer.info.render.calls + ' draw calls, ' + renderer.info.render.triangles + ' triangles'); renderer.info.autoReset = true; }, 500);   // &info=1 logs how much one frame draws
     if (q.get('cam')) { const [s, x, y, ls, lx, ly] = q.get('cam').split(',').map(Number); DEBUG_CAM = { p: tw(s, x, y), l: tw(ls, lx, ly) }; }   // &cam=s,x,y,ls,lx,ly: a fixed camera in the level
