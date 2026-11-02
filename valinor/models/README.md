@@ -12,7 +12,8 @@ Put a `.glb` file here with one of these names and Valinor uses it instead of it
 | `orc.glb` | Orcs and goblins | Most levels |
 | `fellbeast.glb` | The fell beasts (a Nazgûl on a winged beast) | Minas Tirith, Mordor and Mount Doom |
 | `horse.glb` | Shadowfax | The First Circle |
-| `uruk.glb`, `lurtz.glb`, `theoden.glb` | The Uruk-hai, Lurtz and Théoden | Edoras |
+| `uruk.glb`, `lurtz.glb`, `theoden.glb` | The Uruk-hai, Lurtz and Théoden | Edoras (and the Uruk-hai at Helm's Deep) |
+| `berserker.glb` | The Uruk berserkers with their torches | Helm's Deep |
 | `frodo.glb`, `sam.glb`, `merry.glb`, `pippin.glb`, `aragorn.glb`, `legolas.glb`, `gimli.glb`, `boromir.glb` | The Fellowship | Rivendell |
 | `livingmap.glb` + `livingmap.json` | The map: BFME II's War of the Ring board instead of the little diorama (make them with `Prep-Map.ps1`, then `Convert-Chars.ps1 livingmap`) | The world map, where you pick a place |
 
@@ -27,6 +28,7 @@ Put a `.glb` file here with one of these names and Valinor uses it instead of it
 - **Mirkwood:** its dark trees, webbed trees, undergrowth, webs, egg sacs, the spider lair and Dol Guldur's tower.
 - **Edoras:** Meduseld, the rocks breaking through its hill, the palisade, the gatehouse and its watchtowers, and the well. (The town's longhouses are Valinor's own: Battle for Middle-earth's Edoras pieces are all rocks. The trees are the Shire's.)
 - **Minas Tirith:** the White Tree in the Citadel.
+- **Helm's Deep:** the keep, the culvert in the Deeping Wall and Isengard's siege ladders (and the ramp, walls, towers and gates of Rohan's castles, waiting to be fitted). Its walls and ramp are otherwise Valinor's own.
 
 Each level uses whichever are there and builds its own shapes for the rest. Add `?props=none` to the address to compare with the built ones.
 
@@ -38,6 +40,7 @@ To make them (Blender and the W3D add-on, as for the characters):
 ```
 
 `Convert-Props.ps1` skips what's already converted, so it's quick to run again. Give it names to redo just those. If a model faces the wrong way, ask Claude to set its turn in `PROP_TURN` in `index.html`.
+
 ## How it works
 
 - It only works when you start the game with `serve.cmd`. Browsers won't load models into a page opened straight from your files, and the public website never asks for them.
