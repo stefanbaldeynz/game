@@ -19,7 +19,7 @@ The server is `serve.ps1`, which uses the PowerShell built into Windows. It only
 | Game | Folder | What it is |
 | --- | --- | --- |
 | Iyla's Game | [`iylas-game/`](iylas-game/) | 3D runner for phones. Iyla rides 20 animals, birds, dinosaurs and ice animals through 9 levels, with Rhino, Giant Shark, Triceratops and Ice Monster boss fights and Milo the sausage dog. |
-| Valinor | [`valinor/`](valinor/) | 3D platformer across a map of Middle-earth that Gandalf walks freely: twelve levels from an open-world Hobbiton (nine Nazgûl to defeat) to Mount Doom, spiders in the treetops of Mirkwood, with a lightsaber duel against the Witch-king on Weathertop, a Balrog boss in Moria, a Shelob chase and a climb ahead of rising lava. Works on phones with touch controls. |
+| Valinor | [`valinor/`](valinor/) | 3D platformer across a map of Middle-earth that Gandalf walks freely: twelve levels from an open-world Hobbiton (nine Nazgûl to defeat) to Mount Doom, spiders in the treetops of Mirkwood, Kingdom Hearts-style fights up the hill of Edoras, with a lightsaber duel against the Witch-king on Weathertop, a Balrog boss in Moria, a Shelob chase and a climb ahead of rising lava. Works on phones with touch controls. |
 | Astro Blaster | [`astro-blaster/`](astro-blaster/) | 2D arcade space shooter. Fly The Chow Hauler and blast asteroids. |
 | Hellkeep | [`hellkeep/`](hellkeep/) | Shooter in hell, in five rounds: two in 3D first-person, two side-on platform rounds and a tower-defence siege. |
 | Wacky Wings | [`wacky-wings/`](wacky-wings/) | Retro kart racer with NZ birds. Throw possums at the other racers and win a Speight's. |

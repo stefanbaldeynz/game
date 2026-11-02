@@ -17,7 +17,7 @@ The game opens on a map of Middle-earth. Gandalf walks freely across it. Walk hi
 | Rivendell | **Rivendell** (in a gorge from Fable, if `levels/rivendell.json` is there: see its README) | Open country to roam, like Hobbiton: a green valley under cliffs with waterfalls on every side. The Bruinen runs across it under an elven bridge; terraces climb to the Last Homely House; there's the Council ring, the shards of Narsil under a dome, a gazebo over Sam's garden, and a mallorn with a flet reached by stepping stones. **Find the other eight of the Fellowship** (each stands under a beam of light); everyone you find walks behind Gandalf, and when all eight are with him the Fellowship is formed. |
 | Mirkwood | **Mirkwood** (on Tokara Forest from Unreal Tournament 2004, if `levels/mirkwood.json` is there: see its README) | A dark forest bowl under giant trees, old plank walkways high in their branches with ramps up to them, Morgul lanterns glowing green on chains, webs strung everywhere, egg sacs, and Dol Guldur's tower black on the rim. **Twelve spiders** hunt you on the forest floor and up on the walkways (they climb): spin into them or hit them with fireworks, two hits each. **Web springs** fling you up to the walkways. Slay them all to free Mirkwood. |
 | Moria | **The Mines of Moria** | Dark dwarf-halls with columns rising out of a fiery abyss, chains and lanterns hanging from the roof, stalactites. Goblins climbing out of the chasm, then the **Balrog boss** on the Bridge of Khazad-dûm: a plank bridge with rope rails over a sea of mist and rock spires. |
-| Edoras | **The Ride to Edoras** | Gallop on Shadowfax across the golden plains of Rohan past palisades and the Golden Hall. Uruk-hai and stake barricades to jump. |
+| Edoras | **Edoras** | Up the hill to Meduseld. The road runs in through the gate in the palisade and winds round and up the hill past the longhouses to the Golden Hall. Four squares on the way lock behind a golden barrier while the **Uruk-hai** come over the walls in waves. **Lurtz** comes with the last wave at the top. Win it and **Théoden** comes out onto the steps; go to him to finish. You fight the **Kingdom Hearts II** way (see below). |
 | Minas Tirith | Three levels | Flies down into the city and opens its own menu: The First Circle, The Second Circle and The Citadel (Sauron). |
 | Cirith Ungol | **The Pass of Cirith Ungol** | A chase. A narrow pass full of webs, and **Shelob** drops out of them behind you. The camera turns round and you run towards it with the spider at your heels. Jump the webs and the gaps, and don't stop until the end of the pass. |
 | Mordor | **Mordor** | Black rock over a sea of lava, Barad-dûr and the Eye off to the side, fell beasts spitting fire overhead, lots of TNT. |
@@ -32,6 +32,22 @@ Finishing (or quitting) a place brings you back to the map with Gandalf standing
 | Back to the map (Minas Tirith menu) | Esc / Backspace / ○ | ◀ MAP button |
 
 The camera follows Gandalf from high above. He can't walk into the sea.
+
+### Fighting in Edoras (the Kingdom Hearts II way)
+
+| Button | What it does |
+| --- | --- |
+| Attack (J / Shift / □ / ATTACK) | A combo: three cuts and a finisher. Each cut closes in on the nearest enemy, and the finisher knocks it flying. In the air it's an air combo: Gandalf hangs in the air while he strikes, and the last blow slams him down. |
+| Guard (E / GUARD) | Blocks a blow from in front and knocks the attacker back. With the stick held, it's a **Dodge Roll**: nothing touches you while you roll. |
+| Magic (L / F / ○ / MAGIC) | **Thunder**: bolts on up to three enemies near you, for a quarter of your MP (blue bar). |
+| Reaction command (R, or the green prompt) | When an Uruk is dizzy (stars over its head), **TAKEDOWN** leaps on it and finishes it, and blasts the others round it. |
+
+- The Uruk-hai fight like Soldier Heartless. They circle you, hopping and strafing, and only two come at you at once. Each one sets itself before it strikes, eyes flaring red:
+  - a two-cut combo up close
+  - a leaping spin-slash from further off
+  - a charge behind its shield from further still
+- **Lurtz** shrugs off light blows. Knock him down with finishers, magic or a takedown.
+- Your HP is the green bar. Beaten enemies drop green orbs (HP), blue orbs (MP) and apples. MP also comes back slowly by itself.
 
 ### The duel on Weathertop
 
