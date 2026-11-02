@@ -28,7 +28,7 @@ Put a `.glb` file here with one of these names and Valinor uses it instead of it
 - **Mirkwood:** its dark trees, webbed trees, undergrowth, webs, egg sacs, the spider lair and Dol Guldur's tower.
 - **Edoras:** Meduseld, the rocks breaking through its hill, the palisade, the gatehouse and its watchtowers, and the well. (The town's longhouses are Valinor's own: Battle for Middle-earth's Edoras pieces are all rocks. The trees are the Shire's.)
 - **Minas Tirith:** the White Tree in the Citadel.
-- **Helm's Deep:** the keep, the culvert in the Deeping Wall and Isengard's siege ladders (and the ramp, walls, towers and gates of Rohan's castles, waiting to be fitted). Its walls and ramp are otherwise Valinor's own.
+- **Helm's Deep:** the Deeping Wall with its culvert, the Hornburg's walls round the courtyard, Rohan towers at the gate, the keep, and Isengard's siege ladders. The ramp, its parapets and landings are Valinor's own (Battle for Middle-earth's ramp is a short piece made for its own map). `eb_torch` and `rbcastfloor` are flat pieces it doesn't use.
 
 Each level uses whichever are there and builds its own shapes for the rest. Add `?props=none` to the address to compare with the built ones.
 

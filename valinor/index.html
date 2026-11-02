@@ -5939,7 +5939,7 @@ const PROPS = {}, PROP_MATS = new Map();
 // team-colour mask in its alpha, which mustn't punch holes in the walls). Waterfalls are see-through.
 const PROP_CUT = /tree|bush|grass|flower|fern|hedge|shrub|web|wood0|lothlorien|pipeweed|fence|mirk/i, PROP_FLOW = /falls/i;
 // some come out too dark under Valinor's light (BFME lights its own scenery brightly): lit a little by their own picture too
-const PROP_LIFT = [[/^riv/, .4, 0xfff2dc], [/^pt(elvn|lothl)/, .3, 0xfff0d0], [/slvrtree/, .45, 0xf4f6ff], [/^rb/, .35, 0xfff0d8], [/^predoras/, .25, 0xf0ece4]];   // (Edoras's timber and rocks are dark in their own light too)
+const PROP_LIFT = [[/^riv/, .4, 0xfff2dc], [/^pt(elvn|lothl)/, .3, 0xfff0d0], [/slvrtree/, .45, 0xf4f6ff], [/^rb/, .35, 0xfff0d8], [/^predoras/, .25, 0xf0ece4], [/^nbhd|^eb_/, .35, 0xf0f2f6]];   // (Edoras's timber and rocks are dark in their own light too)
 // which way each model faces, where it isn't the way the levels expect (doors towards +s)
 const PROP_TURN = {};
 let GLTF = null;
@@ -7100,8 +7100,10 @@ function buildHelms(L, TH) {
   const wallRun = (sa, xa, sb, xb, top, th) => { const l = Math.hypot(sb - sa, xb - xa), ns = (sb - sa) / l, nx = (xb - xa) / l; for (let d = 0; d < l; d += 4) { const e = Math.min(4, l - d), s = sa + ns * (d + e / 2), x = xa + nx * (d + e / 2), lo = Math.min(at(s, x), TOP) - 8, p = wW(s, x, (lo + top) / 2); hw.push([p.x, p.y, p.z, th, top - lo, e + .05, rotOf(ns, nx)]); for (let q = .7; q < e; q += 1.6) { const pm = wW(sa + ns * (d + q), xa + nx * (d + q), top + .5); hw.push([pm.x, pm.y, pm.z, th + .1, 1, .8, rotOf(ns, nx)]); } } };
   wallRun(c0, x0, c1, x0, TOP + 7, 2.4); wallRun(c0, x1, c1, x1, TOP + 7, 2.4); wallRun(c0, x0, c0, x1, TOP + 7, 2.4);
   wallRun(c1, x0, c1, g0 - Y.HALF - 1, TOP + 7, 2.4); wallRun(c1, g0 + Y.HALF + 1, c1, x1, TOP + 7, 2.4);
+  // (Battle for Middle-earth's own Helm's Deep wall, when it's there, in lengths of twelve along each side)
+  if (PROPS.nbhdmainwall) { hw.length = 0; for (const [sa, xa, sb, xb] of [[c0, x0, c1, x0], [c0, x1, c1, x1], [c0, x0, c0, x1], [c1, x0, c1, g0 - Y.HALF - 1], [c1, g0 + Y.HALF + 1, c1, x1]]) { const l = Math.hypot(sb - sa, xb - xa), ns = (sb - sa) / l, nx = (xb - xa) / l, n = Math.max(1, Math.round(l / 12)), e = l / n; for (let k = 0; k < n; k++) propOne('nbhdmainwall', sa + ns * e * (k + .5), xa + nx * e * (k + .5), TOP - .5, Math.atan2(nx, ns), e * 1.04); } }
   stoneBox(hw, stoneDark);
-  const gt = []; for (const x of [g0 - Y.HALF - 2.6, g0 + Y.HALF + 2.6]) { const p = wW(c1, x, TOP + 3); gt.push([p.x, p.y + 2, p.z, 5, 14, 5, 0]); for (const [ds, dx] of [[-2, -2], [-2, 2], [2, -2], [2, 2], [0, -2], [0, 2], [-2, 0], [2, 0]]) { const q = wW(c1 + ds, x + dx, TOP + 10.6); gt.push([q.x, q.y, q.z, .9, 1.2, .9, 0]); } }
+  const gt = []; for (const x of [g0 - Y.HALF - 2.6, g0 + Y.HALF + 2.6]) { if (PROPS.rbcasttowr) { propOne('rbcasttowr', c1, x, TOP - .4, Math.PI / 2, 6.5); continue; } const p = wW(c1, x, TOP + 3); gt.push([p.x, p.y + 2, p.z, 5, 14, 5, 0]); for (const [ds, dx] of [[-2, -2], [-2, 2], [2, -2], [2, 2], [0, -2], [0, 2], [-2, 0], [2, 0]]) { const q = wW(c1 + ds, x + dx, TOP + 10.6); gt.push([q.x, q.y, q.z, .9, 1.2, .9, 0]); } }
   { const p = wW(c1, g0, TOP + 9); gt.push([p.x, p.y, p.z, Y.HALF * 2 + 4, 4, 4, 0]); }   // the arch over the gateway
   stoneBox(gt, stoneDark);
   { const wood = surf(TX.wood, { sky, color: 0x5a4030, rough: .7, bump: 2, wet: .5 }), d = new THREE.Group(); place(d, c1 - 1, g0 - Y.HALF + 1, TOP, -.9); scene.add(d); part(GEO_BOX, wood, d, 2, 3, 0, 4.2, 6, .4); const d2 = new THREE.Group(); place(d2, c1 - 1.5, g0 + Y.HALF - 1, TOP + .2, 1.3); scene.add(d2); const f2 = part(GEO_BOX, wood, d2, -2, 1.2, 0, 4.2, 6, .4); f2.rotation.z = 1.35; }   // the gate, broken in: one leaf hanging, one down
@@ -7115,8 +7117,9 @@ function buildHelms(L, TH) {
     const e = 6.05, sc = s + 3; if (Math.abs(sc - br[0]) < 8) continue; const lo = at(sc, DX) - 2, top = Math.max(14, at(sc, DX) + 12), p = wW(sc, DX, (lo + top) / 2);
     dw.push([p.x, p.y, p.z, 7, top - lo, e, 0]); for (const xx of [DX - 3.2, DX + 3.2]) for (let q = .8; q < e; q += 1.8) { const pm = wW(s + q, xx, top + .55); dw.push([pm.x, pm.y, pm.z, .7, 1.1, .9, 0]); }
   }
+  // (Battle for Middle-earth's own Deeping Wall, when it's there: lengths of twenty-four, the one by the breach with its culvert)
+  if (PROPS.nbhddeepingw) { dw.length = 0; for (let sc = -46; sc < 100; sc += 24) { if (Math.abs(sc - br[0]) < 14) continue; const drn = PROPS.nbhddeepingwdrn && sc + 24 > br[0] - 14 && sc < br[0]; propOne(drn ? 'nbhddeepingwdrn' : 'nbhddeepingw', sc, DX, Math.min(at(sc - 10, DX), at(sc + 10, DX), at(sc, DX)) - .6, 0, 24.2); } }
   stoneBox(dw, stone);
-  if (PROPS.nbhddeepingwdrn) propOne('nbhddeepingwdrn', br[0] - 9, DX, at(br[0] - 9, DX) - .3, 0, 8);
   // the breach: rubble in a spill out into the coomb, and fire in the hole where the Balrog came through
   const rub = [];
   for (let i = 0; i < 90; i++) { const s = br[0] + rand(-9, 9), x = DX + rand(-5, 14) * Math.abs(Math.cos(i)), p = wW(s, x, at(s, x) + rand(-.2, .6)), r = rand(.4, 1.6); if (Math.hypot(s - Y.arena.s, x - Y.arena.x) < Y.arena.r + 2) continue; rub.push([p.x, p.y, p.z, r, r * rand(.6, 1), r, rand(0, 6)]); }
