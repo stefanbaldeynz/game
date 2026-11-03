@@ -1729,6 +1729,25 @@ const THEMES = {
     },
   }),
 
+  // the Citadel: the Court of the Fountain on top of the city, round the White Tree, the Eye over the Tower in the end
+  citadel: natTheme({
+    wallTex: TX.marble, floorTex: TX.mosaic, tint: MARBLE_T, door: 0x6a6a7a,
+    env: { ...MT_ENV, fog: [30, 260], fogC: 0x3a1424 },
+    orc: MT_ORC,
+    scenery(L) {
+      const first = scene.children.length, R_ = 14;
+      const fl = new THREE.Mesh(new THREE.CircleGeometry(R_, 64), ps1(new THREE.MeshLambertMaterial({ map: TX.mosaic }))); fl.rotation.x = -Math.PI / 2; tw(0, 0, 0, fl.position); scene.add(fl);
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(R_ + .8, R_ + 1.6, 16, 48, 2, true), ps1(new THREE.MeshLambertMaterial({ map: TX.marble, color: 0xd8d0dc, side: THREE.DoubleSide }))); tw(0, 0, -8, base.position); scene.add(base);
+      const mar = ps1(new THREE.MeshLambertMaterial({ map: TX.marble, color: 0xe0d8e4 }));
+      for (let k = 0; k < 60; k++) { const a = k / 60 * TAU, m = new THREE.Mesh(GEO_BOX, mar); tw(Math.cos(a) * (R_ + .35), Math.sin(a) * (R_ + .35), k % 2 ? .55 : .8, m.position); m.scale.set(.5, k % 2 ? .9 : 1.3, 1.1); m.rotation.y = -a; scene.add(m); }
+      const lawn = new THREE.Mesh(new THREE.CircleGeometry(3.4, 32), ps1(new THREE.MeshLambertMaterial({ map: TX.grass }))); lawn.rotation.x = -Math.PI / 2; tw(0, 0, .03, lawn.position); scene.add(lawn);
+      const kerb = new THREE.Mesh(new THREE.RingGeometry(3.4, 3.9, 40), mar); kerb.rotation.x = -Math.PI / 2; tw(0, 0, .04, kerb.position); scene.add(kerb);
+      L.tree = makeWhiteTree(); tw(0, 0, .03, L.tree.position); L.tree.scale.setScalar(1.25); scene.add(L.tree);
+      for (let i = 0; i < 10; i++) { const a = (i + .5) / 10 * TAU; addTorch(Math.cos(a) * (R_ - .6), Math.sin(a) * (R_ - .6), 1.9); }
+      L.eyeK = makeEye(); const ep = tw(26, -4, 17); L.eyeK.g.position.copy(ep); L.eyeK.baseY = ep.y; L.eyeK.g.visible = false;
+    },
+  }),
+
   // Weathertop: a wind-swept hilltop at night, the ruined watchtower's ring of stones, storm clouds and lightning
   weathertop: natTheme({
     wallTex: TX.rock, floorTex: TX.floor, tint: [.75, .76, .82], door: 0x6a6a7a,
@@ -2589,14 +2608,13 @@ const LEVELS = [
     },
   },
   {
-    name: 'THE CITADEL', sub: 'BEWARE THE DARK LORD', loc: 'mt', next: 'RETURN TO THE MAP', R: 14, Y0: 44, CX: 0, CZ: 21, base: -10, wallH: 0, loop: true, arena: true, boss: true, lawnX: 10.6, fog: 0x3a1424,
-    floors: [], pillars: [], dz: [], balrogs: [],
-    content() {
-      // crates and apples placed by compass angle (degrees, 90 = south towards the camera) and distance from the tree
-      const at = (t, deg, r) => addCrate(t, deg / 180 * Math.PI * R, R - r);
-      at('r', 125, 9); at('r', 55, 9); at('p', 200, 8.5); at('b', 300, 10); at('q', 340, 8.5);
-      for (let i = 0; i < 16; i++) addApple(i / 16 * CIRC, R - 6.5, .7);
-    },
+    // a Kingdom Hearts boss fight with Sauron in the Court of the Fountain at the top of the city (on a straight frame laid over the old round court)
+    straight: true, roam: true, kh: true, name: 'THE CITADEL', sub: 'BEWARE THE DARK LORD', loc: 'mt', theme: 'citadel', next: 'RETURN TO THE MAP', R: 40, Y0: 44, CX: -40, CZ: 21, base: -10, wallH: 0, fog: 0x3a1424, winTitle: 'SAURON IS OVERTHROWN!',
+    field: [-14.5, 14.5, -14.5, 14.5], start: [-10, 0],
+    layout: { blocks: [[-1, 1, -1, 1, 12], ...Array.from({ length: 40 }, (_, k) => { const a = k / 40 * TAU, s = Math.cos(a) * 14.6, x = Math.sin(a) * 14.6; return [s - 1.2, s + 1.2, x - 1.2, x + 1.2, 6]; })],
+      plazas: [{ s: 0, x: 0, y: 0, r: 13, waves: [['X']], title: 'THE COURT OF THE FOUNTAIN', boss: true, last: true, breach: [0, 0], bossHp: 1150, noAdds: true }] },
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { khRings(this.layout); for (const [k, s, x] of [['q', -11, 5], ['su', -11, -5], ['b', 11, 0]]) addCrate(k, s, x, 0, 4); },
   },
   // ---- one level for each of the other places on the map; each ring sits far out on its own so they never see each other ----
   {
@@ -5132,7 +5150,7 @@ function updateAmbient(dt) {
   if (THEMES.riv.bigFall) THEMES.riv.bigFall.offset.y += dt * .6;
   if (THEMES.mordor.lava) THEMES.mordor.lava.offset.x += dt * .01;
   torchSprites.forEach((s, i) => s.scale.set(.7 + Math.sin(T * 13 + i) * .06, 1.15 + Math.sin(T * 11 + i * 2) * .1, 1));
-  clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt); updateKhazad(dt); updateFall(dt); updateWeathertop(dt);
+  clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt); updateKhazad(dt); updateFall(dt); updateWeathertop(dt); updateCitadel(dt);
   doomGlow.material.opacity = .8 + Math.sin(T * 1.7) * .2;
   // embers rising from the burning city below
   if (ENV.embers) for (let k = 0; k < 2; k++) { tw(P.s + rand(-6, 26), rand(-14, -4), rand(-8, 0), _a); fx.spawn(_a.x, _a.y, _a.z, rand(-.5, .5), rand(1.5, 3), rand(-.5, .5), rand(2, 3.5), .12, .05, [1, .7, .3], [1, .2, .05]); }
@@ -8303,6 +8321,175 @@ function wkUpdate(b, dt) {
   m.armR.rotation.x = damp(m.armR.rotation.x, arm, 14, dt); saberToBone(m.saber, m); if (m.saber.g) m.saber.g.visible = b.state !== 'fall';
   skinPlay(m, b.state === 'fall' ? 'die' : b.state === 'stun' || b.state === 'stagger' ? 'hit' : b.state === 'atk' || b.state === 'roar' || b.state === 'intro' ? 'attack' : walk ? 'walk' : 'idle');
 }
+// --- Sauron in the Court of the Fountain, the Kingdom Hearts II way: a boss of five bars round the White Tree. He stalks
+//     Gandalf with his great mace: a wide sweep (a red fan: guard or jump it); an overhead slam onto a red circle that
+//     sticks the mace in the stones (strike him while he pulls it free, or DEFLECT the blow as it comes down); a stamp
+//     that sends a ring of fire rolling out (jump it); a charge along a red line; fire raining onto red circles.
+//     Half his gauge gone, the Eye opens in the sky over the Tower: its beam hunts Gandalf across the court, and orcs
+//     come up the stair. Beaten to his knees near the end: CUT THE RING finishes him, and he goes up in a blast of light.
+function spawnSauronKH(pl, delay = 0) {
+  const m = SAURON; scene.add(m.root); scene.add(m.shadow); m.root.visible = m.shadow.visible = false; m.root.scale.setScalar(SKL);
+  const b = { m, boss: true, kind: 'X', name: 'SAURON', hp: pl.bossHp || 900, max: pl.bossHp || 900, bars: 4, r: 1.5, tall: 5.6, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null,
+    state: 'intro', t: -delay - .4, h: 0, cd: 1.6, n: 0, upd: sxUpdate, hitFn: sxHit, reactFn: sxReact, reaction: sxReaction, s: pl.s + 8, x: pl.x, y: 0, pose: null };
+  b.h = Math.atan2(P.x - b.x, P.s - b.s); URUKS.push(b); KH.boss = b; Music.mode = 1;
+  if (LV.eyeK) { LV.eyeK.g.visible = false; LV.eyeK.g.scale.setScalar(.01); }
+  return b;
+}
+const SX_IN = 4.3;   // (the White Tree's lawn in the middle: nobody fights on it)
+function sxKeep(s, x, pl) { const d = Math.hypot(s, x) || .01, r = clamp(d, SX_IN, pl.r - 1.6); return [s / d * r, x / d * r]; }
+function sxEnd(b) { if (b.a) { for (const f of b.a.fx || []) f.dead = true; b.a = null; } if (b.state === 'atk') { b.state = 'idle'; b.t = 0; b.cd = rand(.9, 1.6) / (b.phase > 1 ? 1.35 : 1); } }
+function sxStart(b, type) {
+  const f = b.phase > 1 ? .8 : 1, A = b.a = { type, t: 0, ph: 'wind', wT: { swipe: .75, slam: .95, quake: .7, charge: .85, rain: .6, beam: .5, orcs: .8 }[type] * f, fx: [], n: 0 };
+  b.state = 'atk'; b.t = 0; b.n++;
+  const mark = mm => { const x = khFx(mm, f2 => { warnPulse(f2); return true; }); A.fx.push(x); return x; };
+  const fw = (h, r) => [b.s + Math.cos(h) * r, b.x + Math.sin(h) * r];
+  if (type === 'swipe') { A.h = b.h; mark(warnMesh(b.s, b.x, 1, SWIPE.r + 1.8, A.h - 1.35, A.h + 1.35)); skinClip(b.m, 'attack_b1', A.wT + .6); S.whoosh(); }
+  if (type === 'slam') { A.h = b.h; A.at = fw(A.h, slamR()); mark(warnMesh(A.at[0], A.at[1], 0, 2.8)); skinClip(b.m, 'attack_a', A.wT + .5); }
+  if (type === 'quake') { mark(warnMesh(b.s, b.x, 0, 3.2)); skinClip(b.m, 'attack_c', A.wT + .5); }
+  if (type === 'charge') { A.h = b.h; A.from = [b.s, b.x]; A.to = fw(A.h, 12); mark(warnMesh(b.s, b.x, .5, 12, A.h - .16, A.h + .16)); skinClip(b.m, 'attack_d', A.wT); S.roar(); }
+  if (type === 'rain') { skinClip(b.m, 'attack_e', 1.4); banner('FIRE OF MORDOR!', 1); }
+  if (type === 'beam') { A.at = [P.s + rand(-3, 3), P.x + rand(-3, 3)]; S.zap(); }
+  if (type === 'orcs') { banner('THE ORCS OF MORDOR!', 1.1); skinClip(b.m, 'gtpa', 1.2); }
+}
+function sxAttack(b, dt, d, toP) {
+  const A = b.a; A.t += dt; const pl = b.plaza;
+  if (A.ph === 'wind') { if (A.type !== 'swipe' && A.type !== 'slam' && A.type !== 'charge') b.h += angDiff(b.h, toP) * Math.min(1, dt * 4); if (A.t >= A.wT) { A.ph = 'go'; A.t = 0; } return; }
+  switch (A.type) {
+    case 'swipe': {   // the mace sweeps round in front of him
+      const k = clamp(A.t / .35, 0, 1); A.tw = lerp(1.5, -1.7, k);
+      if (!A.hit && k > .4) { A.hit = true; A.fx.forEach(x => x.dead = true); S.smash(); cam.shake = .4; const pa = Math.atan2(P.x - b.x, P.s - b.s); if (d < SWIPE.r + 1.8 && Math.abs(angDiff(pa, A.h)) < 1.4 && P.y < b.y + 1.4) khHurt(16, b, { kb: 12 }); }
+      if (A.t > 1) sxEnd(b); break;
+    }
+    case 'slam': {   // down onto the red circle; the mace sticks in the stones
+      if (!A.hit) { A.hit = true; A.fx.forEach(x => x.dead = true); const [s, x] = A.at, p = tw(s, x, .3); sparks(p, 50, 10, [1, .8, .5], [.9, .3, .1], .3); bblast(p, 3); S.smash(); cam.shake = .9; KH.react = null;
+        if (Math.hypot(P.s - s, P.x - x) < 2.8 && P.y < 1.4) khHurt(22, { s, x }, { kb: 14 });
+        if (b.phase > 1) bossWave(b, s, x, 9, 8, 10); }
+      A.ph = A.t < 1.6 ? 'stuck' : 'go';   // (pulling the mace free: open to the blade)
+      if (A.t > 2) sxEnd(b); break;
+    }
+    case 'quake': {   // a stamp: the stones jump and a ring of fire rolls out
+      if (!A.hit) { A.hit = true; A.fx.forEach(x => x.dead = true); S.smash(); cam.shake = .8; sparks(tw(b.s, b.x, .3), 40, 9, [1, .8, .5], [.8, .3, .1], .3); if (d < 3.2 && P.y < .8) khHurt(14, b, { unblock: true, kb: 12 }); bossWave(b, b.s, b.x, 13, 9, 12); }
+      if (A.t > 1.1) sxEnd(b); break;
+    }
+    case 'charge': {   // along the red line, the court shaking under him
+      const k = clamp(A.t / .55, 0, 1); [b.s, b.x] = sxKeep(lerp(A.from[0], A.to[0], k), lerp(A.from[1], A.to[1], k), pl); skinPlay(b.m, 'walk');
+      if (Math.random() < .5) puff(tw(b.s, b.x, .2), 2, 1.2, [.2, .18, .2]);
+      if (!A.hit && d < 2.4) { A.hit = true; khHurt(18, b, { unblock: true, kb: 15 }); S.smash(); cam.shake = .6; }
+      if (k >= 1 && A.ph === 'go') { A.fx.forEach(x => x.dead = true); A.ph = 'spent'; A.t = 0; }
+      if (A.ph === 'spent' && A.t > 1) sxEnd(b); break;
+    }
+    case 'rain': {   // fire out of the dark sky, onto red circles round Gandalf
+      const n = b.phase > 1 ? 9 : 6;
+      while (A.n < n && A.t > A.n * .22) { A.n++; const s = clamp(P.s + rand(-4, 4), -pl.r + 1, pl.r - 1), x = clamp(P.x + rand(-4, 4), -pl.r + 1, pl.r - 1), y0 = 26, fb = fallFire(); fb.scale.setScalar(1.8); scene.add(fb);
+        khFx(warnMesh(s, x, 0, 1.7), f => { warnPulse(f); const k = Math.min(1, f.t / 1.1); tw(s, x, lerp(y0, .3, k * k), fb.position); bfire(fb.position, .7, .5);
+          if (k < 1) return true; scene.remove(fb); const p = tw(s, x, .3); sparks(p, 20, 7, [1, .9, .6], [1, .4, .1], .25); S.boom && S.boom(); if (Math.hypot(P.s - s, P.x - x) < 1.7 && P.y < 1.2) khHurt(12, { s, x }, { unblock: true, kb: 7 }); return false; }); }
+      if (A.t > 2.6) sxEnd(b); break;
+    }
+    case 'beam': {   // the Eye's gaze: a burning point that hunts Gandalf across the stones (guarding holds it off)
+      const e = LV.eyeK, k = Math.min(1, dt * (b.phase > 1 ? 2.2 : 1.6)); A.at[0] = lerp(A.at[0], P.s, k); A.at[1] = lerp(A.at[1], P.x, k);
+      if (e) { const from = () => e.disc.getWorldPosition(new V3()), to = tw(A.at[0], A.at[1], .2); A.next = (A.next || 0) - dt; if (A.next <= 0) { A.next = .06; khArc(from, () => to.clone(), .1); } bfire(to, 1.4, 1.2); }
+      if (Math.hypot(P.s - A.at[0], P.x - A.at[1]) < 1.5 && A.t % .25 < dt) { if (KH.guardT > 0) { KH.guardT = .3; sparks(tw(P.s, P.x, P.y + 1.2), 6, 4, [1, .8, .5], [1, .4, .1]); } else khHurt(6, { s: A.at[0], x: A.at[1] }, { unblock: true, kb: 3 }); }
+      if (A.t > 3.2) sxEnd(b); break;
+    }
+    case 'orcs': if (!A.hit) { A.hit = true; S.roar(); for (let i = 0; i < 4; i++) spawnUruk('o', pl, rand(0, TAU), i * .3); } if (A.t > 1) sxEnd(b); break;
+  }
+}
+function sxPick(b, d) {
+  const p2 = b.phase > 1, r = Math.random(); let t;
+  if (d < 5) t = r < .4 ? 'swipe' : r < .75 ? 'slam' : 'quake';
+  else if (d < 10) t = r < .35 ? 'charge' : r < .6 ? 'slam' : r < .8 ? 'rain' : 'swipe';
+  else t = r < .5 ? 'charge' : 'rain';
+  if (p2 && b.n % 4 === 3) t = 'beam';
+  if (p2 && !URUKS.some(u => u !== b && ukLive(u)) && (b.callT || 0) < T) { t = 'orcs'; b.callT = T + 25; }
+  if (t === b.last && Math.random() < .6) t = d < 5 ? 'swipe' : 'charge';
+  b.last = t; sxStart(b, t);
+}
+function sxReact(b, d) {
+  if (b.state === 'atk' && b.a && b.a.type === 'slam' && b.a.ph === 'wind' && b.a.t > .25 && d < 6.5) return 'deflect';
+  if (b.state === 'stun' && b.hp <= b.max * .3 && d < 6) return 'narsil';
+  return null;
+}
+function sxReaction(cmd) {
+  const b = KH.boss; if (!b) return; const p = tw(lerp(P.s, b.s, .5), lerp(P.x, b.x, .5), P.y + 1.6);
+  if (cmd === 'deflect') {   // the blade meets the mace as it comes down and throws it back over his head
+    sxEnd(b); S.clash(); S.smash(); KH.hitstop = .3; cam.shake = .9; flashV = Math.max(flashV, .5); skinClip(hob, khc(KH_SORA.guard, 'attack_b'), .5);
+    sparks(p, 60, 11, [1, 1, 1], [.7, .85, 1], .3); sxHit(b, 50, true, false, true); if (ukLive(b) && b.state !== 'fall') { b.state = 'stun'; b.t = 0; b.stunT = 3; skinPlay(b.m, 'hit'); }
+  } else {   // the blade takes the Ring from his hand, as Isildur's did
+    S.smash(); KH.hitstop = .45; cam.shake = 1.2; flashV = Math.max(flashV, 1); banner('THE RING IS CUT FROM HIS HAND!', 2.2); skinClip(hob, khc(KH_SORA.ground[4], 'attack_e'), .8);
+    const lt = glowSprite(0xffd060, 2, 1); lt.position.copy(p); khFx(lt, f => { lt.scale.setScalar(2 + f.t * 30); lt.material.opacity = 1 - f.t; return f.t < 1; });
+    sxHit(b, 9999, true, false, true);
+  }
+}
+function sxHit(b, dmg, fin, air, react) {
+  if (!ukLive(b)) return; const p = tw(lerp(b.s, P.s, .35), lerp(b.x, P.x, .35), P.y + 1.4);
+  if (b.state === 'intro' || b.state === 'roar') { S.clash(); sparks(p, 8, 4, [1, .7, .4], [.6, .2, .1]); return; }
+  if (KH.form > 0) dmg *= 1.5; if (b.state === 'stun' || (b.a && (b.a.ph === 'stuck' || b.a.ph === 'spent'))) dmg *= 1.6;
+  b.hp -= dmg; b.flash = .1; if (!react) b.rev += fin ? 18 : 7; KH.target = b; KH.targetT = 6; if (KH.form <= 0) KH.drive = Math.min(100, KH.drive + 2);
+  KH.hitstop = Math.max(KH.hitstop, react ? .12 : fin ? .07 : .035); cam.shake = Math.max(cam.shake, fin ? .3 : .12); sparks(p, fin ? 26 : 12, fin ? 8 : 5, [1, .8, .5], [.8, .3, .1]); S.saberHit();
+  if (b.hp <= 0) { b.hp = 0; sxEnd(b); b.state = 'fall'; b.t = 0; b.dead = true; KH.react = null; skinPlay(b.m, 'die'); for (const o of URUKS) if (!o.boss && ukLive(o)) khHit(o, 999, true); banner('SAURON IS OVERTHROWN!', 2.6); KH.hitstop = .4; flashV = Math.max(flashV, .6); Music.mode = 0; return; }
+  if (fin && !react && b.state === 'idle') { b.state = 'stagger'; b.t = 0; }
+  if (b.phase === 1 && b.hp <= b.max * .5) { b.phase = 2; sxEnd(b); b.state = 'roar'; b.t = 0; banner('THE EYE OPENS!', 1.8); S.roar(); S.thunder && S.thunder(); flashV = Math.max(flashV, .4); }
+}
+// his body, posed the old way (the built Sauron) or by BFME's clips when his model is here
+function sxPose(b, dt) {
+  const A = b.a, st = b.state; let tgt, k = 8;
+  if (st === 'fall') tgt = poseRage();
+  else if (st === 'roar' || st === 'intro') { tgt = poseRage(); k = 4; }
+  else if (st === 'stun') { tgt = poseStuck(SLAM.ang); tgt.hipY = 8; k = 6; }
+  else if (st === 'stagger') tgt = poseHurt();
+  else if (A && A.type === 'slam') { if (A.ph === 'wind') tgt = poseSlamWind(); else { tgt = poseStuck(SLAM.ang); k = A.ph === 'go' && !A.hit ? 30 : A.ph === 'stuck' ? 30 : 4; } }
+  else if (A && A.type === 'swipe') { tgt = poseSwipe(A.ph === 'wind' ? 1.5 : A.tw ?? 1.5, SWIPE.ang); k = 14; }
+  else if (A && A.type === 'quake') { tgt = poseQuake(A.ph !== 'wind'); k = A.ph === 'wind' ? 6 : 25; }
+  else if (A && (A.type === 'rain' || A.type === 'beam' || A.type === 'orcs')) tgt = poseRain();
+  else { b.walkPh = (b.walkPh || 0) + dt * (A && A.type === 'charge' ? 9 : b.walk ? 4 : 0); tgt = poseWalk(b.walkPh, b.walk || (A && A.type === 'charge') ? 1 : 0); }
+  if (!b.pose) b.pose = poseWalk(0, 0); blendPose(b.pose, tgt, Math.min(1, dt * k)); applySauronPose(b.pose);
+  skinPlay(b.m, st === 'fall' ? 'die' : st === 'stun' || st === 'stagger' ? 'hit' : st === 'roar' || st === 'atk' ? 'attack' : b.walk ? 'walk' : 'idle');
+}
+function sxUpdate(b, dt) {
+  const m = b.m; b.t += dt; b.flash -= dt; b.rev = Math.max(0, b.rev - dt * 12); b.walk = 0;
+  const ds = P.s - b.s, dx = P.x - b.x, d = Math.hypot(ds, dx) || .01, toP = Math.atan2(dx, ds), live = state === 'play', pl = b.plaza, A = b.a;
+  switch (b.state) {
+    case 'intro': {   // up out of a pool of shadow and fire on the far side of the Tree
+      if (b.t < 0) return; if (!b.shown) { b.shown = true; m.root.visible = m.shadow.visible = true; S.roar(); S.thunder && S.thunder(); cam.shake = .6; flashV = Math.max(flashV, .3); }
+      const k = clamp(b.t / 2.2, 0, 1); b.y = lerp(-6.5, 0, 1 - (1 - k) * (1 - k));
+      for (let q = 0; q < 3; q++) { const a = rand(0, TAU), r = rand(.5, 3); bfire(tw(b.s + Math.cos(a) * r, b.x + Math.sin(a) * r, .2), 1.6, 2.4); }
+      if (Math.random() < .7) smoke.spawn(...tw(b.s + rand(-2, 2), b.x + rand(-2, 2), rand(0, 4)).toArray(), rand(-.5, .5), rand(1, 2.5), rand(-.5, .5), 1.6, 2, 4, [.04, .03, .04], [.12, .08, .08], 0, .3);
+      if (k >= 1 && !b.landed) { b.landed = true; skinClip(m, 'land_a', .8); banner('SAURON, THE DARK LORD!', 2.4); bossWave(b, b.s, b.x, 7, 10, 0); cam.shake = 1; }
+      b.h += angDiff(b.h, toP) * Math.min(1, dt * 3); if (b.t > 3.6) { b.state = 'idle'; b.t = 0; b.cd = .8; } break;
+    }
+    case 'idle': {   // stalking round the Tree after Gandalf
+      b.h += angDiff(b.h, toP) * Math.min(1, dt * 3); const want = 4, k = clamp(d - want, -1, 1), side = Math.sin(b.t * .5 + 1) > 0 ? 1 : -1;
+      const sp = b.phase > 1 ? 2.6 : 2.1; [b.s, b.x] = sxKeep(b.s + (ds / d * k * sp - dx / d * side * .8) * dt, b.x + (dx / d * k * sp + ds / d * side * .8) * dt, pl); b.walk = Math.abs(k) > .2 ? 1 : 0;
+      b.cd -= dt; if (live && b.cd <= 0) sxPick(b, d); break;
+    }
+    case 'atk': sxAttack(b, dt, d, toP); break;
+    case 'stagger': if (b.t > .6) { b.state = 'idle'; b.t = 0; b.cd = .4; } break;
+    case 'stun': if (Math.random() < .3) sparks(tw(b.s, b.x, 4.5), 2, 2, [1, 1, .8], [1, .7, .2]); if (b.t > b.stunT) { b.state = 'idle'; b.t = 0; b.cd = .5; } break;   // (on one knee: strike, or cut the Ring)
+    case 'roar': {   // the Eye opens over the Tower
+      const e = LV.eyeK; if (e) { e.g.visible = true; e.g.scale.setScalar(Math.max(.01, Math.min(1, b.t / 1.2))); }
+      if (b.t > 2) { b.state = 'idle'; b.t = 0; b.cd = .4; } break;
+    }
+    case 'fall': {   // light breaks out of him, and he is gone in a blast that throws the court back
+      b.y = 0; if (Math.random() < .9) { const a = rand(0, TAU); khArc(() => tw(b.s, b.x, 3), () => tw(b.s + Math.cos(a) * 6, b.x + Math.sin(a) * 6, rand(1, 8)), .12); }
+      if (b.t > 2.4 && !b.blown) { b.blown = true; m.root.visible = m.shadow.visible = false; flashV = 1.2; cam.shake = 1.4; S.boom && S.boom(); S.thunder && S.thunder(); bblast(tw(b.s, b.x, 3), 9); sparks(tw(b.s, b.x, 3), 120, 16, [1, 1, .9], [1, .6, .2], .4); bossWave(b, b.s, b.x, 16, 14, 0);
+        const lt = glowSprite(0xffe0a0, 4, 1); tw(b.s, b.x, 3, lt.position); khFx(lt, f => { lt.scale.setScalar(4 + f.t * 60); lt.material.opacity = 1 - f.t / 1.2; return f.t < 1.2; });
+        if (LV.eyeK) LV.eyeK.g.visible = false; if (LV.tree) LV.tree.userData.bloomT = 0; }
+      if (b.t > 3.4) { m.root.visible = m.shadow.visible = false; b.m = { root: new THREE.Group(), shadow: new THREE.Group() }; khRemove(b); b.m = m; return; }
+      break;
+    }
+  }
+  if (b.rev >= 100 && b.state === 'idle') { b.rev = 0; sxStart(b, 'quake'); }   // (too many blows at once: he stamps them away)
+  if (d < b.r + .5 && b.state !== 'fall' && m.root.visible) { P.s = b.s + ds / d * (b.r + .5); P.x = b.x + dx / d * (b.r + .5); }
+  place(m.root, b.s, b.x, b.y - (b.state === 'stun' ? .4 : 0), b.h); tw(b.s, b.x, .03, m.shadow.position); m.root.scale.setScalar(SKL);
+  m.ringGlow.material.opacity = b.state === 'stun' ? .6 + Math.sin(T * 12) * .4 : 1;
+  sxPose(b, dt);
+}
+// each frame in the Citadel: embers on the wind, the Eye watching from over the Tower
+function updateCitadel(dt) {
+  if (!LV || LV.theme !== 'citadel' || state === 'map' || state === 'title') return;
+  const e = LV.eyeK; if (e && e.g.visible) { e.g.position.y = e.baseY + Math.sin(T * 1.3) * .3; e.disc.lookAt(camera.position); const s = 1 + Math.sin(T * 5) * .04; e.disc.scale.set(3.6 * s, 2.3 * s, 1); e.halo.material.opacity = .5 + Math.sin(T * 7) * .1; }
+  if (Math.random() < dt * 14) { const a = rand(0, TAU), r = rand(2, 16); fx.spawn(...tw(Math.cos(a) * r, Math.sin(a) * r, rand(0, 2)).toArray(), rand(-.6, .6), rand(.6, 1.8), rand(-.6, .6), rand(1.5, 3), .14, .05, [1, .7, .3], [1, .3, .1], 0, -.2); }
+}
 // each frame on Weathertop: mist drifting between the standing stones and over the hill, ghost-lights, the storm
 function updateWeathertop(dt) {
   if (!LV || LV.theme !== 'weathertop' || state === 'map' || state === 'title') return;
@@ -8825,7 +9012,7 @@ function khWhite(on) {
   hob.skin = on ? hob.skinW : hob.skinG; hob.skin.cur = ''; hob.skin.holdT = 0; skinPlay(hob, 'idle');
 }
 // the reaction commands: what the green prompt does depends on whose moment it is
-const KH_REACT = { takedown: 'TAKEDOWN', repel: 'REPEL', sword: 'SWORD RUN', stand: 'YOU SHALL NOT PASS!', duel: "WIZARDS' DUEL", staff: 'BREAK HIS STAFF', deflect: 'DEFLECT', anor: 'FLAME OF ANOR' };
+const KH_REACT = { takedown: 'TAKEDOWN', repel: 'REPEL', sword: 'SWORD RUN', stand: 'YOU SHALL NOT PASS!', duel: "WIZARDS' DUEL", staff: 'BREAK HIS STAFF', deflect: 'DEFLECT', anor: 'FLAME OF ANOR', narsil: 'CUT THE RING' };
 function khReaction() {
   const R_ = KH.react; if (!R_) return;
   const u = R_.u; KH.react = null; KH.atk = null; KH.rx = KH.rx || {}; KH.rx[R_.cmd] = (KH.rx[R_.cmd] || 0) + 1;   // (KH.rx: a tally, for testing)
@@ -8837,7 +9024,7 @@ function khReaction() {
   }
   if (R_.cmd === 'sword') { KH.reacting = { u, t: 0, cmd: 'sword', hits: 0, from: [P.s, P.x, P.y] }; KH.invT = 2.4; P.ground = false; skinClip(hob, 'attack_a', .5); S.whoosh(); return; }
   if (R_.cmd === 'stand') { KH.reacting = { u, t: 0, cmd: 'stand' }; KH.invT = 2.5; bossStand(u); return; }
-  if (R_.cmd === 'duel' || R_.cmd === 'staff' || R_.cmd === 'deflect' || R_.cmd === 'anor') { KH.reacting = { u, t: 0, cmd: R_.cmd }; KH.invT = 2.5; u.reaction(R_.cmd); return; }   // (Saruman's)
+  if (R_.cmd === 'duel' || R_.cmd === 'staff' || R_.cmd === 'deflect' || R_.cmd === 'anor' || R_.cmd === 'narsil') { KH.reacting = { u, t: 0, cmd: R_.cmd }; KH.invT = 2.5; u.reaction(R_.cmd); return; }   // (Saruman's)
   KH.reacting = { u, t: 0, hit: false, cmd: 'takedown' }; KH.invT = 1.6;
   P.vy = 11; P.ground = false; skinClip(hob, 'attack_c', .85); S.saberSwing();
 }
@@ -8938,6 +9125,7 @@ function spawnUruk(kind, pl, a, delay) {
   if (kind === 'B') return spawnKHBalrog(pl, delay);
   if (kind === 'S') return spawnSaruman(pl, delay);
   if (kind === 'W') return spawnWitchKing(pl, delay);
+  if (kind === 'X') return spawnSauronKH(pl, delay);
   if (kind === 'F') return spawnFallBalrog(pl, delay);
   const K = UK_KINDS[kind], R2 = pl.r * rand(.35, .7);
   if (pl.ladders) a = pl.ladders[Math.random() * pl.ladders.length | 0] + rand(-.15, .15);   // up the ladders, over the parapet
