@@ -2521,7 +2521,8 @@ function rivendellLayout() {
   for (const [s, x, w, d, h] of L.houses) L.blocks.push([s - w / 2, s + w / 2, x - d / 2, x + d / 2, h]);
   return L;
 }
-const RACE_FORD = 520, RACE_END = 572;   // (the race to the Ford: where the river crosses the road, and where the road ends)
+const RACE_FORD = 520, RACE_END = 572;
+const ER = { WALK: 12, X0: -46, X1: 46, TOWERS: [-46, -23, 0, 23, 46], TOP: 20 };   // (Erebor's ramparts: the walk's height and ends, its towers, their tops)   // (the race to the Ford: where the river crosses the road, and where the road ends)
 const LEVELS = [
   {
     name: 'THE FIRST CIRCLE', sub: 'RIDE OF SHADOWFAX', loc: 'mt', next: 'CLIMB TO THE SECOND CIRCLE', R: 50, Y0: 0, base: -26, wallH: 12, fog: 0x2c1a48, ride: true,
@@ -2780,6 +2781,20 @@ const LEVELS = [
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { isenContent(this); },
   },
+  {
+    // Erebor, the first level: on the ramparts before the Gate with a bow, the dragon wheeling over the valley (see EREBOR)
+    straight: true, roam: true, kh: true, bow: true, startH: Math.PI, name: 'EREBOR', sub: 'THE RAMPARTS · A DRAGON!', loc: 'erebor', theme: 'erebor', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 85000, CZ: 0, base: -20, wallH: 0, winTitle: 'THE DRAGON FLEES INTO THE MOUNTAIN!',
+    ...ereborLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { ereborContent(this); },
+  },
+  {
+    // Erebor, the second level: the dragon in the treasure hall under the Mountain, the Kingdom Hearts way (see EREBOR)
+    straight: true, roam: true, kh: true, name: 'THE TREASURE HALL', sub: 'THE HOARD OF THRÓR', loc: 'erebor', theme: 'hoard', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 90000, CZ: 0, base: -20, wallH: 0, winTitle: 'THE DRAGON IS SLAIN!',
+    ...hoardLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { hoardContent(this); },
+  },
 ];
 
 for (const L of LEVELS) if (L.lava) L.endY = L.pillars[L.pillars.length - 1][4];   // the climb's last gate stands on the top spire
@@ -2882,7 +2897,7 @@ function respawn(fresh) {
   } else for (const c of crates) restoreCrate(c);
   if (fresh) for (const o of orcs) resetOrc(o);
   cratesDirty = 2;
-  P.s = cp.s; P.x = cp.x; P.y = cp.y + .05; P.vs = P.vx = P.vy = 0; P.heading = LV.arena ? Math.PI / 2 : 0; P.spinT = 0; P.invT = 1; P.ground = false; P.standOn = null; P.fireAnim = 0; P.safe = null;
+  P.s = cp.s; P.x = cp.x; P.y = cp.y + .05; P.vs = P.vx = P.vy = 0; P.heading = LV.arena ? Math.PI / 2 : LV.startH || 0; P.spinT = 0; P.invT = 1; P.ground = false; P.standOn = null; P.fireAnim = 0; P.safe = null;
   if (cp.s > 1.5 && !LV.arena && !LV.roam) P.s = cp.s - 1.2;
   cam.yaw = 0; resetNazgul(); resetFellowship(); if (LV.duel && duel.wk) resetDuel(); if (khOn()) resetKH(fresh);
   for (const f of fireballs) killWarn(f.warn), scene.remove(f.mesh); fireballs = [];
@@ -3008,7 +3023,7 @@ function readInput() {
   inp.guardP = !!(hit.KeyE || hit.TGuard || pad.guardP); inp.reactP = !!(hit.KeyR || hit.TReact || pad.reactP);   // Edoras: guard (or roll), and the reaction command
   inp.driveP = !!(hit.KeyQ || hit.TDrive || pad.driveP);   // (and the drive form)
   if (AUTOFIGHT && LV && LV.kh) { const u = URUKS.find(o => ukLive(o) && o.state !== 'spawn'); WALKTO = u ? [u.s, u.x] : AUTOFIGHT.next(); if (u && Math.hypot(u.s - P.s, u.x - P.x) < 4 + (u.boss ? u.r : 0) && T % .3 < .02 && !KH.sub && KH.cur === 0) hit.KeyK = true; if (u && KH.mp >= 25 && T % 3 < .02) hit.KeyF = true; if (KH.react) hit.KeyR = true; if (KH.drive >= 100) hit.TDrive = true; }   // testing: &autofight=1
-  if (AUTOK && LV && LV.khl && T % .35 < .02) hit.KeyK = true;   // (testing: &autok=1 attacks every moment)
+  if (AUTOK && LV && (LV.khl || LV.bow) && T % .35 < .02) hit.KeyK = true;   // (testing: &autok=1 attacks every moment; on the ramparts it looses arrows, aimed for it)
   inp.spinP = inp.spinP || !!hit.KeyJ; inp.fireP = inp.fireP || !!hit.KeyF; inp.reactP = inp.reactP || !!hit.KeyR; inp.driveP = inp.driveP || !!hit.KeyQ;
   if (khOn()) {   // the Kingdom Hearts levels: W A S D move; K does the command chosen on the menu (attack); L jumps; J dodges; Space guards;
     // I is the reaction command; F casts Thunder and H Fire; Q and E (or the arrows, or the mouse wheel) move up and down the menu, and
@@ -5143,7 +5158,7 @@ function updateAmbient(dt) {
   if (THEMES.riv.bigFall) THEMES.riv.bigFall.offset.y += dt * .6;
   if (THEMES.mordor.lava) THEMES.mordor.lava.offset.x += dt * .01;
   torchSprites.forEach((s, i) => s.scale.set(.7 + Math.sin(T * 13 + i) * .06, 1.15 + Math.sin(T * 11 + i * 2) * .1, 1));
-  clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt); updateKhazad(dt); updateFall(dt); updateWeathertop(dt); updateCitadel(dt); updateRivKH(dt);
+  clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt); updateKhazad(dt); updateFall(dt); updateWeathertop(dt); updateCitadel(dt); updateRivKH(dt); updateErebor(dt); updateBow(dt);
   doomGlow.material.opacity = .8 + Math.sin(T * 1.7) * .2;
   // embers rising from the burning city below
   if (ENV.embers) for (let k = 0; k < 2; k++) { tw(P.s + rand(-6, 26), rand(-14, -4), rand(-8, 0), _a); fx.spawn(_a.x, _a.y, _a.z, rand(-.5, .5), rand(1.5, 3), rand(-.5, .5), rand(2, 3.5), .12, .05, [1, .7, .3], [1, .2, .05]); }
@@ -5281,6 +5296,12 @@ function updateCamera(dt) {
     camera.lookAt(cam.wl); return;
   }
   if (LV.roam && !LV.duel) {
+    if (LV.bow) {   // (Erebor's ramparts: from the Mountain's side over Gandalf's shoulder, out over the valley; Shift and / turn it, which is how you aim)
+      cam.by = clamp((cam.by || 0) + (inp.camT || 0) * 1.5 * dt, -1.3, 1.3); cam.yaw = Math.PI + cam.by;
+      const fs = Math.cos(cam.yaw), fx_ = Math.sin(cam.yaw); _a.copy(tw(P.s - fs * 6.5, P.x - fx_ * 6.5, P.y + 3.2)); _b.copy(tw(P.s + fs * 30, P.x + fx_ * 30, P.y + 7));
+      if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-8 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp);
+      const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
+    }
     if (LV.fall) {   // (the fall: from above, looking down the shaft past Gandalf to the Balrog)
       cam.yaw = 0; _a.copy(tw(P.s - 4.5, P.x, P.y + 15)); _b.copy(tw(P.s + 2.2, P.x, P.y - 8));
       if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-5 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp);
@@ -5612,6 +5633,7 @@ const NODES = [
   { name: 'MIRKWOOD', x: 8, z: -24, open: true, loc: 'mirk', sub: 'THE DARK FOREST · SLAY THE SPIDERS' },
   { name: 'ISENGARD', x: -18, z: 9, open: true, loc: 'isen', sub: 'UP THE TOWER OF ORTHANC · SARUMAN BOSS' },
   { name: "HELM'S DEEP", x: -14.6, z: 15.8, open: true, loc: 'helm', sub: 'DOWN THE RAMP · BALROG BOSS' },
+  { name: 'EREBOR', x: 24, z: -34, open: true, loc: 'erebor', sub: 'THE LONELY MOUNTAIN · DRAGON BOSS · 2 LEVELS' },
 ];
 const ROAD = (() => {
   const way = [NODES[0], [-40, -6], [-30, -17], NODES[1], [-18.5, -13], NODES[2], [-5, 3], [1, 11], NODES[3], [21, 17], [31, 14.5], [40, 15.5], NODES[4], [46, 14.5], NODES[5], [54, 3], NODES[6], [62, 0], [65, 6], NODES[7]];
@@ -5662,7 +5684,7 @@ const NEAR_R = 2.4;
 function nodeNear() { let best = -1, bd = NEAR_R; NODES.forEach((n, i) => { const d = Math.hypot(tok.p.x - n.x, tok.p.z - n.z); if (d < bd) { bd = d; best = i; } }); return best; }
 const onLand = (x, z) => BOARD ? boardLand(x, z) : coastAt(x, z) > .8;
 // a place with several levels opens its own menu to choose from (Moria; Minas Tirith flies down into the city instead)
-const CHAP_DESC = { riv: ['Find the Fellowship in the hidden valley', 'Race the Nine to the Ford of Bruinen'], moria: ['The dwarf-halls, to the doors of the bridge', 'Face the Balrog on the bridge', 'Fall with the Balrog into the deep'] };
+const CHAP_DESC = { erebor: ['The ramparts before the Gate: shoot down the dragon', 'The treasure hall: the dragon in his hoard'], riv: ['Find the Fellowship in the hidden valley', 'Race the Nine to the Ford of Bruinen'], moria: ['The dwarf-halls, to the doors of the bridge', 'Face the Balrog on the bridge', 'Fall with the Balrog into the deep'] };
 let CHAP = null;
 function openChap(loc) {
   const ls = LEVELS.map((L, i) => [L, i]).filter(([L]) => L.loc === loc); CHAP = { loc, ls: ls.map(([, i]) => i), sel: 0 }; tok.dest = null;
@@ -5773,7 +5795,7 @@ function updateMap(dt) {
 
 // --- your own War of the Ring board (models/livingmap.glb and livingmap.json, from Battle for Middle-earth II: see
 //     models/README.md): it replaces the little diorama, each stop moves onto its region, and Gandalf walks over its hills ---
-const STOP_REGION = { shire: 'The_Shire', riv: 'Rhudaur', moria: 'Redhorn_Pass', weather: 'Amon_Sul', rohan: 'Rohan', mt: 'Minas_Tirith', ungol: 'Minas_Morgul', mordor: 'Mordor', doom: 'Mount_Doom', mirk: 'Mirkwood', helm: 'Helms_Deep', isen: 'Isengard' };
+const STOP_REGION = { shire: 'The_Shire', riv: 'Rhudaur', moria: 'Redhorn_Pass', weather: 'Amon_Sul', rohan: 'Rohan', mt: 'Minas_Tirith', ungol: 'Minas_Morgul', mordor: 'Mordor', doom: 'Mount_Doom', mirk: 'Mirkwood', helm: 'Helms_Deep', isen: 'Isengard', erebor: 'Erebor' };
 // what's hidden (clouds, smoke and BFME's own markers), what's water, and what's the ground itself (its 20 painted tiles)
 const BOARD_HIDE = /^(.*(cloud|pick|smok|sunray|flash|marker|brdr|rallyflag|hero)|impassable|lm_coast)/i, BOARD_WATER = /ocean|water|sea\b|wtr/i, BOARD_GROUND = /^LM_\d\d(_\d+)?$/;   // (three.js adds _1 when a part shares its name with the node holding it)
 // the tiles' pictures, small, so the map can tell the painted sea (blue) from land where Gandalf may walk
@@ -5941,6 +5963,7 @@ const MODEL_SLOTS = {
   fellbeast: { height: 7.5, turn: -Math.PI / 2 }, horse: { height: 2.5, turn: -Math.PI / 2, hide: /gandalf/i, anims: { walk: /^run_a/i, jump: /^fly/i } },
   sauron: { height: 20, turn: -Math.PI / 2 },   // in his own units: the game builds Sauron at .28 scale (about 5.6 tall)
   spider: { height: 1.6, turn: -Math.PI / 2, src: 'shelob' },
+  dragon: { height: 7, turn: -Math.PI / 2, anims: { fly: /^fly_a/i, idle: /^idle_a/i, attack: /^attack_a/i, hit: /^hurt_a/i, die: /^die_k/i } },   // (Erebor: Drogoth, Rise of the Witch-king's dragon)
   blackrider: { height: 3.1, turn: -Math.PI / 2, anims: { walk: /run|wlk|gallop/i } },   // (the race to the Ford: Rise of the Witch-king's Black Rider, on his horse)   // Mirkwood's spiders: Shelob again (src: whose model it is), smaller
 };
 // which animation plays for each action: the first clip whose name matches (case doesn't matter)
@@ -7570,6 +7593,283 @@ THEMES.ford = natTheme({
   orc: MT_ORC,
   scenery(L) { buildRace(L, this); },
 });
+// =====================================================================
+//  EREBOR: the dragon. Level 1, on the ramparts before the Gate: Gandalf with a bow on the wall-walk, the dragon wheeling
+//  over the valley (K looses an arrow: it flies at the dragon only if he's in front of you, and he's quick: loose when he
+//  hangs or comes at you). Level 2, in the treasure hall under the Mountain, the Kingdom Hearts way, among hills of gold.
+//  With your own models the dragon is Battle for Middle-earth's Drogoth (Rise of the Witch-king's), else a built one.
+// =====================================================================
+function makeDragon() {
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
+  const SC = lam(0x6a2a1a, { emissive: 0x1a0604 }), BEL = lam(0xb8884a, { emissive: 0x201004 }), WG = lam(0x4a1a12, { side: THREE.DoubleSide, emissive: 0x100402 }), HN = lam(0xd8c8a0);
+  part(GEO.sph, SC, body, 0, 2.6, 0, 1.6, 1.4, 3.4); part(GEO.sph, BEL, body, 0, 2.2, .4, 1.3, 1, 2.6);
+  const neck = new THREE.Group(); neck.position.set(0, 3.2, 2.8); body.add(neck); part(GEO.sph, SC, neck, 0, .8, 1.2, .6, .6, 1.8); neck.rotation.x = -.5;
+  const head = new THREE.Group(); head.position.set(0, 1.4, 2.8); neck.add(head); part(GEO.sph, SC, head, 0, 0, .4, .7, .55, 1.3);
+  for (const sx of [-1, 1]) { part(GEO.cone, HN, head, sx * .35, .5, -.3, .1, .9, .1).rotation.x = -1; part(GEO.sph, bas(0xffb020), head, sx * .32, .2, .9, .1, .08, .08); }
+  const jaw = new THREE.Group(); jaw.position.set(0, -.2, .2); head.add(jaw); part(GEO_BOX, SC, jaw, 0, -.15, .8, .8, .25, 1.4);
+  const mouth = glowSprite(0xff8a20, 2, 0); mouth.position.set(0, -.2, 1.6); head.add(mouth);
+  const wings = [-1, 1].map(sx => { const w = new THREE.Group(); w.position.set(sx * 1.2, 3.4, .6); body.add(w); const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, sx * 7, .6, -1, sx * 5, 0, -4, 0, 0, -2.6, sx * 7, .6, -1, sx * 5, 0, -4], 3)); g.computeVertexNormals(); w.add(new THREE.Mesh(g, WG)); part(GEO.cyl, SC, w, sx * 3.5, .3, -.5, .15, 7.2, .15).rotation.z = Math.PI / 2; return w; });
+  const tail = new THREE.Group(); tail.position.set(0, 2.5, -3.2); body.add(tail); for (let k = 0; k < 5; k++) part(GEO.sph, SC, tail, 0, -k * .1, -k * 1.3, .9 - k * .15, .8 - k * .14, 1.1);
+  const legs = [[-1, 1.6], [1, 1.6], [-1, -1.4], [1, -1.4]].map(([sx, z]) => { const l = new THREE.Group(); l.position.set(sx * 1.1, 2, z); body.add(l); part(GEO.cyl, SC, l, 0, -.9, 0, .35, 1.8, .35); return l; });
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(3, 16), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .4, depthWrite: false })); shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
+  root.visible = shadow.visible = false; scene.add(root);
+  const M = { root, body, neck, head, jaw, mouth, wings, tail, legs, shadow }; addSkin(M, 'dragon', body, root, [mouth]); if (M.skin) M.skin.temp = true; return M;
+}
+// each frame: wings beat (built dragon), the jaw opens to breathe, the mouth glows
+function drDraw(b, dt, fly, open) {
+  const m = b.m; place(m.root, b.s, b.x, b.y, b.h); m.root.rotation.z = b.bank || 0; m.body.rotation.x = b.pitch || 0;
+  b.flap = (b.flap || 0) + dt * (fly ? 5 : 1.2); m.wings.forEach((w, i) => { w.rotation.z = (i ? -1 : 1) * (fly ? Math.sin(b.flap) * .6 : .9); });
+  m.jaw.rotation.x = damp(m.jaw.rotation.x, open ? .7 : .05, 10, dt); m.mouth.material.opacity = open ? .9 : .15;
+  const gy = b.ground ?? 0; tw(b.s, b.x, gy + .05, m.shadow.position); m.shadow.scale.setScalar(Math.max(.3, 1.4 - (b.y - gy) * .03)); m.shadow.material.opacity = clamp(.5 - (b.y - gy) * .012, .08, .5);
+  if (b.flash > 0) m.root.traverse(o => { if (o.isMesh && o.material.emissive) o.material.emissive.setHex(0x803020); }); else if (b.flashWas) m.root.traverse(o => { if (o.isMesh && o.material.emissive) o.material.emissive.setHex(0x1a0604); }); b.flashWas = b.flash > 0;
+}
+const drMouth = b => b.m.head.localToWorld(new V3(0, -.2, 1.8));
+// his fire: a stream from the mouth onto the marked ground (drawn as many small flames)
+function drBreathFx(b, to) { const from = drMouth(b); for (let k = 0; k < 4; k++) { const t = Math.random(), p = from.clone().lerp(to, t); bfire(p.add(_a.set(rand(-.6, .6), rand(-.6, .6), rand(-.6, .6))), 1 + t * 1.6, .4); } }
+
+// ---------- level 1: the ramparts ----------
+
+function ereborLayout() {
+  const N = 121, C = 60, hs = new Float32Array(N * N), g = new Array(N * N).fill('g');
+  const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const k = j * N + i, s = C - j, x = C - i; let y = Math.sin(s * .13) * Math.cos(x * .1) * .4;
+    if (s > 7) y += Math.min(80, (s - 7) * 3.2) * (1 - ss(10, 4, Math.abs(x)) * ss(16, 9, s)) + Math.sin(x * .3 + s * .2) * 1.5 * ss(8, 14, s);   // (the Mountain's face, the Gate cut into it)
+    if (Math.abs(s) <= 3 && x >= ER.X0 && x <= ER.X1) y = ER.WALK;   // (under the wall-walk: so Gandalf starts up on it)
+    hs[k] = y; g[k] = s > 9 ? 'c' : 'g';
+  }
+  const { WALK } = ER, blocks = [];
+  blocks.push([-2.5, 2.5, ER.X0, ER.X1, WALK, 'floor', -30]);
+  blocks.push([-3.3, -2.5, ER.X0, ER.X1, WALK + 3.5, 'wall', -30], [2.5, 3.3, ER.X0, ER.X1, WALK + 3.5, 'wall', -30]);
+  blocks.push([-3.3, 3.3, ER.X0 - 1, ER.X0, WALK + 8, 'wall', -30], [-3.3, 3.3, ER.X1, ER.X1 + 1, WALK + 8, 'wall', -30]);
+  return { field: [-60, 30, -58, 58], start: [0, -12], terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g },
+    layout: { blocks, plazas: [{ s: 0, x: 0, y: WALK, r: 58, waves: [['D']], title: 'THE RAMPARTS OF EREBOR', boss: true, last: true, breach: [0, 0], bossHp: 480, noAdds: true }] } };
+}
+function ereborContent(L) {
+  khRings(L.layout);
+  for (const [k, x] of [['q', -34], ['b', -12], ['su', 12], ['q', 34], ['b', 40]]) addCrate(k, 0, x, ER.WALK, 4);
+}
+function buildErebor(L, TH) {
+  const T_ = L.terrain, first = scene.children.length, sky = TH.env, W = ER.WALK;
+  const rockM = surf(TX.rock, { sky, vc: true, color: 0x9a948a, rough: .85, bump: 3, tri: 4 });
+  groundMesh(T_, TX.rock, (k, sl, y) => k === 'c' || sl > 1.5 ? [.62, .6, .58] : [.55, .52, .44], 6, () => rockM);
+  wideFloor(TX.rock, 0x4a4842, 90, 0, 900);
+  const st = surf(TX.hdStone || TX.rock, { sky, color: 0xb0a898, rough: .8, bump: 3, tri: 3 }), dark = lam(0x14100c);
+  // the wall: its face, the walk, merlons along both sides; towers astride the walk with a passage through
+  stoneBox([[...tw(0, 0, W / 2).toArray(), ER.X1 - ER.X0, W, 7.6]].map(([x, y, z, a, b, c]) => [x, y, z, a, b, c, 0]), st);
+  const merl = []; for (let x = ER.X0 + .8; x < ER.X1; x += 1.6) for (const s of [-2.9, 2.9]) { const q = tw(s, x, W + .6); merl.push([q.x, q.y, q.z, .9, 1.2, .5, 0]); }
+  stoneBox(merl, st);
+  for (const tx of ER.TOWERS) {
+    const q = tw(0, tx, 0); for (const sx of [-1, 1]) { const p = tw(0, tx + sx * 2.6, (ER.TOP + 1) / 2); part(GEO_BOX, st, scene, p.x, p.y, p.z, 1.6, ER.TOP + 1, 7); }
+    const lid = tw(0, tx, W + 3.4 + (ER.TOP - W - 3.4) / 2); part(GEO_BOX, st, scene, lid.x, lid.y, lid.z, 6.8, ER.TOP - W - 3.4, 7);
+    for (let k = 0; k < 4; k++) for (const [ds, dx] of [[-3.2, -3 + k * 2], [3.2, -3 + k * 2]]) { const p = tw(ds, tx + dx, ER.TOP + .6); part(GEO_BOX, st, scene, p.x, p.y, p.z, .8, 1.2, .5); }
+    if (PROPS.dbtower && tx === 0) propOne('dbtower', 6, 0, 0, 0, 30, 'h');
+  }
+  // the Gate in the Mountain, the two great kings carved either side of it
+  if (!(PROPS.dbwallgate && propOne('dbwallgate', 10, 0, 0, Math.PI, 18))) { const q = tw(10, 0, 6); part(GEO_BOX, dark, scene, q.x, q.y, q.z, 8, 12, .5); const f = tw(10.3, 0, 13); part(GEO_BOX, st, scene, f.x, f.y, f.z, 11, 2, 1.4); }
+  for (const sx of [-1, 1]) { if (PROPS.dbstatue && propOne('dbstatue', 11, sx * 15, 0, Math.PI, 34, 'h')) continue; const q = tw(11, sx * 15, 0); part(GEO_BOX, st, scene, q.x, q.y + 15, q.z, 6, 30, 4); part(GEO.sph, st, scene, q.x, q.y + 32, q.z, 2.6, 3, 2.6); }
+  // Dale in ruins down the valley
+  for (let k = 0; k < 26; k++) { const s = rand(-58, -30), x = rand(-50, 50), h = rand(2, 7), q = tw(s, x, h / 2); part(GEO_BOX, st, scene, q.x, q.y, q.z, rand(3, 6), h, rand(3, 6)).rotation.y = rand(0, 1); }
+  bakeScenery(scene.children.slice(first));
+}
+function spawnDragonRamparts(pl, delay = 0) {
+  const b = { m: makeDragon(), boss: true, kind: 'D', name: 'DROGOTH THE DRAGON', hp: pl.bossHp, max: pl.bossHp, bars: 3, r: 3, tall: 5, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1,
+    state: 'intro', t: -delay, s: 60, x: 30, y: 60, h: Math.PI, ang: 0, cd: 2, n: 0, upd: drRampUpdate, hitFn: drHit, reactFn: () => null };
+  URUKS.push(b); KH.boss = b; Music.mode = 1; return b;
+}
+function drHit(b, dmg, fin) {
+  if (!ukLive(b) || b.state === 'intro' || b.state === 'flee') return;
+  if (b.state === 'perch' || b.state === 'stun') dmg *= 2; if (KH.form > 0) dmg *= 1.4;
+  b.hp -= dmg; b.flash = .12; KH.target = b; KH.targetT = 6; sparks(tw(b.s, b.x, b.y + 2.5), 16, 6, [1, .8, .5], [.8, .3, .1]); S.screech && Math.random() < .3 && S.screech();
+  if (b.phase === 1 && b.hp <= b.max * .5) { b.phase = 2; banner('THE DRAGON IS ENRAGED!', 1.6); S.roar(); }
+  if (b.hp <= 0) { b.hp = 0; b.dead = true; KH.react = null; b.state = b.kind === 'D' ? 'flee' : 'die'; b.t = 0; banner(b.kind === 'D' ? 'THE DRAGON FLEES INTO THE MOUNTAIN!' : 'THE DRAGON IS SLAIN!', 2.6); S.roar(); Music.mode = 0; flashV = Math.max(flashV, .4); }
+}
+// a fireball from his mouth onto a red circle (where Gandalf stands)
+function drFireball(b, s, x, y, warn = 1.3, r = 2.2, dmg = 12) {
+  const fb = fallFire(); fb.scale.setScalar(2); scene.add(fb); const p0 = drMouth(b), p1 = tw(s, x, y + .3);
+  khFx(warnMesh(s, x, y, r), f => { warnPulse(f); const k = Math.min(1, f.t / warn); fb.position.lerpVectors(p0, p1, k); fb.position.y += Math.sin(k * Math.PI) * 3; bfire(fb.position, .9, .3);
+    if (k < 1) return true; scene.remove(fb); sparks(p1, 26, 8, [1, .9, .6], [1, .4, .1], .25); bblast(p1, 2.4); if (Math.hypot(P.s - s, P.x - x) < r && Math.abs(P.y - y) < 2) khHurt(dmg, { s, x }, { unblock: true, kb: 8 }); return false; });
+}
+function drRampUpdate(b, dt) {
+  b.t += dt; b.flash -= dt; if (b.t < 0) return; const m = b.m; m.root.visible = true; m.shadow.visible = true; b.ground = 0;
+  const p2 = b.phase > 1, live = state === 'play', W = ER.WALK; let fly = true, open = false;
+  const toward = (s, x, y, sp) => { const ds = s - b.s, dx = x - b.x, dy = y - b.y, d = Math.hypot(ds, dx, dy) || .01, k = Math.min(1, sp * dt / d); b.s += ds * k; b.x += dx * k; b.y += dy * k; if (Math.hypot(ds, dx) > .3) { const h = Math.atan2(dx, ds); b.bank = clamp(angDiff(b.h, h) * 1.5, -.6, .6); b.h += angDiff(b.h, h) * Math.min(1, dt * 3); } return d; };
+  switch (b.state) {
+    case 'intro':   // down off the Mountain, over the wall with a roar
+      if (!b.said) { b.said = true; S.roar(); } toward(-30, -10, 26, 26); if (b.t > 1 && !b.named) { b.named = true; banner('DROGOTH THE DRAGON!', 2.4); cam.shake = .6; }
+      if (b.t > 3.2) { b.state = 'circle'; b.t = 0; b.ang = Math.atan2(b.x, b.s + 30); } break;
+    case 'circle': {   // wheeling over the valley, hurling fire at the wall
+      b.ang += dt * (p2 ? .42 : .32); const ts = -30 + Math.cos(b.ang) * 26, tx = Math.sin(b.ang) * 40; toward(ts, tx, 24 + Math.sin(b.t * .7) * 4, 22); b.pitch = 0;
+      b.cd -= dt; if (!live || b.cd > 0) break; b.n++;
+      if (b.n % 3 === 0) { b.state = 'strafe'; b.t = 0; b.dir = P.x > 0 ? -1 : 1; b.cx = clamp(P.x, ER.X0 + 10, ER.X1 - 10); const half = 11; b.seg = [b.cx - half, b.cx + half];
+        b.marks = []; for (let x = b.seg[0]; x <= b.seg[1]; x += 2.4) b.marks.push(khFx(warnMesh(0, x, W + .05, 2.4), f => { warnPulse(f); return b.state === 'strafe'; })); S.roar(); banner('FIRE ON THE WALL! GET CLEAR, OR INTO A TOWER!', 1.4); }
+      else if (b.n % 3 === 1) { b.state = 'perch'; b.t = 0; const opts = ER.TOWERS.filter(tx => Math.abs(tx - P.x) > 8 && Math.abs(tx - P.x) < 30); b.tower = opts.length ? opts[Math.random() * opts.length | 0] : ER.TOWERS[0]; b.landed = false; }
+      else { const k = p2 ? 5 : 3; for (let i = 0; i < k; i++) setTimeout(() => { if (state === 'play' && ukLive(b)) drFireball(b, clamp(P.s + rand(-1, 1), -2, 2), P.x + rand(-1.5, 1.5) + P.vx * .6, W); }, i * 420); open = true; b.openT = 1.4; }
+      b.cd = rand(2.4, 3.6) / (p2 ? 1.3 : 1); break;
+    }
+    case 'strafe': {   // round to the end of the marked stretch, then low along the front of the wall breathing fire on it
+      const sx0 = b.dir > 0 ? b.seg[0] - 14 : b.seg[1] + 14, sx1 = b.dir > 0 ? b.seg[1] + 14 : b.seg[0] - 14;
+      if (!b.run) { if (toward(-9, sx0, W + 6, 26) < 2) { b.run = true; b.rt = 0; } break; }
+      b.rt += dt; const x = lerp(sx0, sx1, Math.min(1, b.rt / 2.2)); b.s = -7; b.x = x; b.y = W + 5; b.h = b.dir > 0 ? Math.PI / 2 : -Math.PI / 2; b.bank = 0;
+      if (x > b.seg[0] && x < b.seg[1]) { open = true; drBreathFx(b, tw(0, x + b.dir * 2, W + .3)); if (live && Math.abs(P.x - x) < 3 && Math.abs(P.s) < 3 && P.y > W - 1 && !ER.TOWERS.some(tx => Math.abs(P.x - tx) < 2.2)) khHurt(p2 ? 20 : 15, { s: -6, x }, { unblock: true, kb: 4 }); }
+      if (b.rt > 2.4) { b.state = 'circle'; b.t = 0; b.run = false; b.cd = 1.5; b.ang = Math.atan2(b.x, b.s + 30); } break;
+    }
+    case 'perch': {   // onto a tower: there he breathes down the wall at Gandalf; and there he's easiest to hit
+      const tgt = [0, b.tower, ER.TOP + .2];
+      if (!b.landed) { if (toward(tgt[0], tgt[1], tgt[2] + 1, 20) < 1.2) { b.landed = true; b.lt = 0; S.roar(); cam.shake = .5; banner('HE LANDS ON THE TOWER: NOW!', 1.2); } break; }
+      fly = false; b.lt += dt; b.y = ER.TOP + .2; b.ground = ER.TOP; b.bank = 0; const toP = Math.atan2(P.x - b.x, P.s - b.s); b.h += angDiff(b.h, toP) * Math.min(1, dt * 3); b.pitch = -.25;
+      const cyc = b.lt % 2.6; if (live && cyc < dt && b.lt < 6) { b.aim = clamp(P.x, b.x - 14, b.x + 14); b.bmark = khFx(warnMesh(0, b.aim, W + .05, 3), f => { warnPulse(f); return f.t < 1; }); }
+      if (cyc > 1 && cyc < 1.8 && b.aim !== undefined) { open = true; drBreathFx(b, tw(0, b.aim, W + .3)); if (live && Math.abs(P.x - b.aim) < 3 && Math.abs(P.s) < 3 && P.y > W - 1) khHurt(16, { s: 0, x: b.aim }, { unblock: true, kb: 6 }); }
+      if (b.lt > 7) { b.state = 'circle'; b.t = 0; b.cd = 1.2; b.ang = Math.atan2(b.x, b.s + 30); } break;
+    }
+    case 'flee':   // away up the Mountain to the Gate, smoking
+      toward(40, 0, 50, 18); if (Math.random() < .6) smoke.spawn(...tw(b.s, b.x, b.y + 2).toArray(), 0, 1, 0, 1.6, 1.4, 3, [.1, .08, .06], [.2, .18, .16], 0, .3);
+      if (b.t > 3.5) { khRemove(b); return; } break;
+  }
+  if ((b.openT -= dt) > 0) open = true;
+  drDraw(b, dt, fly, open);
+  skinPlay(m, b.state === 'flee' ? 'fly' : !fly ? (open ? 'attack' : 'idle') : 'fly');
+}
+// the bow: an arrow toward the dragon if he's in front of the camera, else straight out where the camera looks
+const BOW = { arrows: [], cd: 0, mesh: null };
+function bowShoot() {
+  if (BOW.cd > 0) return; BOW.cd = .32; S.whoosh();
+  const from = tw(P.s, P.x, P.y + 1.5), b = KH.boss, dir = new V3(); camera.getWorldDirection(dir);
+  let to = from.clone().addScaledVector(dir, 60).add(_a.set(0, 4, 0));
+  if (b && ukLive(b) && b.m.root.visible) { const bp = tw(b.s, b.x, b.y + 2.5), v = bp.clone().sub(camera.position).normalize(); if (v.dot(dir) > Math.cos(.5) || AUTOK) to = bp; }
+  const v = to.sub(from).normalize().multiplyScalar(52); v.y += 1.5;
+  const m = new THREE.Group(); part(GEO.cyl, lam(0x8a6a3a), m, 0, 0, 0, .04, 1.2, .04).rotation.x = Math.PI / 2; part(GEO.cone, lam(0xc8c8d0), m, 0, 0, .65, .06, .18, .06).rotation.x = Math.PI / 2; scene.add(m);
+  BOW.arrows.push({ p: from, v, m, life: 2.2 }); P.heading = Math.atan2(-v.x, v.z);   // (Gandalf turns to loose it)
+  skinClip(hob, khc(KH_SORA.ground[0], 'attack_a'), .3);
+}
+function updateBow(dt) {
+  BOW.cd -= dt; const on = !!(LV && LV.bow && state !== 'map' && state !== 'title');
+  if (!BOW.mesh) { const g = new THREE.Group(), w = lam(0x5a3a1e); const arc = new THREE.Mesh(new THREE.TorusGeometry(.62, .035, 5, 16, Math.PI * .9), w); arc.rotation.z = Math.PI / 2 + Math.PI * .05; g.add(arc); part(GEO.cyl, lam(0xe8e8e8), g, -.02, 0, 0, .008, 1.2, .008); BOW.mesh = g; scene.add(g); }
+  BOW.mesh.visible = on; if (on) { tw(P.s + Math.cos(P.heading) * .35, P.x + Math.sin(P.heading) * .35 + Math.cos(P.heading) * -.25, P.y + 1.25, BOW.mesh.position); BOW.mesh.rotation.set(0, -(trackAng(P.s) + P.heading) + Math.PI / 2, 0); }
+  const b = KH.boss;
+  for (let i = BOW.arrows.length - 1; i >= 0; i--) {
+    const a = BOW.arrows[i]; a.life -= dt; a.v.y -= 6 * dt; const p0 = a.p.clone(); a.p.addScaledVector(a.v, dt); a.m.position.copy(a.p); a.m.lookAt(_a.copy(a.p).add(a.v));
+    let hit = a.life <= 0;
+    if (!hit && b && ukLive(b) && b.hitFn === drHit) { const c = tw(b.s, b.x, b.y + 2.5); for (let k = 0; k <= 4 && !hit; k++) if (p0.clone().lerp(a.p, k / 4).distanceTo(c) < 3.4) { hit = true; drHit(b, 8, false); } }
+    if (hit) { scene.remove(a.m); BOW.arrows.splice(i, 1); }
+  }
+}
+
+// ---------- level 2: the treasure hall ----------
+TX.gold = mkTex(64, 64, g => { g.fillStyle = '#b88a20'; g.fillRect(0, 0, 64, 64); for (let i = 0; i < 160; i++) { const x = Math.random() * 64, y = Math.random() * 64, r = 1.5 + Math.random() * 2.5, v = Math.random(); g.fillStyle = v < .3 ? '#ffd860' : v < .7 ? '#e8b030' : '#8a6014'; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.fillStyle = 'rgba(255,250,200,.6)'; g.fillRect(x - r * .4, y - r * .5, r * .5, r * .3); } });
+TX.gold.wrapS = TX.gold.wrapT = THREE.RepeatWrapping;
+function hoardLayout() {
+  const N = 101, C = 50, hs = new Float32Array(N * N), g = new Array(N * N).fill('g');
+  const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  const mounds = []; for (let k = 0; k < 16; k++) { const a = k / 16 * TAU + rand(-.2, .2), r = rand(24, 32); mounds.push([Math.cos(a) * r, Math.sin(a) * r, rand(5, 9), rand(2.5, 5)]); }
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const k = j * N + i, s = C - j, x = C - i, d = Math.hypot(s, x); let y = Math.sin(s * .4) * Math.cos(x * .35) * .2 + Math.sin(s * .9 + x * .7) * .08;   // (coins underfoot)
+    for (const [ms, mx, r, h] of mounds) { const q = Math.hypot(s - ms, x - mx) / r; if (q < 1) y = Math.max(y, h * (1 - q * q)); }
+    y += 46 * ss(34, 46, d); hs[k] = y; g[k] = d > 36 ? 'c' : 'g';
+  }
+  const pillars = []; for (let k = 0; k < 10; k++) { const a = k / 10 * TAU + .3; pillars.push([Math.cos(a) * 21, Math.sin(a) * 21]); }
+  const blocks = pillars.map(([s, x]) => [s - 1.6, s + 1.6, x - 1.6, x + 1.6, 60, 'wall', -10]);
+  return { field: [-40, 40, -40, 40], start: [-17, 0], terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g },
+    layout: { blocks, pillars, mounds, plazas: [{ s: 0, x: 0, y: 0, r: 19, waves: [['G']], title: 'THE TREASURE OF THRÓR', boss: true, last: true, breach: [8, 0], bossHp: 900, noAdds: true }] } };
+}
+function hoardContent(L) { khRings(L.layout); for (const [k, s, x] of [['q', -15, 6], ['su', -15, -6], ['b', 14, 10], ['q', 12, -12]]) addCrate(k, s, x, terrainAt(s, x, true), 4); }
+function buildHoard(L, TH) {
+  const Y = L.layout, T_ = L.terrain, first = scene.children.length, sky = TH.env, at = (s, x) => terrainAt(s, x, true);
+  const goldM = surf(TX.gold, { sky, vc: true, rough: .35, metal: .75, bump: 2.2, env: 1.2, glow: .12 }), rockM = surf(TX.rock, { sky, color: 0x5a5048, rough: .9, bump: 3 });
+  groundMesh(T_, TX.gold, (k) => k === 'c' ? [.35, .3, .25] : [1, .95, .8], 4, () => goldM);
+  const st = surf(TX.hdStone || TX.rock, { sky, color: 0x8a7a68, rough: .75, bump: 3, tri: 3 });
+  // the great columns of the hall, carved, with braziers
+  for (const [s, x] of Y.pillars) { const q = tw(s, x, 0); part(new THREE.CylinderGeometry(1.6, 1.9, 44, 12), st, scene, q.x, q.y + 20, q.z); for (const y of [2, 12, 24]) part(new THREE.CylinderGeometry(2.1, 2.1, .9, 12), st, scene, q.x, q.y + y, q.z); addTorch(s * .93, x * .93, 3.2); }
+  // the vault overhead, lost in the dark, and hanging chains
+  const roof = new THREE.Mesh(new THREE.SphereGeometry(48, 24, 10, 0, TAU, 0, Math.PI / 2), surf(TX.rock, { sky, color: 0x2a2420, side: THREE.BackSide })); tw(0, 0, 6, roof.position); roof.scale.y = .8; scene.add(roof);
+  // treasure scattered over the gold: goblets, chests, shields, gems
+  const gem = [0xff3040, 0x30c0ff, 0x40ff80, 0xffffff, 0xc060ff], chest = lam(0x6a3a1a), goldB = lam(0xffd040, { emissive: 0x6a4a08 });
+  for (let k = 0; k < 90; k++) { const a = rand(0, TAU), r = rand(4, 34), s = Math.cos(a) * r, x = Math.sin(a) * r, y = at(s, x), q = tw(s, x, y); const t = k % 4;
+    if (t === 0) { part(GEO_BOX, chest, scene, q.x, q.y + .35, q.z, 1.2, .7, .8).rotation.y = rand(0, 3); part(GEO_BOX, goldB, scene, q.x, q.y + .78, q.z, 1, .2, .6); }
+    else if (t === 1) part(new THREE.CylinderGeometry(.3, .18, .6, 8), goldB, scene, q.x, q.y + .3, q.z);
+    else if (t === 2) part(new THREE.CircleGeometry(.8, 14), goldB, scene, q.x, q.y + .6, q.z).rotation.set(rand(-1, -.3), rand(0, 3), 0);
+    else part(new THREE.OctahedronGeometry(.25), lam(gem[k % 5], { emissive: gem[k % 5] }), scene, q.x, q.y + .3, q.z); }
+  // the Arkenstone, high on the far mound, shining
+  { const [s, x, , h] = Y.mounds[4], q = tw(s, x, h + .6); const ark = glowSprite(0xe8f0ff, 4, .9); ark.position.copy(q); scene.add(ark); part(new THREE.OctahedronGeometry(.4), lam(0xffffff, { emissive: 0xc0d0ff }), scene, q.x, q.y, q.z); }
+  bakeScenery(scene.children.slice(first));
+}
+function spawnDragonHoard(pl, delay = 0) {
+  const b = { m: makeDragon(), boss: true, kind: 'G', name: 'DROGOTH THE DRAGON', hp: pl.bossHp, max: pl.bossHp, bars: 4, r: 3.2, tall: 6, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null,
+    state: 'intro', t: -delay, s: 8, x: 0, y: -8, h: Math.PI, cd: 1.5, n: 0, upd: drHoardUpdate, hitFn: drHit, reactFn: drHoardReact, reaction: drHoardReaction };
+  URUKS.push(b); KH.boss = b; Music.mode = 1; return b;
+}
+function drHoardReact(b, d) { return b.state === 'stun' && b.hp <= b.max * .3 && d < 9 ? 'black' : null; }
+function drHoardReaction() {   // the Black Arrow: Gandalf calls it out of the air into the bare patch under his wing
+  const b = KH.boss; if (!b) return; S.smash(); KH.hitstop = .4; cam.shake = 1.1; flashV = Math.max(flashV, .8); banner('THE BLACK ARROW!', 2.2);
+  const p = tw(b.s, b.x, b.y + 3); khArc(() => tw(P.s, P.x, P.y + 1.6), () => p.clone(), .4); sparks(p, 70, 12, [1, 1, 1], [.4, .4, .5], .35);
+  drHit(b, 9999, true);
+}
+function drHoardUpdate(b, dt) {
+  b.t += dt; b.flash -= dt; b.rev = Math.max(0, b.rev - dt * 10); if (b.t < 0) return; const m = b.m; m.root.visible = m.shadow.visible = true;
+  const p2 = b.phase > 1, live = state === 'play', pl = b.plaza, ds = P.s - b.s, dx = P.x - b.x, d = Math.hypot(ds, dx) || .01, toP = Math.atan2(dx, ds), A = b.a, gl = (s, x) => terrainAt(s, x, true);
+  let fly = false, open = false; b.ground = gl(b.s, b.x); const keep = (s, x) => { const r = Math.hypot(s, x), R_ = pl.r - 2.5; return r > R_ ? [s / r * R_, x / r * R_] : [s, x]; };
+  const end = () => { if (b.a) for (const f of b.a.fx || []) f.dead = true; b.a = null; b.state = 'idle'; b.t = 0; b.cd = rand(.8, 1.5) / (p2 ? 1.3 : 1); };
+  switch (b.state) {
+    case 'intro':   // up out of the gold, coins pouring off him
+      b.y = lerp(-8, b.ground, Math.min(1, b.t / 2.4)); for (let k = 0; k < 3; k++) fx.spawn(...tw(b.s + rand(-3, 3), b.x + rand(-3, 3), b.y + rand(1, 5)).toArray(), rand(-2, 2), rand(1, 4), rand(-2, 2), rand(.6, 1.2), .25, .1, [1, .9, .4], [.8, .6, .1], 1.2, 0);
+      if (b.t > .2 && !b.said) { b.said = true; S.roar(); cam.shake = .7; } if (b.t > 2.4 && !b.named) { b.named = true; banner('THE DRAGON WAKES!', 2.2); bossWave(b, b.s, b.x, 10, 9, 0); }
+      b.h += angDiff(b.h, toP) * Math.min(1, dt * 2); if (b.t > 3.4) end(); break;
+    case 'idle': {
+      b.h += angDiff(b.h, toP) * Math.min(1, dt * 2.5); if (d > 7) { [b.s, b.x] = keep(b.s + ds / d * 3.4 * dt, b.x + dx / d * 3.4 * dt); }
+      b.y = b.ground; b.cd -= dt; if (!live || b.cd > 0) break;
+      const r = Math.random(); let t = d < 7 ? (r < .4 ? 'bite' : r < .75 ? 'tail' : 'breath') : (r < .45 ? 'breath' : r < .8 ? 'dive' : 'coins');
+      if (p2 && b.n % 4 === 3) t = 'dive'; if (b.rev >= 100) { b.rev = 0; t = 'coins'; } b.n++;
+      const fw = (h, r_) => [b.s + Math.cos(h) * r_, b.x + Math.sin(h) * r_], a = b.a = { type: t, t: 0, ph: 'wind', fx: [] }, mark = mm => a.fx.push(khFx(mm, f => { warnPulse(f); return true; }));
+      b.state = 'atk';
+      if (t === 'bite') { a.h = b.h; a.from = [b.s, b.x]; a.to = keep(...fw(b.h, 8)); mark(warnMesh(b.s, b.x, 1, 9, b.h - .25, b.h + .25)); a.w = .7; }
+      if (t === 'tail') { a.w = .8; mark(warnMesh(b.s, b.x, 1.5, 8, b.h + Math.PI - 1.6, b.h + Math.PI + 1.6)); }
+      if (t === 'breath') { a.h = b.h; a.w = .9; mark(warnMesh(b.s, b.x, 2, 14, b.h - .45, b.h + .45)); S.roar(); }
+      if (t === 'dive') { a.w = .5; a.from = [b.s, b.x]; a.tgt = [P.s, P.x]; }
+      if (t === 'coins') { a.w = .6; banner('A FLOOD OF GOLD! JUMP IT!', 1); }
+      break;
+    }
+    case 'atk': {
+      a_: { A.t += dt; if (A.ph === 'wind') { if (A.type !== 'bite' && A.type !== 'breath') b.h += angDiff(b.h, toP) * Math.min(1, dt * 2); if (A.t >= A.w) { A.ph = 'go'; A.t = 0; } break a_; }
+        switch (A.type) {
+          case 'bite': { const k = Math.min(1, A.t / .3); [b.s, b.x] = [lerp(A.from[0], A.to[0], k), lerp(A.from[1], A.to[1], k)]; open = true; if (!A.hit && d < 4 && Math.abs(angDiff(toP, b.h)) < .7) { A.hit = true; khHurt(18, b, { kb: 12 }); S.smash(); } if (A.t > .3 && !A.sp) { A.sp = true; A.fx.forEach(f => f.dead = true); } if (A.t > 1.5) end(); break; }   // (after the bite, he's open for a moment)
+          case 'tail': if (!A.hit) { A.hit = true; A.fx.forEach(f => f.dead = true); S.whoosh(); cam.shake = .4; const pa = Math.atan2(P.x - b.x, P.s - b.s); if (d < 8 && Math.abs(angDiff(pa, b.h + Math.PI)) < 1.7 && P.y - gl(P.s, P.x) < 1) khHurt(16, b, { kb: 14 }); } if (A.t > .8) end(); break;
+          case 'breath': { open = true; const tip = tw(b.s + Math.cos(A.h) * 12, b.x + Math.sin(A.h) * 12, gl(b.s + Math.cos(A.h) * 12, b.x + Math.sin(A.h) * 12) + .5); drBreathFx(b, tip); const pa = Math.atan2(P.x - b.x, P.s - b.s); if (d < 14 && Math.abs(angDiff(pa, A.h)) < .45 && A.t % .25 < dt) khHurt(7, b, { unblock: true, kb: 3 }); if (A.t > 2) { A.fx.forEach(f => f.dead = true); end(); } break; }
+          case 'dive': {   // up into the dark, then down onto the red circle; he lands hard and his head sticks in the gold
+            if (A.t < 1.1) { fly = true; b.y = lerp(b.y, b.ground + 14, Math.min(1, dt * 3)); if (!A.mk && A.t > .5) { A.mk = true; A.tgt = keep(P.s, P.x); A.fx.push(khFx(warnMesh(A.tgt[0], A.tgt[1], 0, 4.5), f => { warnPulse(f); return true; })); } break; }
+            fly = true; const k = Math.min(1, (A.t - 1.1) / .45); b.s = lerp(b.s, A.tgt[0], k); b.x = lerp(b.x, A.tgt[1], k); b.y = lerp(b.ground + 14, gl(b.s, b.x), k * k);
+            if (k >= 1 && !A.hit) { A.hit = true; A.fx.forEach(f => f.dead = true); S.smash(); cam.shake = 1; bblast(tw(b.s, b.x, b.y + .5), 4); if (Math.hypot(P.s - b.s, P.x - b.x) < 4.5) khHurt(22, b, { unblock: true, kb: 14 }); bossWave(b, b.s, b.x, 12, 9, p2 ? 12 : 0); b.state = 'stun'; b.t = 0; b.a = null; b.stunT = 3; banner('HIS HEAD IS STUCK IN THE GOLD!', 1.2); }
+            break;
+          }
+          case 'coins': if (!A.hit) { A.hit = true; S.whoosh(); bossWave(b, b.s, b.x, 18, 8, 12); if (p2) setTimeout(() => { if (ukLive(b)) bossWave(b, b.s, b.x, 18, 8, 12); }, 700); } if (A.t > 1.4) end(); break;
+        } }
+      break;
+    }
+    case 'stun': b.y = b.ground - .4; b.pitch = .2; if (Math.random() < .3) sparks(tw(b.s, b.x, b.y + 4), 2, 2, [1, 1, .8], [1, .8, .2]); if (b.t > b.stunT) { b.pitch = 0; end(); } break;
+    case 'die': b.pitch = .4; b.y = lerp(b.y, b.ground - 2, dt); if (Math.random() < .8) fx.spawn(...tw(b.s + rand(-3, 3), b.x + rand(-3, 3), b.y + 3).toArray(), rand(-3, 3), rand(2, 5), rand(-3, 3), 1, .3, .1, [1, .9, .4], [.8, .6, .1], 1.2, 0); if (b.t > 3) { khRemove(b); return; } break;
+  }
+  if (d < b.r + .6 && b.state !== 'die' && !fly) { P.s = b.s + ds / d * (b.r + .6); P.x = b.x + dx / d * (b.r + .6); }
+  if (!fly && b.state !== 'stun' && b.state !== 'die' && b.state !== 'intro') b.y = b.ground;
+  b.bank = 0; drDraw(b, dt, fly, open);
+  skinPlay(m, b.state === 'die' ? 'die' : b.state === 'stun' ? 'hit' : fly ? 'fly' : b.state === 'atk' ? 'attack' : d > 7 && b.state === 'idle' ? 'walk' : 'idle');
+}
+// each frame under the Mountain: glints over the gold
+function updateErebor(dt) {
+  if (!LV || (LV.theme !== 'erebor' && LV.theme !== 'hoard') || state === 'map' || state === 'title') return;
+  if (LV.theme === 'hoard' && Math.random() < dt * 30) { const a = rand(0, TAU), r = rand(2, 34), s = Math.cos(a) * r, x = Math.sin(a) * r; fx.spawn(...tw(s, x, terrainAt(s, x, true) + .2).toArray(), 0, .4, 0, .5, .25, .02, [1, 1, .8], [1, .8, .3], 0, 0); }
+  if (LV.theme === 'erebor' && Math.random() < dt * 4) smoke.spawn(...tw(rand(-50, -20), rand(-50, 50), rand(0, 6)).toArray(), rand(-.3, .3), rand(.3, .8), rand(-.3, .3), rand(4, 7), 3, 6, [.2, .18, .16], [.35, .32, .3], 0, .2);
+}
+THEMES.erebor = natTheme({
+  wallTex: TX.rock, floorTex: TX.rock, tint: [1, .96, .9], door: 0x5a4a3a,
+  env: { sky: [0x1a1a2a, 0x4a3a4a, 0xb06a40, 0xffa050], fog: [60, 320], fogC: 0x6a5048, amb: [0x7a6a62, .5], hemi: [0xd8b8a0, 0x3a2a1a, .55], sun: [0xffc890, .95], east: [0xff7a30, .35], cloud: 0xc8a090, sunDir: [-70, 40, -60] },
+  orc: MT_ORC,
+  scenery(L) { buildErebor(L, this); },
+});
+THEMES.hoard = natTheme({
+  wallTex: TX.rock, floorTex: TX.rock, tint: [1, .92, .7], door: 0x5a4a3a,
+  env: { sky: [0x0a0806, 0x14100a, 0x2a1e10, 0x4a3414], fog: [20, 90], fogC: 0x2a1e0e, amb: [0xb08a40, .7], hemi: [0xffd890, 0x4a3010, .6], sun: [0xffd080, .7], east: [0xff9a30, .3], bloom: 1.1, sunDir: [20, 80, 30] },
+  orc: MT_ORC,
+  scenery(L) { buildHoard(L, this); },
+});
 function buildHelms(L, TH) {
   const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
   const stone = surf(TX.hdStone, { sky, rough: .82, bump: 3.2, wet: .75, env: .5, tri: 3.2 }), stoneDark = surf(TX.hdStone, { sky, color: 0x8a8a90, rough: .85, bump: 3.2, wet: .6, env: .4, tri: 3.2 });
@@ -9133,6 +9433,7 @@ function khInput() {
 const khFlash = c => KH.cmdT[c] = .25;   // the command menu lights the command just used
 const KH_CLIPS = ['attack_a', 'attack_b', 'attack_c', 'attack_a', 'attack_e'];
 function khAttack() {
+  if (LV && LV.bow) { bowShoot(); return; }   // (Erebor's ramparts: the bow instead of the blade)
   if (KH.rollT > 0) return;
   if (KH.atk) { if (KH.atk.t > KH.atk.dur * .35) KH.buf = true; return; }   // pressed during a cut: the next comes when this one's done
   const form = KH.form > 0, air = !P.ground, last = (form ? 4 : 3) + (KH.comboPlus && !air ? 1 : 0), n = air ? KH.airN : KH.combo, fin = n >= last, tgt = khTarget(air ? 5 : 7.5);
@@ -9383,7 +9684,7 @@ function khWhite(on) {
   hob.skin = on ? hob.skinW : hob.skinG; hob.skin.cur = ''; hob.skin.holdT = 0; skinPlay(hob, 'idle');
 }
 // the reaction commands: what the green prompt does depends on whose moment it is
-const KH_REACT = { takedown: 'TAKEDOWN', repel: 'REPEL', sword: 'SWORD RUN', stand: 'YOU SHALL NOT PASS!', duel: "WIZARDS' DUEL", staff: 'BREAK HIS STAFF', deflect: 'DEFLECT', anor: 'FLAME OF ANOR', narsil: 'CUT THE RING' };
+const KH_REACT = { takedown: 'TAKEDOWN', repel: 'REPEL', sword: 'SWORD RUN', stand: 'YOU SHALL NOT PASS!', duel: "WIZARDS' DUEL", staff: 'BREAK HIS STAFF', deflect: 'DEFLECT', anor: 'FLAME OF ANOR', narsil: 'CUT THE RING', black: 'THE BLACK ARROW' };
 function khReaction() {
   const R_ = KH.react; if (!R_) return;
   const u = R_.u; KH.react = null; KH.atk = null; KH.rx = KH.rx || {}; KH.rx[R_.cmd] = (KH.rx[R_.cmd] || 0) + 1;   // (KH.rx: a tally, for testing)
@@ -9395,7 +9696,7 @@ function khReaction() {
   }
   if (R_.cmd === 'sword') { KH.reacting = { u, t: 0, cmd: 'sword', hits: 0, from: [P.s, P.x, P.y] }; KH.invT = 2.4; P.ground = false; skinClip(hob, 'attack_a', .5); S.whoosh(); return; }
   if (R_.cmd === 'stand') { KH.reacting = { u, t: 0, cmd: 'stand' }; KH.invT = 2.5; bossStand(u); return; }
-  if (R_.cmd === 'duel' || R_.cmd === 'staff' || R_.cmd === 'deflect' || R_.cmd === 'anor' || R_.cmd === 'narsil') { KH.reacting = { u, t: 0, cmd: R_.cmd }; KH.invT = 2.5; u.reaction(R_.cmd); return; }   // (Saruman's)
+  if (R_.cmd === 'duel' || R_.cmd === 'staff' || R_.cmd === 'deflect' || R_.cmd === 'anor' || R_.cmd === 'narsil' || R_.cmd === 'black') { KH.reacting = { u, t: 0, cmd: R_.cmd }; KH.invT = 2.5; u.reaction(R_.cmd); return; }   // (Saruman's)
   KH.reacting = { u, t: 0, hit: false, cmd: 'takedown' }; KH.invT = 1.6;
   P.vy = 11; P.ground = false; skinClip(hob, 'attack_c', .85); S.saberSwing();
 }
@@ -9498,6 +9799,8 @@ function spawnUruk(kind, pl, a, delay) {
   if (kind === 'W') return spawnWitchKing(pl, delay);
   if (kind === 'K') return Object.assign(spawnWitchKing(pl, delay, 'nazgul'), { name: 'KHAMÛL', title: 'KHAMÛL, THE BLACK RIDER!', endTitle: 'KHAMÛL FLEES THE SHIRE!' });
   if (kind === 'X') return spawnSauronKH(pl, delay);
+  if (kind === 'D') return spawnDragonRamparts(pl, delay);
+  if (kind === 'G') return spawnDragonHoard(pl, delay);
   if (kind === 'F') return spawnFallBalrog(pl, delay);
   const K = UK_KINDS[kind], R2 = pl.r * rand(.35, .7);
   if (pl.ladders) a = pl.ladders[Math.random() * pl.ladders.length | 0] + rand(-.15, .15);   // up the ladders, over the parapet
@@ -9798,6 +10101,7 @@ showScreen(null); syncPauseBtns();
     if (q.get('menu') && LV.kh) { KH.sub = q.get('menu'); KH.cur = KH_MENU.findIndex(c => c.sub === KH.sub); }   // (&menu=magic: that list open, for testing)
     if (q.get('cast') && q.get('cast') !== 'all' && LV.kh) { KH.mp = 100; KH.magicCD = 0; KH.atk = null; khCast(q.get('cast')); for (let i = 0; i < 12; i++) step(1 / 60, true); }   // (&cast=thunder: a spell just before the picture)
     if (LV.kh) console.log(`${LV.name} after ${q.get('sim')}s: walkto ${WALKTO ? WALKTO.map(v => v.toFixed(1)).join(',') : '-'},${KH.boss ? ` boss ${KH.boss.state}${KH.boss.a ? '/' + KH.boss.a.type + '/' + KH.boss.a.ph : ''} hp ${Math.round(KH.boss.hp)} phase ${KH.boss.phase},` : ''} drive ${Math.round(KH.drive)} form ${KH.form.toFixed(1)}, reactions ${JSON.stringify(KH.rx || {})}, squares done ${LV.layout.plazas.filter(p => p.done).length}/${LV.layout.plazas.length}, in ${KH.plaza ? LV.layout.plazas.indexOf(KH.plaza) : '-'} wave ${KH.plaza ? KH.plaza.wave : '-'}, uruks ${URUKS.length} (${URUKS.map(u => u.state + ':' + Math.round(u.hp)).join(' ')}), HP ${Math.round(KH.hp)} MP ${Math.round(KH.mp)}, kills ${gs.kills}, at ${P.s.toFixed(0)},${P.x.toFixed(0)},${P.y.toFixed(1)} (ground ${TERR ? terrainAt(P.s, P.x).toFixed(1) : 'none'}, on ${P.ground} ${P.standOn ? P.standOn.kind + ' ' + [P.standOn.y0, P.standOn.y1].map(v => v && v.toFixed(1)) : ''}), state ${state}`);
+      console.log(`camera at ${camera.position.toArray().map(v => v.toFixed(1)).join(",")} looking ${camera.getWorldDirection(new V3()).toArray().map(v => v.toFixed(2)).join(",")}, Gandalf at ${tw(P.s, P.x, P.y).toArray().map(v => v.toFixed(1)).join(",")}`);
       if (q.get('pos') || q.get('spring')) console.log(`after ${q.get('sim')}s: s ${P.s.toFixed(1)} x ${P.x.toFixed(1)} y ${P.y.toFixed(1)} ground ${P.ground}`); }   // &sim=6 plays 6 seconds first (invincible)
     if (q.get('info')) setTimeout(() => { renderer.info.autoReset = false; renderer.info.reset(); renderer.setRenderTarget(rt); renderer.render(scene, camera); console.log('scene: ' + renderer.info.render.calls + ' draw calls, ' + renderer.info.render.triangles + ' triangles'); renderer.info.autoReset = true; }, 500);   // &info=1 logs how much one frame draws
     if (q.get('cam')) { const [s, x, y, ls, lx, ly] = q.get('cam').split(',').map(Number); DEBUG_CAM = { p: tw(s, x, y), l: tw(ls, lx, ly) }; }   // &cam=s,x,y,ls,lx,ly: a fixed camera in the level
