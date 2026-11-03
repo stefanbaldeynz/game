@@ -14,6 +14,7 @@ Put a `.glb` file here with one of these names and Valinor uses it instead of it
 | `horse.glb` | Shadowfax | The First Circle |
 | `uruk.glb`, `lurtz.glb`, `theoden.glb` | The Uruk-hai, Lurtz and Théoden | Edoras (and the Uruk-hai at Helm's Deep) |
 | `berserker.glb` | The Uruk berserkers with their torches | Helm's Deep |
+| `gandalfw.glb` | Gandalf the White, while the White Wizard drive form lasts | Edoras and Helm's Deep |
 | `frodo.glb`, `sam.glb`, `merry.glb`, `pippin.glb`, `aragorn.glb`, `legolas.glb`, `gimli.glb`, `boromir.glb` | The Fellowship | Rivendell |
 | `livingmap.glb` + `livingmap.json` | The map: BFME II's War of the Ring board instead of the little diorama (make them with `Prep-Map.ps1`, then `Convert-Chars.ps1 livingmap`) | The world map, where you pick a place |
 
@@ -28,7 +29,7 @@ Put a `.glb` file here with one of these names and Valinor uses it instead of it
 - **Mirkwood:** its dark trees, webbed trees, undergrowth, webs, egg sacs, the spider lair and Dol Guldur's tower.
 - **Edoras:** Meduseld, the rocks breaking through its hill, the palisade, the gatehouse and its watchtowers, and the well. (The town's longhouses are Valinor's own: Battle for Middle-earth's Edoras pieces are all rocks. The trees are the Shire's.)
 - **Minas Tirith:** the White Tree in the Citadel.
-- **Helm's Deep:** the Deeping Wall with its culvert, the Hornburg's walls round the courtyard, Rohan towers at the gate, the keep, and Isengard's siege ladders. The ramp, its parapets and landings are Valinor's own (Battle for Middle-earth's ramp is a short piece made for its own map). `eb_torch` and `rbcastfloor` are flat pieces it doesn't use.
+- **Helm's Deep:** the Deeping Wall with its culvert, Rohan towers at the gate, a hall of Rohan's by the top court, and Isengard's siege ladders. The Hornburg's courts, stairs, walls, Great Hall and tower and the causeway are Valinor's own. (Battle for Middle-earth's ramp is a short piece made for its own map; `eb_torch` and `rbcastfloor` are flat pieces it doesn't use.)
 
 Each level uses whichever are there and builds its own shapes for the rest. Add `?props=none` to the address to compare with the built ones.
 
@@ -67,3 +68,13 @@ To make them (Blender and the W3D add-on, as for the characters):
 4. **File → Export → glTF 2.0**, format **glTF Binary (.glb)**, with **Animation** ticked. Save it here with the name from the table.
 
 These models belong to EA and the Tolkien rights holders, so keep them for playing at home and don't share them.
+
+## Sora's moves: `sora/` (Kingdom Hearts II's own animations for Gandalf)
+
+In Edoras and Helm's Deep, Gandalf fights with Sora's own moves from Kingdom Hearts II (the Epic Games PC release): his ground and air combos, guard, dodge roll, spell casts, battle stance, run, jump and flinch. They're fitted onto Battle for Middle-earth's Gandalf (and Gandalf the White) when the level loads, so they need `gandalf.glb` too. To make them (with OpenKH in `C:\Users\Stefan\bfme\openkh`, the .NET 8 runtime and PowerShell 7):
+
+```powershell
+& C:\Users\Stefan\bfme\tools\Export-Sora.ps1
+```
+
+Kingdom Hearts belongs to Square Enix and Disney: like everything here, keep it for playing at home.

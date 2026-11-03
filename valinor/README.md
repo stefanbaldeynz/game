@@ -18,7 +18,7 @@ The game opens on a map of Middle-earth. Gandalf walks freely across it. Walk hi
 | Mirkwood | **Mirkwood** (on Tokara Forest from Unreal Tournament 2004, if `levels/mirkwood.json` is there: see its README) | A dark forest bowl under giant trees, old plank walkways high in their branches with ramps up to them, Morgul lanterns glowing green on chains, webs strung everywhere, egg sacs, and Dol Guldur's tower black on the rim. **Twelve spiders** hunt you on the forest floor and up on the walkways (they climb): spin into them or hit them with fireworks, two hits each. **Web springs** fling you up to the walkways. Slay them all to free Mirkwood. |
 | Moria | **The Mines of Moria** | Dark dwarf-halls with columns rising out of a fiery abyss, chains and lanterns hanging from the roof, stalactites. Goblins climbing out of the chasm, then the **Balrog boss** on the Bridge of Khazad-dûm: a plank bridge with rope rails over a sea of mist and rock spires. |
 | Edoras | **Edoras** | Up the hill to Meduseld. The road runs in through the gate in the palisade and winds round and up the hill past the longhouses to the Golden Hall. Four squares on the way lock behind a golden barrier while the **Uruk-hai** come over the walls in waves. **Lurtz** comes with the last wave at the top. Win it and **Théoden** comes out onto the steps; go to him to finish. You fight the **Kingdom Hearts II** way (see below). |
-| Helm's Deep | **Helm's Deep** | A Kingdom Hearts level, at night in a storm. Down the great ramp from the Hornburg's broken gate, with Saruman's army filling the coomb below with torches. Four landings on the way lock behind a golden barrier while wave after wave of **orcs**, **Uruk-hai** and **berserkers** come up the ladders over the parapet. At the bottom the Deeping Wall is breached, and out of the fire comes **a Balrog**: a boss fight the Kingdom Hearts II way (see below). |
+| Helm's Deep | **Helm's Deep** | A Kingdom Hearts level, at night in a storm, with Saruman's army filling the coomb below with torches. You fight your way down through the Hornburg: the Great Hall's court under its tower, a bastion on the wall-walk, the court inside the gate, then out through the broken gate and down the causeway, with two fights on the way. Each place locks behind a golden barrier while wave after wave of **orcs**, **Uruk-hai** and **berserkers** come over the walls and up the ladders. At the bottom, fire glows in the culvert of the Deeping Wall, and out of it crawls **a Balrog**: a boss fight the Kingdom Hearts II way (see below). |
 | Minas Tirith | Three levels | Flies down into the city and opens its own menu: The First Circle, The Second Circle and The Citadel (Sauron). |
 | Cirith Ungol | **The Pass of Cirith Ungol** | A chase. A narrow pass full of webs, and **Shelob** drops out of them behind you. The camera turns round and you run towards it with the spider at your heels. Jump the webs and the gaps, and don't stop until the end of the pass. |
 | Mordor | **Mordor** | Black rock over a sea of lava, Barad-dûr and the Eye off to the side, fell beasts spitting fire overhead, lots of TNT. |
@@ -36,16 +36,37 @@ The camera follows Gandalf from high above. He can't walk into the sea.
 
 ### Fighting in Edoras and Helm's Deep (the Kingdom Hearts II way)
 
-| Button | What it does |
+Kingdom Hearts II's controls:
+
+| Key (controller) | What it does |
 | --- | --- |
-| Attack (J / Shift / □ / ATTACK) | A combo: three cuts and a finisher. Each cut closes in on the nearest enemy, and the finisher knocks it flying. In the air it's an air combo: Gandalf hangs in the air while he strikes, and the last blow slams him down. |
-| Guard (E / Y / GUARD) | Blocks a blow from in front and knocks the attacker back. With the stick held, it's a **Dodge Roll**: nothing touches you while you roll. |
-| Magic (L / F / ○ / MAGIC) | **Thunder**: bolts on up to three enemies near you, for a quarter of your MP (blue bar). |
-| Drive (Q / LT / DRIVE) | When the yellow drive bar is full (every blow fills it), Gandalf becomes **the White Wizard** for about twenty seconds: a combo of five, harder blows, quicker MP, and **Thundaga** on five enemies. |
-| Reaction command (R / Y, or the green prompt) | Appears when its moment comes. **TAKEDOWN**: an enemy is dizzy (stars over its head); leap on it and finish it, blasting the others round it. **REPEL**: a berserker is running at you; swat it back to blow up among its friends. Against the Balrog: **SWORD RUN** and **YOU SHALL NOT PASS!** (below). |
+| **W A S D** (left stick) | Move. Double-tap W for Battle Charge (a technique). |
+| **K** (A) | Does the command the cursor is on in the **command menu** (bottom left). On **ATTACK** it attacks: three cuts and a finisher, each closing in on the nearest enemy, the finisher knocking it flying. In the air it's an air combo, and the last blow slams Gandalf down. On **MAGIC**, **ITEMS** or **DRIVE** it opens that list, and K again uses what's chosen there. |
+| **Q** / **E** (d-pad ▲ ▼) | Move the cursor up and down the menu, or the list that's open (the arrow keys and mouse wheel do too). **L**, **Backspace** or **←** backs out of a list. After you use a spell or an item from a list, the cursor goes back to ATTACK. |
+| **F** / **H** | Cast the two shortcut powers straight away (Thunder and Fire to start with). |
+| **Tab** | The **powers menu** (below): choose which powers are on F and H, and the five in MAGIC. |
+| **L** (B) | Jump. Double-tap in the air for Force Jump (a technique). |
+| **J** (RT) | **Dodge Roll**: the way you're pushing, or straight back. Nothing touches you while you roll. |
+| **Space** (X) | Guard: blocks a blow from in front and knocks the attacker back. With a direction held it rolls instead. || **I** (Y), or the green prompt | The **reaction command**, when its moment comes. **TAKEDOWN**: an enemy is dizzy (stars over its head), so leap on it and finish it, blasting the others round it. **REPEL**: a berserker is running at you; swat it back to blow up among its friends. Against the Balrog: **SWORD RUN** and **YOU SHALL NOT PASS!** (below). |
+| **Left Shift** / **/** (LB / RB) | Turn the camera left and right. |
+- **Powers:** press **Tab** for the powers menu (the game pauses). It has two pages, **MAGIC** and **TECHNIQUES**: **Q**/**E** turns between them, **A**/**D** moves between the three games' columns, **W**/**S** up and down (or click). Your choices are remembered.
+  - **Magic**, on the F and H shortcuts and in the five places of the MAGIC list (on that page, **F** or **H** puts the chosen spell on that shortcut, **1**–**5** in that place in MAGIC). Lightning and healing are Kingdom Hearts II's own Thunder and Cure:
+    - **Kingdom Hearts II:** Fire, Blizzard (freezes), Thunder, Cure, Magnet (pulls foes in and holds them up), Reflect (throws blows back).
+    - **Jedi Outcast:** Force Push, Pull, Grip, Mind Trick (leaves foes dazed, ready for TAKEDOWN), Speed (everything else slows), Saber Throw.
+    - **Fable:** Fireball, Enflame, Force Push, Slow Time, Turncoat (a foe fights for you), Drain Life, and The Lost Chapters' ultimates, **Divine Fury** (pillars of holy light on every foe near) and **Infernal Wrath** (hell bursts up round you).
+  - **Techniques**, switched on or off with **K**. They cost MP while they work: Battle Charge, Force Jump and Assassin Rush each time you use them, the rest a little every second (with no MP they stop until it comes back).
+    - **Kingdom Hearts II:** Combo Plus (one more blow in the ground combo), Second Chance (a blow that would finish you leaves 1 HP).
+    - **Jedi Outcast:** Force Jump (**double-tap L**: a great second leap in the air), Force Sight (more harm).
+    - **Fable:** Battle Charge (**double-tap W**: charge through foes), Assassin Rush (darts to a far foe as you attack), Multi-Strike, Berserk, Physical Shield (builds back up), Ghost Sword.
 
-The command menu bottom left (on a computer) shows what each button does now: it lights up as you use one, and greys out what you can't use yet.
-
+  MP is the blue bar, and it slowly comes back by itself. The White Wizard's powers cost less and hit harder.
+- **Summon crates** (a spirit's face, on every other landing): break one and a guardian spirit floats beside Gandalf, striking at foes near him. If a blow would finish him, the spirit gives its life for his instead: a spare life. Another Summon crate while you have one fills your MP.- **Items:**
+  - **Potion:** gives back HP.
+  - **Ether:** gives back MP.
+  
+  You start each level with four Potions and two Ethers.
+- **Drive:** when the yellow drive bar is full (every blow fills it), choose **WHITE WIZARD**. Gandalf becomes Gandalf the White for about twenty seconds: Battle for Middle-earth's own when `models/gandalfw.glb` is there. He gets a combo of five, harder blows, quicker MP, and stronger, cheaper powers, and he glows white.
+- **On a phone:** ATTACK attacks, MAGIC casts the last spell, and GUARD and DRIVE do what they say.
 - The Uruk-hai fight like Soldier Heartless. They circle you, hopping and strafing, and only two come at you at once. Each one sets itself before it strikes, eyes flaring red:
   - a two-cut combo up close
   - a leaping spin-slash from further off
@@ -64,12 +85,13 @@ Its gauge (top right) has four bars, green, yellow, orange and red; the diamonds
 | **Sword slam**: a red circle follows you, then the sword comes down on it, and a ring of fire rolls out | Get off the circle, then jump the ring. The sword sticks in the ground: **SWORD RUN** takes Gandalf up its arm for three blows on its head |
 | **Fire breath**: it rears back, then sweeps a cone of fire | Get beside or behind it (guarding doesn't stop fire) |
 | **Leap**: onto a red circle where you are | Roll off the circle |
+| **Wings** (once it blazes up): it takes to the air, drops fireballs on red circles round you, then dives onto a big red circle | Keep moving, then roll clear of the dive |
 | Half its gauge gone, it **blazes up** and calls orcs and a berserker | |
 | **Rain of fire**: fireballs fall on red circles round you | Keep moving |
 | **Charge** across the arena | Stand in its way and press **YOU SHALL NOT PASS!**: it crashes into Gandalf's light and falls to its knees, open to everything you have |
 | Hit it too much at once and it **bursts free** in a ring of fire (Kingdom Hearts II's revenge value) | Back off when it flashes |
 
-The Balrog is Battle for Middle-earth's own when `models/balrog.glb` is there.
+The Balrog is Battle for Middle-earth's own when `models/balrog.glb` is there, and burns with Battle for Middle-earth's own fire when `fx/` has it (see its README).
 
 ### The duel on Weathertop
 
