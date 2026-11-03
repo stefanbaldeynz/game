@@ -19,6 +19,7 @@ The game opens on a map of Middle-earth. Gandalf walks freely across it. Walk hi
 | Moria | **The Mines of Moria** | Dark dwarf-halls with columns rising out of a fiery abyss, chains and lanterns hanging from the roof, stalactites. Goblins climbing out of the chasm, then the **Balrog boss** on the Bridge of Khazad-dûm: a plank bridge with rope rails over a sea of mist and rock spires. |
 | Edoras | **Edoras** | Up the hill to Meduseld. The road runs in through the gate in the palisade and winds round and up the hill past the longhouses to the Golden Hall. Four squares on the way lock behind a golden barrier while the **Uruk-hai** come over the walls in waves. **Lurtz** comes with the last wave at the top. Win it and **Théoden** comes out onto the steps; go to him to finish. You fight the **Kingdom Hearts II** way (see below). |
 | Helm's Deep | **Helm's Deep** | A Kingdom Hearts level, at night in a storm, with Saruman's army filling the coomb below with torches. You fight your way down through the Hornburg: the Great Hall's court under its tower, a bastion on the wall-walk, the court inside the gate, then out through the broken gate and down the causeway, with two fights on the way. Each place locks behind a golden barrier while wave after wave of **orcs**, **Uruk-hai** and **berserkers** come over the walls and up the ladders. At the bottom, fire glows in the culvert of the Deeping Wall, and out of it crawls **a Balrog**: a boss fight the Kingdom Hearts II way (see below). |
+| Isengard | **Isengard** | A Kingdom Hearts level like Helm's Deep, under a smoky dusk. From the plain at the foot of **Orthanc**, past fire pits, forges and warg pits, up the great stair to its doors. Then round and round the outside of the tower on a stair that winds up it, like Kingdom Hearts II's Wayward Stairs, stopping on two balconies to fight **orcs**, **Uruk-hai**, **berserkers** and **wargs** (Lurtz comes too). At the top, between Orthanc's four horns: **Saruman** (below). |
 | Minas Tirith | Three levels | Flies down into the city and opens its own menu: The First Circle, The Second Circle and The Citadel (Sauron). |
 | Cirith Ungol | **The Pass of Cirith Ungol** | A chase. A narrow pass full of webs, and **Shelob** drops out of them behind you. The camera turns round and you run towards it with the spider at your heels. Jump the webs and the gaps, and don't stop until the end of the pass. |
 | Mordor | **Mordor** | Black rock over a sea of lava, Barad-dûr and the Eye off to the side, fell beasts spitting fire overhead, lots of TNT. |
@@ -93,6 +94,21 @@ Its gauge (top right) has four bars, green, yellow, orange and red; the diamonds
 
 The Balrog is Battle for Middle-earth's own when `models/balrog.glb` is there, and burns with Battle for Middle-earth's own fire when `fx/` has it (see its README).
 
+#### Saruman
+
+A boss of four bars on the top of Orthanc. He keeps his distance and casts:
+
+| He does | What to do |
+| --- | --- |
+| **Lightning** on red circles round you | Keep moving |
+| **Three fireballs** that hunt you | Guard just as one reaches you, and it flies back and hits him |
+| **A blast** from his staff all round him (a red circle), rolling out as a ring | Get clear, then jump the ring |
+| **Force Push** across a red wedge | Get out of the wedge |
+| **Vanishes** in smoke and comes back somewhere else | |
+| Half his gauge gone: **a storm of lightning**, **a beam of lightning** sweeping after you, and he **calls his Uruk-hai and wargs** | Guard holds the beam off. Press **WIZARDS' DUEL** to break it and throw him down |
+| Nearly beaten and knocked down | **BREAK HIS STAFF** finishes him |
+
+A finisher staggers him, and too many blows at once make him burst free. Saruman and the wargs are Battle for Middle-earth's own when `models/saruman.glb` and `models/warg.glb` are there.
 ### The duel on Weathertop
 
 Gandalf has a blue lightsaber and the Witch-king a red one. Gandalf always faces him: forward closes in, sideways circles round him.

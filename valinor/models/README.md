@@ -14,6 +14,7 @@ Put a `.glb` file here with one of these names and Valinor uses it instead of it
 | `horse.glb` | Shadowfax | The First Circle |
 | `uruk.glb`, `lurtz.glb`, `theoden.glb` | The Uruk-hai, Lurtz and Théoden | Edoras (and the Uruk-hai at Helm's Deep) |
 | `berserker.glb` | The Uruk berserkers with their torches | Helm's Deep |
+| `saruman.glb`, `warg.glb` | Saruman and the wargs | Isengard |
 | `gandalfw.glb` | Gandalf the White, while the White Wizard drive form lasts | Edoras and Helm's Deep |
 | `frodo.glb`, `sam.glb`, `merry.glb`, `pippin.glb`, `aragorn.glb`, `legolas.glb`, `gimli.glb`, `boromir.glb` | The Fellowship | Rivendell |
 | `livingmap.glb` + `livingmap.json` | The map: BFME II's War of the Ring board instead of the little diorama (make them with `Prep-Map.ps1`, then `Convert-Chars.ps1 livingmap`) | The world map, where you pick a place |
@@ -29,6 +30,7 @@ Put a `.glb` file here with one of these names and Valinor uses it instead of it
 - **Mirkwood:** its dark trees, webbed trees, undergrowth, webs, egg sacs, the spider lair and Dol Guldur's tower.
 - **Edoras:** Meduseld, the rocks breaking through its hill, the palisade, the gatehouse and its watchtowers, and the well. (The town's longhouses are Valinor's own: Battle for Middle-earth's Edoras pieces are all rocks. The trees are the Shire's.)
 - **Minas Tirith:** the White Tree in the Citadel.
+- **Isengard:** the warg pit, forges, diggings, furnace and watchtowers on the plain, Saruman's statue, and the ring wall with its gate. Orthanc and its stair are Valinor's own.
 - **Helm's Deep:** the Deeping Wall with its culvert, Rohan towers at the gate, a hall of Rohan's by the top court, and Isengard's siege ladders. The Hornburg's courts, stairs, walls, Great Hall and tower and the causeway are Valinor's own. (Battle for Middle-earth's ramp is a short piece made for its own map; `eb_torch` and `rbcastfloor` are flat pieces it doesn't use.)
 
 Each level uses whichever are there and builds its own shapes for the rest. Add `?props=none` to the address to compare with the built ones.

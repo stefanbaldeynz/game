@@ -963,6 +963,8 @@ const NO_DECK = -1e9;
 let DECK = null;
 // each square keeps up to DECK_L surfaces one over another (a walkway over a walkway, a rail over its deck); top is the highest
 const DECK_L = 3;
+// Isengard's stair round Orthanc: inner and outer radius, the tower's top, where the stair starts and how many turns (see ISENGARD)
+const ISEN = { R0: 10.4, R1: 15.2, TOP: 60, Y0: 6, TURNS: 2.5, A0: Math.PI };
 function newDeck(s0, x0, w, h) { return { s0, x0, w, h, top: new Float32Array(w * h).fill(NO_DECK), lay: new Float32Array(w * h * DECK_L).fill(NO_DECK) }; }
 // the highest walkway surface at s, x no higher than y
 function deckAt(s, x, y = Infinity) { const D = DECK, i = Math.round(x - D.x0), j = Math.round(s - D.s0); if (i < 0 || j < 0 || i >= D.w || j >= D.h) return NO_DECK; let b = NO_DECK; for (let q = 0, k = (j * D.w + i) * DECK_L; q < DECK_L; q++) { const v = D.lay[k + q]; if (v <= y && v > b) b = v; } return b; }
@@ -2745,6 +2747,14 @@ const LEVELS = [
     ...helmsLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { helmsContent(this); },
+  },
+  {
+    // a Kingdom Hearts level like Helm's Deep: from the foot of Orthanc up the stair winding round it, fighting on its balconies,
+    // to Saruman on the top (see ISENGARD)
+    straight: true, roam: true, kh: true, name: 'ISENGARD', sub: 'THE TOWER OF ORTHANC', loc: 'isen', theme: 'isen', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 60000, CZ: 0, base: -4, wallH: 0, winTitle: 'SARUMAN IS DEFEATED!',
+    ...isenLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { isenContent(this); },
   },
 ];
 
@@ -5103,7 +5113,7 @@ function updateAmbient(dt) {
   if (THEMES.riv.bigFall) THEMES.riv.bigFall.offset.y += dt * .6;
   if (THEMES.mordor.lava) THEMES.mordor.lava.offset.x += dt * .01;
   torchSprites.forEach((s, i) => s.scale.set(.7 + Math.sin(T * 13 + i) * .06, 1.15 + Math.sin(T * 11 + i * 2) * .1, 1));
-  clouds.rotation.y += dt * .004; updateHelms(dt);
+  clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt);
   doomGlow.material.opacity = .8 + Math.sin(T * 1.7) * .2;
   // embers rising from the burning city below
   if (ENV.embers) for (let k = 0; k < 2; k++) { tw(P.s + rand(-6, 26), rand(-14, -4), rand(-8, 0), _a); fx.spawn(_a.x, _a.y, _a.z, rand(-.5, .5), rand(1.5, 3), rand(-.5, .5), rand(2, 3.5), .12, .05, [1, .7, .3], [1, .2, .05]); }
@@ -5245,7 +5255,10 @@ function updateCamera(dt) {
     const bo = LV.kh && KH.boss && KH.boss.m.root.visible && KH.boss.state !== 'fall' ? KH.boss : null; cam.bk = damp(cam.bk || 0, bo ? 1 : 0, 2, dt);
     // (Left Shift and / turn it by hand in the Kingdom Hearts levels; it leaves you be for a moment after)
     if (state === 'play' && inp.camT) { cam.yaw += inp.camT * 2.4 * dt; cam.man = 1.4; } cam.man = (cam.man || 0) - dt;
-    if (state === 'play' && cam.man <= 0) { if (bo) cam.yaw += angDiff(cam.yaw, Math.atan2(bo.x - P.x, bo.s - P.s)) * (1 - Math.exp(-2.4 * dt)); else { const mv = Math.hypot(P.vs, P.vx); if (mv > 1) cam.yaw += angDiff(cam.yaw, P.heading) * (1 - Math.exp(-1.7 * dt * Math.min(1, mv / RUN))); } }
+    // (on Orthanc's stair it stays out over the drop, looking in at the tower, as on Kingdom Hearts II's Wayward Stairs)
+    const onTower = LV.theme === 'isen' && !bo && P.y > 3 && P.y < ISEN.TOP - .5 && Math.hypot(P.s, P.x) < ISEN.R1 + 9;
+    if (state === 'play' && cam.man <= 0 && onTower) { const inA = Math.atan2(-P.x, -P.s); cam.yaw += angDiff(cam.yaw, inA + clamp(angDiff(P.heading, inA), -.95, .95)) * (1 - Math.exp(-3 * dt)); }
+    else if (state === 'play' && cam.man <= 0) { if (bo)cam.yaw += angDiff(cam.yaw, Math.atan2(bo.x - P.x, bo.s - P.s)) * (1 - Math.exp(-2.4 * dt)); else { const mv = Math.hypot(P.vs, P.vx); if (mv > 1) cam.yaw += angDiff(cam.yaw, P.heading) * (1 - Math.exp(-1.7 * dt * Math.min(1, mv / RUN))); } }
     let tgy = P.ground ? P.y : Math.min(cam.gy, P.y + 1.2); cam.gy = cam.snap ? P.y : damp(cam.gy, tgy, P.ground ? 4 : 2, dt);
     const D = 7.4 + cam.bk * 4.4, c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw);
     _a.copy(tw(P.s - c * D, P.x - sn * D, cam.gy + 3.9 + cam.bk * 2.2)); _b.copy(tw(P.s + c * 3, P.x + sn * 3, cam.gy + 1.1 + cam.bk * 2.6));
@@ -5546,6 +5559,7 @@ const NODES = [
   { name: 'MOUNT DOOM', x: 62.5, z: 11.5, open: true, loc: 'doom', sub: 'THE CLIMB · OUTRUN THE LAVA' },
   { name: 'WEATHERTOP', x: -34, z: -14, open: true, loc: 'weather', sub: 'DUEL THE WITCH-KING' },   // added last: the road and Minas Tirith go by position in this list
   { name: 'MIRKWOOD', x: 8, z: -24, open: true, loc: 'mirk', sub: 'THE DARK FOREST · SLAY THE SPIDERS' },
+  { name: 'ISENGARD', x: -18, z: 9, open: true, loc: 'isen', sub: 'UP THE TOWER OF ORTHANC · SARUMAN BOSS' },
   { name: "HELM'S DEEP", x: -14.6, z: 15.8, open: true, loc: 'helm', sub: 'DOWN THE RAMP · BALROG BOSS' },
 ];
 const ROAD = (() => {
@@ -5690,7 +5704,7 @@ function updateMap(dt) {
 
 // --- your own War of the Ring board (models/livingmap.glb and livingmap.json, from Battle for Middle-earth II: see
 //     models/README.md): it replaces the little diorama, each stop moves onto its region, and Gandalf walks over its hills ---
-const STOP_REGION = { shire: 'The_Shire', riv: 'Rhudaur', moria: 'Redhorn_Pass', weather: 'Amon_Sul', rohan: 'Rohan', mt: 'Minas_Tirith', ungol: 'Minas_Morgul', mordor: 'Mordor', doom: 'Mount_Doom', mirk: 'Mirkwood', helm: 'Helms_Deep' };
+const STOP_REGION = { shire: 'The_Shire', riv: 'Rhudaur', moria: 'Redhorn_Pass', weather: 'Amon_Sul', rohan: 'Rohan', mt: 'Minas_Tirith', ungol: 'Minas_Morgul', mordor: 'Mordor', doom: 'Mount_Doom', mirk: 'Mirkwood', helm: 'Helms_Deep', isen: 'Isengard' };
 // what's hidden (clouds, smoke and BFME's own markers), what's water, and what's the ground itself (its 20 painted tiles)
 const BOARD_HIDE = /^(.*(cloud|pick|smok|sunray|flash|marker|brdr|rallyflag|hero)|impassable|lm_coast)/i, BOARD_WATER = /ocean|water|sea\b|wtr/i, BOARD_GROUND = /^LM_\d\d(_\d+)?$/;   // (three.js adds _1 when a part shares its name with the node holding it)
 // the tiles' pictures, small, so the map can tell the painted sea (blue) from land where Gandalf may walk
@@ -6748,7 +6762,7 @@ THEMES.mirkwood = natTheme({
 //  the last, before the hall. Gandalf fights the Kingdom Hearts II way (see KH below). With your own files the town
 //  and hall are Battle for Middle-earth's, and the Uruk-hai, Lurtz and Théoden are its models.
 // =====================================================================
-Object.assign(MODEL_SLOTS, { uruk: { height: 1.95, turn: -Math.PI / 2, hide: /forged/i }, lurtz: { height: 2.15, turn: -Math.PI / 2, hide: /forged/i }, theoden: { height: 1.9, turn: -Math.PI / 2 }, berserker: { height: 2.05, turn: -Math.PI / 2, hide: /forged/i }, gandalfw: { height: 1.75, turn: -Math.PI / 2, saberBone: 'B_SWORDBONE', glow: .45 } });   // (the Uruk-hai come with the red glow of their Forged Blades upgrade on: left out)
+Object.assign(MODEL_SLOTS, { uruk: { height: 1.95, turn: -Math.PI / 2, hide: /forged/i }, lurtz: { height: 2.15, turn: -Math.PI / 2, hide: /forged/i }, theoden: { height: 1.9, turn: -Math.PI / 2 }, berserker: { height: 2.05, turn: -Math.PI / 2, hide: /forged/i }, gandalfw: { height: 1.75, turn: -Math.PI / 2, saberBone: 'B_SWORDBONE', glow: .45 }, saruman: { height: 1.95, turn: -Math.PI / 2 }, warg: { height: 1.6, turn: -Math.PI / 2 } });   // (the Uruk-hai come with the red glow of their Forged Blades upgrade on: left out)
 HEROES.theoden = { h: 1.85, hair: 0xd8c8a0, coat: 0x2a5a2a, legs: 0x3a3020, cloak: 0x7a1a14, beard: 0xd8c8a0, sword: true };
 // the hill, the road and where everything stands (made once, the same every time)
 function edorasLayout() {
@@ -7691,6 +7705,319 @@ async function loadSora(ids) {
   return true;
 }
 // =====================================================================
+//  ISENGARD: a Kingdom Hearts level, like Helm's Deep. From the plain at the foot of Orthanc, up the great stair to its doors,
+//  then round and round the tower on a stair that winds up its outside (Kingdom Hearts II's Wayward Stairs), stopping on
+//  balconies to fight orcs, Uruk-hai, berserkers and wargs, to the top between Orthanc's four horns: Saruman.
+//  The stair winds over itself, so it's a walkway (DECK, as in Mirkwood) over the land, not the land.
+// =====================================================================
+function isenLayout() {
+  const N = 201, C = 100, I = ISEN, hs = new Float32Array(N * N), g = new Array(N * N).fill('g'), TT = I.TURNS * TAU;
+  const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  // the stair's height round the tower: climbing, but level across the two balconies (and for a little at the start)
+  const LAND = [[0, .025], [.37, .05], [.73, .05]], M = 2000, ys = new Float32Array(M + 1); let acc = 0;
+  const flat = u => LAND.some(([c, w]) => Math.abs(u - c) < w / 2 || (c === 0 && u < w));
+  for (let i = 0; i <= M; i++) { ys[i] = acc; if (!flat(i / M)) acc++; }
+  const yAt = t => { const u = clamp(t / TT, 0, 1), i = Math.round(u * M); return lerp(I.Y0, I.TOP, ys[i] / acc); };
+  const ptAt = (t, r = (I.R0 + I.R1) / 2) => { const a = I.A0 + t; return [Math.cos(a) * r, Math.sin(a) * r, yAt(t)]; };
+  // the places the enemy comes: the plain at the foot of Orthanc, its doors, the two balconies, and the top
+  const balc = (u, r, waves, title) => { const t = u * TT, a = I.A0 + t, R = I.R1 + 2.4; return { s: Math.cos(a) * R, x: Math.sin(a) * R, y: yAt(t), r, waves, title, t, ladders: [a - .7, a, a + .7], fromY: yAt(t) - 7, wallH: 1.1, balcony: true, rim: true }; };
+  const plazas = [
+    { s: -50, x: 0, y: 0, r: 11, waves: [['o', 'o', 'w'], ['u', 'o', 'o', 'w'], ['w', 'w', 'u']], title: 'THE RING OF ISENGARD', wallH: 0 },
+    { s: -19.5, x: 0, y: I.Y0, r: 6, waves: [['u', 'u', 'b'], ['o', 'o', 'o', 'u', 'w']], title: 'THE DOORS OF ORTHANC', wallH: 1.1, rim: true },
+    balc(.37, 6.5, [['w', 'w', 'o', 'o'], ['u', 'b', 'u', 'o'], ['w', 'w', 'w']], 'THE WAYWARD STAIR'),
+    balc(.73, 6.5, [['b', 'u', 'u', 'w'], ['w', 'w', 'u', 'u', 'b'], ['L', 'u', 'u']], 'HIGH ABOVE ISENGARD'),
+    { s: 0, x: 0, y: I.TOP, r: 8.6, waves: [['S']], title: 'SARUMAN!', boss: true, last: true, ladders: [0, Math.PI / 2, Math.PI, Math.PI * 1.5], fromY: I.TOP - 8, breach: [0, 0] },
+  ];
+  // the land: the plain of Isengard, gently uneven, pits dug in it, the cliffs of the ring round it; Orthanc's rock in the middle,
+  // up to its top; the great stair from the plain to its doors
+  const pits = [[-20, -40], [25, -42], [42, -12], [40, 26], [8, 46], [-30, 38], [-48, 18], [-58, -26]];
+  const base = (s, x) => {
+    const r = Math.hypot(s, x); let y = Math.sin(s * .08) * Math.cos(x * .07) * .5 + Math.sin(s * .21 + x * .17) * .25;
+    for (const [ps, px] of pits) y -= 4 * (1 - ss(5, 9, Math.hypot(s - ps, x - px)));
+    y += 40 * ss(86, 97, r);
+    if (r < 10.1) y = I.TOP;   // (Orthanc)
+    return y;
+  };
+  const wB = new Float32Array(N * N), yR = new Float32Array(N * N), cell = (s, x) => [Math.round(C - s), Math.round(C - x)];
+  const carve = (s, x, y, half, fall, kind) => {
+    const [j0, i0] = cell(s, x), R_ = Math.ceil(half + fall);
+    for (let j = j0 - R_; j <= j0 + R_; j++) for (let i = i0 - R_; i <= i0 + R_; i++) {
+      if (i < 0 || j < 0 || i >= N || j >= N) continue; const d = Math.hypot(C - j - s, C - i - x), e = clamp((d - half) / fall, 0, 1), w = 1 - e * e * (3 - 2 * e), k = j * N + i;
+      if (w > wB[k]) { wB[k] = w; yR[k] = y; } if (kind && d < half - .3) g[k] = kind;
+    }
+  };
+  for (let s = -40; s <= -24; s += .5) carve(s, 0, lerp(0, I.Y0, ss(-40, -24, s)), 3.4, 1.5, 'p');   // the great stair to the doors
+  carve(-19.5, 0, I.Y0, 6.4, 1.5, 's'); carve(-50, 0, 0, 11.5, 3, 's');
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = C - j, x = C - i; hs[k] = Math.hypot(s, x) < 10.1 ? I.TOP : lerp(base(s, x), yR[k], wB[k]); if (Math.hypot(s, x) < 10.1) g[k] = 'o'; }
+  // the walkway: the stair round the tower (up to three turns over one another) and the balconies
+  const D = newDeck(-27, -27, 55, 55);
+  for (let j = 0; j < D.h; j++) for (let i = 0; i < D.w; i++) {
+    const s = D.s0 + j, x = D.x0 + i, r = Math.hypot(s, x), a = Math.atan2(x, s), k = j * D.w + i;
+    if (r >= I.R0 - .3 && r <= I.R1 + .3) for (let q = 0; q < 4; q++) { const t = ((a - I.A0) % TAU + TAU) % TAU + q * TAU; if (t <= TT + .02) deckPut(D, k, yAt(t)); }
+    for (const p of plazas) if (p.balcony && Math.hypot(s - p.s, x - p.x) < p.r + .5 && r > I.R0 - .3) deckPut(D, k, p.y);
+  }
+  // the path the way goes (for the test autopilot): [s, x, height, half its width]
+  const path = []; for (let s = -62; s < -40; s += .5) path.push([s, 0, 0, 3]); for (let s = -40; s <= -24; s += .5) path.push([s, 0, lerp(0, I.Y0, ss(-40, -24, s)), 3]);
+  for (let s = -24; s < -13; s += .5) path.push([s, 0, I.Y0, 3]);
+  for (let t = 0; t <= TT; t += .04) { const [s, x, y] = ptAt(t); path.push([s, x, y, 2.4]); }
+  for (let r = 12.8; r > 0; r -= .5) path.push([Math.cos(I.A0 + TT) * r, Math.sin(I.A0 + TT) * r, I.TOP, 3]);
+  for (const p of plazas) { let bi = 0, bd = 1e9; path.forEach((q, i) => { const d = Math.hypot(q[0] - p.s, q[1] - p.x) + Math.abs(q[2] - p.y); if (d < bd) { bd = d; bi = i; } }); p.pi = bi; }
+  // the walls: the stair's outer rail; each balcony's rim (open where the stair runs through); the rim round the top
+  const blocks = [], walls = [];
+  for (let t = 0; t <= TT; t += .055) { const a = I.A0 + t, r = I.R1 + .35, s = Math.cos(a) * r, x = Math.sin(a) * r; if (plazas.some(p => p.rim && Math.hypot(s - p.s, x - p.x) < p.r + .6)) continue; walls.push([s, x, yAt(t), Math.cos(a), Math.sin(a), 1.1]); }
+  for (const p of plazas) if (p.rim) for (let a = 0; a < TAU; a += .5 / (p.r + .45)) { const ns = Math.cos(a), nx = Math.sin(a), s = p.s + ns * (p.r + .45), x = p.x + nx * (p.r + .45), r = Math.hypot(s, x); if (r < I.R1 + .7 || (!p.balcony && Math.abs(x) < 3.8 && s < p.s - 2)) continue; walls.push([s, x, p.y, ns, nx, 1.1]); }   // (open to the tower's stair, and to the great stair up to the doors)
+  const endA = I.A0 + TT;
+  for (let a = 0; a < TAU; a += .045) { if (Math.abs(angDiff(a, endA)) < .3) continue; const s = Math.cos(a) * 10.1, x = Math.sin(a) * 10.1; walls.push([s, x, I.TOP, Math.cos(a), Math.sin(a), 1.1]); }
+  for (const [s, x, y, , , hh] of walls) blocks.push([s - .4, s + .4, x - .4, x + .4, y + hh + .2, 'wall', y - 2]);
+  for (const k of [0, 1, 2, 3]) { const a = Math.PI / 4 + k * Math.PI / 2, s = Math.cos(a) * 8.6, x = Math.sin(a) * 8.6; blocks.push([s - 1.2, s + 1.2, x - 1.2, x + 1.2, I.TOP + 14, 'wall', I.TOP - 1]); }   // (the four horns)
+  return { field: [-96, 96, -96, 96], start: [-64, 0], deck: D, terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g }, layout: { blocks, path, plazas, walls, pits, yAt, TT } };
+}
+function isenContent(L) {
+  const Y = L.layout;
+  khRings(Y);
+  for (let i = 30; i < Y.path.length - 20; i += 22) { const [s, x, y] = Y.path[i]; if (Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 1 && Math.abs(y - p.y) < 3)) continue; addApple(s, x, y + .8); }
+  Y.plazas.forEach((p, n) => { if (p.boss) return; for (const [a, k] of [[.9, 'b'], [2.6, n % 2 ? 'su' : 'q'], [4.3, 'b']]) { const s = p.s + Math.cos(a) * (p.r - 1.6), x = p.x + Math.sin(a) * (p.r - 1.6); if (p.balcony && Math.hypot(s, x) < ISEN.R1 + .8) continue; addCrate(k, s, x, 0, p.y + 2); } });   // (a Summon crate on every other)
+}
+function buildIsen(L, TH) {
+  const Y = L.layout, T_ = L.terrain, I = ISEN, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
+  const rotOf = (ns, nx) => Math.atan2(-nx, ns);
+  const obsid = surf(TX.hdRock, { sky, color: 0x24262e, rough: .28, metal: .2, bump: 2.2, env: 1.1 }), stone = surf(TX.hdStone, { sky, color: 0x5a5c66, rough: .5, bump: 3, env: .6, tri: 3.2 });
+  const stepM = surf(TX.hdStone, { sky, color: 0x4a4e5c, rough: .35, bump: 2.6, env: .9, tri: 2.4 }), flagM = surf(TX.hdFlag, { sky, color: 0x8a8e9a, rough: .4, bump: 3, env: .8 });
+  // the ground: ash and mud on the plain, scorched round the pits, rock in the cliffs of the ring
+  const grd = surf(TX.hdMud, { sky, vc: true, rough: .9, bump: 2.2, env: .3 });
+  groundMesh(T_, TX.hdMud, (k, sl, y) => k === 'p' || k === 's' ? [.55, .55, .58] : k === 'o' ? [.15, .15, .18] : y < -1.5 ? [.35, .2, .14] : sl > 1.2 ? [.55, .5, .48] : [.45, .4, .34], 9, () => grd);
+  wideFloor(TX.hdMud, 0x2a2420, 120, -1.2, 600);
+  // Orthanc: a core of black stone, four great piers with thorns up their edges, a door at the top of the great stair, and four
+  // horns round the top
+  { const core = new THREE.Mesh(new THREE.CylinderGeometry(9.4, 10.2, I.TOP, 40), obsid); tw(0, 0, I.TOP / 2, core.position); core.userData.cast = true; scene.add(core);
+    const piers = [], thorns = [];
+    for (let k = 0; k < 4; k++) { const a = Math.PI / 4 + k * Math.PI / 2, ns = Math.cos(a), nx = Math.sin(a);
+      for (let y = 0; y < I.TOP; y += 6) { const w = 4.6 - y / I.TOP * 1.4, p = tw(ns * (10.3 - w / 2), nx * (10.3 - w / 2), y + 3); piers.push([p.x, p.y, p.z, w, 6.05, w * .8, rotOf(ns, nx)]); }
+      for (let y = 4; y < I.TOP; y += 4.5) for (const sd of [-1, 1]) { const ta = a + sd * .2, p = tw(Math.cos(ta) * 10.3, Math.sin(ta) * 10.3, y); thorns.push(p); } }
+    stoneBox(piers, obsid);
+    for (const p of thorns) { const c = new THREE.Mesh(new THREE.ConeGeometry(.35, 2.2, 6), obsid); c.position.copy(p); c.lookAt(_a.set(0, p.y + 40, 0).add(new V3(p.x, 0, p.z).multiplyScalar(1.6))); c.rotateX(Math.PI / 2); scene.add(c); }
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(10.3, 10.3, .6, 40), flagM); tw(0, 0, I.TOP - .28, top.position); scene.add(top);
+    // the horns: thick at the root, curving out and up to points
+    for (let k = 0; k < 4; k++) { const a = Math.PI / 4 + k * Math.PI / 2, ns = Math.cos(a), nx = Math.sin(a), pts = [[8.6, 0], [9.2, 4], [10.4, 8.5], [10.2, 12], [8.8, 15.5]].map(([r, h]) => tw(ns * r, nx * r, I.TOP + h));
+      const curve = new THREE.CatmullRomCurve3(pts); for (let q = 0; q < 10; q++) { const p0 = curve.getPoint(q / 10), p1 = curve.getPoint((q + 1) / 10), r = lerp(1.3, .12, q / 10), seg = new THREE.Mesh(new THREE.CylinderGeometry(r * .85, r, p0.distanceTo(p1) * 1.05, 10), obsid); seg.position.copy(p0).add(p1).multiplyScalar(.5); seg.quaternion.setFromUnitVectors(UPV, p1.clone().sub(p0).normalize()); scene.add(seg); } }
+    const door = new THREE.Mesh(GEO_BOX, lam(0x07080c)); tw(-10.1, 0, I.Y0 + 4, door.position); door.scale.set(.2, 8, 4.2); door.rotation.y = 0; scene.add(door);
+    for (let k = 0; k < 14; k++) { const a = rand(0, TAU), y = rand(12, I.TOP - 4), w = new THREE.Mesh(GEO_BOX, lam(0xffa050, { emissive: 0xc05010 })), p = tw(Math.cos(a) * 9.5, Math.sin(a) * 9.5, y); w.position.copy(p); w.scale.set(.5, 1.6, .5); scene.add(w); }   // (lit slits)
+  }
+  // the great stair from the plain to the doors
+  { const st = []; for (let s = -40; s <= -24; s += .55) { const y = lerp(0, I.Y0, clamp((s + 40) / 16, 0, 1)), p = tw(s, 0, y - .5); st.push([p.x, p.y, p.z, 6.8, 1, .6, 0]); } stoneBox(st, stepM); }
+  // the stair round the tower, Kingdom Hearts II's Wayward Stairs: a ribbon of black steps with a rail on its outer edge
+  { const st = [], rail = [], R = (I.R0 + I.R1) / 2;
+    for (let t = 0; t <= Y.TT; t += .05) { const a = I.A0 + t, y = Y.yAt(t), p = tw(Math.cos(a) * R, Math.sin(a) * R, y - .45); st.push([p.x, p.y, p.z, I.R1 - I.R0 + .3, .9, .05 * R + .08, rotOf(Math.cos(a), Math.sin(a))]); }
+    stoneBox(st, stepM);
+    for (const [s, x, y, ns, nx, hh] of Y.walls) { const p = tw(s, x, y + hh / 2); rail.push([p.x, p.y, p.z, .45, hh, .72, rotOf(ns, nx)]); }
+    stoneBox(rail, stone); }
+  // the balconies' floors, and the top's
+  for (const p of Y.plazas) if (p.balcony || p === Y.plazas[1]) { const geo = new THREE.CylinderGeometry(p.r + .4, p.r + .4, .9, 40), m = new THREE.Mesh(geo, flagM); tw(p.s, p.x, p.y - .45, m.position); m.receiveShadow = true; scene.add(m); }
+  // the barrier round each place, while it's locked
+  const barM = new THREE.MeshBasicMaterial({ color: 0xffd060, transparent: true, opacity: .12, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  for (const p of Y.plazas) { const m = new THREE.Mesh(new THREE.CylinderGeometry(p.r + .5, p.r + .5, 6, 40, 1, true), barM); tw(p.s, p.x, p.y + 2.5, m.position); m.visible = false; m.userData.keep = true; scene.add(m); p.vis = m; }
+  // the plain: Battle for Middle-earth's own pits, forges, diggings, furnaces and watchtowers when they're there; fire in the pits
+  const PIECES = ['ibwargpit', 'iburukpit_a', 'ibfbforgb', 'ibfbforges', 'ibfexcav', 'mbfurnace_a', 'ibfwtower', 'ibfitower'].filter(n => PROPS[n]);
+  const spots = [[-36, -28], [30, -30], [52, 2], [32, 46], [-12, 58], [-44, 44], [-66, 8], [-70, -40], [12, -62], [60, -36], [64, 34], [-24, -62]];
+  spots.forEach(([s, x], k) => { if (!PIECES.length) return; const n = PIECES[k % PIECES.length]; propOne(n, s, x, at(s, x) - .2, Math.atan2(-x, -s), /tower/.test(n) ? 6 : 13); Y.blocks.push([s - 4, s + 4, x - 4, x + 4, at(s, x) + 6]); });
+  if (PROPS.sarumanstatue01) propOne('sarumanstatue01', -56, 14, at(-56, 14), Math.PI / 2, 7, 'h');
+  for (const [ps, px] of Y.pits) for (let k = 0; k < 3; k++) { const gl = glowSprite(0xff5a14, rand(6, 9), .55); tw(ps + rand(-2, 2), px + rand(-2, 2), at(ps, px) + 1, gl.position); gl.userData.keep = true; scene.add(gl); }
+  TH.pits = Y.pits.map(([s, x]) => [s, x, at(s, x)]);
+  // the ring of Isengard round it all: Battle for Middle-earth's wall when it's there, its own rock either way
+  if (PROPS.ibwalln) for (let a = 0; a < TAU; a += 14 / 92) { if (Math.abs(angDiff(a, Math.PI)) < .1) continue; const s = Math.cos(a) * 92, x = Math.sin(a) * 92; propOne('ibwalln', s, x, at(s, x) - 1, a + Math.PI / 2, 14.5); }
+  if (PROPS.ibgate1) propOne('ibgate1', -92, 0, at(-92, 0) - .5, Math.PI / 2, 16);
+  for (let i = 0; i < 16; i++) { const a = rand(-Math.PI, Math.PI), r = rand(200, 420), h = rand(90, 200), m = gradCone(rand(60, 110), h, 6, 0x8a7a70, 0x1a1614); tw(Math.cos(a) * r, Math.sin(a) * r, h / 2 - 20, m.position); scene.add(m); }   // (the mountains)
+  bakeScenery(scene.children.slice(first));
+}
+// each frame at Isengard: fire licking up out of the pits, smoke rising from them
+function updateIsen(dt) {
+  const H = THEMES.isen; if (!LV || LV.theme !== 'isen' || state === 'map' || state === 'title' || !H.pits) return;
+  if (FIRE) FIRE.update(dt);
+  for (const [s, x, y] of H.pits) { if (Math.random() < dt * 6) bfire(tw(s + rand(-3, 3), x + rand(-3, 3), y + .3), rand(1.4, 2.4), 2.2); if (Math.random() < dt * 2) smoke.spawn(...tw(s + rand(-2, 2), x + rand(-2, 2), y + 2).toArray(), rand(-.3, .3), rand(2, 3.5), rand(-.3, .3), rand(4, 6), 2, 7, [.12, .1, .1], [.25, .22, .22], -.2, .3); }
+}
+THEMES.isen = natTheme({
+  wallTex: TX.hdStone, floorTex: TX.hdFlag, tint: [.7, .7, .74], door: 0x3a3a44,
+  env: { sky: [0x1a1418, 0x3a2a26, 0x8a5a3e, 0xd08a4a], fog: [45, 280], fogC: 0x3a2c26, amb: [0x6a5a50, .7], hemi: [0xb0a090, 0x2a1a12, .6], sun: [0xffc090, .7], east: [0xff7a30, .35], cloud: 0x5a4a42, embers: true, bloom: .9, sunDir: [-60, 70, 40] },
+  orc: MT_ORC,
+  scenery(L) { buildIsen(L, this); },
+});
+
+// --- wargs: great wolves, low and quick; they circle like the orcs and pounce from further off
+function makeWarg() {
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
+  const FUR = lam(0x3a3430), DARK = lam(0x1e1a18), EYE = bas(0xffd040);
+  part(GEO_BOX, FUR, body, 0, .95, -.1, .7, .7, 1.7); part(GEO_BOX, FUR, body, 0, 1.15, .55, .8, .8, .7);   // body and shoulders
+  const head = new THREE.Group(); head.position.set(0, 1.25, .95); body.add(head);
+  part(GEO_BOX, FUR, head, 0, 0, .15, .5, .45, .55); part(GEO_BOX, DARK, head, 0, -.08, .5, .3, .25, .4);   // skull and snout
+  for (const sx of [-1, 1]) part(GEO.cone, FUR, head, sx * .16, .32, 0, .08, .25, .08);
+  const eyes = [-.13, .13].map(x => part(GEO.sph, EYE, head, x, .08, .43, .045, .035, .03));
+  const tail = part(GEO.cylT || GEO.cyl, FUR, body, 0, 1.1, -1.05, .08, .7, .08); tail.rotation.x = -.9;
+  const legs = [];
+  for (const [x, z] of [[.25, .6], [-.25, -.7], [-.25, .6], [.25, -.7]]) { const g = new THREE.Group(); g.position.set(x, .8, z); body.add(g); part(GEO_BOX, DARK, g, 0, -.38, 0, .16, .8, .2); legs.push(g); }
+  const armL = new THREE.Group(); body.add(armL);
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(.9, 12), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .45, depthWrite: false }));
+  shadow.rotation.x = -Math.PI / 2; scene.add(shadow); scene.add(root);
+  const mats = []; root.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); if (!eyes.includes(o)) mats.push(o); } });
+  const dizzy = glowSprite(0xffe060, 1, 0); dizzy.position.y = 2; root.add(dizzy);
+  const M = { root, body, legs, armR: head, armL, head, eyes, shadow, mats, dizzy }; addSkin(M, 'warg', body, root, [dizzy]); if (M.skin) M.skin.temp = true; return M;
+}
+
+// --- Saruman, the Kingdom Hearts II way: a boss of four bars on the top of Orthanc. He keeps his distance and casts:
+//     Lightning on red circles round you; three fireballs that hunt you (guard as one reaches you and it flies back at him);
+//     a blast of power from his staff all round him, rolling out as a ring to jump; Force Push across a red wedge; and he
+//     vanishes in smoke and comes back elsewhere. Half his gauge gone, his power grows: a storm of lightning, a beam of it
+//     sweeping at you, and he calls his Uruk-hai. Reaction commands: when he pours his beam into you, WIZARDS' DUEL breaks
+//     it and throws him down; and when he's down and nearly beaten, BREAK HIS STAFF.
+function makeSaruman() {
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
+  const ROBE = lam(0xe4e4ea, { emissive: 0x18181c }), SKIN = lam(0xd8b8a0), HAIR = lam(0xf0f0f4), BLK = lam(0x101014);
+  part(new THREE.CylinderGeometry(.32, .62, 1.55, 12), ROBE, body, 0, .78, 0);   // the robe
+  part(new THREE.CylinderGeometry(.24, .33, .55, 12), ROBE, body, 0, 1.8, 0);
+  const head = new THREE.Group(); head.position.set(0, 2.18, .02); body.add(head);
+  part(GEO.sph, SKIN, head, 0, 0, 0, .16, .19, .17); part(GEO.sph, HAIR, head, 0, .04, -.05, .19, .21, .19);
+  part(new THREE.ConeGeometry(.14, .55, 8), HAIR, head, 0, -.3, .1).rotation.x = Math.PI;   // the beard
+  const arm = new THREE.Group(); arm.position.set(.36, 1.95, 0); body.add(arm); part(GEO.cylT || GEO.cyl, ROBE, arm, 0, -.35, 0, .11, .7, .11);
+  const staff = new THREE.Group(); staff.position.set(0, -.68, .1); arm.add(staff); part(GEO.cyl, BLK, staff, 0, .3, 0, .045, 2.2, .045);
+  const tip = new THREE.Group(); tip.position.y = 1.45; staff.add(tip); part(GEO.sph, bas(0xf0f4ff), tip, 0, 0, 0, .09, .14, .09);
+  const glow = glowSprite(0xdde8ff, 1.2, .8); tip.add(glow);
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(.6, 14), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .5, depthWrite: false })); shadow.rotation.x = -Math.PI / 2;
+  scene.add(root); scene.add(shadow);
+  const M = { root, body, head, arm, staff, tip, glow, shadow }; addSkin(M, 'saruman', body, root, [glow]); if (M.skin) M.skin.temp = true; return M;
+}
+function spawnSaruman(pl, delay = 0) {
+  const b = { m: makeSaruman(), boss: true, kind: 'S', name: 'SARUMAN', hp: 640, max: 640, bars: 4, r: .7, tall: 2.3, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null,
+    state: 'intro', t: -delay - .4, h: 0, cd: 1.6, n: 0, upd: sarUpdate, hitFn: sarHit, reactFn: sarReact, reaction: sarReaction };
+  b.s = pl.s + 4; b.x = pl.x; b.y = pl.y; b.h = Math.atan2(P.x - b.x, P.s - b.s); b.m.root.visible = b.m.shadow.visible = false;
+  URUKS.push(b); KH.boss = b; Music.mode = 1; return b;
+}
+const sarTip = b => b.m.tip.getWorldPosition(new V3());
+function sarStart(b, type) {
+  const f = b.phase > 1 ? .8 : 1, W = { bolts: .7, fireballs: .55, blast: .9, push: .75, teleport: .3, storm: 1, beam: 1, summon: .8 }[type] * f, A = b.a = { type, t: 0, ph: 'wind', wT: W, fx: [], n: 0, next: 0 };
+  b.state = 'atk'; b.t = 0; b.n++; skinClip(b.m, 'attack', W + .4);
+  const mark = m => { const fx_ = khFx(m, f2 => { warnPulse(f2); return true; }); A.fx.push(fx_); return fx_; };
+  if (type === 'blast') mark(warnMesh(b.s, b.x, 0, 5.5));
+  if (type === 'push') { A.h = b.h; mark(warnMesh(b.s, b.x, .8, 11, A.h - .6, A.h + .6)); }
+  if (type === 'beam') { A.h = b.h; S.zap(); }
+  if (type === 'storm') banner('THE STORM OF SARUMAN!', 1);
+}
+function sarEnd(b) { if (b.a) { for (const f of b.a.fx || []) f.dead = true; b.a = null; } if (b.state === 'atk') { b.state = 'idle'; b.t = 0; b.cd = rand(.8, 1.6) / (b.phase > 1 ? 1.3 : 1); } }
+// a strike of lightning on a red circle, a beat after it's marked
+function sarStrike(b, s, x, warn = .65) {
+  const y = khLand(s, x, ISEN.TOP);
+  khFx(warnMesh(s, x, 0, 1.7, 0, TAU, 0xb0c8ff), fm => { warnPulse(fm); if (fm.t < warn) return true;
+    const p = tw(s, x, y + .2); khArc(() => sarTip(b), () => p, .3); zapFlash(p, 3); sparks(p, 20, 7, [.9, .95, 1], [.4, .5, 1]); S.zap(); cam.shake = Math.max(cam.shake, .2);
+    if (Math.hypot(P.s - s, P.x - x) < 1.7 && P.y - y < 2) khHurt(11, { s, x }, { unblock: true, kb: 6 }); return false; });
+}
+// a fireball that hunts Gandalf; guarded as it reaches him, it flies back at Saruman
+function sarFireball(b, k) {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: FX_TEX.exfireballc || TX.glow, color: FX_TEX.exfireballc ? 0xffffff : 0xff7a20, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })), ang = b.h + (k - 1) * .9;
+  sp.scale.setScalar(1.5); sp.position.copy(sarTip(b)).add(_a.set(Math.sin(-ang) * 0, 0, 0)); let back = false; const v = tw(b.s + Math.cos(ang) * 3, b.x + Math.sin(ang) * 3, b.y + 1.6).sub(tw(b.s, b.x, b.y + 1.6)).normalize().multiplyScalar(6);
+  khFx(sp, (f, dt) => {
+    const tgt = back ? tw(b.s, b.x, b.y + 1.3) : tw(P.s, P.x, P.y + 1); v.lerp(tgt.clone().sub(sp.position).normalize().multiplyScalar(back ? 22 : 9), Math.min(1, dt * (back ? 8 : 1.6))); sp.position.addScaledVector(v, dt); sp.material.rotation += .2; bfire(sp.position, .5, .3);
+    if (sp.position.distanceTo(tgt) < (back ? 1.1 : .9)) {
+      if (back) { bblast(sp.position.clone(), 4); S.smash(); sarHit(b, 28, true, false, true); if (ukLive(b) && b.state !== 'fall') { sarEnd(b); b.state = 'stun'; b.t = 0; b.stunT = 1.4; } return false; }
+      if (KH.guardT > 0) { back = true; KH.guardT = 0; S.clash(); sparks(sp.position, 20, 6, [1, 1, 1], [1, .7, .3]); KH.hitstop = .08; return true; }   // (guarded: back it goes)
+      bblast(sp.position.clone(), 3); khHurt(12, { s: P.s - 1, x: P.x }, { unblock: true, kb: 7 }); return false;
+    }
+    return f.t < 4.5 || back;
+  });
+}
+function sarAttack(b, dt, d, toP) {
+  const A = b.a; A.t += dt;
+  if (A.ph === 'wind') { b.h += angDiff(b.h, toP) * Math.min(1, dt * 5); if (A.t >= A.wT) { A.ph = 'go'; A.t = 0; } return; }
+  switch (A.type) {
+    case 'bolts': A.next -= dt; if (A.next <= 0 && A.n < 4) { A.next = .35; A.n++; sarStrike(b, P.s + rand(-1, 1) * (A.n > 1), P.x + rand(-1, 1) * (A.n > 1)); } if (A.t > 2.2) sarEnd(b); break;
+    case 'fireballs': A.next -= dt; if (A.next <= 0 && A.n < 3) { A.next = .3; sarFireball(b, A.n); A.n++; S.whoosh(); } if (A.t > 1.4) sarEnd(b); break;
+    case 'blast': if (!A.hit) { A.hit = true; A.fx.forEach(x => x.dead = true); const p = tw(b.s, b.x, b.y + .3); zapFlash(tw(b.s, b.x, b.y + 1.5), 6); sparks(p, 50, 10, [.9, .95, 1], [.5, .6, 1], .3); S.smash(); cam.shake = .6; if (d < 5.5 && P.y - b.y < 2) khHurt(16, b, { unblock: true, kb: 13 }); bossWave(b, b.s, b.x, 13, 11, 9); } if (A.t > .8) sarEnd(b); break;
+    case 'push': if (!A.hit) { A.hit = true; A.fx.forEach(x => x.dead = true); S.forcePush(); const pa = Math.atan2(P.x - b.x, P.s - b.s); if (d < 11 && Math.abs(angDiff(pa, A.h)) < .6) khHurt(13, b, { unblock: true, kb: 17 }); const p = sarTip(b); for (let k = 0; k < 30; k++) { const a = A.h + rand(-.6, .6), w = tw(b.s + Math.cos(a) * 6, b.x + Math.sin(a) * 6, b.y + 1.2).sub(tw(b.s, b.x, b.y + 1.2)).normalize().multiplyScalar(14); fx.spawn(p.x, p.y, p.z, w.x, w.y, w.z, .5, .5, 1.6, [.8, .85, 1], [.3, .35, .7]); } } if (A.t > .7) sarEnd(b); break;
+    case 'teleport':
+      if (!A.gone) { A.gone = true; puff(tw(b.s, b.x, b.y + 1), 14, 1.5, [.2, .2, .25]); b.m.root.visible = b.m.shadow.visible = false; S.whoosh(); }
+      if (A.t > .7 && !A.back) { A.back = true; const pl = b.plaza; let s = pl.s, x = pl.x; for (let k = 0; k < 20; k++) { const a = rand(0, TAU), r = rand(2, pl.r - 2); s = pl.s + Math.cos(a) * r; x = pl.x + Math.sin(a) * r; if (Math.hypot(s - P.s, x - P.x) > 6) break; } b.s = s; b.x = x; b.m.root.visible = b.m.shadow.visible = true; zapFlash(tw(s, x, b.y + 1.2), 4); puff(tw(s, x, b.y + 1), 10, 1.2, [.2, .2, .25]); }
+      if (A.t > 1) sarEnd(b); break;
+    case 'storm': A.next -= dt; if (A.next <= 0 && A.n < 10) { A.next = .22; A.n++; const pl = b.plaza, a = rand(0, TAU), r = A.n === 1 ? 0 : rand(.5, 4); let s = P.s + Math.cos(a) * r, x = P.x + Math.sin(a) * r; const dd = Math.hypot(s - pl.s, x - pl.x); if (dd > pl.r - 1) { s = pl.s + (s - pl.s) / dd * (pl.r - 1); x = pl.x + (x - pl.x) / dd * (pl.r - 1); } sarStrike(b, s, x, .9); } if (A.n >= 10 && A.t > 3.2) sarEnd(b); break;
+    case 'beam': {   // a stream of lightning sweeping after Gandalf; guarding holds it off; WIZARDS' DUEL breaks it
+      A.h += angDiff(A.h, toP) * Math.min(1, dt * 1.2); b.h = A.h; A.next -= dt;
+      const end = tw(b.s + Math.cos(A.h) * 14, b.x + Math.sin(A.h) * 14, b.y + 1.2), pa = Math.atan2(P.x - b.x, P.s - b.s), onP = d < 14 && Math.abs(angDiff(pa, A.h)) < .16;
+      if (A.next <= 0) { A.next = .08; khArc(() => sarTip(b), () => onP ? tw(P.s, P.x, P.y + 1.2) : end, .12); }
+      if (onP && A.t % .25 < dt) { if (KH.guardT > 0) { KH.guardT = .3; P.vs -= Math.cos(A.h) * 2; P.vx -= Math.sin(A.h) * 2; sparks(tw(P.s, P.x, P.y + 1.2), 6, 4, [.9, .95, 1], [.4, .5, 1]); } else khHurt(5, b, { unblock: true, kb: 3 }); }
+      if (A.t > 2.6) sarEnd(b); break;
+    }
+    case 'summon': if (!A.hit) { A.hit = true; S.roar && S.roar(); banner('TO ME, MY URUK-HAI!', 1.2); (b.phase > 1 ? ['w', 'u', 'o', 'w'] : ['o', 'w', 'u']).forEach((k, i) => spawnUruk(k, b.plaza, rand(0, TAU), i * .3)); } if (A.t > 1) sarEnd(b); break;
+  }
+}
+function sarPick(b, d) {
+  const p2 = b.phase > 1, r = Math.random(); let t;
+  if (b.n > 0 && b.n % 4 === 0 && b.last !== 'teleport') t = 'teleport';
+  else if (d < 4.5) t = r < .55 ? 'blast' : r < .8 ? 'push' : 'teleport';
+  else if (d < 11) t = p2 && r < .2 ? 'beam' : p2 && r < .35 ? 'storm' : r < .55 ? 'bolts' : r < .8 ? 'fireballs' : 'push';
+  else t = p2 && r < .3 ? 'beam' : r < .6 ? 'fireballs' : 'bolts';
+  if (p2 && !URUKS.some(u => u !== b && ukLive(u)) && (b.summonT || 0) < T) { t = 'summon'; b.summonT = T + 25; }
+  if (t === b.last && Math.random() < .6) t = d < 4.5 ? 'push' : 'bolts';
+  b.last = t; sarStart(b, t);
+}
+function sarReact(b, d) {
+  if (b.state === 'atk' && b.a && b.a.type === 'beam' && b.a.ph === 'go' && d < 10) return 'duel';
+  if (b.state === 'stun' && b.hp <= b.max * .3 && d < 6) return 'staff';
+  return null;
+}
+function sarReaction(cmd) {
+  const b = KH.boss; if (!b) return; const p = tw(lerp(P.s, b.s, .5), lerp(P.x, b.x, .5), P.y + 1.4);
+  if (cmd === 'duel') {   // Gandalf's blade meets the lightning and drives it back into him
+    sarEnd(b); S.clash(); S.zap(); KH.hitstop = .3; cam.shake = .9; flashV = Math.max(flashV, .7); banner("WIZARDS' DUEL!", 1.6); skinClip(hob, khc(KH_SORA.ground[4], 'attack_e'), .8);
+    for (let k = 0; k < 6; k++) khArc(() => tw(P.s, P.x, P.y + 1.4), () => sarTip(b), .5); sparks(p, 70, 12, [1, 1, 1], [.6, .75, 1], .3);
+    sarHit(b, 50, true, false, true); if (ukLive(b) && b.state !== 'fall') { b.state = 'stun'; b.t = 0; b.stunT = 4; }
+  } else {   // the staff, broken across his knee: the end of Saruman's power
+    S.smash(); KH.hitstop = .4; cam.shake = 1; flashV = Math.max(flashV, .8); banner('YOUR STAFF IS BROKEN!', 2); skinClip(hob, khc(KH_SORA.ground[4], 'attack_e'), .8);
+    sparks(sarTip(b), 90, 12, [1, 1, 1], [.7, .8, 1], .35); b.m.staff.visible = false; sarHit(b, 9999, true, false, true);
+  }
+}
+function sarHit(b, dmg, fin, air, react) {
+  if (!ukLive(b)) return; const p = tw(lerp(b.s, P.s, .4), lerp(b.x, P.x, .4), P.y + 1.2);
+  if (b.state === 'intro' || (b.a && b.a.type === 'teleport' && b.a.gone && !b.a.back)) { S.clash(); sparks(p, 8, 4, [.9, .95, 1], [.5, .6, 1]); return; }
+  if (KH.form > 0) dmg *= 1.5; if (b.state === 'stun') dmg *= 1.5;
+  b.hp -= dmg; b.flash = .1; if (!react) b.rev += fin ? 22 : 9; KH.target = b; KH.targetT = 6; if (KH.form <= 0) KH.drive = Math.min(100, KH.drive + 2);
+  KH.hitstop = Math.max(KH.hitstop, react ? .12 : fin ? .07 : .035); cam.shake = Math.max(cam.shake, fin ? .3 : .12); sparks(p, fin ? 24 : 12, fin ? 8 : 5, [1, 1, 1], [.7, .8, 1]); S.saberHit();
+  if (b.hp <= 0) { sarFall(b); return; }
+  if (fin && !react && b.state === 'idle') { b.state = 'stagger'; b.t = 0; const ds = b.s - P.s, dx = b.x - P.x, d = Math.hypot(ds, dx) || 1; b.vs = ds / d * 5; b.vx = dx / d * 5; }   // (a finisher staggers him)
+  if (b.phase === 1 && b.hp <= b.max * .5) { b.phase = 2; sarEnd(b); b.state = 'roar'; b.t = 0; banner("SARUMAN'S POWER GROWS!", 1.8); S.zap(); flashV = Math.max(flashV, .4); for (let k = 0; k < 8; k++) { const a = k / 8 * TAU; sarStrike(b, b.s + Math.cos(a) * 4, b.x + Math.sin(a) * 4, .3); } }
+}
+function sarFall(b) {
+  b.hp = 0; sarEnd(b); b.state = 'fall'; b.t = 0; b.dead = true; KH.react = null; skinPlay(b.m, 'die');
+  for (const o of URUKS) if (!o.boss && ukLive(o)) khHit(o, 999, true);
+  banner('SARUMAN IS DEFEATED!', 2.4); KH.hitstop = .35; flashV = Math.max(flashV, .5); Music.mode = 0;
+}
+function sarUpdate(b, dt) {
+  const m = b.m; b.t += dt; b.flash -= dt; b.rev = Math.max(0, b.rev - dt * 12);
+  const ds = P.s - b.s, dx = P.x - b.x, d = Math.hypot(ds, dx) || .01, toP = Math.atan2(dx, ds), live = state === 'play', pl = b.plaza;
+  let walk = 0, cast = 0;
+  switch (b.state) {
+    case 'intro':   // out of the doors of his tower in a crack of lightning
+      if (b.t < 0) return; if (!b.shown) { b.shown = true; m.root.visible = m.shadow.visible = true; zapFlash(tw(b.s, b.x, b.y + 1.2), 6); S.zap(); cam.shake = .5; banner('SARUMAN THE WHITE!', 2); }
+      b.h += angDiff(b.h, toP) * Math.min(1, dt * 3); cast = 1; if (b.t > 2) { b.state = 'idle'; b.t = 0; b.cd = .8; } break;
+    case 'idle': {   // he keeps his distance, gliding round you
+      b.h += angDiff(b.h, toP) * Math.min(1, dt * 4); const want = 7.5, k = clamp(want - d, -1, 1), side = Math.sin(b.t * .7) > 0 ? 1 : -1;
+      const ms = (-ds / d * k * 3 - dx / d * side * 1.6) * dt, mx = (-dx / d * k * 3 + ds / d * side * 1.6) * dt, ns = b.s + ms, nx = b.x + mx; if (Math.hypot(ns - pl.s, nx - pl.x) < pl.r - 1.5) { b.s = ns; b.x = nx; } walk = Math.abs(k) > .2 ? 1 : .4;
+      b.cd -= dt; if (live && b.cd <= 0) sarPick(b, d); break;
+    }
+    case 'atk': cast = b.a && b.a.ph === 'wind' ? 1 : .6; sarAttack(b, dt, d, toP); break;
+    case 'stagger': { const ns = b.s + b.vs * dt, nx = b.x + b.vx * dt; if (Math.hypot(ns - pl.s, nx - pl.x) < pl.r - 1.5) { b.s = ns; b.x = nx; } b.vs *= Math.exp(-6 * dt); b.vx *= Math.exp(-6 * dt); if (b.t > .55) { b.state = 'idle'; b.t = 0; b.cd = .3; } break; }
+    case 'stun': if (b.t > b.stunT) { b.state = 'idle'; b.t = 0; b.cd = .4; } break;
+    case 'roar': cast = 1; if (b.t > 1.8) { b.state = 'idle'; b.t = 0; b.cd = .4; } break;
+    case 'fall':   // to his knees, and over the edge of his tower
+      if (b.t > 1.6) { const a = Math.atan2(b.x - pl.x, b.s - pl.s); b.s += Math.cos(a) * dt * 5; b.x += Math.sin(a) * dt * 5; if (Math.hypot(b.s - pl.s, b.x - pl.x) > ISEN.R0) b.y -= dt * (b.t - 1.6) * 14; }
+      if (b.t > 4.5) { khRemove(b); return; } break;
+  }
+  if (b.rev >= 100 && (b.state === 'idle' || (b.state === 'atk' && b.a && b.a.ph === 'wind' && b.a.type !== 'blast'))) { b.rev = 0; sarEnd(b); sarStart(b, 'blast'); b.a.wT = .3; }   // (too many blows at once: he bursts free)
+  if (d < b.r + .45 && b.state !== 'fall') { P.s = b.s - ds / d * (b.r + .45); P.x = b.x - dx / d * (b.r + .45); }
+  if (b.state !== 'fall') b.y = khLand(b.s, b.x, pl.y);
+  // drawing: he floats a hand's breadth off the stone; the staff goes up to cast, the crystal on it burns brighter
+  place(m.root, b.s, b.x, b.y + (b.state === 'fall' ? 0 : .08 + Math.sin(T * 2) * .05), b.h); tw(b.s, b.x, khLand(b.s, b.x, b.y) + .04, m.shadow.position); m.shadow.visible = m.root.visible && b.state !== 'fall';
+  m.arm.rotation.x = damp(m.arm.rotation.x, cast ? -2.4 : -.3 - walk * .2, 10, dt); m.body.rotation.x = damp(m.body.rotation.x, b.state === 'stun' ? .5 : b.state === 'fall' ? 1.2 : 0, 6, dt);
+  m.glow.material.opacity = .5 + cast * .45 + Math.sin(T * 9) * .1; m.glow.scale.setScalar(1 + cast * 1.6);
+  if (cast && Math.random() < .5) { const p = sarTip(b); fx.spawn(p.x, p.y, p.z, rand(-1, 1), rand(-1, 1), rand(-1, 1), .3, .25, .05, [1, 1, 1], [.5, .6, 1]); }
+  skinPlay(m, b.state === 'fall' ? 'die' : b.state === 'stun' || b.state === 'stagger' ? 'hit' : b.state === 'atk' || b.state === 'roar' ? 'attack' : walk > .5 ? 'walk' : 'idle');
+}
+// =====================================================================
 //  KH: fighting the way Sora does in Kingdom Hearts II (Edoras and Helm's Deep, LV.kh)
 //   - Attack: a combo of three cuts and a finisher; each closes in on the nearest enemy; the finisher knocks it flying.
 //     In the air, an air combo: Gandalf hangs in the air while he strikes, and the last blow slams him down.
@@ -7707,11 +8034,15 @@ const KH = { hp: 100, max: 100, mp: 100, maxMp: 100, combo: 0, airN: 0, comboT: 
   target: null, targetT: 0, react: null, reacting: null, magicCD: 0, bolts: [], sword: null, plaza: null, waveT: 0, theoden: null, ring: null, drive: 0, form: 0, boss: null, winT: 0, cmdT: {} };
 const URUKS = [], ORBS = [], KHFX = [];
 const ukLive = u => !u.dead && !u.gone;
+// the ground under an enemy: the walkway it's on (Isengard's stair winds round over itself), or the land
+const khLand = (s, x, y) => { let g = landAt(s, x); if (DECK) { const d = deckAt(s, x, y + 1.2); if (d > g) g = d; } return g; };
+const pl_y = u => u.plaza ? u.plaza.y : u.y;
 // how each kind fights: Uruk-hai soldiers, Lurtz, the quick little orcs that come in swarms, and berserkers with torches
 const UK_KINDS = {
   u: { hp: 22, r: .55, name: 'URUK-HAI', speed: 3.6, dmg: 9, slot: 'uruk' },
   L: { hp: 80, r: .7, name: 'LURTZ', speed: 3, dmg: 14, armor: true, slot: 'lurtz' },
   o: { hp: 11, r: .45, name: 'ORC', speed: 4.6, dmg: 6, slot: 'orc' },
+  w: { hp: 15, r: .6, name: 'WARG', speed: 6.2, dmg: 9, slot: 'warg' },
   b: { hp: 16, r: .55, name: 'BERSERKER', speed: 3.8, dmg: 18, slot: 'berserker' },
 };
 function setupKH() {
@@ -8017,7 +8348,7 @@ function khWhite(on) {
   hob.skin = on ? hob.skinW : hob.skinG; hob.skin.cur = ''; hob.skin.holdT = 0; skinPlay(hob, 'idle');
 }
 // the reaction commands: what the green prompt does depends on whose moment it is
-const KH_REACT = { takedown: 'TAKEDOWN', repel: 'REPEL', sword: 'SWORD RUN', stand: 'YOU SHALL NOT PASS!' };
+const KH_REACT = { takedown: 'TAKEDOWN', repel: 'REPEL', sword: 'SWORD RUN', stand: 'YOU SHALL NOT PASS!', duel: "WIZARDS' DUEL", staff: 'BREAK HIS STAFF' };
 function khReaction() {
   const R_ = KH.react; if (!R_) return;
   const u = R_.u; KH.react = null; KH.atk = null; KH.rx = KH.rx || {}; KH.rx[R_.cmd] = (KH.rx[R_.cmd] || 0) + 1;   // (KH.rx: a tally, for testing)
@@ -8029,6 +8360,7 @@ function khReaction() {
   }
   if (R_.cmd === 'sword') { KH.reacting = { u, t: 0, cmd: 'sword', hits: 0, from: [P.s, P.x, P.y] }; KH.invT = 2.4; P.ground = false; skinClip(hob, 'attack_a', .5); S.whoosh(); return; }
   if (R_.cmd === 'stand') { KH.reacting = { u, t: 0, cmd: 'stand' }; KH.invT = 2.5; bossStand(u); return; }
+  if (R_.cmd === 'duel' || R_.cmd === 'staff') { KH.reacting = { u, t: 0, cmd: R_.cmd }; KH.invT = 2.5; u.reaction(R_.cmd); return; }   // (Saruman's)
   KH.reacting = { u, t: 0, hit: false, cmd: 'takedown' }; KH.invT = 1.6;
   P.vy = 11; P.ground = false; skinClip(hob, 'attack_c', .85); S.saberSwing();
 }
@@ -8044,7 +8376,7 @@ function khMove(dt) {
     P.vs = (ts - P.s) / Math.max(dt, .001); P.vx = (tx - P.x) / Math.max(dt, .001); P.vy = (ty - P.y) / Math.max(dt, .001); KH.hover = .2; P.heading = Math.atan2(u.x - P.x, u.s - P.s);
     if (R_.t > 1.25) { P.vs *= .1; P.vx *= .1; P.vy = 3; } return;
   }
-  if (R_ && R_.cmd === 'stand') { P.vs = P.vx = 0; P.heading = Math.atan2(R_.u.x - P.x, R_.u.s - P.s); return; }
+  if (R_ && (R_.cmd === 'stand' || R_.cmd === 'duel' || R_.cmd === 'staff')) { P.vs = P.vx = 0; P.heading = Math.atan2(R_.u.x - P.x, R_.u.s - P.s); return; }
   if (R_ && R_.cmd === 'repel') { P.vs *= .5; P.vx *= .5; return; }
   if (R_) { const ds = R_.u.s - P.s, dx = R_.u.x - P.x, d = Math.hypot(ds, dx) || 1; P.heading = Math.atan2(dx, ds); const sp = d > 1.2 ? Math.min(12, d / .3) : 0; P.vs = ds / d * sp; P.vx = dx / d * sp; return; }
   const A = KH.atk; if (!A) return;
@@ -8055,7 +8387,7 @@ function khHit(u, dmg, fin, air, again) {
   if (!ukLive(u)) return;
   dmg *= (KH.berserkT > 0 ? 1.6 : 1) * (KH.sightT > 0 ? 1.25 : 1);
   if (KH.multiT > 0 && !again) khFx(null, f => { if (f.t < .09) return true; khHit(u, dmg * .6, false, air, true); return false; });   // (Multi-Strike: each blow strikes twice)
-  if (u.boss) { bossHit(u, dmg, fin, air); return; }
+  if (u.boss) { (u.hitFn || bossHit)(u, dmg, fin, air); return; }
   if (KH.form > 0) dmg *= 1.5;
   u.hp -= dmg; u.flash = .15; u.stag += fin ? 30 : 12; KH.target = u; KH.targetT = 4; KH.drive = Math.min(100, KH.drive + (KH.form > 0 ? 0 : 3));
   KH.hitstop = fin ? .09 : .045; cam.shake = Math.max(cam.shake, fin ? .35 : .15);
@@ -8127,10 +8459,11 @@ function makeUruk(kind) {
 }
 function spawnUruk(kind, pl, a, delay) {
   if (kind === 'B') return spawnKHBalrog(pl, delay);
+  if (kind === 'S') return spawnSaruman(pl, delay);
   const K = UK_KINDS[kind], R2 = pl.r * rand(.35, .7);
   if (pl.ladders) a = pl.ladders[Math.random() * pl.ladders.length | 0] + rand(-.15, .15);   // up the ladders, over the parapet
   const R1 = pl.r + (pl.ladders ? 1.2 : 5);
-  const u = { m: makeUruk(kind), kind, lurtz: kind === 'L', armor: !!K.armor, hp: K.hp, max: K.hp, name: K.name, r: K.r, plaza: pl, stag: 0, dizzy: 0, flash: 0,
+  const u = { m: makeUruk(kind), kind, lite: kind === 'o' || kind === 'w', lurtz: kind === 'L', armor: !!K.armor, hp: K.hp, max: K.hp, name: K.name, r: K.r, plaza: pl, stag: 0, dizzy: 0, flash: 0,
     h: a + Math.PI, t: -delay, cd: rand(.6, 1.8), vs: 0, vx: 0, vy: 0, seed: rand(0, 6), state: 'spawn',
     from: [pl.s + Math.cos(a) * R1, pl.x + Math.sin(a) * R1], to: [pl.s + Math.cos(a) * R2, pl.x + Math.sin(a) * R2] };
   u.s = u.from[0]; u.x = u.from[1]; u.y0 = pl.fromY ?? landAt(u.s, u.x); u.y = u.y0; u.m.root.visible = u.m.shadow.visible = false; URUKS.push(u); return u;
@@ -8140,7 +8473,7 @@ function khRemove(u) {
   if (u.boss) { (u.m.extra || []).forEach(o => scene.remove(o)); if (KH.boss === u) KH.boss = null; }
 }
 function ukMove(u, ds, dx) {
-  const [S0, S1, X0, X1] = LV.field, ns = clamp(u.s + ds, S0 + 1, S1 - 1), nx = clamp(u.x + dx, X0 + 1, X1 - 1), ok = (s, x) => !inSolid({ s, x, y: u.y + .8 }) && Math.abs(landAt(s, x) - u.y) < 1.4;
+  const [S0, S1, X0, X1] = LV.field, ns = clamp(u.s + ds, S0 + 1, S1 - 1), nx = clamp(u.x + dx, X0 + 1, X1 - 1), ok = (s, x) => !inSolid({ s, x, y: u.y + .8 }) && Math.abs(khLand(s, x, u.y) - u.y) < 1.4;
   if (ok(ns, u.x)) u.s = ns; if (ok(u.s, nx)) u.x = nx;
 }
 const khTokens = () => URUKS.filter(u => !u.boss && (u.state === 'wind' || u.state === 'atk')).length;
@@ -8154,14 +8487,14 @@ function khBoom(u) {
   Object.assign(u, { hp: 0, dead: true, state: 'die', t: .6, armed: false }); u.m.root.visible = false;
 }
 function ukUpdate(u, dt) {
-  if (u.boss) { bossUpdate(u, dt); return; }
+  if (u.boss) { (u.upd || bossUpdate)(u, dt); return; }   // (each boss its own way: the Balrog's, Saruman's)
   const m = u.m, K = UK_KINDS[u.kind]; u.t += dt; u.cd -= dt; u.flash -= dt;
   const ds = P.s - u.s, dx = P.x - u.x, d = Math.hypot(ds, dx) || .01, toP = Math.atan2(dx, ds), live = state === 'play', facing = (ds * Math.cos(u.h) + dx * Math.sin(u.h)) / d > .3, dy = Math.abs(P.y - u.y);
   let walk = 0, onGround = true, armX = -.4;
   switch (u.state) {
     case 'spawn': {   // leaping in over the barrier (or up a ladder and over the parapet)
       if (u.t < 0) return; m.root.visible = m.shadow.visible = true;
-      const k = clamp(u.t / .8, 0, 1); u.s = lerp(u.from[0], u.to[0], k); u.x = lerp(u.from[1], u.to[1], k); u.y = lerp(u.y0, landAt(u.s, u.x), k) + Math.sin(k * Math.PI) * 5; onGround = false;
+      const k = clamp(u.t / .8, 0, 1); u.s = lerp(u.from[0], u.to[0], k); u.x = lerp(u.from[1], u.to[1], k); u.y = lerp(u.y0, khLand(u.s, u.x, pl_y(u)), k) + Math.sin(k * Math.PI) * 5; onGround = false;
       if (k >= 1) { u.state = 'stalk'; u.t = 0; dustAt(u.s, u.x, u.y, 6); S.stomp(); } break;
     }
     case 'stalk': {   // keep a few steps off, strafing round, now and then a hop
@@ -8170,9 +8503,9 @@ function ukUpdate(u, dt) {
       ukMove(u, (ds / d * k * sp - dx / d * side * 1.7) * dt, (dx / d * k * sp + ds / d * side * 1.7) * dt); walk = 1;
       if (live && u.cd <= 0 && dy < 2 && !(u.charmT > 0)) {   // (a turncoat fights for you instead)
         if (u.kind === 'b') { if (d < 14) { u.state = 'wind'; u.atk = 'rush'; u.t = 0; u.windT = .9; S.roar(); } else u.cd = .4; break; }
-        if (khTokens() >= (u.kind === 'o' ? 3 : 2)) { u.cd = .3; break; }
-        const kind = u.kind === 'o' ? (d < 2.4 ? 'combo' : d < 6 ? 'leap' : null) : d < 2.8 ? 'combo' : d < 9 && Math.random() < .55 ? 'leap' : d < 12 ? 'charge' : null;
-        if (kind) { u.state = 'wind'; u.atk = kind; u.t = 0; u.windT = (kind === 'combo' ? .42 : .55) * (u.kind === 'L' ? .8 : u.kind === 'o' ? .7 : 1); S.orcGrunt(); }
+        if (khTokens() >= (u.lite ? 3 : 2)) { u.cd = .3; break; }
+        const kind = u.lite ? (d < 2.4 ? 'combo' : d < (u.kind === 'w' ? 9 : 6) ? 'leap' : null) : d < 2.8 ? 'combo' : d < 9 && Math.random() < .55 ? 'leap' : d < 12 ? 'charge' : null;
+        if (kind) { u.state = 'wind'; u.atk = kind; u.t = 0; u.windT = (kind === 'combo' ? .42 : .55) * (u.kind === 'L' ? .8 : u.lite ? .7 : 1); S.orcGrunt(); }
         else u.cd = .5;
       }
       break;
@@ -8194,12 +8527,12 @@ function ukUpdate(u, dt) {
       } else if (u.atk === 'combo') {
         if (u.t < .3) ukMove(u, Math.cos(u.h) * 2.6 * dt, Math.sin(u.h) * 2.6 * dt);
         armX = u.t < .2 ? .8 : u.t < .45 ? -2.6 : .8;
-        for (const [at, n] of u.kind === 'o' ? [[.15, 1]] : [[.15, 1], [.55, 2]]) if (u.t >= at && u.hits < n) { u.hits = n; S.saberSwing(); if (d < 2.4 + u.r && dy < 1.6 && facing) khHurt(K.dmg, u); }
-        if (u.t > (u.kind === 'o' ? .5 : .9)) { u.state = 'recover'; u.t = 0; }
+        for (const [at, n] of u.lite ? [[.15, 1]] : [[.15, 1], [.55, 2]]) if (u.t >= at && u.hits < n) { u.hits = n; S.saberSwing(); if (d < 2.4 + u.r && dy < 1.6 && facing) khHurt(K.dmg, u); }
+        if (u.t > (u.lite ? .5 : .9)) { u.state = 'recover'; u.t = 0; }
       } else if (u.atk === 'leap') {   // up, round, and down with the sword spinning out
-        const k = clamp(u.t / .7, 0, 1); u.s = lerp(u.from[0], u.to[0], k); u.x = lerp(u.from[1], u.to[1], k); u.y = lerp(u.y0, landAt(u.s, u.x), k) + Math.sin(k * Math.PI) * (u.kind === 'o' ? 2.5 : 4.5); onGround = false;
+        const k = clamp(u.t / .7, 0, 1); u.s = lerp(u.from[0], u.to[0], k); u.x = lerp(u.from[1], u.to[1], k); u.y = lerp(u.y0, khLand(u.s, u.x, u.y0 + .5), k) + Math.sin(k * Math.PI) * (u.lite ? 2.5 : 4.5); onGround = false;
         m.body.rotation.y = k * TAU * 2; armX = -1.6;
-        if (k >= 1 && !u.hits) { u.hits = 1; m.body.rotation.y = 0; dustAt(u.s, u.x, u.y, 10); S.stomp(); cam.shake = Math.max(cam.shake, .2); if (d < 2.7 && dy < 1.6) khHurt(u.kind === 'L' ? 16 : u.kind === 'o' ? 8 : 12, u); }
+        if (k >= 1 && !u.hits) { u.hits = 1; m.body.rotation.y = 0; dustAt(u.s, u.x, u.y, 10); S.stomp(); cam.shake = Math.max(cam.shake, .2); if (d < 2.7 && dy < 1.6) khHurt(u.kind === 'L' ? 16 : u.lite ? 8 : 12, u); }
         if (u.t > 1.1) { u.state = 'recover'; u.t = 0; }
       } else {   // the charge, shield first
         const s0 = u.s, x0 = u.x; ukMove(u, u.cv[0] * dt, u.cv[1] * dt); walk = 1.6;
@@ -8208,14 +8541,14 @@ function ukUpdate(u, dt) {
       }
       break;
     }
-    case 'recover': if (u.t > .55) { u.state = 'stalk'; u.t = 0; u.cd = rand(1.2, 2.6) * (u.kind === 'L' ? .6 : u.kind === 'o' ? .5 : 1); } break;
+    case 'recover': if (u.t > .55) { u.state = 'stalk'; u.t = 0; u.cd = rand(1.2, 2.6) * (u.kind === 'L' ? .6 : u.lite ? .5 : 1); } break;
     case 'recoil': case 'flinch': {
       ukMove(u, u.vs * dt, u.vx * dt); u.vs *= Math.exp(-7 * dt); u.vx *= Math.exp(-7 * dt);
       if (u.t > (u.state === 'recoil' ? .7 : .35)) { u.state = u.dizzy > 0 ? 'dizzy' : 'stalk'; u.t = 0; u.cd = Math.min(u.cd, .6); } break;
     }
     case 'launch': {   // knocked flying
       u.vy -= 24 * dt; u.y += u.vy * dt; ukMove(u, u.vs * dt, u.vx * dt); onGround = false; m.body.rotation.x = -clamp(u.t * 4, 0, 1.4);
-      const g = landAt(u.s, u.x); if (u.y <= g && u.vy < 0) { u.y = g; dustAt(u.s, u.x, u.y, 6); if (u.kind === 'b') { khBoom(u); return; } u.state = u.dead ? 'die' : 'down'; u.t = 0; } break;
+      const g = khLand(u.s, u.x, u.y); if (u.y <= g && u.vy < 0) { u.y = g; dustAt(u.s, u.x, u.y, 6); if (u.kind === 'b') { khBoom(u); return; } u.state = u.dead ? 'die' : 'down'; u.t = 0; } break;
     }
     case 'down': m.body.rotation.x = -1.4; if (u.t > .9) { u.state = 'getup'; u.t = 0; } break;
     case 'getup': m.body.rotation.x = -1.4 * (1 - u.t / .4); if (u.t > .4) { m.body.rotation.x = 0; u.state = u.dizzy > 0 ? 'dizzy' : 'stalk'; u.t = 0; } break;
@@ -8227,15 +8560,15 @@ function ukUpdate(u, dt) {
       if (u.t > .9) khRemove(u); return;
     }
   }
-  if (onGround) { const g = landAt(u.s, u.x); u.y += clamp(g - u.y, -20 * dt, 12 * dt); }
+  if (onGround) { const g = khLand(u.s, u.x, u.y); u.y += clamp(g - u.y, -20 * dt, 12 * dt); }
   if (u.state !== 'launch' && u.state !== 'down' && u.state !== 'getup' && u.state !== 'die') m.body.rotation.x = 0;
   // shoulder to shoulder, not inside each other (or Gandalf); and out of the Balrog's way
   for (const o of URUKS) if (o !== u && ukLive(o) && o.state !== 'spawn') { const es = u.s - o.s, ex = u.x - o.x, e = Math.hypot(es, ex); if (e > 0 && e < u.r + o.r + .2) ukMove(u, es / e * (o.boss ? .2 : .04), ex / e * (o.boss ? .2 : .04)); }
   if (d < u.r + .5 && u.state !== 'spawn') ukMove(u, -ds / d * .05, -dx / d * .05);
   // drawing
-  place(m.root, u.s, u.x, u.y, u.h); tw(u.s, u.x, landAt(u.s, u.x) + .03, m.shadow.position);
+  place(m.root, u.s, u.x, u.y, u.h); tw(u.s, u.x, khLand(u.s, u.x, u.y) + .03, m.shadow.position);
   const ph = u.t * (walk > 1.5 ? 14 : 9); m.legs.forEach((l, i) => l.rotation.x = Math.sin(ph + i * Math.PI) * .6 * Math.min(walk, 1.3));
-  m.armR.rotation.x = damp(m.armR.rotation.x, armX, 18, dt); m.armL.rotation.x = u.kind === 'b' ? -2.6 : -.5 + Math.sin(ph) * .2 * walk;
+  m.armR.rotation.x = damp(m.armR.rotation.x, armX * (u.kind === 'w' ? .25 : 1), 18, dt);   // (a warg's head only dips) m.armL.rotation.x = u.kind === 'b' ? -2.6 : -.5 + Math.sin(ph) * .2 * walk;
   if (u.state === 'dizzy') { m.body.rotation.z = Math.sin(u.t * 6) * .15; m.dizzy.material.opacity = .8; m.dizzy.position.set(Math.cos(u.t * 6) * .4, 2.6, Math.sin(u.t * 6) * .4); } else { m.body.rotation.z = 0; m.dizzy.material.opacity = 0; }
   m.eyes.forEach(e => e.material.color.setHex(u.state === 'wind' || (u.state === 'atk' && u.atk === 'rush') ? 0xff2a1a : 0xffa040));
   m.mats.forEach(o => o.material.emissive && o.material.emissive.setHex(u.flash > 0 ? 0x8a8a8a : u.kind === 'b' && u.state === 'atk' ? 0x3a1004 : 0x050506));
@@ -8290,7 +8623,7 @@ function updateKH(dt) {
     } else if (R_.cmd === 'sword') {   // three blows on the Balrog's head
       for (const [at, n] of [[.7, 1], [.88, 2], [1.08, 3]]) if (R_.t >= at && R_.hits < n) { R_.hits = n; skinClip(hob, KH_CLIPS[n - 1], .2); S.saberSwing(); if (ukLive(R_.u)) bossHit(R_.u, n === 3 ? 32 : 18, n === 3, true, true); }
       if (R_.t > 1.5) KH.reacting = null;
-    } else if (R_.t > (R_.cmd === 'stand' ? 1.6 : .4)) KH.reacting = null;
+    } else if (R_.t > (R_.cmd === 'stand' || R_.cmd === 'duel' || R_.cmd === 'staff' ? 1.6 : .4)) KH.reacting = null;
   }
   // thunder: each bolt falls where its foe is, a beat after the last
   for (let i = KH.bolts.length - 1; i >= 0; i--) {
@@ -8306,7 +8639,7 @@ function updateKH(dt) {
     let bd = 4.5;
     for (const u of URUKS) {
       if (!ukLive(u) || Math.abs(u.y - P.y) > 2.5) continue; const d = Math.hypot(u.s - P.s, u.x - P.x);
-      if (u.boss) { const c = bossReact(u, d); if (c) { KH.react = { u, cmd: c }; break; } continue; }
+      if (u.boss) { const c = (u.reactFn || bossReact)(u, d); if (c) { KH.react = { u, cmd: c }; break; } continue; }
       if (d < bd && (u.state === 'dizzy' || (u.state === 'atk' && u.atk === 'rush'))) { bd = d; KH.react = { u, cmd: u.state === 'dizzy' ? 'takedown' : 'repel' }; }
     }
   }
@@ -8323,12 +8656,12 @@ function updateKH(dt) {
       if (p.wave < p.waves.length) { KH.waveT = 1.2; banner('MORE ARE COMING!', 1.2); }
       else {
         p.done = true; khBarrier(p, false); KH.plaza = null; S.check(); gs.cp = { s: p.s, x: p.x, y: p.y, t: gs.time, deaths: 0 };
-        banner(p.boss ? "HELM'S DEEP HOLDS!" : p.last ? 'MEDUSELD IS FREE! GO TO THE KING' : 'THE WAY IS OPEN!', 2.2); KH.hp = Math.min(KH.max, KH.hp + 30);
+        banner(p.boss ? (LV.winTitle || "HELM'S DEEP HOLDS!") : p.last ? 'MEDUSELD IS FREE! GO TO THE KING' : 'THE WAY IS OPEN!', 2.2); KH.hp = Math.min(KH.max, KH.hp + 30);
         if (p.boss) KH.winT = 2.4;
       }
     }
   }
-  if (KH.winT > 0 && play) { KH.winT -= dt; if (KH.winT <= 0) roamWin("HELM'S DEEP HOLDS!"); }
+  if (KH.winT > 0 && play) { KH.winT -= dt; if (KH.winT <= 0) roamWin(LV.winTitle || "HELM'S DEEP HOLDS!"); }
   // Théoden, out on the steps of Meduseld once the last square is won: go to him to finish
   const th = KH.theoden, won = !!Y.hall && Y.plazas[Y.plazas.length - 1].done;
   if (th) {
