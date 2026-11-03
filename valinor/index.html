@@ -2960,18 +2960,18 @@ function readInput() {
   inp.fireP = !!(hit.KeyL || hit.KeyF || hit.Mouse0 || hit.TFire || pad.fireP);
   inp.guardP = !!(hit.KeyE || hit.TGuard || pad.guardP); inp.reactP = !!(hit.KeyR || hit.TReact || pad.reactP);   // Edoras: guard (or roll), and the reaction command
   inp.driveP = !!(hit.KeyQ || hit.TDrive || pad.driveP);   // (and the drive form)
-  if (AUTOFIGHT && LV && LV.kh) { const u = URUKS.find(o => ukLive(o) && o.state !== 'spawn'); WALKTO = u ? [u.s, u.x] : AUTOFIGHT.next(); if (u && Math.hypot(u.s - P.s, u.x - P.x) < 4 + (u.boss ? u.r : 0) && T % .3 < .02 && !KH.sub && KH.cur === 0) hit.KeyF = true; if (u && KH.mp >= 25 && T % 3 < .02) hit.KeyQ = true; if (KH.react) hit.KeyR = true; if (KH.drive >= 100) hit.TDrive = true; }   // testing: &autofight=1
+  if (AUTOFIGHT && LV && LV.kh) { const u = URUKS.find(o => ukLive(o) && o.state !== 'spawn'); WALKTO = u ? [u.s, u.x] : AUTOFIGHT.next(); if (u && Math.hypot(u.s - P.s, u.x - P.x) < 4 + (u.boss ? u.r : 0) && T % .3 < .02 && !KH.sub && KH.cur === 0) hit.KeyK = true; if (u && KH.mp >= 25 && T % 3 < .02) hit.KeyF = true; if (KH.react) hit.KeyR = true; if (KH.drive >= 100) hit.TDrive = true; }   // testing: &autofight=1
   inp.spinP = inp.spinP || !!hit.KeyJ; inp.fireP = inp.fireP || !!hit.KeyF; inp.reactP = inp.reactP || !!hit.KeyR; inp.driveP = inp.driveP || !!hit.KeyQ;
-  if (LV && LV.kh) {   // the Kingdom Hearts levels: W A S D move; F does the command chosen on the menu; K jumps; Space dodges; J guards; I is the
-    // reaction command; Q and E cast Thunder and Fire; the up and down arrows (or the mouse wheel) move round the menu, L backs out of a
-    // list; Left Shift and / turn the camera
+  if (LV && LV.kh) {   // the Kingdom Hearts levels: W A S D move; K does the command chosen on the menu (attack); L jumps; J dodges; Space guards;
+    // I is the reaction command; F casts Thunder and H Fire; Q and E (or the arrows, or the mouse wheel) move up and down the menu, and
+    // Backspace or the left arrow backs out of a list; Left Shift and / turn the camera
     const pb = pad.b || [], pp = pad.p || []; let mx = 0, mz = 0;
     if (keys.KeyA) mx -= 1; if (keys.KeyD) mx += 1; if (keys.KeyW) mz += 1; if (keys.KeyS) mz -= 1;   // (the arrows are the menu's here)
     inp.x = clamp(mx + pad.x + stick.x, -1, 1); inp.z = clamp(mz + pad.z + stick.z, -1, 1);
-    inp.cmdP = !!(hit.KeyF || pp[0]); inp.guardP = !!(hit.KeyJ || hit.TGuard || pp[2]); inp.reactP = !!(hit.KeyI || hit.KeyR || hit.TReact || pp[3]);
-    inp.upP = !!(hit.ArrowUp || hit.WheelUp || pp[12]); inp.downP = !!(hit.ArrowDown || hit.WheelDown || pp[13]); inp.backP = !!(hit.KeyL || pp[1] || hit.ArrowLeft) && !!KH.sub;
-    inp.jump = !!(keys.KeyK || keys.TJump || pb[1]); inp.jumpP = !!(hit.KeyK || (pp[1] && !KH.sub) || hit.TJump); inp.dodgeP = !!(hit.Space || pp[7]);
-    inp.spinP = !!(hit.TSpin || hit.Mouse0); inp.fireP = !!hit.TFire; inp.thunderP = !!hit.KeyQ; inp.firaP = !!hit.KeyE; inp.driveP = !!(hit.TDrive || pp[6]);
+    inp.cmdP = !!(hit.KeyK || pp[0]); inp.guardP = !!(hit.Space || hit.TGuard || pp[2]); inp.reactP = !!(hit.KeyI || hit.KeyR || hit.TReact || pp[3]);
+    inp.upP = !!(hit.KeyQ || hit.ArrowUp || hit.WheelUp || pp[12]); inp.downP = !!(hit.KeyE || hit.ArrowDown || hit.WheelDown || pp[13]); inp.backP = !!(hit.Backspace || pp[1] || hit.ArrowLeft) && !!KH.sub;
+    inp.jump = !!(keys.KeyL || keys.TJump || pb[1]); inp.jumpP = !!(hit.KeyL || (pp[1] && !KH.sub) || hit.TJump); inp.dodgeP = !!(hit.KeyJ || pp[7]);
+    inp.spinP = !!(hit.TSpin || hit.Mouse0); inp.fireP = !!hit.TFire; inp.thunderP = !!hit.KeyF; inp.firaP = !!hit.KeyH; inp.driveP = !!(hit.TDrive || pp[6]);
     inp.camT = (keys.Slash || pb[5] ? 1 : 0) - (keys.ShiftLeft || pb[4] ? 1 : 0);
   } else inp.camT = 0;
   if (WALKTO) { const ds = WALKTO[0] - P.s, dx = WALKTO[1] - P.x, d = Math.hypot(ds, dx); if (d > .5) { const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw), us = ds / d, ux = dx / d; inp.z = us * c + ux * sn; inp.x = -us * sn + ux * c; } else inp.x = inp.z = 0; }   // testing: &walkto=s,x
@@ -7839,9 +7839,9 @@ function khDrive() {
 function khWhite(on) {
   if (!LOADED.gandalfw || !hob.skin) return;
   if (!hob.skinW) { hob.skinG = hob.skin; const M2 = { root: hob.root }; addSkin(M2, 'gandalfw', hob.body, [], [], hob.root); hob.skinW = M2.skin; if (SORA.list) soraActs(); }
+  if (hob.skinG.obj) hob.skinG.obj.visible = !on; if (hob.skinW.obj) hob.skinW.obj.visible = on;   // (only ever one of them: the White is made hidden)
   if (hob.skin === (on ? hob.skinW : hob.skinG)) return;
-  hob.skin = on ? hob.skinW : hob.skinG; if (hob.skinG.obj) hob.skinG.obj.visible = !on; if (hob.skinW.obj) hob.skinW.obj.visible = on;
-  hob.skin.cur = ''; hob.skin.holdT = 0; skinPlay(hob, 'idle');
+  hob.skin = on ? hob.skinW : hob.skinG; hob.skin.cur = ''; hob.skin.holdT = 0; skinPlay(hob, 'idle');
 }
 // the reaction commands: what the green prompt does depends on whose moment it is
 const KH_REACT = { takedown: 'TAKEDOWN', repel: 'REPEL', sword: 'SWORD RUN', stand: 'YOU SHALL NOT PASS!' };
@@ -8075,6 +8075,7 @@ function updateOrbs(dt) {
 }
 function updateKH(dt) {
   if (!LV || !LV.kh) return;
+  khWhite(KH.form > 0);   // (Grey or White, whichever the drive form says, once both models are in)
   saberToBone(KH.sword, hob);
   const play = state === 'play', A = KH.atk, form = KH.form > 0;
   KH.mp = Math.min(KH.maxMp, KH.mp + dt * (form ? 6 : 2.5));
@@ -8189,9 +8190,9 @@ function khHud() {
   const sig = [KH.cur, KH.sub, KH.subCur, Math.floor(KH.mp / 4), KH.items.potion, KH.items.ether, KH.drive >= 100, form, ...KH_MENU.map(c => (KH.cmdT[c.id] || 0) > 0)].join();
   if (sig !== khHud.sig) {
     khHud.sig = sig;
-    document.getElementById('khcmd').innerHTML = `<div class="t">COMMAND<small class="kOnly">↑ ↓ · F</small></div>` +
+    document.getElementById('khcmd').innerHTML = `<div class="t">COMMAND<small class="kOnly">Q ▲ E ▼ · K</small></div>` +
       KH_MENU.map((c, i) => `<div class="r${i === KH.cur && !KH.sub ? ' sel' : i === KH.cur ? ' open' : ''}${dim(c) ? ' dim' : ''}${(KH.cmdT[c.id] || 0) > 0 ? ' on' : ''}">${c.name}${c.sub ? '<small>▸</small>' : ''}</div>`).join('') +
-      (list ? `<div class="khsub"><div class="t">${KH_MENU[KH.cur].name}<small class="kOnly">L ◂</small></div>${list.map(subRow).join('')}</div>` : '');
+      (list ? `<div class="khsub"><div class="t">${KH_MENU[KH.cur].name}<small class="kOnly">⌫ ◂</small></div>${list.map(subRow).join('')}</div>` : '');
   }}
 document.getElementById('khreact').addEventListener('pointerdown', e => { e.preventDefault(); hit.TReact = true; });
 addEventListener('wheel', e => { if (LV && LV.kh && state === 'play') hit[e.deltaY < 0 ? 'WheelUp' : 'WheelDown'] = true; }, { passive: true });   // (the mouse wheel moves round the command menu)
@@ -8228,7 +8229,8 @@ showScreen(null); syncPauseBtns();
     if (q.get('autofight')) AUTOFIGHT = { next: () => { const p = LV.layout.plazas.find(p => !p.done), W_ = LV.layout.path;
       if (W_ && p && p.pi !== undefined && Math.hypot(P.s - p.s, P.x - p.x) > p.r - 2) { let bi = 0, bd = 1e9; for (let i = 0; i < W_.length; i += 2) { const d = Math.hypot(W_[i][0] - P.s, W_[i][1] - P.x) + Math.abs(W_[i][2] - P.y); if (d < bd) { bd = d; bi = i; } } const ti = Math.min(p.pi, bi + 14); if (ti < p.pi - 1) return [W_[ti][0], W_[ti][1]]; }   // (along the way, at Helm's Deep)
       const dr = LV.layout.hall && LV.layout.hall.door; return p ? [p.s, p.x] : dr ? [dr.s, dr.x] : [P.s, P.x]; } };
-    if (q.get('sim')) { cheats.god = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (q.get('menu') && LV.kh) { KH.sub = q.get('menu'); KH.cur = KH_MENU.findIndex(c => c.sub === KH.sub); }   // (&menu=magic: that list open, for testing)
+    if (q.get('sim')) { cheats.god = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (q.get('drive') && LV.kh) { KH.drive = 100; khDrive(); }   // (&drive=1: the White Wizard, for testing)
+    if (q.get('menu') && LV.kh) { KH.sub = q.get('menu'); KH.cur = KH_MENU.findIndex(c => c.sub === KH.sub); }   // (&menu=magic: that list open, for testing)
     if (q.get('cast') && LV.kh) { KH.mp = 100; KH.magicCD = 0; KH.atk = null; khCast(q.get('cast')); for (let i = 0; i < 12; i++) step(1 / 60, true); }   // (&cast=thunder: a spell just before the picture)
     if (LV.kh) console.log(`${LV.name} after ${q.get('sim')}s:${KH.boss ? ` boss ${KH.boss.state}${KH.boss.a ? '/' + KH.boss.a.type + '/' + KH.boss.a.ph : ''} hp ${Math.round(KH.boss.hp)} phase ${KH.boss.phase},` : ''} drive ${Math.round(KH.drive)} form ${KH.form.toFixed(1)}, reactions ${JSON.stringify(KH.rx || {})}, squares done ${LV.layout.plazas.filter(p => p.done).length}/${LV.layout.plazas.length}, in ${KH.plaza ? LV.layout.plazas.indexOf(KH.plaza) : '-'} wave ${KH.plaza ? KH.plaza.wave : '-'}, uruks ${URUKS.length} (${URUKS.map(u => u.state + ':' + Math.round(u.hp)).join(' ')}), HP ${Math.round(KH.hp)} MP ${Math.round(KH.mp)}, kills ${gs.kills}, at ${P.s.toFixed(0)},${P.x.toFixed(0)},${P.y.toFixed(1)} (ground ${TERR ? terrainAt(P.s, P.x).toFixed(1) : 'none'}, on ${P.ground} ${P.standOn ? P.standOn.kind + ' ' + [P.standOn.y0, P.standOn.y1].map(v => v && v.toFixed(1)) : ''}), state ${state}`);
       if (q.get('pos') || q.get('spring')) console.log(`after ${q.get('sim')}s: s ${P.s.toFixed(1)} x ${P.x.toFixed(1)} y ${P.y.toFixed(1)} ground ${P.ground}`); }   // &sim=6 plays 6 seconds first (invincible)

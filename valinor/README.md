@@ -41,13 +41,12 @@ Kingdom Hearts II's controls:
 | Key (controller) | What it does |
 | --- | --- |
 | **W A S D** (left stick) | Move. |
-| **F** (A) | Does the command the cursor is on in the **command menu** (bottom left). On **ATTACK** it attacks: three cuts and a finisher, each closing in on the nearest enemy, the finisher knocking it flying. In the air it's an air combo, and the last blow slams Gandalf down. On **MAGIC**, **ITEMS** or **DRIVE** it opens that list, and F again uses what's chosen there. |
-| **↑ / ↓** or the mouse wheel (d-pad ▲ ▼) | Move the cursor up and down the menu, or the list that's open. **L** (or ←) backs out of a list. |
-| **Q** / **E** | Cast **Thunder** / **Fire** straight away. |
-| **K** (B) | Jump. |
-| **Space** (RT) | **Dodge Roll**: the way you're pushing, or straight back. Nothing touches you while you roll. |
-| **J** (X) | Guard: blocks a blow from in front and knocks the attacker back. With a direction held it rolls instead. |
-| **I** (Y), or the green prompt | The **reaction command**, when its moment comes. **TAKEDOWN**: an enemy is dizzy (stars over its head), so leap on it and finish it, blasting the others round it. **REPEL**: a berserker is running at you; swat it back to blow up among its friends. Against the Balrog: **SWORD RUN** and **YOU SHALL NOT PASS!** (below). |
+| **K** (A) | Does the command the cursor is on in the **command menu** (bottom left). On **ATTACK** it attacks: three cuts and a finisher, each closing in on the nearest enemy, the finisher knocking it flying. In the air it's an air combo, and the last blow slams Gandalf down. On **MAGIC**, **ITEMS** or **DRIVE** it opens that list, and K again uses what's chosen there. |
+| **Q** / **E** (d-pad ▲ ▼) | Move the cursor up and down the menu, or the list that's open (the arrow keys and mouse wheel do too). **Backspace** or **←** backs out of a list. |
+| **F** / **H** | Cast **Thunder** / **Fire** straight away. |
+| **L** (B) | Jump. |
+| **J** (RT) | **Dodge Roll**: the way you're pushing, or straight back. Nothing touches you while you roll. |
+| **Space** (X) | Guard: blocks a blow from in front and knocks the attacker back. With a direction held it rolls instead. || **I** (Y), or the green prompt | The **reaction command**, when its moment comes. **TAKEDOWN**: an enemy is dizzy (stars over its head), so leap on it and finish it, blasting the others round it. **REPEL**: a berserker is running at you; swat it back to blow up among its friends. Against the Balrog: **SWORD RUN** and **YOU SHALL NOT PASS!** (below). |
 | **Left Shift** / **/** (LB / RB) | Turn the camera left and right. |
 - **Magic:**
   - **Thunder** (25 MP): Jedi Outcast's Force lightning, forking from Gandalf's hand into up to three enemies.
