@@ -40,21 +40,27 @@ Kingdom Hearts II's controls:
 
 | Key (controller) | What it does |
 | --- | --- |
-| **W A S D** (left stick) | Move. |
+| **W A S D** (left stick) | Move. Double-tap W for Battle Charge (a technique). |
 | **K** (A) | Does the command the cursor is on in the **command menu** (bottom left). On **ATTACK** it attacks: three cuts and a finisher, each closing in on the nearest enemy, the finisher knocking it flying. In the air it's an air combo, and the last blow slams Gandalf down. On **MAGIC**, **ITEMS** or **DRIVE** it opens that list, and K again uses what's chosen there. |
 | **Q** / **E** (d-pad ▲ ▼) | Move the cursor up and down the menu, or the list that's open (the arrow keys and mouse wheel do too). **L**, **Backspace** or **←** backs out of a list. After you use a spell or an item from a list, the cursor goes back to ATTACK. |
 | **F** / **H** | Cast the two shortcut powers straight away (Thunder and Fire to start with). |
 | **Tab** | The **powers menu** (below): choose which powers are on F and H, and the five in MAGIC. |
-| **L** (B) | Jump. |
+| **L** (B) | Jump. Double-tap in the air for Force Jump (a technique). |
 | **J** (RT) | **Dodge Roll**: the way you're pushing, or straight back. Nothing touches you while you roll. |
 | **Space** (X) | Guard: blocks a blow from in front and knocks the attacker back. With a direction held it rolls instead. || **I** (Y), or the green prompt | The **reaction command**, when its moment comes. **TAKEDOWN**: an enemy is dizzy (stars over its head), so leap on it and finish it, blasting the others round it. **REPEL**: a berserker is running at you; swat it back to blow up among its friends. Against the Balrog: **SWORD RUN** and **YOU SHALL NOT PASS!** (below). |
 | **Left Shift** / **/** (LB / RB) | Turn the camera left and right. |
-- **Powers:** every spell and power from Kingdom Hearts II, Jedi Outcast and Fable works here. Press **Tab** to see them all. In that menu, W/S (or ↑↓, or a click) chooses one, **F** or **H** puts it on that shortcut, and **1**–**5** puts it in that place in the MAGIC list. Your choices are remembered. The game pauses while it's open.
-  - **Kingdom Hearts II:** Fire, Blizzard (freezes), Thunder, Cure, Magnet (pulls foes in and holds them up), Reflect (throws blows back).
-  - **Jedi Outcast:** Force Push, Pull, Lightning (a stream from the hand, using Jedi Outcast's own lightning), Grip, Mind Trick (leaves foes dazed, ready for TAKEDOWN), Speed (everything else slows), Jump, Heal, Sight (they take more harm), Saber Throw. (Its passive Saber Offense and Defense aren't powers you cast, so they're not here.)
-  - **Fable:** Lightning (jumps from foe to foe), Fireball, Enflame, Force Push, Slow Time, Multi-Strike, Assassin Rush, Heal Life, Battle Charge, Turncoat (a foe fights for you), Drain Life, Summon (a spirit that fights beside you), Ghost Sword, Physical Shield, Berserk.
+- **Powers:** press **Tab** for the powers menu (the game pauses). It has two pages, **MAGIC** and **TECHNIQUES**: **Q**/**E** turns between them, **A**/**D** moves between the three games' columns, **W**/**S** up and down (or click). Your choices are remembered.
+  - **Magic**, on the F and H shortcuts and in the five places of the MAGIC list (on that page, **F** or **H** puts the chosen spell on that shortcut, **1**–**5** in that place in MAGIC). Lightning and healing are Kingdom Hearts II's own Thunder and Cure:
+    - **Kingdom Hearts II:** Fire, Blizzard (freezes), Thunder, Cure, Magnet (pulls foes in and holds them up), Reflect (throws blows back).
+    - **Jedi Outcast:** Force Push, Pull, Grip, Mind Trick (leaves foes dazed, ready for TAKEDOWN), Speed (everything else slows), Saber Throw.
+    - **Fable:** Fireball, Enflame, Force Push, Slow Time, Turncoat (a foe fights for you), Drain Life, and The Lost Chapters' ultimates, **Divine Fury** (pillars of holy light on every foe near) and **Infernal Wrath** (hell bursts up round you).
+  - **Techniques**, switched on or off with **K**. They cost MP while they work: Battle Charge, Force Jump and Assassin Rush each time you use them, the rest a little every second (with no MP they stop until it comes back).
+    - **Kingdom Hearts II:** Combo Plus (one more blow in the ground combo), Second Chance (a blow that would finish you leaves 1 HP).
+    - **Jedi Outcast:** Force Jump (**double-tap L**: a great second leap in the air), Force Sight (more harm).
+    - **Fable:** Battle Charge (**double-tap W**: charge through foes), Assassin Rush (darts to a far foe as you attack), Multi-Strike, Berserk, Physical Shield (builds back up), Ghost Sword.
 
-  Each costs MP (the blue bar, which slowly comes back by itself). The White Wizard's cost less and hit harder.- **Items:**
+  MP is the blue bar, and it slowly comes back by itself. The White Wizard's powers cost less and hit harder.
+- **Summon crates** (a spirit's face, on every other landing): break one and a guardian spirit floats beside Gandalf, striking at foes near him. If a blow would finish him, the spirit gives its life for his instead: a spare life. Another Summon crate while you have one fills your MP.- **Items:**
   - **Potion:** gives back HP.
   - **Ether:** gives back MP.
   
