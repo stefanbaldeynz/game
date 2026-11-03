@@ -72,13 +72,18 @@ body.touch #khtarget{top:calc(max(2.2vh,env(safe-area-inset-top)) + clamp(40px,8
 #khhud .dv{width:min(16vw,150px);height:1.3vh}#khhud .dv i{background:linear-gradient(#fff6b0,#e8b820 55%,#8a6008)}#khhud .dv.full{animation:khpulse .35s infinite alternate;box-shadow:0 0 12px #ffe060,3px 3px 0 #000}#khhud .dv.form i{background:linear-gradient(#fff,#d8e8ff 55%,#8aa0d0)}
 #khtarget.boss{flex-direction:column;align-items:flex-end;gap:.3vh;color:#ffe0c0}#khtarget.boss .bar{width:min(42vw,440px);height:2.4vh}#khtarget.boss i{transition:width .25s}#khTPips{color:#ffd040;letter-spacing:.1em;font-size:.8em;min-height:1em}
 /* Kingdom Hearts II's command menu, bottom left: what each button does now */
-#khcmd{position:absolute;left:max(3vw,env(safe-area-inset-left));bottom:max(4vh,env(safe-area-inset-bottom));display:none;font-size:clamp(10px,1.6vh,15px);color:#fff;-webkit-text-stroke:1px var(--ink);text-shadow:2px 2px 0 #000;pointer-events:none}
+#khcmd{position:absolute;left:max(3vw,env(safe-area-inset-left));bottom:max(4vh,env(safe-area-inset-bottom));display:none;font-size:clamp(11px,1.95vh,18px);color:#fff;-webkit-text-stroke:1px var(--ink);text-shadow:2px 2px 0 #000;pointer-events:none}
 #khcmd .t{background:linear-gradient(90deg,#2aa04a,#1a6a2a 80%,transparent);padding:.1em .8em;margin-bottom:.25em;font-size:.8em;letter-spacing:.12em;transform:skewX(-14deg);width:8.5em;white-space:nowrap}
 #khcmd .r{display:flex;justify-content:space-between;align-items:center;width:7.5em;margin:.15em 0;padding:.18em .7em;background:linear-gradient(90deg,#123a7a,#0a1e48 85%);border:2px solid #000;border-radius:4px;box-shadow:3px 3px 0 #000;transform:skewX(-14deg);transition:transform .1s,filter .1s}
 #khcmd .r.sel{transform:skewX(-14deg) translateX(.7em);background:linear-gradient(90deg,#3a8aff,#1a4ab0 85%);box-shadow:0 0 10px #8ac8ff,3px 3px 0 #000}#khcmd .r.sel::before{content:'▶';position:absolute;left:-1.1em;color:#ffe060}#khcmd .r.open{background:linear-gradient(90deg,#2a5aa0,#122a68 85%)}
 #khcmd .khsub{position:absolute;left:9em;bottom:0}#khcmd .khsub .r{width:7.5em;background:linear-gradient(90deg,#3a1a6a,#1a0a3a 85%)}#khcmd .khsub .r.sel{background:linear-gradient(90deg,#8a4aff,#4a1ab0 85%)}
 #khcmd .r.on{filter:brightness(1.7)}#khcmd .r.dim{filter:grayscale(1) brightness(.6)}#khcmd small{font-size:.7em;opacity:.85;margin-left:.6em}#khcmd .t small{font-size:.75em}
 body.touch #khcmd{display:none!important}
+#khpow{position:absolute;inset:6vh 6vw;display:none;background:rgba(6,14,40,.92);border:3px solid #000;border-radius:14px;box-shadow:0 0 30px #000,inset 0 0 40px rgba(60,120,255,.25);padding:1.4vh 2vw;color:#fff;font-size:clamp(11px,1.8vh,16px);-webkit-text-stroke:.6px var(--ink);text-shadow:2px 2px 0 #000;overflow:auto;z-index:30}
+#khpow .t{font-size:1.8em;color:#ffe060}#khpow .t small{font-size:.45em;color:#bcd;margin-left:1.5em}#khpow .slots{margin:.6em 0 1em;color:#cde}#khpow .slots i{font-style:normal;color:#ffe9a0;margin-right:.7em}
+#khpow .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4vw}#khpow .g{color:#7fd0ff;font-size:1.15em;margin-bottom:.4em;border-bottom:2px solid #2a4a8a}
+#khpow .p{display:grid;grid-template-columns:1fr auto auto;gap:.5em;padding:.25em .5em;margin:.15em 0;border-radius:6px;background:rgba(30,60,140,.35);cursor:pointer}#khpow .p.sel{background:linear-gradient(90deg,#3a8aff,#1a4ab0);box-shadow:0 0 10px #8ac8ff}
+#khpow .p small{opacity:.8}#khpow .p em{font-style:normal;color:#ffe060}#khpow .p em b{margin-left:.3em}#khpow .p .d{grid-column:1/-1;font-size:.75em;opacity:.75;-webkit-text-stroke:0}
 .menu{margin:3.5vh auto 0;display:flex;flex-direction:column;gap:1.1vh;width:min(560px,90vw)}
 .mi{display:grid;grid-template-columns:2.1em 1fr;align-items:center;column-gap:.6em;text-align:left;padding:.45em .8em;border:3px solid #000;border-radius:12px;background:rgba(14,4,36,.7);box-shadow:4px 4px 0 #000;cursor:pointer;transition:transform .15s,background .15s}
 .mi b{grid-row:span 2;font-weight:normal;font-size:clamp(26px,4.4vh,44px);color:var(--gold);-webkit-text-stroke:2px var(--ink);text-align:center}
@@ -201,6 +206,7 @@ body.touch #bossbar .bar{width:min(50vw,420px)}
 <div id="bossbar"><span id="bossName">SAURON</span><div class="bar"><i id="bossfill"></i></div></div>
 <div id="khhud"><div><b>HP</b><div class="bar hp"><i id="khHP"></i></div></div><div><b>MP</b><div class="bar mp"><i id="khMP"></i></div></div><div><b>DRIVE</b><div class="bar dv"><i id="khDV"></i></div></div></div>
 <div id="khcmd"></div>
+<div id="khpow"></div>
 <div id="khtarget"><span id="khTName">URUK-HAI</span><div class="bar"><i id="khTHP"></i></div><span id="khTPips"></span></div>
 <div id="khreact"><span id="khRName">TAKEDOWN</span><small class="kOnly">R</small></div>
 <div id="mapUI">
@@ -2867,6 +2873,7 @@ function respawn(fresh) {
 const keys = {}, hit = {};
 addEventListener('keydown', e => {
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+  if (e.code === 'Tab') e.preventDefault();
   if (!keys[e.code]) hit[e.code] = true; keys[e.code] = true; initAudio(); onKey(e.code);
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
@@ -2887,6 +2894,8 @@ addEventListener('pointermove', e => { if (state === 'map' && (e.buttons & 1) &&
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; touchReset(); if (state === 'play') pause(true); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(true); });
 function onKey(code) {
+  if (KH_PMENU.open) { khPowersKey(code); return; }   // (the powers menu has the keys while it's open)
+  if (code === 'Tab' && state === 'play' && LV && LV.kh) { khPowersMenu(true); return; }
   if (code === 'KeyM') { musicOn = !musicOn; syncPauseBtns(); return; }
   if (code === 'KeyG') { setLook(!RETRO); if (state !== 'paused') banner(RETRO ? 'RETRO LOOK' : 'HD LOOK', 1); syncPauseBtns(); return; }
   if (code === 'KeyZ') { cheats.god = !cheats.god; if (state !== 'paused') banner(cheats.god ? 'INVINCIBLE ON' : 'INVINCIBLE OFF', 1); syncPauseBtns(); return; }
@@ -2969,8 +2978,8 @@ function readInput() {
     if (keys.KeyA) mx -= 1; if (keys.KeyD) mx += 1; if (keys.KeyW) mz += 1; if (keys.KeyS) mz -= 1;   // (the arrows are the menu's here)
     inp.x = clamp(mx + pad.x + stick.x, -1, 1); inp.z = clamp(mz + pad.z + stick.z, -1, 1);
     inp.cmdP = !!(hit.KeyK || pp[0]); inp.guardP = !!(hit.Space || hit.TGuard || pp[2]); inp.reactP = !!(hit.KeyI || hit.KeyR || hit.TReact || pp[3]);
-    inp.upP = !!(hit.KeyQ || hit.ArrowUp || hit.WheelUp || pp[12]); inp.downP = !!(hit.KeyE || hit.ArrowDown || hit.WheelDown || pp[13]); inp.backP = !!(hit.Backspace || pp[1] || hit.ArrowLeft) && !!KH.sub;
-    inp.jump = !!(keys.KeyL || keys.TJump || pb[1]); inp.jumpP = !!(hit.KeyL || (pp[1] && !KH.sub) || hit.TJump); inp.dodgeP = !!(hit.KeyJ || pp[7]);
+    inp.upP = !!(hit.KeyQ || hit.ArrowUp || hit.WheelUp || pp[12]); inp.downP = !!(hit.KeyE || hit.ArrowDown || hit.WheelDown || pp[13]); inp.backP = !!(hit.KeyL || hit.Backspace || pp[1] || hit.ArrowLeft) && !!KH.sub;
+    inp.jump = !!(keys.KeyL || keys.TJump || pb[1]); inp.jumpP = !!(((hit.KeyL || pp[1]) && !KH.sub) || hit.TJump);   // (L backs out of an open list instead) inp.dodgeP = !!(hit.KeyJ || pp[7]);
     inp.spinP = !!(hit.TSpin || hit.Mouse0); inp.fireP = !!hit.TFire; inp.thunderP = !!hit.KeyF; inp.firaP = !!hit.KeyH; inp.driveP = !!(hit.TDrive || pp[6]);
     inp.camT = (keys.Slash || pb[5] ? 1 : 0) - (keys.ShiftLeft || pb[4] ? 1 : 0);
   } else inp.camT = 0;
@@ -5789,7 +5798,7 @@ function step(dt, noRender) {
     updateDragons(dt); updateApples(); updatePhial(dt); updateLightning(dt); updateAmbient(dt); updateTree(dt);
     fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt); poseDuelGandalf(dt);
     skinPlay(hob, state === 'dying' ? 'die' : !P.ground && P.airT > .1 ? 'jump' : P.spinT > 0 || (LV && LV.duel && duel.atk) ? 'attack' : Math.hypot(P.vs, P.vx) > 1 ? 'walk' : 'idle');
-    updateSkins(dt);
+    updateSkins(dt); khAfterSkins();
   }
   updateCamera(state === 'paused' ? 0 : dt); if (DEBUG_CAM) { camera.position.copy(DEBUG_CAM.p); camera.lookAt(DEBUG_CAM.l); }
   updateSabers(state === 'paused' ? 0 : dt);
@@ -6734,7 +6743,7 @@ THEMES.mirkwood = natTheme({
 //  the last, before the hall. Gandalf fights the Kingdom Hearts II way (see KH below). With your own files the town
 //  and hall are Battle for Middle-earth's, and the Uruk-hai, Lurtz and Théoden are its models.
 // =====================================================================
-Object.assign(MODEL_SLOTS, { uruk: { height: 1.95, turn: -Math.PI / 2, hide: /forged/i }, lurtz: { height: 2.15, turn: -Math.PI / 2, hide: /forged/i }, theoden: { height: 1.9, turn: -Math.PI / 2 }, berserker: { height: 2.05, turn: -Math.PI / 2, hide: /forged/i }, gandalfw: { height: 1.75, turn: -Math.PI / 2, saberBone: 'B_SWORDBONE' } });   // (the Uruk-hai come with the red glow of their Forged Blades upgrade on: left out)
+Object.assign(MODEL_SLOTS, { uruk: { height: 1.95, turn: -Math.PI / 2, hide: /forged/i }, lurtz: { height: 2.15, turn: -Math.PI / 2, hide: /forged/i }, theoden: { height: 1.9, turn: -Math.PI / 2 }, berserker: { height: 2.05, turn: -Math.PI / 2, hide: /forged/i }, gandalfw: { height: 1.75, turn: -Math.PI / 2, saberBone: 'B_SWORDBONE', glow: .45 } });   // (the Uruk-hai come with the red glow of their Forged Blades upgrade on: left out)
 HEROES.theoden = { h: 1.85, hair: 0xd8c8a0, coat: 0x2a5a2a, legs: 0x3a3020, cloak: 0x7a1a14, beard: 0xd8c8a0, sword: true };
 // the hill, the road and where everything stands (made once, the same every time)
 function edorasLayout() {
@@ -7716,6 +7725,7 @@ function setupKH() {
 }
 function resetKH(fresh) {
   const hadBoss = !!KH.boss;
+  Object.assign(KH, { slowT: 0, sightT: 0, multiT: 0, berserkT: 0, shield: 0, reflectT: 0 });
   Object.assign(KH, { hp: KH.max, mp: KH.maxMp, combo: 0, airN: 0, atk: null, buf: false, hover: 0, guardT: 0, rollT: 0, invT: 1, react: null, reacting: null, bolts: [], target: null, form: 0, winT: 0 });
   if (KH.plaza) { const p = KH.plaza; for (const u of URUKS.slice()) khRemove(u); khBarrier(p, false); p.wave = -1; KH.plaza = null; }   // a square you fell in starts again
   for (const o of ORBS) scene.remove(o.sp); ORBS.length = 0; khClearFx();
@@ -7746,7 +7756,7 @@ function khInput() {
   if (inp.spinP) khAttack();
   if (inp.cmdP) khCommand();
   if (inp.fireP) khMagic();
-  if (inp.thunderP) khCast('thunder'); if (inp.firaP) khCast('fire');   // (the shortcuts)
+  if (inp.thunderP) khCast(KH_POWER_SET.f); if (inp.firaP) khCast(KH_POWER_SET.h);   // (the shortcuts, chosen in the powers menu)
   if (inp.dodgeP) khGuard(true);
 }
 const khFlash = c => KH.cmdT[c] = .25;   // the command menu lights the command just used
@@ -7772,45 +7782,123 @@ function khGuard(dodge) {   // (dodge: Space always rolls, the way you're pushin
     KH.rollV = [ds / l * 11, dx / l * 11]; KH.rollT = .36; KH.invT = .4; P.heading = Math.atan2(dx, ds); S.whoosh(); dustAt(P.s, P.x, P.y, 6); skinClip(hob, khc(KH_SORA.roll), .5);
   } else { KH.guardT = .5; skinClip(hob, khc(KH_SORA.guard), .6); }
 }
-// the spells (MAGIC on the command menu): Thunder is Jedi Outcast's Force lightning, forking from Gandalf's hand to the
-// foes round him; Fire, a fireball that seeks its foe; Cure heals. The White Wizard's are stronger and cheaper.
-const KH_SPELLS = [{ id: 'thunder', name: 'THUNDER', w: 'THUNDAGA', mp: 25 }, { id: 'fire', name: 'FIRE', w: 'FIRAGA', mp: 12 }, { id: 'cure', name: 'CURE', w: 'CURAGA', mp: 50 }];
+// the powers: every spell and power from Kingdom Hearts II, Jedi Outcast and Fable, for Gandalf. Two are on the F and H
+// shortcuts, and five sit in the MAGIC list of the command menu; Tab opens the powers menu to choose them. The White
+// Wizard's cost less and hit harder.
 const KH_ITEMS = [{ id: 'potion', name: 'POTION' }, { id: 'ether', name: 'ETHER' }];
 const khHand = () => tw(P.s + Math.cos(P.heading) * .55, P.x + Math.sin(P.heading) * .55, P.y + 1.35);
 const khFoes = (range, n) => URUKS.filter(u => ukLive(u) && u.state !== 'spawn' && u.state !== 'intro').map(u => ({ u, d: Math.hypot(u.s - P.s, u.x - P.x) - (u.boss ? u.r : 0) })).filter(o => o.d < range).sort((a, b) => a.d - b.d).slice(0, n);
-function khMagic() { khCast(KH.spell || 'thunder'); }   // (the quick cast: the last spell again)
+// foes within range in front of Gandalf (cos: how wide)
+const khAhead = (range, cos = .3) => khFoes(range, 99).filter(o => { const ds = o.u.s - P.s, dx = o.u.x - P.x, d = Math.hypot(ds, dx) || 1; return (ds * Math.cos(P.heading) + dx * Math.sin(P.heading)) / d > cos; });
+const khFace = u => { if (u) P.heading = Math.atan2(u.x - P.x, u.s - P.s); };
+const khUp = u => tw(u.s, u.x, u.y + (u.boss ? u.tall * .55 : 1.1));
+// a power that lasts: up(f, dt) each frame until it says it's done (or t passes)
+const khLast = (t, up) => khFx(null, (f, dt) => up(f, dt) !== false && f.t < t);
+// knock a foe away from (or towards) Gandalf
+function khShove(u, sp, up, dmg) {
+  if (!ukLive(u)) return; if (u.boss) { khHit(u, dmg, true); return; }
+  const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx) || 1; khHit(u, dmg, false);
+  if (ukLive(u)) Object.assign(u, { state: 'launch', t: 0, vs: ds / d * sp, vx: dx / d * sp, vy: up });
+}
+const khRing = (col, n = 40, r = .9) => { const p = tw(P.s, P.x, P.y + .2); for (let k = 0; k < n; k++) { const a = rand(0, TAU); fx.spawn(p.x + Math.cos(a) * r, p.y + rand(0, .4), p.z + Math.sin(a) * r, 0, rand(1.5, 3), 0, rand(.5, .9), .35, .05, [1, 1, 1], col, 0, 1); } };
+const KH_POWERS = [
+  // --- Kingdom Hearts II: Sora's magic
+  { id: 'fire', game: 'KH', name: 'FIRE', mp: 12, anim: 'fire', desc: 'A fireball that seeks its foe', cast(w) { const n = khFoes(16, w ? 3 : 1); khFace(n[0] && n[0].u); if (n.length) n.forEach(o => khFireball(o.u)); else khFireball(null); S.whoosh(); } },
+  { id: 'blizzard', game: 'KH', name: 'BLIZZARD', mp: 12, anim: 'fire', desc: 'Shards of ice that freeze', cast(w) { const n = khFoes(15, w ? 4 : 2); khFace(n[0] && n[0].u); S.whoosh();
+      n.forEach((o, k) => { const u = o.u, sp = glowSprite(0xbfe8ff, 1, 1); sp.position.copy(khHand()); khFx(sp, (f, dt) => { const t = khUp(u); sp.position.lerp(t, Math.min(1, dt * 9)); fx.spawn(sp.position.x, sp.position.y, sp.position.z, 0, 0, 0, .3, .3, .05, [1, 1, 1], [.5, .8, 1]); if (sp.position.distanceTo(t) < .6 || f.t > 1.2) { sparks(t, 18, 5, [1, 1, 1], [.6, .85, 1]); if (ukLive(u)) { khHit(u, 7, false); if (ukLive(u) && !u.boss) Object.assign(u, { state: 'dizzy', t: 0, dizzy: 1.6 }); } return false; } return true; }); }); } },
+  { id: 'thunder', game: 'KH', name: 'THUNDER', mp: 25, anim: 'thunder', desc: 'Bolts on up to three foes', cast(w) { const n = khFoes(13, w ? 5 : 3); khFace(n[0] && n[0].u); S.zap();
+      n.forEach((o, k) => { const u = o.u; for (let q = 0; q < 2; q++) khArc(khHand, () => khUp(u), .6); KH.bolts.push({ t: .12 + k * .06, u }); });
+      if (!n.length) for (let k = 0; k < 3; k++) { const a = P.heading + rand(-.6, .6), r = rand(4, 8), s = P.s + Math.cos(a) * r, x = P.x + Math.sin(a) * r, p = tw(s, x, landAt(s, x) + .2); khArc(khHand, () => p, .45); KH.bolts.push({ t: .12, p }); } } },
+  { id: 'cure', game: 'KH', name: 'CURE', mp: 50, anim: 'cure', desc: 'Heals a lot', cast(w) { KH.hp = Math.min(KH.max, KH.hp + (w ? 70 : 45)); S.apple(); khRing([.3, 1, .4]); } },
+  { id: 'magnet', game: 'KH', name: 'MAGNET', mp: 20, anim: 'thunder', desc: 'Draws foes in and holds them up', cast(w) {
+      const c = tw(P.s + Math.cos(P.heading) * 4.5, P.x + Math.sin(P.heading) * 4.5, P.y + 2.4), cs = P.s + Math.cos(P.heading) * 4.5, cx = P.x + Math.sin(P.heading) * 4.5, orb = glowSprite(0xc8a0ff, 3, .9); orb.position.copy(c); S.zap(); let tick = 0;
+      khFx(orb, (f, dt) => { orb.scale.setScalar(3 + Math.sin(f.t * 12) * .4); tick -= dt; for (const u of URUKS) { if (!ukLive(u) || u.boss || u.state === 'spawn') continue; const ds = cs - u.s, dx = cx - u.x, d = Math.hypot(ds, dx); if (d > 7) continue; u.s += ds * Math.min(1, dt * 3); u.x += dx * Math.min(1, dt * 3); u.y = damp(u.y, c.y - 1, 4, dt); u.state = 'flinch'; u.t = 0; if (tick <= 0) khHit(u, 2, false); } if (tick <= 0) tick = .35; if (Math.random() < .5) fx.spawn(c.x + rand(-2, 2), c.y + rand(-1, 1), c.z + rand(-2, 2), 0, 0, 0, .4, .3, .05, [1, 1, 1], [.7, .5, 1]); return f.t < (w ? 3 : 2.2); }); } },
+  { id: 'reflect', game: 'KH', name: 'REFLECT', mp: 15, anim: 'cure', desc: 'A barrier that throws blows back', cast(w) { KH.reflectT = w ? 1.6 : 1.1; const b = glowSprite(0xffffff, 3.4, .5); hob.root.add(b); b.position.y = 1; khFx(b, f => { b.material.opacity = .5 * (1 - f.t / KH.reflectT); return KH.reflectT > 0; }); S.clash(); } },
+  // --- Jedi Outcast: the Force
+  { id: 'push', game: 'JO', name: 'FORCE PUSH', mp: 10, anim: 'fire', desc: 'Throws back all in front', cast(w) { S.forcePush(); khAhead(w ? 11 : 9, .2).forEach(o => khShove(o.u, w ? 15 : 12, 7, 5)); const p = khHand(); for (let k = 0; k < 24; k++) { const a = P.heading + rand(-.6, .6); fx.spawn(p.x, p.y, p.z, Math.sin(-a) * 0 + rand(-1, 1), rand(-.5, .5), rand(-1, 1), .4, .5, 1.5, [.7, .8, 1], [.3, .4, .8]); } } },
+  { id: 'pull', game: 'JO', name: 'FORCE PULL', mp: 10, anim: 'fire', desc: 'Drags foes to you, off their feet', cast(w) { S.forcePush(); khAhead(14, .2).forEach(o => { const u = o.u; if (u.boss) return; const ds = P.s - u.s, dx = P.x - u.x, d = Math.hypot(ds, dx) || 1; khHit(u, 3, false); if (ukLive(u)) Object.assign(u, { state: 'launch', t: 0, vs: ds / d * Math.min(14, d * 2), vx: dx / d * Math.min(14, d * 2), vy: 4 }); }); } },
+  { id: 'jlightning', game: 'JO', name: 'FORCE LIGHTNING', mp: 20, anim: 'thunder', desc: 'A stream of lightning from the hand', cast(w) { let tick = 0; S.zap(); khLast(w ? 1.8 : 1.2, (f, dt) => { tick -= dt; const n = khAhead(9, .4).slice(0, w ? 5 : 3); if (tick <= 0) { tick = .12; n.forEach(o => { khArc(khHand, () => khUp(o.u), .14); khHit(o.u, 2, false); }); if (!n.length) { const a = P.heading + rand(-.4, .4), p = tw(P.s + Math.cos(a) * 6, P.x + Math.sin(a) * 6, P.y + 1); khArc(khHand, () => p, .14); } } }); } },
+  { id: 'grip', game: 'JO', name: 'FORCE GRIP', mp: 15, anim: 'thunder', desc: 'Lifts a foe and chokes it', cast(w) { const o = khAhead(11, .3)[0]; if (!o) return; const u = o.u, y0 = u.y; let tick = 0; S.grip && S.grip(); khFace(u);
+      khLast(w ? 2.6 : 2, (f, dt) => { if (!ukLive(u)) return false; tick -= dt; if (!u.boss) { u.y = y0 + Math.min(2, f.t * 3); u.state = 'flinch'; u.t = 0; } if (tick <= 0) { tick = .4; khHit(u, w ? 6 : 4, false); } if (f.t > (w ? 2.5 : 1.9) && !u.boss && ukLive(u)) Object.assign(u, { state: 'launch', t: 0, vs: 0, vx: 0, vy: -6 }); }); } },
+  { id: 'trick', game: 'JO', name: 'MIND TRICK', mp: 15, anim: 'cure', desc: 'Leaves foes near you dazed', cast(w) { for (const o of khFoes(w ? 12 : 9, 99)) if (!o.u.boss) Object.assign(o.u, { state: 'dizzy', t: 0, dizzy: w ? 5 : 3.5 }); khRing([.6, .7, 1], 30, 2); } },
+  { id: 'speed', game: 'JO', name: 'FORCE SPEED', mp: 15, anim: 'cure', desc: 'The world slows round you', cast(w) { KH.slowT = Math.max(KH.slowT || 0, w ? 6 : 4); S.whoosh(); khRing([.8, .9, 1], 30, 1.4); } },
+  { id: 'fjump', game: 'JO', name: 'FORCE JUMP', mp: 5, anim: null, desc: 'A great leap', cast(w) { P.vy = w ? 18 : 15; P.ground = false; KH.hover = 0; dustAt(P.s, P.x, P.y, 8); S.whoosh(); } },
+  { id: 'jheal', game: 'JO', name: 'FORCE HEAL', mp: 30, anim: 'cure', desc: 'Heals some', cast(w) { KH.hp = Math.min(KH.max, KH.hp + (w ? 45 : 30)); S.apple(); khRing([.5, .8, 1]); } },
+  { id: 'sight', game: 'JO', name: 'FORCE SIGHT', mp: 10, anim: 'cure', desc: 'Sees their weak points: more harm for a while', cast(w) { KH.sightT = w ? 12 : 8; khRing([1, 1, .6], 30, 1.6); } },
+  { id: 'throw', game: 'JO', name: 'SABER THROW', mp: 12, anim: 'fire', desc: 'The blade flies out and back', cast(w) { const sp = glowSprite(0x9ad8ff, 1.6, 1), hit = new Set(), a = P.heading, R = w ? 13 : 10; sp.position.copy(khHand()); S.saberSwing();
+      khFx(sp, f => { const k = f.t / .9, r = Math.sin(Math.min(1, k) * Math.PI) * R, s = P.s + Math.cos(a) * r, x = P.x + Math.sin(a) * r; tw(s, x, P.y + 1.2, sp.position); sp.material.rotation += .6; for (const o of khFoes(30, 99)) { if (hit.has(o.u) || Math.hypot(o.u.s - s, o.u.x - x) > 1.6 + (o.u.boss ? o.u.r : 0)) continue; hit.add(o.u); khHit(o.u, w ? 12 : 9, true); } if (k > .5 && hit.size) hit.clear(); return k < 1; }); } },
+  // --- Fable: the Will
+  { id: 'flightning', game: 'Fable', name: 'LIGHTNING', mp: 18, anim: 'thunder', desc: 'Leaps from foe to foe', cast(w) { const done = new Set(); let from = khHand, last = null; S.zap();
+      for (let k = 0; k < (w ? 6 : 4); k++) { const src = last; const o = URUKS.filter(u => ukLive(u) && !done.has(u) && u.state !== 'spawn').map(u => ({ u, d: Math.hypot(u.s - (src ? src.s : P.s), u.x - (src ? src.x : P.x)) })).filter(o => o.d < (k ? 7 : 12)).sort((a, b) => a.d - b.d)[0]; if (!o) break; done.add(o.u); const f0 = from; khArc(f0, () => khUp(o.u), .5); khHit(o.u, w ? 9 : 7, false); last = o.u; from = () => khUp(o.u); } } },
+  { id: 'fireball', game: 'Fable', name: 'FIREBALL', mp: 15, anim: 'fire', desc: 'A ball of fire that bursts', cast(w) { const o = khFoes(18, 1)[0]; khFace(o && o.u); const u = o && o.u, sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: FX_TEX.exfireballc || TX.glow, color: FX_TEX.exfireballc ? 0xffffff : 0xff7020, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); sp.scale.setScalar(2); sp.position.copy(khHand()); const fw = tw(P.s + Math.cos(P.heading) * 14, P.x + Math.sin(P.heading) * 14, P.y + 1.2); S.whoosh();
+      khFx(sp, (f, dt) => { const t = u && ukLive(u) ? khUp(u) : fw; sp.position.add(t.clone().sub(sp.position).normalize().multiplyScalar(20 * dt)); bfire(sp.position, .7, .3); if (sp.position.distanceTo(t) < 1 || f.t > 1.4) { bblast(sp.position.clone(), 6); S.smash(); for (const q of URUKS) if (ukLive(q) && q.state !== 'spawn' && sp.position.distanceTo(khUp(q)) < 3.5 + (q.boss ? q.r : 0)) khHit(q, w ? 18 : 14, true); return false; } return true; }); } },
+  { id: 'enflame', game: 'Fable', name: 'ENFLAME', mp: 25, anim: 'cure', desc: 'A ring of fire bursts round you', cast(w) { S.smash(); const R = w ? 6 : 5; for (let k = 0; k < 50; k++) { const a = k / 50 * TAU; bfire(tw(P.s + Math.cos(a) * R * .7, P.x + Math.sin(a) * R * .7, P.y + .3), 1.6, 1.4); } for (const o of khFoes(R, 99)) khHit(o.u, w ? 16 : 12, true); cam.shake = .3; } },
+  { id: 'fpush', game: 'Fable', name: 'FORCE PUSH', mp: 12, anim: 'fire', desc: 'A blast that throws back all round you', cast(w) { S.forcePush(); khFoes(w ? 8 : 6.5, 99).forEach(o => khShove(o.u, 13, 8, 5)); khRing([.9, .9, 1], 40, 2); } },
+  { id: 'slow', game: 'Fable', name: 'SLOW TIME', mp: 20, anim: 'cure', desc: 'Time crawls for everyone but you', cast(w) { KH.slowT = Math.max(KH.slowT || 0, w ? 9 : 7); khRing([.7, .6, 1], 40, 2); } },
+  { id: 'multi', game: 'Fable', name: 'MULTI-STRIKE', mp: 15, anim: 'cure', desc: 'Every blow strikes twice', cast(w) { KH.multiT = w ? 14 : 10; khRing([1, .9, .5], 30, 1.2); } },
+  { id: 'rush', game: 'Fable', name: 'ASSASSIN RUSH', mp: 10, anim: null, desc: 'Darts to a foe and strikes', cast(w) { const o = khFoes(16, 1)[0]; if (!o) return; const u = o.u, ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx) || 1, k = Math.max(0, d - u.r - 1.2) / d; for (let q = 0; q < 12; q++) puff(tw(P.s + ds * k * q / 12, P.x + dx * k * q / 12, P.y + 1), 1, .6); P.s += ds * k; P.x += dx * k; khFace(u); KH.invT = Math.max(KH.invT, .3); skinClip(hob, khc(KH_SORA.ground[4], 'attack_c'), .5); khHit(u, w ? 16 : 12, true); S.whoosh(); } },
+  { id: 'heal', game: 'Fable', name: 'HEAL LIFE', mp: 35, anim: 'cure', desc: 'Heals', cast(w) { KH.hp = Math.min(KH.max, KH.hp + (w ? 55 : 40)); S.apple(); khRing([.4, 1, .7]); } },
+  { id: 'charge', game: 'Fable', name: 'BATTLE CHARGE', mp: 12, anim: null, desc: 'Charges forward through foes', cast(w) { const hit = new Set(); KH.invT = Math.max(KH.invT, .5); S.whoosh(); skinClip(hob, khc(KH_SORA.ground[3], 'attack_b'), .5);
+      khLast(.45, (f, dt) => { P.vs = Math.cos(P.heading) * 20; P.vx = Math.sin(P.heading) * 20; dustAt(P.s, P.x, P.y, 1); for (const o of khFoes(1.8, 99)) if (!hit.has(o.u)) { hit.add(o.u); khShove(o.u, 10, 6, w ? 12 : 9); } }); } },
+  { id: 'turncoat', game: 'Fable', name: 'TURNCOAT', mp: 20, anim: 'cure', desc: 'A foe fights for you', cast(w) { const o = khAhead(12, .2).find(o => !o.u.boss) || khFoes(12, 9).find(o => !o.u.boss); if (!o) return; const u = o.u; u.charmT = w ? 12 : 8; let tick = 0; S.zap();
+      khLast(u.charmT, (f, dt) => { if (!ukLive(u)) return false; u.charmT -= dt; tick -= dt; fx.spawn(...khUp(u).toArray(), 0, 1, 0, .4, .25, .05, [.8, 1, .8], [.2, .9, .3]); const e = URUKS.filter(q => q !== u && ukLive(q) && !q.boss && q.state !== 'spawn').sort((a, b) => Math.hypot(a.s - u.s, a.x - u.x) - Math.hypot(b.s - u.s, b.x - u.x))[0]; if (!e) return;
+        const ds = e.s - u.s, dx = e.x - u.x, d = Math.hypot(ds, dx) || 1; if (d > 1.6) ukMove(u, ds / d * 6 * dt, dx / d * 6 * dt); else if (tick <= 0) { tick = .7; u.h = Math.atan2(dx, ds); khHit(e, 8, false); } }); } },
+  { id: 'drain', game: 'Fable', name: 'DRAIN LIFE', mp: 15, anim: 'thunder', desc: 'Steals life from a foe', cast(w) { const o = khFoes(10, 1)[0]; if (!o) return; const u = o.u; let tick = 0;
+      khLast(1.5, (f, dt) => { if (!ukLive(u)) return false; tick -= dt; if (tick <= 0) { tick = .15; khArc(() => khUp(u), khHand, .16); khHit(u, 2, false); KH.hp = Math.min(KH.max, KH.hp + 2.5); } }); } },
+  { id: 'summon', game: 'Fable', name: 'SUMMON', mp: 30, anim: 'thunder', desc: 'A spirit fights at your side', cast(w) { const sp = glowSprite(0xffd8a0, 2, .9); sp.position.copy(khHand()); scene.add(sp); let tick = 0; khRing([1, .85, .5], 30, 1.5);
+      khFx(sp, (f, dt) => { tick -= dt; const o = khFoes(14, 1)[0], t = o ? khUp(o.u) : tw(P.s + Math.cos(T) * 2, P.x + Math.sin(T) * 2, P.y + 2); sp.position.lerp(t, Math.min(1, dt * 4)); fx.spawn(sp.position.x, sp.position.y, sp.position.z, 0, .5, 0, .5, .4, .05, [1, 1, .9], [1, .7, .3]); if (o && tick <= 0 && sp.position.distanceTo(t) < 1.5) { tick = .7; khHit(o.u, 6, false); } return f.t < (w ? 16 : 12); }); } },
+  { id: 'ghost', game: 'Fable', name: 'GHOST SWORD', mp: 25, anim: 'cure', desc: 'A blade of light circles you', cast(w) { const sp = glowSprite(0xa0e0ff, 1.8, 1); scene.add(sp); const cd = new Map();
+      khFx(sp, (f, dt) => { const a = f.t * 6, s = P.s + Math.cos(a) * 2.2, x = P.x + Math.sin(a) * 2.2; tw(s, x, P.y + 1.1, sp.position); for (const o of khFoes(4, 99)) { if (Math.hypot(o.u.s - s, o.u.x - x) > 1.3 + (o.u.boss ? o.u.r : 0) || (cd.get(o.u) || 0) > f.t) continue; cd.set(o.u, f.t + .5); khHit(o.u, 5, false); } return f.t < (w ? 15 : 11); }); } },
+  { id: 'shield', game: 'Fable', name: 'PHYSICAL SHIELD', mp: 20, anim: 'cure', desc: 'Soaks up blows', cast(w) { KH.shield = w ? 60 : 40; const b = glowSprite(0x90c0ff, 3, .35); hob.root.add(b); b.position.y = 1; khFx(b, () => { b.material.opacity = .15 + .25 * KH.shield / 60; return KH.shield > 0; }); } },
+  { id: 'berserk', game: 'Fable', name: 'BERSERK', mp: 20, anim: 'cure', desc: 'Harder blows for a while', cast(w) { KH.berserkT = w ? 12 : 8; khRing([1, .4, .3], 40, 1.2); S.roar && S.roar(); } },
+];
+const POWER = Object.fromEntries(KH_POWERS.map(p => [p.id, p]));
+const KH_POWER_SET = (() => { try { const v = JSON.parse(localStorage.getItem('valinorPowers')); if (v && POWER[v.f] && POWER[v.h] && v.slots.every(i => POWER[i])) return v; } catch (e) { } return { f: 'thunder', h: 'fire', slots: ['thunder', 'fire', 'blizzard', 'cure', 'push'] }; })();
+const khSavePowers = () => { try { localStorage.setItem('valinorPowers', JSON.stringify(KH_POWER_SET)); } catch (e) { } };
+const khCost = p => Math.round(p.mp * (KH.form > 0 ? .6 : 1));
+function khMagic() { khCast(KH.spell || KH_POWER_SET.f); }   // (the quick cast: the last spell again)
 function khCast(id) {
-  if (KH.magicCD > 0 || KH.atk) return false;
-  const form = KH.form > 0, sp = KH_SPELLS.find(o => o.id === id), cost = Math.round(sp.mp * (form ? .6 : 1));
-  if (KH.mp < cost) { S.click(); banner('NOT ENOUGH MP', .6); return false; }
-  KH.mp -= cost; KH.magicCD = .7; P.fireAnim = .5; KH.spell = id; banner(form ? sp.w : sp.name, .6); khFlash('M');
-  if (id === 'thunder') {
-    const near = khFoes(13, form ? 5 : 3); S.zap(); skinClip(hob, khc(KH_SORA.thunder, 'attack_c'), .9);
-    if (near.length) P.heading = Math.atan2(near[0].u.x - P.x, near[0].u.s - P.s);
-    near.forEach((o, k) => { const u = o.u, at = () => tw(u.s, u.x, u.y + (u.boss ? u.tall * .55 : 1.1)); for (let q = 0; q < 2; q++) khArc(khHand, at, .6); KH.bolts.push({ t: .12 + k * .06, u }); });
-    if (form && near.length === 1) KH.bolts.push({ t: .3, u: near[0].u }, { t: .45, u: near[0].u });   // (a lone foe takes them all)
-    if (!near.length) for (let k = 0; k < 3; k++) { const a = P.heading + rand(-.6, .6), r = rand(4, 8), p = tw(P.s + Math.cos(a) * r, P.x + Math.sin(a) * r, landAt(P.s + Math.cos(a) * r, P.x + Math.sin(a) * r) + .2); khArc(khHand, () => p, .45); KH.bolts.push({ t: .12, p }); }
-  } else if (id === 'fire') {
-    const near = khFoes(16, form ? 3 : 1); S.whoosh(); skinClip(hob, khc(KH_SORA.fire, 'attack_b'), .8);
-    if (near.length) P.heading = Math.atan2(near[0].u.x - P.x, near[0].u.s - P.s);
-    if (near.length) near.forEach(o => khFireball(o.u)); else khFireball(null);
-  } else {   // Cure: a ring of green light rising round him
-    KH.hp = Math.min(KH.max, KH.hp + (form ? 70 : 45)); S.apple(); skinClip(hob, khc(KH_SORA.cure), .9); const p = tw(P.s, P.x, P.y + .2);
-    for (let k = 0; k < 40; k++) { const a = rand(0, TAU); fx.spawn(p.x + Math.cos(a) * .9, p.y + rand(0, .4), p.z + Math.sin(a) * .9, 0, rand(1.5, 3), 0, rand(.5, .9), .35, .05, [.8, 1, .8], [.3, 1, .4], 0, 1); }
-  }
-  return true;
+  const p = POWER[id]; if (!p || KH.magicCD > 0 || KH.atk) return false;
+  const cost = khCost(p); if (KH.mp < cost) { S.click(); return false; }
+  KH.mp -= cost; KH.magicCD = .6; P.fireAnim = .5; KH.spell = id; khFlash('M');
+  if (p.anim) skinClip(hob, khc(KH_SORA[p.anim], 'attack_c'), .9);
+  p.cast(KH.form > 0); return true;
 }
 function khItem(id) {
   if (!(KH.items[id] > 0)) { S.click(); return false; }
   KH.items[id]--; S.apple(); khFlash('I');
-  if (id === 'potion') { KH.hp = Math.min(KH.max, KH.hp + 40); banner('POTION', .6); } else { KH.mp = Math.min(KH.maxMp, KH.mp + 60); banner('ETHER', .6); }
+  if (id === 'potion') KH.hp = Math.min(KH.max, KH.hp + 40); else KH.mp = Math.min(KH.maxMp, KH.mp + 60);
   const p = tw(P.s, P.x, P.y + 1); sparks(p, 16, 3, id === 'potion' ? [.7, 1, .7] : [.7, .85, 1], [.2, .8, .3]);
   return true;
 }
+// the powers menu (Tab): every power, by game; F or H puts the chosen one on that shortcut, 1 to 5 in that place in MAGIC
+const KH_PMENU = { open: false, cur: 0 };
+function khPowersMenu(on) {
+  KH_PMENU.open = on; const el = document.getElementById('khpow'); el.style.display = on ? 'block' : 'none';
+  if (on) { pausedFrom = state; state = 'paused'; khPowersDraw(); } else if (state === 'paused') state = pausedFrom;
+}
+function khPowersDraw() {
+  const P_ = KH_POWER_SET, games = [['KH', 'KINGDOM HEARTS II'], ['JO', 'JEDI OUTCAST'], ['Fable', 'FABLE']];
+  const tag = id => [P_.f === id ? '<b>F</b>' : '', P_.h === id ? '<b>H</b>' : '', ...P_.slots.map((s, i) => s === id ? `<b>${i + 1}</b>` : '')].join('');
+  document.getElementById('khpow').innerHTML = `<div class="t">POWERS<small>W/S or ↑↓ choose · F or H: shortcut · 1–5: MAGIC menu · Tab: close</small></div>
+    <div class="slots">F <i>${POWER[P_.f].name}</i> · H <i>${POWER[P_.h].name}</i> · MAGIC ${P_.slots.map((s, i) => `<i>${i + 1} ${POWER[s].name}</i>`).join(' ')}</div>
+    <div class="cols">${games.map(([g, gn]) => `<div><div class="g">${gn}</div>${KH_POWERS.map((p, i) => p.game !== g ? '' : `<div class="p${i === KH_PMENU.cur ? ' sel' : ''}" data-i="${i}"><span>${p.name}</span><small>${p.mp} MP</small><em>${tag(p.id)}</em><div class="d">${p.desc}</div></div>`).join('')}</div>`).join('')}</div>`;
+}
+function khPowersKey(code) {
+  const n = KH_POWERS.length, P_ = KH_POWER_SET, id = KH_POWERS[KH_PMENU.cur].id;
+  if (code === 'Tab' || code === 'Escape') { khPowersMenu(false); return; }
+  if (code === 'KeyW' || code === 'ArrowUp') KH_PMENU.cur = (KH_PMENU.cur + n - 1) % n;
+  else if (code === 'KeyS' || code === 'ArrowDown') KH_PMENU.cur = (KH_PMENU.cur + 1) % n;
+  else if (code === 'KeyF') P_.f = id; else if (code === 'KeyH') P_.h = id;
+  else if (/^Digit[1-5]$/.test(code)) P_.slots[+code.slice(-1) - 1] = id;
+  else return;
+  S.click(); khSavePowers(); khPowersDraw();
+}
+document.getElementById('khpow').addEventListener('pointerdown', e => { const d = e.target.closest('[data-i]'); if (d) { KH_PMENU.cur = +d.dataset.i; khPowersDraw(); } });
 // Kingdom Hearts II's command menu: Q and E move up and down it, K does what's chosen (ATTACK attacks; MAGIC, ITEMS and
 // DRIVE open their lists, and K again uses what's chosen there); L backs out of a list
 const KH_MENU = [{ id: 'A', name: 'ATTACK' }, { id: 'M', name: 'MAGIC', sub: 'magic' }, { id: 'I', name: 'ITEMS', sub: 'items' }, { id: 'D', name: 'DRIVE', sub: 'drive' }];
-const khSubList = sub => sub === 'magic' ? KH_SPELLS : sub === 'items' ? KH_ITEMS : [{ id: 'white', name: 'WHITE WIZARD' }];
+const khSubList = sub => sub === 'magic' ? KH_POWER_SET.slots.map(i => POWER[i]) : sub === 'items' ? KH_ITEMS : [{ id: 'white', name: 'WHITE WIZARD' }];
 function khMenuMove(d) {
   if (KH.sub) { const n = khSubList(KH.sub).length; KH.subCur = (KH.subCur + d + n) % n; } else KH.cur = (KH.cur + d + KH_MENU.length) % KH_MENU.length;
   S.click();
@@ -7820,11 +7908,11 @@ function khCommand() {
     const c = KH_MENU[KH.cur];
     if (c.id === 'A') { khAttack(); return; }
     if (c.id === 'D' && (KH.drive < 100 || KH.form > 0)) { S.click(); return; }
-    KH.sub = c.sub; KH.subCur = c.sub === 'magic' ? Math.max(0, KH_SPELLS.findIndex(o => o.id === (KH.spell || 'thunder'))) : 0; S.click(); return;
+    KH.sub = c.sub; KH.subCur = c.sub === 'magic' ? Math.max(0, KH_POWER_SET.slots.indexOf(KH.spell)) : 0; S.click(); return;
   }
   const it = khSubList(KH.sub)[KH.subCur];
   const done = KH.sub === 'magic' ? khCast(it.id) : KH.sub === 'items' ? khItem(it.id) : (khDrive(), true);
-  if (done) KH.sub = null;
+  if (done) { KH.sub = null; KH.cur = 0; }   // (and back to ATTACK)
 }
 // the White Wizard: Gandalf's drive form, while the gauge runs down
 function khDrive() {
@@ -7834,6 +7922,18 @@ function khDrive() {
   banner('WHITE WIZARD!', 1.4); S.smash(); cam.shake = .4; KH.hitstop = .12;
   const p = tw(P.s, P.x, P.y + 1); sparks(p, 50, 9, [1, 1, 1], [.8, .9, 1]); puff(p, 10, 1.4, [.9, .95, 1]);
   KH.sword.g.traverse(o => { if (o.material && o.material.color) o.userData.c0 = o.userData.c0 ?? o.material.color.getHex(); });
+}
+// after the animations each frame: in the Kingdom Hearts levels Gandalf's staff is folded away to nothing (just the
+// lightsaber), and the White Wizard glows softly
+function khAfterSkins() {
+  const kh = !!(LV && LV.kh);
+  for (const K of [hob.skinG || hob.skin, hob.skinW]) {
+    if (!K || !K.obj) continue;
+    if (!K.staff) { K.staff = []; K.obj.traverse(o => { if (/^(B_BOWBONE|STAFF|STAFF_LIGHT)$/.test(o.name)) K.staff.push(o); }); }
+    for (const o of K.staff) { if (o.isMesh) o.visible = !kh; else o.scale.setScalar(kh ? 1e-3 : 1); }
+  }
+  if (!KH.wl) { KH.wl = new THREE.PointLight(0xe8eeff, 0, 7, 2); hob.root.add(KH.wl); KH.wl.position.y = 1.4; }
+  KH.wl.intensity = damp(KH.wl.intensity, kh && KH.form > 0 ? 2.2 + Math.sin(T * 3) * .3 : 0, 4, 1 / 60);
 }
 // Gandalf the White: Battle for Middle-earth's own (models/gandalfw.glb) takes the Grey's place while the drive form lasts
 function khWhite(on) {
@@ -7851,13 +7951,13 @@ function khReaction() {
   if (R_.cmd === 'repel') {   // a backhand that sends the berserker flying back the way it came, to blow up among its friends
     const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx) || 1; P.heading = Math.atan2(dx, ds);
     Object.assign(u, { state: 'launch', t: 0, vs: ds / d * 13, vx: dx / d * 13, vy: 8, armed: true });
-    KH.reacting = { u, t: 0, cmd: 'repel', hit: true }; KH.invT = .6; skinClip(hob, 'attack_b', .35); S.saberHit(); S.clash(); KH.hitstop = .1; cam.shake = .3; banner('REPEL!', .8);
+    KH.reacting = { u, t: 0, cmd: 'repel', hit: true }; KH.invT = .6; skinClip(hob, 'attack_b', .35); S.saberHit(); S.clash(); KH.hitstop = .1; cam.shake = .3;
     sparks(tw(P.s + ds / d, P.x + dx / d, P.y + 1.2), 24, 7, [1, 1, 1], [.7, .85, 1]); return;
   }
-  if (R_.cmd === 'sword') { KH.reacting = { u, t: 0, cmd: 'sword', hits: 0, from: [P.s, P.x, P.y] }; KH.invT = 2.4; P.ground = false; skinClip(hob, 'attack_a', .5); S.whoosh(); banner('SWORD RUN!', 1); return; }
+  if (R_.cmd === 'sword') { KH.reacting = { u, t: 0, cmd: 'sword', hits: 0, from: [P.s, P.x, P.y] }; KH.invT = 2.4; P.ground = false; skinClip(hob, 'attack_a', .5); S.whoosh(); return; }
   if (R_.cmd === 'stand') { KH.reacting = { u, t: 0, cmd: 'stand' }; KH.invT = 2.5; bossStand(u); return; }
   KH.reacting = { u, t: 0, hit: false, cmd: 'takedown' }; KH.invT = 1.6;
-  P.vy = 11; P.ground = false; skinClip(hob, 'attack_c', .85); S.saberSwing(); banner('TAKEDOWN!', 1);
+  P.vy = 11; P.ground = false; skinClip(hob, 'attack_c', .85); S.saberSwing();
 }
 // Gandalf's movement while he fights: a roll carries him, a cut closes in and then roots him, a takedown leaps at its foe
 function khMove(dt) {
@@ -7878,8 +7978,10 @@ function khMove(dt) {
   if (A.tgt && ukLive(A.tgt)) P.heading += angDiff(P.heading, Math.atan2(A.tgt.x - P.x, A.tgt.s - P.s)) * Math.min(1, dt * 20);
   if (A.dash && A.t < A.dur * .45) { P.vs = A.dash[0]; P.vx = A.dash[1]; } else { P.vs *= .3; P.vx *= .3; }
 }
-function khHit(u, dmg, fin, air) {
+function khHit(u, dmg, fin, air, again) {
   if (!ukLive(u)) return;
+  dmg *= (KH.berserkT > 0 ? 1.6 : 1) * (KH.sightT > 0 ? 1.25 : 1);
+  if (KH.multiT > 0 && !again) khFx(null, f => { if (f.t < .09) return true; khHit(u, dmg * .6, false, air, true); return false; });   // (Multi-Strike: each blow strikes twice)
   if (u.boss) { bossHit(u, dmg, fin, air); return; }
   if (KH.form > 0) dmg *= 1.5;
   u.hp -= dmg; u.flash = .15; u.stag += fin ? 30 : 12; KH.target = u; KH.targetT = 4; KH.drive = Math.min(100, KH.drive + (KH.form > 0 ? 0 : 3));
@@ -7897,6 +7999,8 @@ function khHit(u, dmg, fin, air) {
 // otherwise it costs HP and throws him back. src is the attacker, or where the blow comes from ({ s, x }).
 function khHurt(dmg, u, o = {}) {
   if (state !== 'play' || KH.invT > 0 || KH.rollT > 0 || KH.reacting || cheats.god) return false;
+  if (KH.reflectT > 0) { if (u.state && ukLive(u)) khHit(u, 12, true); S.clash(); sparks(tw(P.s, P.x, P.y + 1.2), 24, 7, [1, 1, 1], [.7, .9, 1]); KH.invT = .2; return false; }   // (Reflect throws it back)
+  if (KH.shield > 0) { KH.shield -= dmg; S.clash(); sparks(tw(P.s, P.x, P.y + 1.2), 12, 4, [.8, .9, 1], [.4, .6, 1]); KH.invT = .4; return false; }   // (the Physical Shield soaks it)
   const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx) || 1;
   if (!o.unblock && KH.guardT > 0 && (ds * Math.cos(P.heading) + dx * Math.sin(P.heading)) / d > -.25) {
     if (!u.boss && u.state) { Object.assign(u, { state: 'recoil', t: 0, vs: ds / d * 7, vx: dx / d * 7 }); u.stag += 25; }
@@ -7989,7 +8093,7 @@ function ukUpdate(u, dt) {
       u.h += angDiff(u.h, toP) * Math.min(1, dt * 6);
       const want = u.kind === 'b' ? 5 : 3.2, k = clamp(d - want, -1, 1), side = Math.sin(u.t * 1.1 + u.seed) > 0 ? 1 : -1, sp = K.speed;
       ukMove(u, (ds / d * k * sp - dx / d * side * 1.7) * dt, (dx / d * k * sp + ds / d * side * 1.7) * dt); walk = 1;
-      if (live && u.cd <= 0 && dy < 2) {
+      if (live && u.cd <= 0 && dy < 2 && !(u.charmT > 0)) {   // (a turncoat fights for you instead)
         if (u.kind === 'b') { if (d < 14) { u.state = 'wind'; u.atk = 'rush'; u.t = 0; u.windT = .9; S.roar(); } else u.cd = .4; break; }
         if (khTokens() >= (u.kind === 'o' ? 3 : 2)) { u.cd = .3; break; }
         const kind = u.kind === 'o' ? (d < 2.4 ? 'combo' : d < 6 ? 'leap' : null) : d < 2.8 ? 'combo' : d < 9 && Math.random() < .55 ? 'leap' : d < 12 ? 'charge' : null;
@@ -8080,7 +8184,8 @@ function updateKH(dt) {
   const play = state === 'play', A = KH.atk, form = KH.form > 0;
   KH.mp = Math.min(KH.maxMp, KH.mp + dt * (form ? 6 : 2.5));
   for (const c in KH.cmdT) KH.cmdT[c] -= dt;
-  if (form) { KH.form -= dt; KH.drive = KH.form / 22 * 100; if (KH.form <= 0) { KH.form = 0; KH.drive = 0; banner('THE LIGHT FADES', .9); khWhite(false); } }
+  for (const k of ['slowT', 'sightT', 'multiT', 'berserkT', 'reflectT']) KH[k] = Math.max(0, (KH[k] || 0) - dt);
+  if (form) { KH.form -= dt; KH.drive = KH.form / 22 * 100; if (KH.form <= 0) { KH.form = 0; KH.drive = 0; khWhite(false); } }
   // the cut: it lands in the middle part of the swing, on everything in reach in front (the finisher all round); crates break
   if (A) {
     A.t += dt;
@@ -8117,7 +8222,7 @@ function updateKH(dt) {
     const tp = b.u ? tw(b.u.s, b.u.x, b.u.y + (b.u.boss ? b.u.tall * .55 : 1.1)) : b.p || tw(b.s, b.x, landAt(b.s, b.x)); zapFlash(tp, b.u && b.u.boss ? 4 : 2.6); sparks(tp, 14, 6, [.85, .9, 1], [.4, .5, 1]);   // (where the lightning strikes)
     if (b.u && ukLive(b.u)) khHit(b.u, b.u.boss ? 12 : 9, true);
   }
-  for (const u of URUKS.slice()) ukUpdate(u, dt);
+  for (const u of URUKS.slice()) ukUpdate(u, dt * (KH.slowT > 0 ? .3 : 1));   // (Force Speed and Slow Time)
   updateOrbs(dt); updateKHFx(dt);
   // the reaction command: a dizzy one close by, a berserker charging at you, or the Balrog's moment
   KH.react = null;
@@ -8185,8 +8290,8 @@ function khHud() {
   // the command menu, Kingdom Hearts II's: the cursor on the command K will do, and the list it opens beside it
   const form = KH.form > 0, list = KH.sub ? khSubList(KH.sub) : null;
   const dim = c => c.id === 'M' ? KH.mp < 8 : c.id === 'I' ? !(KH.items.potion + KH.items.ether) : c.id === 'D' ? KH.drive < 100 || form : false;
-  const subRow = (o, i) => { const sp = KH.sub === 'magic', cost = sp ? Math.round(o.mp * (form ? .6 : 1)) : 0, n = KH.sub === 'items' ? KH.items[o.id] : null, off = sp ? KH.mp < cost : n === 0;
-    return `<div class="r${i === KH.subCur ? ' sel' : ''}${off ? ' dim' : ''}">${sp && form ? o.w : o.name}<small>${sp ? cost + ' MP' : n !== null ? '×' + n : ''}</small></div>`; };
+  const subRow = (o, i) => { const sp = KH.sub === 'magic', cost = sp ? khCost(o) : 0, n = KH.sub === 'items' ? KH.items[o.id] : null, off = sp ? KH.mp < cost : n === 0;
+    return `<div class="r${i === KH.subCur ? ' sel' : ''}${off ? ' dim' : ''}">${o.name}<small>${sp ? cost + ' MP' : n !== null ? '×' + n : ''}</small></div>`; };
   const sig = [KH.cur, KH.sub, KH.subCur, Math.floor(KH.mp / 4), KH.items.potion, KH.items.ether, KH.drive >= 100, form, ...KH_MENU.map(c => (KH.cmdT[c.id] || 0) > 0)].join();
   if (sig !== khHud.sig) {
     khHud.sig = sig;
@@ -8229,9 +8334,11 @@ showScreen(null); syncPauseBtns();
     if (q.get('autofight')) AUTOFIGHT = { next: () => { const p = LV.layout.plazas.find(p => !p.done), W_ = LV.layout.path;
       if (W_ && p && p.pi !== undefined && Math.hypot(P.s - p.s, P.x - p.x) > p.r - 2) { let bi = 0, bd = 1e9; for (let i = 0; i < W_.length; i += 2) { const d = Math.hypot(W_[i][0] - P.s, W_[i][1] - P.x) + Math.abs(W_[i][2] - P.y); if (d < bd) { bd = d; bi = i; } } const ti = Math.min(p.pi, bi + 14); if (ti < p.pi - 1) return [W_[ti][0], W_[ti][1]]; }   // (along the way, at Helm's Deep)
       const dr = LV.layout.hall && LV.layout.hall.door; return p ? [p.s, p.x] : dr ? [dr.s, dr.x] : [P.s, P.x]; } };
-    if (q.get('sim')) { cheats.god = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (q.get('drive') && LV.kh) { KH.drive = 100; khDrive(); }   // (&drive=1: the White Wizard, for testing)
+    if (q.get('sim')) { cheats.god = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (q.get('cast') === 'all' && LV.kh) { const bad = []; for (const p of KH_POWERS) { try { KH.mp = 100; KH.magicCD = 0; KH.atk = null; if (!khCast(p.id)) bad.push(p.id + ' (not cast)'); for (let i = 0; i < 90; i++) step(1 / 60, true); } catch (e) { bad.push(p.id + ': ' + e.message); } } console.log('castall ' + KH_POWERS.length + ' powers, problems: ' + (bad.join('; ') || 'none') + ', kills ' + gs.kills); }   // (&cast=all: every power in turn, for testing)
+    if (q.get('powers') && LV.kh) setTimeout(() => khPowersMenu(true), 3000);   // (&powers=1: the powers menu, for testing)
+    if (q.get('drive') && LV.kh) { KH.drive = 100; khDrive(); }   // (&drive=1: the White Wizard, for testing)
     if (q.get('menu') && LV.kh) { KH.sub = q.get('menu'); KH.cur = KH_MENU.findIndex(c => c.sub === KH.sub); }   // (&menu=magic: that list open, for testing)
-    if (q.get('cast') && LV.kh) { KH.mp = 100; KH.magicCD = 0; KH.atk = null; khCast(q.get('cast')); for (let i = 0; i < 12; i++) step(1 / 60, true); }   // (&cast=thunder: a spell just before the picture)
+    if (q.get('cast') && q.get('cast') !== 'all' && LV.kh) { KH.mp = 100; KH.magicCD = 0; KH.atk = null; khCast(q.get('cast')); for (let i = 0; i < 12; i++) step(1 / 60, true); }   // (&cast=thunder: a spell just before the picture)
     if (LV.kh) console.log(`${LV.name} after ${q.get('sim')}s:${KH.boss ? ` boss ${KH.boss.state}${KH.boss.a ? '/' + KH.boss.a.type + '/' + KH.boss.a.ph : ''} hp ${Math.round(KH.boss.hp)} phase ${KH.boss.phase},` : ''} drive ${Math.round(KH.drive)} form ${KH.form.toFixed(1)}, reactions ${JSON.stringify(KH.rx || {})}, squares done ${LV.layout.plazas.filter(p => p.done).length}/${LV.layout.plazas.length}, in ${KH.plaza ? LV.layout.plazas.indexOf(KH.plaza) : '-'} wave ${KH.plaza ? KH.plaza.wave : '-'}, uruks ${URUKS.length} (${URUKS.map(u => u.state + ':' + Math.round(u.hp)).join(' ')}), HP ${Math.round(KH.hp)} MP ${Math.round(KH.mp)}, kills ${gs.kills}, at ${P.s.toFixed(0)},${P.x.toFixed(0)},${P.y.toFixed(1)} (ground ${TERR ? terrainAt(P.s, P.x).toFixed(1) : 'none'}, on ${P.ground} ${P.standOn ? P.standOn.kind + ' ' + [P.standOn.y0, P.standOn.y1].map(v => v && v.toFixed(1)) : ''}), state ${state}`);
       if (q.get('pos') || q.get('spring')) console.log(`after ${q.get('sim')}s: s ${P.s.toFixed(1)} x ${P.x.toFixed(1)} y ${P.y.toFixed(1)} ground ${P.ground}`); }   // &sim=6 plays 6 seconds first (invincible)
     if (q.get('info')) setTimeout(() => { renderer.info.autoReset = false; renderer.info.reset(); renderer.setRenderTarget(rt); renderer.render(scene, camera); console.log('scene: ' + renderer.info.render.calls + ' draw calls, ' + renderer.info.render.triangles + ' triangles'); renderer.info.autoReset = true; }, 500);   // &info=1 logs how much one frame draws

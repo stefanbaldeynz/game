@@ -42,24 +42,24 @@ Kingdom Hearts II's controls:
 | --- | --- |
 | **W A S D** (left stick) | Move. |
 | **K** (A) | Does the command the cursor is on in the **command menu** (bottom left). On **ATTACK** it attacks: three cuts and a finisher, each closing in on the nearest enemy, the finisher knocking it flying. In the air it's an air combo, and the last blow slams Gandalf down. On **MAGIC**, **ITEMS** or **DRIVE** it opens that list, and K again uses what's chosen there. |
-| **Q** / **E** (d-pad ▲ ▼) | Move the cursor up and down the menu, or the list that's open (the arrow keys and mouse wheel do too). **Backspace** or **←** backs out of a list. |
-| **F** / **H** | Cast **Thunder** / **Fire** straight away. |
+| **Q** / **E** (d-pad ▲ ▼) | Move the cursor up and down the menu, or the list that's open (the arrow keys and mouse wheel do too). **L**, **Backspace** or **←** backs out of a list. After you use a spell or an item from a list, the cursor goes back to ATTACK. |
+| **F** / **H** | Cast the two shortcut powers straight away (Thunder and Fire to start with). |
+| **Tab** | The **powers menu** (below): choose which powers are on F and H, and the five in MAGIC. |
 | **L** (B) | Jump. |
 | **J** (RT) | **Dodge Roll**: the way you're pushing, or straight back. Nothing touches you while you roll. |
 | **Space** (X) | Guard: blocks a blow from in front and knocks the attacker back. With a direction held it rolls instead. || **I** (Y), or the green prompt | The **reaction command**, when its moment comes. **TAKEDOWN**: an enemy is dizzy (stars over its head), so leap on it and finish it, blasting the others round it. **REPEL**: a berserker is running at you; swat it back to blow up among its friends. Against the Balrog: **SWORD RUN** and **YOU SHALL NOT PASS!** (below). |
 | **Left Shift** / **/** (LB / RB) | Turn the camera left and right. |
-- **Magic:**
-  - **Thunder** (25 MP): Jedi Outcast's Force lightning, forking from Gandalf's hand into up to three enemies.
-  - **Fire** (12 MP): a fireball that seeks its enemy. The Balrog shrugs off most of it.
-  - **Cure** (50 MP): heals.
-  
-  MP is the blue bar, and it slowly comes back by itself.
-- **Items:**
+- **Powers:** every spell and power from Kingdom Hearts II, Jedi Outcast and Fable works here. Press **Tab** to see them all. In that menu, W/S (or ↑↓, or a click) chooses one, **F** or **H** puts it on that shortcut, and **1**–**5** puts it in that place in the MAGIC list. Your choices are remembered. The game pauses while it's open.
+  - **Kingdom Hearts II:** Fire, Blizzard (freezes), Thunder, Cure, Magnet (pulls foes in and holds them up), Reflect (throws blows back).
+  - **Jedi Outcast:** Force Push, Pull, Lightning (a stream from the hand, using Jedi Outcast's own lightning), Grip, Mind Trick (leaves foes dazed, ready for TAKEDOWN), Speed (everything else slows), Jump, Heal, Sight (they take more harm), Saber Throw. (Its passive Saber Offense and Defense aren't powers you cast, so they're not here.)
+  - **Fable:** Lightning (jumps from foe to foe), Fireball, Enflame, Force Push, Slow Time, Multi-Strike, Assassin Rush, Heal Life, Battle Charge, Turncoat (a foe fights for you), Drain Life, Summon (a spirit that fights beside you), Ghost Sword, Physical Shield, Berserk.
+
+  Each costs MP (the blue bar, which slowly comes back by itself). The White Wizard's cost less and hit harder.- **Items:**
   - **Potion:** gives back HP.
   - **Ether:** gives back MP.
   
   You start each level with four Potions and two Ethers.
-- **Drive:** when the yellow drive bar is full (every blow fills it), choose **WHITE WIZARD**. Gandalf becomes Gandalf the White for about twenty seconds: Battle for Middle-earth's own when `models/gandalfw.glb` is there. He gets a combo of five, harder blows, quicker MP, and stronger, cheaper magic: Thundaga, Firaga and Curaga.
+- **Drive:** when the yellow drive bar is full (every blow fills it), choose **WHITE WIZARD**. Gandalf becomes Gandalf the White for about twenty seconds: Battle for Middle-earth's own when `models/gandalfw.glb` is there. He gets a combo of five, harder blows, quicker MP, and stronger, cheaper powers, and he glows white.
 - **On a phone:** ATTACK attacks, MAGIC casts the last spell, and GUARD and DRIVE do what they say.
 - The Uruk-hai fight like Soldier Heartless. They circle you, hopping and strafing, and only two come at you at once. Each one sets itself before it strikes, eyes flaring red:
   - a two-cut combo up close
