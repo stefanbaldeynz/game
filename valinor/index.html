@@ -7462,7 +7462,7 @@ function bossStart(b, type) {
   if (type === 'charge') { S.roar(); A.h = b.h; }
   if (type === 'burst') { S.roar(); mark(warnMesh(b.s, b.x, 0, 6.5, 0, TAU, 0xffa020)); flashV = Math.max(flashV, .25); }
 }
-function bossAttack(b, dt, d, toP) {
+function balAttack(b, dt, d, toP) {
   const A = b.a; A.t += dt; const src = b, f = b.phase > 1 ? .78 : 1;
   switch (A.type) {
     case 'whip':
@@ -7574,9 +7574,9 @@ function bossStand(b) {
   const dome = glowSprite(0xffffff, 1, .95); dome.position.copy(p); khFx(dome, f => { dome.scale.setScalar(2 + f.t * 26); dome.material.opacity = .95 * (1 - f.t / .7); return f.t < .7; });
   S.smash(); S.roar(); cam.shake = 1; flashV = Math.max(flashV, .8); KH.hitstop = .28; banner('YOU SHALL NOT PASS!', 2.2); skinClip(hob, 'attack_e', .8);
   const ds = b.s - P.s, dx = b.x - P.x, d = Math.hypot(ds, dx) || 1; bossMove(b, ds / d * 2.5, dx / d * 2.5);
-  bossHit(b, 60, true, false, true);
+  balHit(b, 60, true, false, true);
 }
-function bossHit(b, dmg, fin, air, react) {
+function balHit(b, dmg, fin, air, react) {
   if (!ukLive(b)) return;
   const p = tw(lerp(b.s, P.s, .55), lerp(b.x, P.x, .55), P.y + 1.2);
   if (b.state === 'intro' || b.state === 'roar') { S.clash(); sparks(p, 8, 4, [1, .8, .5], [1, .4, .1]); return; }   // (it shrugs off blows while it roars)
@@ -7616,7 +7616,7 @@ function bossUpdate(b, dt) {
       b.cd -= dt; if (live && b.cd <= 0) bossPick(b, d);
       break;
     }
-    case 'atk': bossAttack(b, dt, d, toP); if (!b.a) b.cd = rand(.9, 1.8) / f; break;
+    case 'atk': balAttack(b, dt, d, toP); if (!b.a) b.cd = rand(.9, 1.8) / f; break;
     case 'stun': if (b.t > b.stunT) { b.state = 'idle'; b.t = 0; b.cd = .6; } break;
     case 'roar':
       if (b.addsT > 0 && !b.plaza.noAdds) { b.addsT -= dt; if (b.addsT <= 0) ['o', 'o', 'b', 'o'].forEach((k, i) => spawnUruk(k, b.plaza, rand(0, TAU), i * .3)); }
@@ -8709,7 +8709,7 @@ function khHit(u, dmg, fin, air, again) {
   if (!ukLive(u)) return;
   dmg *= (KH.berserkT > 0 ? 1.6 : 1) * (KH.sightT > 0 ? 1.25 : 1);
   if (KH.multiT > 0 && !again) khFx(null, f => { if (f.t < .09) return true; khHit(u, dmg * .6, false, air, true); return false; });   // (Multi-Strike: each blow strikes twice)
-  if (u.boss) { (u.hitFn || bossHit)(u, dmg, fin, air); return; }
+  if (u.boss) { (u.hitFn || balHit)(u, dmg, fin, air); return; }
   if (KH.form > 0) dmg *= 1.5;
   u.hp -= dmg; u.flash = .15; u.stag += fin ? 30 : 12; KH.target = u; KH.targetT = 4; KH.drive = Math.min(100, KH.drive + (KH.form > 0 ? 0 : 3));
   KH.hitstop = fin ? .09 : .045; cam.shake = Math.max(cam.shake, fin ? .35 : .15);
@@ -8951,7 +8951,7 @@ function updateKH(dt) {
       }
       if (R_.t > 1.1) KH.reacting = null;
     } else if (R_.cmd === 'sword') {   // three blows on the Balrog's head
-      for (const [at, n] of [[.7, 1], [.88, 2], [1.08, 3]]) if (R_.t >= at && R_.hits < n) { R_.hits = n; skinClip(hob, KH_CLIPS[n - 1], .2); S.saberSwing(); if (ukLive(R_.u)) bossHit(R_.u, n === 3 ? 32 : 18, n === 3, true, true); }
+      for (const [at, n] of [[.7, 1], [.88, 2], [1.08, 3]]) if (R_.t >= at && R_.hits < n) { R_.hits = n; skinClip(hob, KH_CLIPS[n - 1], .2); S.saberSwing(); if (ukLive(R_.u)) balHit(R_.u, n === 3 ? 32 : 18, n === 3, true, true); }
       if (R_.t > 1.5) KH.reacting = null;
     } else if (R_.t > (R_.cmd === 'stand' || R_.cmd === 'duel' || R_.cmd === 'staff' ? 1.6 : .4)) KH.reacting = null;
   }
