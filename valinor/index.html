@@ -2521,6 +2521,7 @@ function rivendellLayout() {
   for (const [s, x, w, d, h] of L.houses) L.blocks.push([s - w / 2, s + w / 2, x - d / 2, x + d / 2, h]);
   return L;
 }
+const RACE_FORD = 520, RACE_END = 572;   // (the race to the Ford: where the river crosses the road, and where the road ends)
 const LEVELS = [
   {
     name: 'THE FIRST CIRCLE', sub: 'RIDE OF SHADOWFAX', loc: 'mt', next: 'CLIMB TO THE SECOND CIRCLE', R: 50, Y0: 0, base: -26, wallH: 12, fog: 0x2c1a48, ride: true,
@@ -2631,6 +2632,13 @@ const LEVELS = [
     ...rivLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { rivContent(this); },
+  },
+  {
+    // Rivendell's second level: the race to the Ford of Bruinen on Shadowfax, the Nine riding him down (see THE FORD OF BRUINEN)
+    straight: true, roam: true, ride: true, race: true, name: 'THE FORD OF BRUINEN', sub: 'RACE THE NINE', loc: 'riv', theme: 'ford', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 80000, CZ: 0, base: -6, wallH: 0,
+    ...raceLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { raceContent(this); },
   },
   {
     straight: true, name: 'THE MINES OF MORIA', sub: "DURIN'S BANE AWAKES", loc: 'moria', theme: 'moria', next: 'RETURN TO THE MAP', R: 36, Y0: 0, CX: 15000, CZ: 0, base: -40, wallH: 16,
@@ -2838,7 +2846,7 @@ function loadLevel(li) {
   gs.crateTotal = crates.filter(c => c.type !== 'i' && c.type !== 'ib').length;
   // in the courtyard you start on the south side, facing the tree
   gs.cp = LV.arena ? { s: R * Math.PI / 2, x: R - 9.5, y: 0, t: -1, deaths: 0 } : { s: START_S, x: LV.roam ? LV.start[1] : 0, y: TERR ? terrainAt(START_S, LV.start[1]) : 0, t: -1, deaths: 0 };
-  setupNazgul(); setupDuel(); setupFellowship(); setupKH();
+  setupNazgul(); setupRace(); setupDuel(); setupFellowship(); setupKH();
   chase.active = chase.done = false;
   if (LV.door) { LV.door.endBlock.on = true; LV.door.L.rotation.y = LV.door.Rr.rotation.y = 0; LV.door.light.visible = LV.door.glow.visible = false; }
   dragons.forEach((d, i) => { d.active = i < 2 && LV.dz.length > 0; d.away = 0; d.hits = 0; d.spitT = 0; d.s = START_S + rand(30, 60); d.x = -70; d.y = 45; });
@@ -2886,6 +2894,7 @@ function respawn(fresh) {
   const ch = balrogs.find(b => b.def.chase);
   if (!ch || cp.s < ch.def.r1) { chase.active = false; chase.done = false; }
   if (LV.boss) resetBoss();
+  if (LV.race && !fresh) resetRace();
   resetShelob(); resetLava();
   cam.mode = 0; cam.m = 0; Music.mode = 0;
   for (const pl of plats) { pl.gone = 0; pl.cr = 0; pl.fv = 0; pl.cy = pl.by; pl.box.on = true; pl.mesh.visible = true; }
@@ -3483,22 +3492,24 @@ function pickTarget(p, dir) {
   const consider = (pos, kind, ref, maxD, minDot) => { _a.subVectors(pos, p); const d = _a.length(); if (d > maxD || d < .5) return; const dot = _a.dot(dir) / d; if (dot < minDot) return; const sc = d * (2 - dot); if (sc < bs) { bs = sc; best = { kind, ref }; } };
   for (const o of orcs) if (isOrcLive(o)) consider(tw(o.s, o.x, o.y + .8), 'orc', o, 24, .7);
   for (const n of NAZ.list) if (nazLive(n)) consider(tw(n.s, n.x, n.y + 1.2), 'naz', n, 26, .55);
+  if (LV.race) for (const n of RACE.list) if (n.on && raceLive(n)) consider(tw(n.s, n.x, n.y + 2), 'race', n, 30, .2);
   for (const d of dragons) if (d.active && d.away <= 0 && d.m.root.visible) consider(d.pos, 'dragon', d, 55, .25);
   for (const b of balrogs) if (b.state === 'active' || b.state === 'chase') consider(b.m.head.getWorldPosition(new V3()), 'balrog', b, 36, .3);
   if (LV.boss && bossLive()) consider(bossAim(), 'boss', boss, 60, -.2);
   return best;
 }
-function tgtPos(t) { if (t.kind === 'naz') return tw(t.ref.s, t.ref.x, t.ref.y + 1.2); if (t.kind === 'orc') return tw(t.ref.s, t.ref.x, t.ref.y + .8); if (t.kind === 'dragon') return t.ref.pos.clone(); if (t.kind === 'boss') return bossAim(); return t.ref.m.head.getWorldPosition(new V3()); }
+function tgtPos(t) { if (t.kind === 'race') return tw(t.ref.s, t.ref.x, t.ref.y + 2); if (t.kind === 'naz') return tw(t.ref.s, t.ref.x, t.ref.y + 1.2); if (t.kind === 'orc') return tw(t.ref.s, t.ref.x, t.ref.y + .8); if (t.kind === 'dragon') return t.ref.pos.clone(); if (t.kind === 'boss') return bossAim(); return t.ref.m.head.getWorldPosition(new V3()); }
 function updateRockets(dt) {
   for (let i = rockets.length - 1; i >= 0; i--) {
     const r = rockets[i]; r.life -= dt;
-    if (r.tgt) { const k = r.tgt.kind, alive = k === 'naz' ? nazLive(r.tgt.ref) : k === 'orc' ? isOrcLive(r.tgt.ref) : k === 'dragon' ? r.tgt.ref.away <= 0 : k === 'boss' ? bossLive() : (r.tgt.ref.state === 'active' || r.tgt.ref.state === 'chase'); if (!alive) r.tgt = null; }
+    if (r.tgt) { const k = r.tgt.kind, alive = k === 'race' ? raceLive(r.tgt.ref) : k === 'naz' ? nazLive(r.tgt.ref) : k === 'orc' ? isOrcLive(r.tgt.ref) : k === 'dragon' ? r.tgt.ref.away <= 0 : k === 'boss' ? bossLive() : (r.tgt.ref.state === 'active' || r.tgt.ref.state === 'chase'); if (!alive) r.tgt = null; }
     if (r.tgt) { const want = tgtPos(r.tgt).sub(r.p).normalize().multiplyScalar(24); r.v.lerp(want, 1 - Math.exp(-6 * dt)); }
     r.p.addScaledVector(r.v, dt); r.mesh.position.copy(r.p); r.mesh.lookAt(_a.copy(r.p).add(r.v));
     fx.spawn(r.p.x, r.p.y, r.p.z, rand(-.5, .5), rand(-.5, .5), rand(-.5, .5), .35, .25, .05, FW_COLS[Math.random() * 6 | 0], CF2);
     let hitSomething = r.life <= 0;
     if (!hitSomething) for (const o of orcs) if (isOrcLive(o) && r.p.distanceTo(tw(o.s, o.x, o.y + .8)) < 1) { killOrc(o, 'blast'); hitSomething = true; break; }
     if (!hitSomething) for (const n of NAZ.list) if (nazLive(n) && r.p.distanceTo(tw(n.s, n.x, n.y + 1.2)) < 1.25) { nazHit(n); hitSomething = true; break; }
+    if (!hitSomething && LV.race) for (const n of RACE.list) if (n.on && raceLive(n) && r.p.distanceTo(tw(n.s, n.x, n.y + 2)) < 1.8) { raceHit(n); hitSomething = true; break; }
     if (!hitSomething) for (const c of crates) if (c.alive && r.p.distanceTo(crateCenter(c)) < .85) { spinCrate(c); hitSomething = true; break; }
     if (!hitSomething) for (const d of dragons) if (d.away <= 0 && d.m.root.visible && r.p.distanceTo(d.pos) < 2.8) { d.hits++; S.screech(); if (d.hits >= 3) { d.away = 14; d.hits = 0; banner(d.m.skin.obj ? 'FELL BEAST DRIVEN OFF!' : 'DRAGON DRIVEN OFF!'); } hitSomething = true; break; }
     if (!hitSomething) for (const b of balrogs) if ((b.state === 'active' || b.state === 'chase') && (r.p.distanceTo(b.m.head.getWorldPosition(_b)) < 2.4 || r.p.distanceTo(_c.set(0, 3.2, 0).applyMatrix4(b.m.root.matrixWorld)) < 3.4)) { stunBalrog(b); hitSomething = true; break; }
@@ -4270,7 +4281,7 @@ function poseDuelGandalf(dt) {
 
 // --- the Nazgûl: nine black riders hunting through Hobbiton. Spin into them or hit them with fireworks, three times each ---
 const NAZ = { list: [], left: 0, winT: -1, met: false, pools: {}, kind: null };
-function makeNazgul() {
+function makeNazgul(slot = 'nazgul') {
   const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
   const CL = lam(0x141216, { emissive: 0x050407 }), CL2 = lam(0x1e1c22, { side: THREE.DoubleSide });
   part(new THREE.ConeGeometry(.66, 1.95, 10, 1, true), CL2, body, 0, .98, 0);                     // the robe
@@ -4286,7 +4297,7 @@ function makeNazgul() {
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(.6, 12), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .45, depthWrite: false }));
   shadow.rotation.x = -Math.PI / 2; scene.add(shadow); root.visible = shadow.visible = false; scene.add(root);
   const mats = []; root.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); if (!eyes.includes(o)) mats.push(o); } });
-  const M = { root, body, armL, armR, sword, eyes, shadow, mats }; addSkin(M, 'nazgul', body, root); return M;
+  const M = { root, body, armL, armR, sword, eyes, shadow, mats }; addSkin(M, slot, body, root); return M;
 }
 // a spider of Mirkwood: a bloated black body with pale marks, eight jointed legs, a cluster of green eyes and fangs.
 // With your own models it's Battle for Middle-earth's Shelob, smaller (the 'spider' slot).
@@ -5356,7 +5367,7 @@ function updateHUD(dt) {
     bb.style.display = duel.wk.state === 'intro' ? 'none' : 'flex'; document.getElementById('bossfill').style.width = duel.wk.hp + '%';
     const ne = document.getElementById('bossName'); if (ne.textContent !== 'THE WITCH-KING') ne.textContent = 'THE WITCH-KING';
   }
-  const nz = document.getElementById('hNaz'), showN = !!(LV && LV.nazgul) && state !== 'title' && state !== 'map'; nz.style.display = showN ? '' : 'none'; if (showN) { document.getElementById('nNaz').textContent = NAZ.left; document.getElementById('lNaz').textContent = LV.hunt === 'spider' ? 'SPIDERS' : 'NAZGÛL'; }
+  const nz = document.getElementById('hNaz'), showN = !!(LV && (LV.nazgul || LV.race)) && state !== 'title' && state !== 'map'; nz.style.display = showN ? '' : 'none'; if (showN) { document.getElementById('nNaz').textContent = LV.race ? RACE.left : NAZ.left; document.getElementById('lNaz').textContent = LV.hunt === 'spider' ? 'SPIDERS' : 'NAZGÛL'; }
   const fe = document.getElementById('hFel'), showF = !!(LV && LV.layout && LV.layout.fellowship) && state !== 'title' && state !== 'map'; fe.style.display = showF ? '' : 'none'; if (showF) document.getElementById('nFel').textContent = FEL.found + '/' + FEL.total;
   document.getElementById('nLives').textContent = Math.max(0, gs.lives);
 }
@@ -5651,7 +5662,7 @@ const NEAR_R = 2.4;
 function nodeNear() { let best = -1, bd = NEAR_R; NODES.forEach((n, i) => { const d = Math.hypot(tok.p.x - n.x, tok.p.z - n.z); if (d < bd) { bd = d; best = i; } }); return best; }
 const onLand = (x, z) => BOARD ? boardLand(x, z) : coastAt(x, z) > .8;
 // a place with several levels opens its own menu to choose from (Moria; Minas Tirith flies down into the city instead)
-const CHAP_DESC = { moria: ['The dwarf-halls, to the doors of the bridge', 'Face the Balrog on the bridge', 'Fall with the Balrog into the deep'] };
+const CHAP_DESC = { riv: ['Find the Fellowship in the hidden valley', 'Race the Nine to the Ford of Bruinen'], moria: ['The dwarf-halls, to the doors of the bridge', 'Face the Balrog on the bridge', 'Fall with the Balrog into the deep'] };
 let CHAP = null;
 function openChap(loc) {
   const ls = LEVELS.map((L, i) => [L, i]).filter(([L]) => L.loc === loc); CHAP = { loc, ls: ls.map(([, i]) => i), sel: 0 }; tok.dest = null;
@@ -5871,7 +5882,7 @@ function step(dt, noRender) {
   else if (state === 'win') updateWin(dt);
   if (state !== 'paused') {
     if (state !== 'title' && state !== 'map' && state !== 'gameover' && state !== 'complete') {
-      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateFellowship(dt); updateHobbiton(dt); updateDuel(dt); updateSprings(dt); updateKH(gdt);
+      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateRace(dt); updateFellowship(dt); updateHobbiton(dt); updateDuel(dt); updateSprings(dt); updateKH(gdt);
     }
     updateDragons(dt); updateApples(); updatePhial(dt); updateLightning(dt); updateAmbient(dt); updateTree(dt);
     fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt); poseDuelGandalf(dt);
@@ -5929,7 +5940,8 @@ const MODEL_SLOTS = {
   aragorn: { height: 1.95, turn: -Math.PI / 2 }, legolas: { height: 1.9, turn: -Math.PI / 2 }, gimli: { height: 1.35, turn: -Math.PI / 2 }, boromir: { height: 1.95, turn: -Math.PI / 2 },
   fellbeast: { height: 7.5, turn: -Math.PI / 2 }, horse: { height: 2.5, turn: -Math.PI / 2, hide: /gandalf/i, anims: { walk: /^run_a/i, jump: /^fly/i } },
   sauron: { height: 20, turn: -Math.PI / 2 },   // in his own units: the game builds Sauron at .28 scale (about 5.6 tall)
-  spider: { height: 1.6, turn: -Math.PI / 2, src: 'shelob' },   // Mirkwood's spiders: Shelob again (src: whose model it is), smaller
+  spider: { height: 1.6, turn: -Math.PI / 2, src: 'shelob' },
+  blackrider: { height: 3.1, turn: -Math.PI / 2, anims: { walk: /run|wlk|gallop/i } },   // (the race to the Ford: Rise of the Witch-king's Black Rider, on his horse)   // Mirkwood's spiders: Shelob again (src: whose model it is), smaller
 };
 // which animation plays for each action: the first clip whose name matches (case doesn't matter)
 const ANIM_NAMES = { idle: /idle|stand|breath|ready/i, fly: /fly|glid|hover/i, walk: /walk|wala|run|move|gallop/i, attack: /attack|atk|smash|swing|slash|strike|hit_?a/i, hit: /hurt|damage|stun|flinch|react/i, die: /die|death|dead|dtha/i, jump: /jump|fall|air/i };
@@ -7430,6 +7442,133 @@ THEMES.rivkh = natTheme({
   env: { sky: [0x4a8ad0, 0x9ac4e8, 0xf4ead4, 0xffd8a8], fog: [60, 300], fogC: 0xc8d8e0, amb: [0x8a8478, .48], hemi: [0xe4f0ff, 0x5a6a40, .6], sun: [0xfff0d8, 1], east: [0xffc890, .2], cloud: 0xffffff, sunDir: [50, 70, -80] },
   orc: MT_ORC,
   scenery(L) { buildRivKH(L, this); },
+});
+// --- the race to the Ford of Bruinen: Gandalf on Shadowfax down the road through the Trollshaws to Rivendell, the Nine
+//     riding him down. They close up alongside and raise their swords (their eyes go red): spin to cut first, or fire at
+//     them; three blows unhorse one. Fallen trees across the road to jump. Over the Ford, the river rises in a flood of
+//     white horses and sweeps away every rider still behind.
+const RACE = { list: [], left: 0, flood: -1, cpN: 0 };
+function raceGround(s, x) {
+  const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  let y = 2 * Math.sin(s * .012) + 1.4 * Math.sin(s * .031 + 1) + 1;
+  y += ss(6.5, 16, Math.abs(x)) * (5 + Math.sin(s * .07 + x * .2) * 2) + ss(16, 40, Math.abs(x)) * 10;   // (wooded banks either side)
+  const fd = Math.abs(s - RACE_FORD); y = lerp(-1.1, y, ss(6, 14, fd));   // (down to the Ford and out again)
+  return y;
+}
+function raceLayout() {
+  const SC = 2, W = 41, H = 311, CXg = 20, CYg = 300, hs = new Float32Array(W * H), g = new Array(W * H).fill('g');
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) { const k = j * W + i, s = (CYg - j) * SC, x = (CXg - i) * SC; hs[k] = raceGround(s, x); if (Math.abs(x) < 5.5) g[k] = 'p'; if (Math.abs(s - RACE_FORD) < 7) g[k] = 'r'; }
+  const logs = [[86, -6, 1], [150, -1, 6], [214, -6, 6], [270, -6, 0], [330, 0, 6], [392, -6, 6], [452, -6, -1], [488, -6, 6]];
+  // the Nine: [first seen at, side]: three behind at the start, the rest out of the trees along the way
+  const riders = [[0, -1], [0, 1], [0, -1], [120, 1], [140, -1], [250, 1], [270, -1], [380, 1], [400, -1]];
+  return { field: [-12, RACE_END + 10, -6.5, 6.5], start: [0, 0], terrain: { w: W, h: H, hs, cx: CXg, cy: CYg, sc: SC, sea: -999, g }, layout: { blocks: [], logs, riders, plazas: [] } };
+}
+function raceContent(L) {
+  const at = (s, x) => terrainAt(s, x, true);
+  for (const s of [40, 120, 200, 280, 360, 440]) addCrate('r', s, (s / 40 % 2 ? 2 : -2), at(s, 0), 4);
+  for (const s of [70, 240, 410]) addCrate('l', s, 0, at(s, 0), 4);
+  for (let s = 20; s < RACE_FORD - 10; s += 7) { const x = Math.sin(s * .05) * 3; addApple(s, x, at(s, x) + 1.3); }
+}
+function buildRace(L, TH) {
+  const T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
+  const grd = surf(TX.meadow, { sky, vc: true, rough: .95, bump: 1.6, env: .2 });
+  groundMesh(T_, TX.meadow, (k, sl, y) => k === 'p' ? [.85, .7, .5] : k === 'r' ? [.45, .42, .35] : [.55, .7, .45], 3, () => grd);
+  wideFloor(TX.meadow, 0x3a4a2a, 90, 8, 900);
+  const wt = TX.sea.clone(); wt.needsUpdate = true; wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(10, 2); TH.waterTex = wt;
+  const ford = new THREE.Mesh(new THREE.PlaneGeometry(90, 13), new THREE.MeshPhongMaterial({ map: wt, color: 0x5a8aa0, specular: 0xffffff, shininess: 90, transparent: true, opacity: .85 })); ford.rotation.x = -Math.PI / 2; ford.rotation.z = Math.PI / 2; tw(RACE_FORD, 0, -.4, ford.position); scene.add(ford);
+  // the flood: a wall of white water held back upstream, loosed when Gandalf is over
+  const fl = new THREE.Group(); TH.flood = fl; fl.visible = false; scene.add(fl);
+  const foam = new THREE.MeshBasicMaterial({ map: TX.falls, color: 0xf4faff, transparent: true, opacity: .9, side: THREE.DoubleSide, depthWrite: false });
+  for (let k = 0; k < 7; k++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(13, 4 + k % 3), foam); m.position.set(0, 2 + (k % 3), (k - 3) * 1.4); m.rotation.y = Math.PI / 2; fl.add(m); }
+  // trees on the banks, Battle for Middle-earth's or built; fallen ones across the road
+  const trees = propsOf(['ptree01', 'ptree02', 'sb_tree01', 'sb_tree03', 'ptelvnwood01']), wood = lam(0x5a3e24), leaf = lam(0x3a5a2a), list = [];
+  for (let k = 0; k < 260; k++) { const s = rand(-10, RACE_END + 20), side = k % 2 ? 1 : -1, x = side * rand(9, 38); if (Math.abs(s - RACE_FORD) < 10) continue; list.push([s, x]); }
+  list.forEach(([s, x], n) => { const y = at(s, x); if (trees.length && n % 2) { propOne(trees[n % trees.length], s, x, y - .3, rand(0, TAU), rand(9, 15), 'h'); return; } const q = tw(s, x, y); part(GEO.cyl, wood, scene, q.x, q.y + 3, q.z, .45, 6, .45); part(GEO.cone, leaf, scene, q.x, q.y + 8, q.z, 3, 7, 3); });
+  for (const [s, x0, x1] of L.layout.logs) { const w = x1 - x0, x = (x0 + x1) / 2, q = tw(s, x, at(s, x) + .4), m = part(GEO.cyl, wood, scene, q.x, q.y, q.z, .4, w + .6, .4); m.rotation.z = Math.PI / 2; m.updateMatrixWorld(); for (let k = 0; k < 3; k++) { const b = tw(s + rand(-.3, .3), x0 + rand(0, w), at(s, x) + .7); part(GEO.cyl, wood, scene, b.x, b.y, b.z, .08, 1.2, .08).rotation.set(rand(-1, 1), 0, rand(-1, 1)); } }
+  // Rivendell's arch at the end of the road
+  { const q = tw(RACE_END - 4, 0, at(RACE_END - 4, 0)); const pale = lam(0xf0e8d8); for (const sx of [-1, 1]) part(GEO_BOX, pale, scene, q.x + sx * 5, q.y + 3.5, q.z, 1, 7, 1); const ar = new THREE.Mesh(new THREE.TorusGeometry(5, .45, 6, 18, Math.PI), pale); ar.position.set(q.x, q.y + 7, q.z); scene.add(ar); }
+  bakeScenery(scene.children.slice(first));
+}
+// a Nazgûl on a black horse (with your own models, Battle for Middle-earth's mounted Nazgûl)
+function makeRaceRider() {
+  const m = makeNazgul('blackrider'), hz = makeHorse(); if (hz.skin) { const i = SKINS.indexOf(hz.skin); if (i >= 0) SKINS.splice(i, 1); hz.skin = null; }
+  hz.root.traverse(o => { if (o.isMesh && o.material && o.material.color) { o.material = o.material.clone(); o.material.color.multiplyScalar(.12); if (o.material.emissive) o.material.emissive.setHex(0x020203); } });
+  hz.root.visible = false; scene.add(hz.root); return { m, hz };
+}
+const raceLive = n => n.state === 'ride' || n.state === 'wind' || n.state === 'recover';
+function setupRace() {
+  const defs = (LV && LV.race && LV.layout.riders) || [];
+  for (const n of RACE.list) { n.m.root.visible = n.m.shadow.visible = false; n.hz.root.visible = false; }
+  while (RACE.list.length < defs.length) RACE.list.push(makeRaceRider());
+  RACE.list.forEach((n, i) => { const d = defs[i]; n.on = !!d; if (d) Object.assign(n, { at: d[0], side: d[1], state: 'wait', hp: 3, s: -14 - i * 2, x: d[1] * 3, y: 0, vs: 0, h: 0, cd: rand(1, 3), off: -4, wt: 0, flash: 0, t: rand(0, 6) }); });
+  RACE.left = defs.length; RACE.flood = -1; RACE.cpN = 0; if (THEMES.ford && THEMES.ford.flood) THEMES.ford.flood.visible = false;
+}
+function resetRace() {   // after a fall: those already riding come up again from behind
+  for (const [i, n] of RACE.list.entries()) if (n.on && (raceLive(n) || n.state === 'fall')) { if (n.state === 'fall') continue; Object.assign(n, { state: 'ride', s: P.s - 14 - i * 1.5, vs: RIDE_V, off: -4, cd: rand(1.5, 3) }); }
+  for (const n of RACE.list) if (n.state === 'wait' && n.at <= P.s) n.at = P.s + 20;
+}
+function raceHit(n) {
+  if (!raceLive(n)) return; n.hp--; n.flash = .25; S.screech(); cam.shake = Math.max(cam.shake, .3); sparks(tw(n.s, n.x, n.y + 2), 18, 5, [1, 1, 1], [.6, .6, .8]);
+  if (n.hp > 0) { n.state = 'recover'; n.wt = 0; n.off = -3; n.vs -= 4; return; }
+  n.state = 'fall'; n.wt = 0; RACE.left--; gs.kills++; banner(RACE.left ? `A RIDER IS UNHORSED! ${RACE.left} LEFT` : 'THE NINE ARE UNHORSED!', 1.6);
+}
+function updateRace(dt) {
+  if (!LV || !LV.race) return; const live = state === 'play';
+  if (THEMES.ford.waterTex) THEMES.ford.waterTex.offset.x -= dt * .2;
+  if (live && P.ground && P.s > (RACE.cpN + 1) * 110 && P.s < RACE_FORD - 10) { RACE.cpN++; Object.assign(gs.cp, { s: P.s, x: P.x, y: P.y, t: T }); }   // (a checkpoint every 110 m)
+  // the fallen trees: jump them or fall
+  if (live && P.invT <= 0) for (const [s, x0, x1] of LV.layout.logs) if (Math.abs(P.s - s) < .55 && P.x > x0 - .4 && P.x < x1 + .4 && P.y - terrainAt(P.s, P.x, true) < .85) { hurt('hit'); break; }
+  // the Ford: once Gandalf is over, the flood comes down the river
+  if (RACE.flood < 0 && live && P.s > RACE_FORD + 8) { RACE.flood = 0; banner('THE FLOOD OF BRUINEN!', 2.4); S.thunder && S.thunder(); cam.shake = .8; }
+  const FL = THEMES.ford.flood;
+  if (RACE.flood >= 0) {
+    RACE.flood += dt; const fx_ = lerp(-60, 60, Math.min(1, RACE.flood / 3)); FL.visible = RACE.flood < 3.4; tw(RACE_FORD, fx_, 0, FL.position); FL.rotation.y = 0;
+    for (let k = 0; k < 6; k++) fx.spawn(FL.position.x + rand(-1, 1), FL.position.y + rand(0, 5), FL.position.z + rand(-6.5, 6.5), rand(-2, 2), rand(1, 4), rand(-1, 1), rand(.6, 1.2), .9, .3, [1, 1, 1], [.7, .85, 1], .5, 0);
+    for (const n of RACE.list) if (raceLive(n) && n.s < RACE_FORD + 7 && RACE.flood > 1.2) { n.state = 'swept'; n.wt = 0; RACE.left--; }
+    if (RACE.flood > 1.2 && !RACE.sweptMsg) { RACE.sweptMsg = true; if (RACE.list.some(n => n.state === 'swept')) banner('THE RIVER TAKES THEM!', 2); }
+  } else RACE.sweptMsg = false;
+  if (live && P.s > RACE_END - 6) roamWin('YOU REACH RIVENDELL!');
+  for (const [i, n] of RACE.list.entries()) {
+    const m = n.m, hz = n.hz; if (!n.on) continue; n.t += dt; n.cd -= dt; n.flash -= dt;
+    if (n.state === 'wait') { m.root.visible = m.shadow.visible = hz.root.visible = false; if (live && P.s > n.at - (n.at ? 28 : 0)) { n.state = 'ride'; n.s = n.at ? P.s + 6 : P.s - 12 - i * 2; n.x = n.at ? n.side * 18 : n.side * 3; n.vs = RIDE_V; if (n.at) { S.screech(); if (!RACE.met) { RACE.met = true; } } } continue; }
+    if (n.state === 'gone') { m.root.visible = m.shadow.visible = hz.root.visible = false; continue; }
+    const ds = P.s - n.s, dx = P.x - n.x;
+    if (raceLive(n)) {
+      const want = n.state === 'wind' ? P.s + .2 : P.s + n.off, pv = live ? Math.max(P.vs, 4) : 0;
+      n.vs = approach(n.vs, pv + clamp((want - n.s) * 1.6, -6, 8), 10 * dt); n.s += n.vs * dt;
+      const sw = n.state === 'recover' ? 3.6 : 2.2; let tx = P.x - n.side * sw; if (Math.abs(tx) > 5.6) { n.side = -n.side; tx = P.x - n.side * sw; } tx = clamp(tx, -5.6, 5.6);
+      for (const o of RACE.list) if (o !== n && raceLive(o) && Math.abs(o.s - n.s) < 2.2 && Math.abs(o.x - n.x) < 1.6) tx += (n.x >= o.x ? 1 : -1) * 1.5;
+      n.x = approach(n.x, clamp(tx, -6, 6), (Math.abs(n.x) > 7 ? 8 : 4) * dt);
+      if (n.state === 'ride' && live && n.cd <= 0 && Math.abs(ds) < 1.8 && Math.abs(dx) < 2.8) { n.state = 'wind'; n.wt = 0; S.screech(); }
+      if (n.state === 'ride' && n.cd <= 0 && n.off < -1) n.off = rand(-.6, 1.8);
+      if (n.state === 'wind') { n.wt += dt; if (n.wt > .75) { S.whoosh(); sparks(tw(n.s + .6, n.x - n.side * 1.2, n.y + 1.8), 10, 4, [.9, .9, 1], [.5, .5, .7]); if (live && Math.abs(P.s - n.s) < 2.3 && Math.abs(P.x - n.x) < 3 && P.spinT <= 0) hurt('hit'); n.state = 'recover'; n.wt = 0; n.off = -2.6; n.cd = rand(3.2, 5.2); } }
+      if (n.state === 'recover') { n.wt += dt; if (n.wt > 1.3) n.state = 'ride'; }
+      if (live && P.spinT > 0 && Math.hypot(ds, dx) < 3 && n.spinHit !== P.spinId) { n.spinHit = P.spinId; raceHit(n); }
+      n.h = Math.atan2(clamp((tx - n.x) * .3, -.6, .6), 1);
+    } else if (n.state === 'fall') { n.wt += dt; n.vs = approach(n.vs, 0, 8 * dt); n.s += n.vs * dt; if (Math.random() < .5) puff(tw(n.s, n.x, n.y + 1), 1, .8, CSM); if (n.wt > 1.6) n.state = 'gone'; }
+    else if (n.state === 'swept') { n.wt += dt; n.x += 9 * dt; n.s = lerp(n.s, RACE_FORD, Math.min(1, dt * 2)); if (n.wt > 2) n.state = 'gone'; }
+    n.y = (n.state === 'swept' ? -.4 + Math.sin(n.t * 6) * .3 : terrainAt(n.s, n.x, true));
+    // drawing: the horse at a gallop under the rider (the built one; Battle for Middle-earth's comes with its own horse)
+    const own = !!(m.skin && m.skin.obj); m.root.visible = m.shadow.visible = true; hz.root.visible = !own;
+    const rotY = -(trackAng(n.s) + n.h); tw(n.s, n.x, n.y, hz.root.position); hz.root.rotation.set(n.state === 'fall' ? -.3 : 0, rotY, n.state === 'swept' ? .6 : 0);
+    hz.ph += dt * (2 + Math.abs(n.vs) * .62); const gl = clamp(Math.abs(n.vs) / 8, 0, 1); hz.body.position.y = Math.abs(Math.sin(hz.ph)) * .12 * gl; hz.body.rotation.x = Math.sin(hz.ph) * .07 * gl;
+    hz.legs.forEach((l, k) => { const a = Math.sin(hz.ph + [0, .55, Math.PI, Math.PI + .55][k]); l.up.rotation.x = a * .6 * gl; l.lo.rotation.x = Math.max(0, -a) * .9 * gl; });
+    if (own) place(m.root, n.s, n.x, n.y, n.h); else { hz.root.updateMatrixWorld(true); hz.body.localToWorld(m.root.position.set(0, 1.3, -.1)); m.root.rotation.set(0, rotY, 0); }
+    if (n.state === 'fall' && !own) { m.root.position.y -= Math.min(1.3, n.wt * 2); m.root.rotation.x = -Math.min(1.4, n.wt * 2); }
+    tw(n.s, n.x, n.y + .03, m.shadow.position);
+    const up = n.state === 'wind' ? -2.6 * Math.min(1, n.wt / .3) : n.state === 'recover' ? .9 : -.5;
+    m.armR.rotation.x = damp(m.armR.rotation.x, up, n.state === 'recover' ? 30 : 10, dt);
+    m.eyes.forEach(e => e.material.color.setHex(n.state === 'wind' ? 0xff4040 : 0xc8d0ff));
+    skinPlay(m, n.state === 'fall' || n.state === 'swept' ? 'die' : n.state === 'wind' || n.state === 'recover' ? 'attack' : 'walk');
+    if (own && n.state === 'wind' && m.skin.obj) sparks(tw(n.s, n.x, n.y + 3.4), 1, 1, [1, .3, .3], [.6, .1, .1]);   // (a red glint over the BFME rider as he strikes)
+    const fl = n.flash > 0; m.mats.forEach(o => o.material.emissive && o.material.emissive.setHex(fl ? 0x8888aa : 0x050407));
+  }
+}
+THEMES.ford = natTheme({
+  wallTex: TX.rock, floorTex: TX.path, tint: [1, .98, .94], door: 0x6a5a3a,
+  env: { sky: [0x2a4a7a, 0x6a8ab0, 0xd8c8b0, 0xffb878], fog: [40, 220], fogC: 0x8a9aa8, amb: [0x6a6a70, .5], hemi: [0xb8c8e8, 0x3a4a2a, .55], sun: [0xffe0b8, .9], east: [0xff9a50, .3], cloud: 0xe8e8f0, sunDir: [-30, 40, 90] },
+  orc: MT_ORC,
+  scenery(L) { buildRace(L, this); },
 });
 function buildHelms(L, TH) {
   const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
@@ -9651,7 +9790,7 @@ showScreen(null); syncPauseBtns();
     if (q.get('autofight')) AUTOFIGHT = { next: () => { const p = LV.layout.plazas.find(p => !p.done), W_ = LV.layout.path;
       if (W_ && p && p.pi !== undefined && (Math.hypot(P.s - p.s, P.x - p.x) > p.r - 2 || Math.abs(P.y - p.y) > 3)) { let bi = 0, bd = 1e9; for (let i = 0; i < W_.length; i += 2) { const d = Math.hypot(W_[i][0] - P.s, W_[i][1] - P.x) + Math.abs(W_[i][2] - P.y) * 3; if (d < bd) { bd = d; bi = i; } } const ti = Math.min(p.pi, bi + 8); if (ti < p.pi - 1) return [W_[ti][0], W_[ti][1]]; }   // (along the way, at Helm's Deep)
       const dr = LV.layout.hall && LV.layout.hall.door; return p ? [p.s, p.x] : dr ? [dr.s, dr.x] : [P.s, P.x]; } };
-    if (q.get('sim')) { cheats.god = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (q.get('cast') === 'all' && LV.kh) { const bad = []; for (const p of KH_POWERS) { try { KH.mp = 100; KH.magicCD = 0; KH.atk = null; if (!khCast(p.id)) bad.push(p.id + ' (not cast)'); for (let i = 0; i < 90; i++) step(1 / 60, true); } catch (e) { bad.push(p.id + ': ' + e.message); } } console.log('castall ' + KH_POWERS.length + ' powers, problems: ' + (bad.join('; ') || 'none') + ', kills ' + gs.kills); }   // (&cast=all: every power in turn, for testing)
+    if (q.get('sim')) { cheats.god = !q.get('mortal'); for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (q.get('cast') === 'all' && LV.kh) { const bad = []; for (const p of KH_POWERS) { try { KH.mp = 100; KH.magicCD = 0; KH.atk = null; if (!khCast(p.id)) bad.push(p.id + ' (not cast)'); for (let i = 0; i < 90; i++) step(1 / 60, true); } catch (e) { bad.push(p.id + ': ' + e.message); } } console.log('castall ' + KH_POWERS.length + ' powers, problems: ' + (bad.join('; ') || 'none') + ', kills ' + gs.kills); }   // (&cast=all: every power in turn, for testing)
     if (q.get('cutnow') && KH.boss) { bossFall(KH.boss); for (let i = 0; i < Number(q.get('cutnow')) * 60; i++) step(1 / 60, true); }   // (&cutnow=2: the bridge's ending, 2 seconds in, for testing)
     if (q.get('powers') && LV.kh) setTimeout(() => { KH_PMENU.page = q.get('powers') === 'tech' ? 'tech' : 'magic'; khPowersMenu(true); }, 3000);
     if (q.get('techs') && LV.kh) { KH_POWER_SET.tech = KH_TECHS.map(t => t.id); const bad = []; try { for (let i = 0; i < 240; i++) { KH.mp = 100; step(1 / 60, true); } P.ground = true; KH.atk = null; khBattleCharge(); for (let i = 0; i < 40; i++) step(1 / 60, true); P.vy = 9; P.ground = false; khForceJump(); for (let i = 0; i < 30; i++) step(1 / 60, true); KH.mp = 50; for (let i = 0; i < 60; i++) step(1 / 60, true); } catch (e) { bad.push(e.message); } console.log('techs: problems ' + (bad.join('; ') || 'none') + ', MP drained to ' + KH.mp.toFixed(1) + ' in a second, shield ' + (KH.shield || 0).toFixed(1) + ', kills ' + gs.kills); }   // (&techs=1: every technique on, for testing)   // (&powers=1: the powers menu, for testing)
