@@ -8000,7 +8000,11 @@ function khAfterSkins() {
     if (!K || !K.obj) continue;
     if (!K.staff) { K.staff = []; K.obj.traverse(o => { if (/^(B_BOWBONE|STAFF|STAFF_LIGHT)$/.test(o.name)) K.staff.push(o); }); }
     for (const o of K.staff) { if (o.isMesh) o.visible = !kh; else o.scale.setScalar(kh ? 1e-3 : 1); }
+    if (!K.swordBone) K.obj.traverse(o => { if (o.name === 'B_SWORDBONE') K.swordBone = o; });   // (and its own sword, Glamdring: the lightsaber takes its place)
+    if (K.swordBone) K.swordBone.scale.setScalar(kh ? 1e-3 : 1);
   }
+  // the lightsaber hangs on that same bone: keep it its own size however small the bone is
+  const sg = KH.sword && KH.sword.g, b = sg && sg.parent; if (kh && b && b.name === 'B_SWORDBONE') { b.updateWorldMatrix(true, false); sg.scale.setScalar(hob.root.getWorldScale(_a).x / b.getWorldScale(_b).x); }
   if (!KH.wl) { KH.wl = new THREE.PointLight(0xe8eeff, 0, 7, 2); hob.root.add(KH.wl); KH.wl.position.y = 1.4; }
   KH.wl.intensity = damp(KH.wl.intensity, kh && KH.form > 0 ? 2.2 + Math.sin(T * 3) * .3 : 0, 4, 1 / 60);
 }
