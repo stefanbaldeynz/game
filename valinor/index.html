@@ -5707,7 +5707,7 @@ function updateMap(dt) {
   TX.sea.offset.x += dt * .012; TX.sea.offset.y += dt * .005;
   for (const f of mapFx.fires) { const k = 1 + Math.sin(T * 9 + f.ph) * .15; f.sp.scale.set(f.s * k, f.s * (2 - k), 1); }
   for (const c of mapFx.clouds) { c.position.x += dt * .8; if (c.position.x > 100) c.position.x = -90; }
-  if (BOARD || MAP_LOADING) mapFx.mt.visible = mc.zoom > .02;   // on the board, the little city only appears as the camera flies in
+  if (BOARD || MAP_LOADING) mapFx.mt.visible = false;   // (on the War of the Ring board, its own Minas Tirith: the little model city stays hidden)
   mapFx.eye.material.opacity = .85 + Math.sin(T * 3) * .15; mapFx.doom.material.opacity = .7 + Math.sin(T * 2.3) * .2;
   for (const n of NODES) if (n.lock) n.lock.position.y += Math.sin(T * 2.5 + n.x) * .004;
   // Gandalf walks where he's told
@@ -5744,6 +5744,7 @@ function updateMap(dt) {
   }
   // camera: high over the road following Gandalf, then down into the city for the level select
   mc.zoom = approach(mc.zoom, mc.zt, dt * 1.1);
+  (mapFx.marks || []).forEach((g, i) => g.scale.setScalar(3.2 + Math.sin(T * 3 + i) * .5));
   if (state === 'title' && mc.zoom > .78 && !document.getElementById('sTitle').classList.contains('on')) showScreen('sTitle');
   const e = smooth(mc.zoom), tp = tok.g.position;
   // follow Gandalf from high above
@@ -5848,7 +5849,8 @@ function useBoard(gl, regions) {
   EDGE.value.set(BOARD.ex0, BOARD.ex1, BOARD.ez0, BOARD.ez1);
   mapScene.background.setHex(0x14295a); mapScene.fog.color.setHex(0x14295a); mapScene.fog.near = 110; mapScene.fog.far = 230;   // and the far distance fades into it
   // the stop markers again, on the board, and Minas Tirith's little city at its new place (the camera flies into it)
-  for (const n of NODES) { const y = groundY(n.x, n.z); mcyl(1, 1.15, .3, 16, 0xffc21a, n.x, y + .08, n.z, mapScene, { emissive: 0x6a4000 }); }
+  for (const n of NODES) { const y = groundY(n.x, n.z); mcyl(1, 1.15, .3, 16, 0xffc21a, n.x, y + .08, n.z, mapScene, { emissive: 0x6a4000 });
+    const gl = glowSprite(0xffd040, 3.2, .75); gl.position.set(n.x, y + 1.1, n.z); gl.material.depthTest = false; mapScene.add(gl); mapFx.marks = (mapFx.marks || []).concat(gl); }   // (a glow over each place, seen over the hills)
   const mtn = NODES.find(n => n.loc === 'mt'); MT.set(mtn.x - 5.2, groundY(mtn.x, mtn.z), mtn.z); mapFx.mt.position.copy(MT);
   tok.p.set(mtn.x, 0, mtn.z + 2); mc.snap = true;
   const tq = new URLSearchParams(location.search).get('tok'); if (tq) { const n = NODES.find(n => n.loc === tq), [x, z] = n ? [n.x, n.z] : tq.split(',').map(Number); tok.p.set(x, 0, z); }   // ?tok=shire (or x,z) puts Gandalf there, for testing
@@ -7586,11 +7588,13 @@ function balHit(b, dmg, fin, air, react) {
   sparks(p, fin ? 26 : 12, fin ? 8 : 5, [1, .95, .8], [1, .5, .1]); S.saberHit();
   if (b.hp <= 0) { bossFall(b); return; }
   if (b.phase === 1 && b.hp <= b.max * .5) {   // half its gauge gone: it blazes up, and calls more to it
-    b.phase = 2; endBossAtk(b); b.state = 'roar'; b.t = 0; b.addsT = 1.1; skinClip(b.m, 'ignite_ta', 2) || skinClip(b.m, 'roar_a', 2);
+    b.phase = 2; endBossAtk(b); b.state = 'roar'; b.t = 0; b.addsT = 1.1; b.roarT = Math.max(2.4, clipDur(b.m, 'ignite_tb', 2.4) + .3); skinClip(b.m, 'ignite_tb', clipDur(b.m, 'ignite_tb', 2.4)) || skinClip(b.m, 'roar_a', 2);   // (all of it: he blazes up)
     banner('ITS FIRE BLAZES UP!', 1.8); S.roar(); cam.shake = .7; flashV = Math.max(flashV, .3);
     for (let k = 0; k < 40; k++) bfire(tw(b.s + rand(-2.5, 2.5), b.x + rand(-2.5, 2.5), b.y + rand(0, 8)), 2, 2);
   }
 }
+// how long one of a model's own clips runs (or the fallback)
+const clipDur = (M, name, fb) => { const K = M && M.skin, c = K && LOADED[K.slot] && LOADED[K.slot].animations.find(a => a.name === name); return c ? c.duration : fb; };
 function bossFall(b) {
   if (LV.bridge) { if (KH.cut) return; b.hp = 0; b.dead = true; KH.bolts = []; endBossAtk(b); b.state = 'cut'; b.t = 0; KH.cut = { t: 0, b }; KH.react = null; KH.atk = null; for (const o of URUKS) if (!o.boss && ukLive(o)) khHit(o, 999, true); Music.mode = 0; return; }   // (on the bridge: the ending)
   b.hp = 0; endBossAtk(b); b.state = 'fall'; b.t = 0; b.dead = true; KH.react = null; skinPlay(b.m, 'die');
@@ -7602,12 +7606,14 @@ function bossUpdate(b, dt) {
   const ds = P.s - b.s, dx = P.x - b.x, d = Math.hypot(ds, dx) || .01, toP = Math.atan2(dx, ds), live = state === 'play', A = b.a, f = b.phase > 1 ? 1.3 : 1;
   let walk = 0;
   switch (b.state) {
-    case 'intro': {   // up out of the fire in the breach, and down into the arena
-      if (b.t < 0) return; m.root.visible = m.shadow.visible = true;
-      const k = clamp(b.t / 1.6, 0, 1); b.s = lerp(b.from[0], b.to[0], k); b.x = lerp(b.from[1], b.to[1], k); b.y = lerp(b.y0, landAt(b.s, b.x), k) + Math.sin(k * Math.PI) * 12; b.h += angDiff(b.h, toP) * Math.min(1, dt * 3);
-      if (Math.random() < .9) bfire(tw(b.s, b.x, b.y + 2), 2.5, 1.5);
-      if (k >= 1 && !b.landed) { b.landed = true; const p = tw(b.s, b.x, b.y + .3); sparks(p, 60, 12, [1, .9, .6], [1, .4, .1], .3); puff(p, 16, 3); S.smash(); S.roar(); cam.shake = 1.1; skinClip(m, 'roar_a', 1.8); banner('THE BALROG OF MORGOTH!', 2.2); bossWave(b, b.s, b.x, 12, 11, 6); }
-      if (b.t > 3.6) { b.state = 'idle'; b.t = 0; b.cd = .8; }
+    case 'intro': {   // summoned, as in Battle for Middle-earth: a ring of fire opens in the ground and he rises up out of it
+      if (b.t < 0) return; m.root.visible = true; m.shadow.visible = false;
+      if (!b.sum) { b.sum = true; b.s = b.to[0]; b.x = b.to[1]; b.gy = landAt(b.s, b.x); S.roar(); cam.shake = .6; khFx(warnMesh(b.s, b.x, 0, 4.5, 0, TAU, 0xff6a10), f => { f.mesh.material.opacity = .5 + Math.sin(f.t * 12) * .15; return b.state === 'intro' && f.t < 2.4; }); skinClip(m, 'ignite_ta', clipDur(m, 'ignite_ta', 2.6)); }
+      const k = clamp((b.t - .5) / 2, 0, 1); b.y = b.gy - 11 * (1 - k * k * (3 - 2 * k)); b.h += angDiff(b.h, toP) * Math.min(1, dt * 3);
+      for (let q = 0; q < 6; q++) { const a = rand(0, TAU), r = rand(.5, 4.5); bfire(tw(b.s + Math.cos(a) * r, b.x + Math.sin(a) * r, b.gy + .2), 2, 3); }
+      if (Math.random() < .5) smoke.spawn(...tw(b.s + rand(-3, 3), b.x + rand(-3, 3), b.gy + 1).toArray(), rand(-.5, .5), rand(3, 5), rand(-.5, .5), rand(4, 6), 2, 6, [.1, .05, .05], [.2, .15, .15], -.2, .3);
+      if (k >= 1 && !b.landed) { b.landed = true; b.y = b.gy; const p = tw(b.s, b.x, b.y + .3); sparks(p, 60, 12, [1, .9, .6], [1, .4, .1], .3); puff(p, 16, 3); S.smash(); S.roar(); cam.shake = 1.1; skinClip(m, 'roar_a', clipDur(m, 'roar_a', 1.8)); banner('THE BALROG OF MORGOTH!', 2.2); bossWave(b, b.s, b.x, 12, 11, 6); }
+      if (b.t > 4.6) { b.state = 'idle'; b.t = 0; b.cd = .8; }
       break;
     }
     case 'idle': {
@@ -7620,7 +7626,8 @@ function bossUpdate(b, dt) {
     case 'stun': if (b.t > b.stunT) { b.state = 'idle'; b.t = 0; b.cd = .6; } break;
     case 'roar':
       if (b.addsT > 0 && !b.plaza.noAdds) { b.addsT -= dt; if (b.addsT <= 0) ['o', 'o', 'b', 'o'].forEach((k, i) => spawnUruk(k, b.plaza, rand(0, TAU), i * .3)); }
-      if (b.t > 2.4) { b.state = 'idle'; b.t = 0; b.cd = .5; }
+      for (let q = 0; q < 5; q++) bfire(tw(b.s + rand(-2.5, 2.5), b.x + rand(-2.5, 2.5), b.y + rand(0, 8)), 2.2, 2.4);   // (blazing up)
+      if (b.t > (b.roarT || 2.4)) { b.state = 'idle'; b.t = 0; b.cd = .5; }
       break;
     case 'fall':   // down to its knees, and down into the fire under the coomb
       if (b.t > 1.2) b.y -= dt * (1 + (b.t - 1.2) * 4);
@@ -7659,7 +7666,8 @@ function drawBoss(b, dt, walk) {
   m.fires.forEach(fi => { const k = (.8 + .25 * Math.sin(T * 9 + fi.ph) + .1 * Math.sin(T * 23 + fi.ph * 2)) * hot; fi.sp.scale.set(fi.s * .6 * k, fi.s * (.85 + .3 * Math.sin(T * 7 + fi.ph)) * hot, 1); });
   m.halo.material.opacity = (b.phase > 1 ? .48 : .32) + Math.sin(T * 3) * .05;
   if (m.root.visible && b.state !== 'fall') { m.root.updateMatrixWorld(true); for (let k = 0; k < (b.phase > 1 ? 4 : 2); k++) bfire(_a.set(rand(-1.4, 1.4), rand(3, 8.5), rand(-1.2, .6)).applyMatrix4(m.root.matrixWorld), 1.5, 1.6); }
-  skinPlay(m, b.state === 'fall' || b.state === 'cutfall' ? 'die' : b.state === 'stun' ? 'hit' : walk ? 'walk' : 'idle');
+  if (b.state === 'cutfall') { m.root.rotateX(-clamp(b.t * .6, 0, 1.3)); m.root.rotateZ(Math.sin(b.t * 2) * .15); }   // (tipping back as he falls, flailing)
+  skinPlay(m, b.state === 'cutfall' ? 'jump' : b.state === 'fall' ? 'die' : b.state === 'stun' ? 'hit' : walk ? 'walk' : 'idle');
 }
 
 // =====================================================================
@@ -8054,7 +8062,7 @@ function bridgeCut(dt) {
     C.s2 = true; flashV = 1; cam.shake = 1.2; S.smash(); KH.hitstop = .3;
     const p = tw(P.s + Math.cos(P.heading) * 1.4, P.x + Math.sin(P.heading) * 1.4, .2), lt = glowSprite(0xffffff, 2, 1); lt.position.copy(p); khFx(lt, f => { lt.scale.setScalar(2 + f.t * 40); lt.material.opacity = 1 - f.t / 1.4; return f.t < 1.4; });
     sparks(p, 90, 14, [1, 1, 1], [.8, .9, 1], .35);
-    breakFrom(Math.floor(P.s + 1.6)); b.state = 'cutfall'; b.vy = 0; skinPlay(b.m, 'die'); S.roar();
+    breakFrom(Math.floor(P.s + 1.6)); b.state = 'cutfall'; b.t = 0; b.vy = 0; skinClip(b.m, 'fly_a', 6) || skinClip(b.m, 'jump_2', 6); S.roar();
   }
   if (!C.s3 && C.t > 2.6) {   // ...but as he falls, his whip lashes up and catches Gandalf
     C.s3 = true; S.whip(); banner('', .1);
@@ -8335,7 +8343,8 @@ function sarUpdate(b, dt) {
   m.arm.rotation.x = damp(m.arm.rotation.x, cast ? -2.4 : -.3 - walk * .2, 10, dt); m.body.rotation.x = damp(m.body.rotation.x, b.state === 'stun' ? .5 : b.state === 'fall' ? 1.2 : 0, 6, dt);
   m.glow.material.opacity = .5 + cast * .45 + Math.sin(T * 9) * .1; m.glow.scale.setScalar(1 + cast * 1.6);
   if (cast && Math.random() < .5) { const p = sarTip(b); fx.spawn(p.x, p.y, p.z, rand(-1, 1), rand(-1, 1), rand(-1, 1), .3, .25, .05, [1, 1, 1], [.5, .6, 1]); }
-  skinPlay(m, b.state === 'fall' || b.state === 'cutfall' ? 'die' : b.state === 'stun' || b.state === 'stagger' ? 'hit' : b.state === 'atk' || b.state === 'roar' ? 'attack' : walk > .5 ? 'walk' : 'idle');
+  if (b.state === 'cutfall') { m.root.rotateX(-clamp(b.t * .6, 0, 1.3)); m.root.rotateZ(Math.sin(b.t * 2) * .15); }   // (tipping back as he falls, flailing)
+  skinPlay(m, b.state === 'cutfall' ? 'jump' : b.state === 'fall' ? 'die' : b.state === 'stun' || b.state === 'stagger' ? 'hit' : b.state === 'atk' || b.state === 'roar' ? 'attack' : walk > .5 ? 'walk' : 'idle');
 }
 // =====================================================================
 //  KH: fighting the way Sora does in Kingdom Hearts II (Edoras and Helm's Deep, LV.kh)
