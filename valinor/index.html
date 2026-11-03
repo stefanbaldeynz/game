@@ -2618,21 +2618,11 @@ const LEVELS = [
   },
   // ---- one level for each of the other places on the map; each ring sits far out on its own so they never see each other ----
   {
-    // open country to roam: find and defeat the nine Nazgûl hunting through Hobbiton
-    straight: true, roam: true, name: 'HOBBITON', sub: 'THE NINE RIDERS', loc: 'shire', theme: 'hobbiton', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 5000, CZ: 0, base: -6, wallH: 0,
-    field: [-60, 60, -60, 60], start: [-50, 0], layout: hobbitonLayout(),
+    // a Kingdom Hearts level like Helm's Deep: up the lane through Hobbiton, over the Water, round the Party Field to Bag End (see HOBBITON)
+    straight: true, roam: true, kh: true, name: 'HOBBITON', sub: 'THE BLACK RIDERS', loc: 'shire', theme: 'shirekh', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 5000, CZ: 0, base: -6, wallH: 0, winTitle: 'KHAMÛL FLEES THE SHIRE!',
+    ...shireLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
-    nazgul: [[-26, -30], [-8, 30], [20, -18], [34, 40], [-34, 46], [8, -50], [46, -30], [48, 26], [-44, -46]],
-    content() {
-      crateList([
-        ['c', -40, 2], ['c', 2, 8], ['c', 30, -6],
-        ['b', -46, -3], ['b', -46, 3], ['q', -20, 3], ['r', -10, -24], ['b', 8, 30], ['b', 9, 31], ['q', 20, 36], ['p', -30, 30], ['r', 14, -36],
-        ['b', 26, -26], ['l', 56, 0], ['q', -50, -40], ['r', 40, 48], ['b', -16, -40], ['b', 50, 40],
-      ]);
-      aLine(-48, -32, 0, .8, 10); aLine(-28, 0, 0, .8, 12); aArc(34.5, 37.5, 0, .8 + 1.3, 1.4, 4); aArc(39.5, 42.5, 0, .8 + 2.6, 1.4, 4); aLine(44, 47, 0, 4.7, 4);
-      for (let k = 0; k < 12; k++) { const a = k / 12 * TAU; addApple(6 + Math.cos(a) * 3.5, -30 + Math.sin(a) * 3.5, .8); }
-      aLine(-5, 5, -25.4, .85 + .8, 6); aLine(-5, 5, -20.4, .85 + .8, 6); aLine(-12, 20, 34, .8, 10); aLine(-42, -34, 30, .8, 6);
-    },
+    content() { shireContent(this); },
   },
   {
     // the hidden valley to roam: find the other eight of the Fellowship, who follow Gandalf once found
@@ -3947,7 +3937,7 @@ function updateSaberHum() {
     if (!on && S.hum.g.gain.value < .01) { S.hum.s.stop(); S.hum = null; }
   }
 }
-function makeWitchKing() {
+function makeWitchKing(slot = 'witchking') {
   const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
   const CL = lam(0x121014, { emissive: 0x050407 }), CL2 = lam(0x1a181e, { side: THREE.DoubleSide }), MET = lam(0x3a3a42, { emissive: 0x0c0c10 });
   part(new THREE.ConeGeometry(.8, 2.4, 12, 1, true), CL2, body, 0, 1.2, 0);
@@ -3967,7 +3957,7 @@ function makeWitchKing() {
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(.8, 14), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .5, depthWrite: false }));
   shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
   root.scale.setScalar(1.05); root.visible = shadow.visible = false; scene.add(root);
-  const M = { root, body, head, armL, armR, saber, handGlow, eyes, shadow, cape }; addSkin(M, 'witchking', body, root, [saber.g, handGlow]); return M;
+  const M = { root, body, head, armL, armR, saber, handGlow, eyes, shadow, cape }; addSkin(M, slot, body, root, [saber.g, handGlow]); return M;
 }
 // the Witch-king's lightning: a few jagged lines redrawn every frame
 function makeBolts() {
@@ -4164,7 +4154,7 @@ function updateDuel(dt) {
   const mv = (sp, ang) => { W.s += Math.cos(ang) * sp * dt; W.x += Math.sin(ang) * sp * dt; };
   if (W.state === 'intro') {
     turnTo(toG, 3);
-    if ((d < 10 || W.t > 3) && live) { W.state = 'ignite'; W.t = 0; S.saberOnEnemy(); S.screech(); banner('THE WITCH-KING OF ANGMAR!', 2.2); }
+    if ((d < 10 || W.t > 3) && live) { W.state = 'ignite'; W.t = 0; S.saberOnEnemy(); S.screech(); banner(b.title || 'THE WITCH-KING OF ANGMAR!', 2.2); }
   } else if (W.state === 'ignite') {
     W.saberOn = Math.min(1, W.t / .5); turnTo(toG, 4);
     if (W.t > 1.4) { W.state = 'circle'; W.cd = .8; duel.started = true; banner('SWING: SPIN · PUSH: FIRE · STANCE: C', 2.6); }
@@ -4423,10 +4413,10 @@ function updateNazgul(dt) {
   if (NAZ.winT > 0 && state === 'play') { NAZ.winT -= dt; if (NAZ.winT <= 0) roamWin(NAZ.kind.win); }
 }
 function updateHobbiton(dt) {
-  if (!LV || (LV.theme !== 'hobbiton' && LV.theme !== 'oakvale')) return;
+  updateShire(dt); if (!LV || (LV.theme !== 'hobbiton' && LV.theme !== 'oakvale' && LV.theme !== 'shirekh')) return;
   const ch = LV.layout.chimneys;
   if (ch.length && Math.random() < dt * 8) { const c = ch[Math.random() * ch.length | 0]; smoke.spawn(c.x, c.y, c.z, rand(-.2, .2), rand(.8, 1.4), rand(-.2, .2), rand(2.5, 4), .5, 1.6, [.8, .8, .82], [.95, .95, .95], -.05, .35); }
-  if (state === 'play' && LV.theme === 'hobbiton' && Math.random() < dt * .5) fireworkBurst(tw(rand(-6, 18), rand(-40, -18), rand(14, 22)));
+  if (state === 'play' && (LV.theme === 'hobbiton' || LV.theme === 'shirekh') && Math.random() < dt * .5) fireworkBurst(tw(rand(-6, 18), rand(-40, -18), rand(14, 22)));
   const H = THEMES.hobbiton; if (H.wheel) H.wheel.rotation.x += dt * .9;
   if (THEMES.oakvale.seaTex) THEMES.oakvale.seaTex.offset.y += dt * .02;
   for (const f of H.flies || []) {   // butterflies wander, flutter and bob over the flowers
@@ -6157,7 +6147,7 @@ const oakHeading = (fwx, fwy) => Math.atan2(-fwx, -fwy);
 const HOBBIT_HOMES = ['sbgen_01', 'sbgen_02', 'sbgen_03', 'sbgen_04', 'sbgen_05', 'sbgen_06', 'cbhobbitbldg02'];   // (Bag End is only its front: it needs BFME's own hill behind it)
 const OAK_BUILD = [[/TAVERN/, 14, 10, 5], [/HOUSE_LARGE/, 11, 8, 4.6], [/TWO_FLOORS/, 8, 7, 5.2], [/HOUSE_MEDIUM/, 8, 6, 3.2], [/SHOP/, 6, 6, 3.4], [/WAREHOUSE/, 14, 9, 5.2], [/TRADERBRIDGE/, 4, 12, 0]];
 async function loadOakvale() {
-  if (!LOCAL_ASSETS || new URLSearchParams(location.search).get('layout') === 'shire') return;
+  if (!LOCAL_ASSETS || new URLSearchParams(location.search).get('layout') !== 'oakvale') return;   // (?layout=oakvale: Hobbiton on Fable's Oakvale, as it was)
   const r = await fetch('levels/oakvale.json').catch(() => null); if (!r || !r.ok) return;
   try { applyOakvale(LEVELS.find(L => L.loc === 'shire'), await r.json()); console.log('Valinor: Hobbiton is Oakvale (levels/oakvale.json)'); }
   catch (e) { console.warn('Valinor: levels/oakvale.json is there but could not be used:', e.message); }
@@ -7200,6 +7190,128 @@ function helmsContent(L) {
 }
 // a wall of any length and height as one box, laid with stone by where it stands in the world (so it tiles evenly)
 function stoneBox(list, mat) { const im = instanced(GEO_BOX, mat, list); im.userData.noCast = false; return im; }
+// --- Hobbiton, a Kingdom Hearts level like Helm's Deep: its own rolling ground, the lane from the south road over the
+//     Water by the stone bridge, past the mill and the Green Dragon, round the Party Field and up to Bag End under the Hill.
+//     Hobbit holes are dug into knolls along the way (Battle for Middle-earth's, or built ones: a mound, a round door).
+//     Black Riders and orcs come at Gandalf on the road, at the bridge and on the Party Field; Khamûl waits at Bag End.
+function shireRiv(x) { return -12 + Math.sin(x * .05) * 3.5; }   // (the Water's middle, at each x)
+function shireLayout() {
+  const N = 161, C = 80, hs = new Float32Array(N * N), g = new Array(N * N).fill('g');
+  const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  const dome = (s, x, cs, cx, r, h) => { const d = Math.hypot(s - cs, x - cx) / r; return d >= 1 ? 0 : h * (1 - d * d) * (1 - d * d); };
+  // the lane, as points [s, x, half its width]
+  const WAY = [[-68, 0, 3], [-52, 0, 3], [-34, 3, 2.6], [-21, 1, 2.4], [-3, 0, 2.4], [6, -6, 2.6], [10, -18, 2.8], [12, -30, 3], [20, -22, 2.8], [26, -10, 2.8], [34, -2, 3], [37, 0, 3]];
+  const path = []; for (let i = 0; i < WAY.length - 1; i++) { const [s0, x0, h0] = WAY[i], [s1, x1, h1] = WAY[i + 1], n = Math.ceil(Math.hypot(s1 - s0, x1 - x0) / .5); for (let k = 0; k < n; k++) { const t = k / n; path.push([lerp(s0, s1, t), lerp(x0, x1, t), 0, lerp(h0, h1, t)]); } }
+  path.push([...WAY[WAY.length - 1].slice(0, 2), 0, 3]);
+  const plazas = [
+    { s: -54, x: 0, r: 9, waves: [['o', 'o', 'o'], ['n', 'o', 'o', 'o']], title: 'BLACK RIDERS ON THE ROAD!' },
+    { s: -28, x: 4, r: 8, waves: [['w', 'o', 'o'], ['n', 'w', 'w', 'o']], title: 'THE BRIDGE OF THE WATER!' },
+    { s: 12, x: -32, r: 10, waves: [['o', 'o', 'u', 'o'], ['n', 'n', 'o', 'o'], ['u', 'n', 'n', 'o', 'o']], title: 'THE PARTY FIELD!' },
+    { s: 36, x: 0, r: 11, waves: [['K']], title: 'BAG END', boss: true, last: true, breach: [44, 0], bossHp: 620, noAdds: true },
+  ];
+  const holes = [[-64, 9], [-64, -9], [-44, 10], [-42, -10], [2, 12], [-34, 20], [-34, -14], [20, 12], [26, 22], [38, -24], [30, -34], [44, 17], [2, -40], [-6, 26], [16, 32], [-58, 22], [-58, -24], [46, -10]];
+  const nearPath = (s, x) => { let b = 1e9, bi = 0; path.forEach((q, i) => { const d = Math.hypot(s - q[0], x - q[1]); if (d < b) { b = d; bi = i; } }); return [b, path[bi]]; };
+  const homes = [];
+  for (const [s, x] of holes) {
+    const [d, q] = nearPath(s, x); if (d < 6 || plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 5)) continue;
+    const f = Math.atan2(q[1] - x, q[0] - s); homes.push([s, x, f]);
+  }
+  const bagEnd = [46.6, 0, Math.PI];   // (facing south, down to the court)
+  const base = (s, x) => {
+    let y = .9 + Math.sin(s * .07) * Math.cos(x * .06) * .7 + Math.sin(s * .19 + x * .13) * .25;
+    y += 20 * Math.max(ss(66, 84, Math.abs(s)), ss(66, 84, Math.abs(x)));   // (green hills all round)
+    y += dome(s, x, 60, 0, 26, 10) + 4 * ss(44, 50, s) * ss(18, 7, Math.abs(x));   // (the Hill, Bag End cut into its face)
+    for (const [hs_, hx, f] of homes) y = Math.max(y, dome(s, x, hs_ - Math.cos(f) * 1.6, hx - Math.sin(f) * 1.6, 10, 4.4) + .9);   // (each hole's knoll, round it and over its back: only the door side open)
+    const rd = Math.abs(s - shireRiv(x)); y = lerp(-1.6, y, ss(3.2, 6, rd));   // (the Water)
+    return y;
+  };
+  const wB = new Float32Array(N * N), yR = new Float32Array(N * N), cell = (s, x) => [Math.round(C - s), Math.round(C - x)];
+  const carve = (s, x, y, half, fall, kind) => {
+    const [j0, i0] = cell(s, x), R_ = Math.ceil(half + fall);
+    for (let j = j0 - R_; j <= j0 + R_; j++) for (let i = i0 - R_; i <= i0 + R_; i++) {
+      if (i < 0 || j < 0 || i >= N || j >= N) continue; const d = Math.hypot(C - j - s, C - i - x), e = clamp((d - half) / fall, 0, 1), w = 1 - e * e * (3 - 2 * e), k = j * N + i;
+      if (w > wB[k]) { wB[k] = w; yR[k] = y; } if (kind && d < half - .3) g[k] = kind;
+    }
+  };
+  for (const p of plazas) p.y = base(p.s, p.x) * (p.boss ? 1 : 1);
+  plazas[3].y = Math.max(1, base(30, 0));
+  for (const q of path) { const rd = Math.abs(q[0] - shireRiv(q[1])); q[2] = rd < 7 ? 1 : base(q[0], q[1]); for (const p of plazas) if (Math.hypot(q[0] - p.s, q[1] - p.x) < p.r) q[2] = p.y; }
+  for (let i = 0; i < path.length; i += 2) { const [s, x, y, h] = path[i]; if (Math.abs(s - shireRiv(x)) < 6.5) continue; carve(s, x, y, h + .3, 2.2, 'p'); }
+  for (const p of plazas) carve(p.s, p.x, p.y, p.r + .5, p.boss ? 3 : 4, p.boss ? 'a' : 's');
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = C - j, x = C - i, b0 = base(s, x); hs[k] = lerp(b0, yR[k], wB[k]); if (Math.abs(s - shireRiv(x)) < 3.6) g[k] = 'r'; }
+  // the stone bridge over the Water: a hump of floor in steps, low walls along both sides
+  const blocks = [], bs = shireRiv(0), BL = 13, BW = 2.2;
+  for (let k = 0; k < 26; k++) { const t0 = k / 26, t1 = (k + 1) / 26, s0 = bs - BL / 2 + t0 * BL, s1 = bs - BL / 2 + t1 * BL, y = 1 + Math.sin((t0 + t1) / 2 * Math.PI) * 1.1; blocks.push([s0, s1, -BW, BW, y, 'floor', -6]); }
+  for (const sx of [-1, 1]) blocks.push([bs - BL / 2 + 1.5, bs + BL / 2 - 1.5, sx * BW + (sx > 0 ? 0 : -.5), sx * BW + (sx > 0 ? .5 : 0), 3.4, 'wall', -6]);
+  // the Hill and the knolls are walls where they rise steeply (the ground itself carries Gandalf over the gentle parts)
+  return { field: [-74, 74, -74, 74], start: [-66, 0], terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g },
+    layout: { blocks, path, plazas, homes, bagEnd, bridge: [bs, 0, BL, BW], chimneys: [], mill: [shireRiv(-26) + 6.5, -26], dragon: [-2, 16, -Math.PI / 2], partyTree: [20, -44], pavilion: [2, -46], base } };
+}
+function shireContent(L) {
+  const Y = L.layout; khRings(Y);
+  for (let i = 10; i < Y.path.length - 10; i += 14) { const [s, x, y] = Y.path[i]; if (Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 1) || Math.abs(s - shireRiv(x)) < 7) continue; addApple(s, x, y + .8); }
+  for (const p of Y.plazas) { if (p.boss) continue; for (const [a, k] of [[.8, 'b'], [2.6, Y.plazas.indexOf(p) % 2 ? 'su' : 'q'], [4.6, 'b']]) addCrate(k, p.s + Math.cos(a) * (p.r - 1.8), p.x + Math.sin(a) * (p.r - 1.8), p.y, 4); }
+  addCrate('q', 30, -6, Y.plazas[3].y, 4); addCrate('su', 30, 6, Y.plazas[3].y, 4);
+}
+function buildShire(L, TH) {
+  const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
+  const grd = surf(TX.meadow, { sky, vc: true, rough: .95, bump: 1.6, env: .2 });
+  groundMesh(T_, TX.meadow, (k, sl, y) => k === 'p' ? [.78, .64, .44] : k === 'r' ? [.42, .4, .3] : k === 's' ? [.9, .92, .7] : k === 'a' ? [.95, .85, .62] : sl > 1.3 ? [.72, .78, .5] : [.82, .95, .62], 5, () => grd);
+  wideFloor(TX.meadow, 0x6a8a4a, 90, 14, 900);
+  // the Water: a strip of moving water down the river bed
+  const wt = TX.sea.clone(); wt.needsUpdate = true; wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(30, 3); TH.waterTex = wt;
+  const wg = new THREE.PlaneGeometry(1, 1, 80, 1), wp = wg.attributes.position; for (let i = 0; i < wp.count; i++) { const u = wp.getX(i), v = wp.getY(i), x = u * 150, s = shireRiv(x) + v * 8, q = tw(s, x, -.45); wp.setXYZ(i, q.x, q.y, q.z); }
+  wg.computeVertexNormals(); const water = new THREE.Mesh(wg, new THREE.MeshPhongMaterial({ map: wt, color: 0x4a8aa0, specular: 0xfff0d0, shininess: 80, transparent: true, opacity: .82, side: THREE.DoubleSide })); water.userData.keep = true; scene.add(water);
+  const stone = surf(TX.rock, { sky, color: 0xb0a890, rough: .8, bump: 2.6 }), wood = lam(0x6a4a2a), thatch = lam(0xb89a5a);
+  // the bridge: Battle for Middle-earth's, or a hump of stone with low walls
+  { const [bs, bx, BL, BW] = Y.bridge; if (!(PROPS.sbbridge && propOne('sbbridge', bs, bx, .2, 0, BL + 1, 'w'))) { for (let k = 0; k < 13; k++) { const t = (k + .5) / 13, s = bs - BL / 2 + t * BL, y = 1 + Math.sin(t * Math.PI) * 1.1; const q = tw(s, bx, y - .4); part(GEO_BOX, stone, scene, q.x, q.y, q.z, BW * 2 + 1, .8, BL / 13 + .05); for (const sx of [-1, 1]) { const w = tw(s, bx + sx * (BW + .25), y + .35); part(GEO_BOX, stone, scene, w.x, w.y, w.z, .5, .7, BL / 13 + .05); } } } }
+  // the hobbit holes: each in its knoll, its round door looking down to the lane
+  const homes = propsOf(HOBBIT_HOMES), doorCols = [0x2a6a2a, 0xc8a020, 0x9a2a1a, 0x2a4a8a, 0x5a3a8a];
+  const moundM = surf(TX.meadow, { sky, color: 0x8ab05a, rough: .95, bump: 1.6 }), frameM = lam(0x6a4a2a), winM = lam(0xffe0a0, { emissive: 0x8a6a30 }), knobM = lam(0xd8b040, { emissive: 0x3a2a10 });
+  Y.homes.forEach(([s, x, f], i) => {
+    const y = at(s, x);
+    if (homes.length) { const pr = propOne(homes[i % homes.length], s, x, y - .25, f, 10); if (pr) { pr.g.updateMatrixWorld(true); Y.chimneys.push(pr.g.localToWorld(new V3(0, PROPS[homes[i % homes.length]].size.y * .9, 0))); return; } }
+    const gg = new THREE.Group(); place(gg, s, x, y - .1, f); scene.add(gg);
+    const r = 4.2, m = new THREE.Mesh(new THREE.SphereGeometry(r, 22, 10, 0, TAU, 0, Math.PI / 2), moundM); m.scale.y = .85; m.position.z = -2.2; gg.add(m);
+    part(GEO_BOX, stone, gg, 0, 1.15, 1.2, 4.2, 2.3, 1.2); part(new THREE.CircleGeometry(1.02, 24), frameM, gg, 0, .98, 1.81); part(new THREE.CircleGeometry(.9, 24), lam(doorCols[i % doorCols.length]), gg, 0, .98, 1.82);
+    part(GEO.sph, knobM, gg, 0, .98, 1.9, .1, .1, .1);
+    for (const sx of [-1, 1]) { part(new THREE.CircleGeometry(.48, 16), frameM, gg, sx * 1.5, 1.3, 1.81); part(new THREE.CircleGeometry(.38, 16), winM, gg, sx * 1.5, 1.3, 1.82); }
+    part(GEO.cyl, stone, gg, 1.4, 3.6, -1.8, .25, 1.4, .25); gg.updateMatrixWorld(true); Y.chimneys.push(gg.localToWorld(new V3(1.4, 4.4, -1.8)));
+  });
+  // Bag End, in the face of the Hill above the court
+  { const [s, x, f] = Y.bagEnd, y = Y.plazas[3].y; if (!(PROPS.sbbagend && propOne('sbbagend', s, x, y - .1, f, 17))) { const gg = new THREE.Group(); place(gg, s, x, y, f); scene.add(gg); part(GEO_BOX, stone, gg, 0, 1.6, -.3, 7, 3.2, 1); part(new THREE.CircleGeometry(1.3, 28), frameM, gg, 0, 1.3, .21); part(new THREE.CircleGeometry(1.15, 28), lam(0x2a6a2a), gg, 0, 1.3, .22); part(GEO.sph, knobM, gg, 0, 1.3, .32, .14, .14, .14); for (const sx of [-1, 1]) { part(new THREE.CircleGeometry(.6, 18), frameM, gg, sx * 2.4, 1.6, .21); part(new THREE.CircleGeometry(.5, 18), winM, gg, sx * 2.4, 1.6, .22); } } }
+  // the mill on the Water, the Green Dragon, the Party Tree and the pavilion
+  { const [s, x] = Y.mill; if (!(PROPS.sbmill && propOne('sbmill', s, x, at(s, x) - .2, Math.PI, 11))) { const q = tw(s, x, at(s, x)); part(GEO_BOX, stone, scene, q.x, q.y + 2.5, q.z, 6, 5, 6); } }
+  { const [s, x, f] = Y.dragon; if (!(PROPS.sbgrndrg && propOne('sbgrndrg', s, x, at(s, x) - .2, f, 13))) { const gg = new THREE.Group(); place(gg, s, x, at(s, x), f); scene.add(gg); part(GEO_BOX, lam(0xe8dcc0), gg, 0, 2, 0, 9, 4, 7); const rf = part(new THREE.ConeGeometry(6.4, 3, 4), thatch, gg, 0, 5.5, 0); rf.rotation.y = Math.PI / 4; rf.scale.z = .8; } }
+  { const [s, x] = Y.partyTree, q = tw(s, x, at(s, x)); if (!(PROPS.sb_tree02 && propOne('sb_tree02', s, x, at(s, x) - .2, 0, 16, 'h'))) { part(GEO.cyl, wood, scene, q.x, q.y + 4, q.z, 1.2, 8, 1.2); part(GEO.sph, lam(0x3a7a2a), scene, q.x, q.y + 10, q.z, 7, 5, 7); } }
+  { const [s, x] = Y.pavilion; if (!(PROPS.sbparty01 && propOne('sbparty01', s, x, at(s, x) - .1, Math.PI / 2, 10))) { const q = tw(s, x, at(s, x)); part(new THREE.ConeGeometry(5, 4, 10), lam(0xf0ece0), scene, q.x, q.y + 4, q.z); } }
+  // trees, hedges along the lane and flowers
+  const trees = propsOf(['sb_tree01', 'sb_tree03', 'sb_tree04', 'sb_tree02']); let n = 0;
+  for (let k = 0; k < 140 && n < 46; k++) {
+    const s = rand(-68, 66), x = rand(-68, 68); if (Math.abs(s - shireRiv(x)) < 6 || Y.path.some(q => Math.hypot(q[0] - s, q[1] - x) < q[3] + 11) || Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 10) || Y.homes.some(h => Math.hypot(h[0] - s, h[1] - x) < 8) || Math.hypot(s - 46, x) < 10) continue;
+    n++; const y = at(s, x);
+    if (trees.length) { propOne(trees[n % trees.length], s, x, y - .2, rand(0, TAU), rand(8, 13), 'h'); continue; }
+    const q = tw(s, x, y); part(GEO.cyl, wood, scene, q.x, q.y + 2, q.z, .5, 4, .5); part(GEO.sph, lam(0x4a8a3a), scene, q.x, q.y + 5, q.z, 3, 2.6, 3);
+  }
+  const hedge = propsOf(['pshirehedge01', 'pshirehedge02']), fl = [0xe84a6a, 0xf0d040, 0xffffff, 0xa060e0, 0xff8a30];
+  for (let i = 6; i < Y.path.length - 6; i += 9) {
+    const [s, x, y, h] = Y.path[i], a = Math.atan2(Y.path[i + 1][1] - Y.path[i - 1][1], Y.path[i + 1][0] - Y.path[i - 1][0]);
+    for (const side of [-1, 1]) {
+      const ps = s - Math.sin(a) * side * (h + 1.4), px = x + Math.cos(a) * side * (h + 1.4); if (Math.abs(ps - shireRiv(px)) < 7 || Y.plazas.some(p => Math.hypot(ps - p.s, px - p.x) < p.r + 2)) continue;
+      if (hedge.length && (i / 9 | 0) % 3) propOne(hedge[i % hedge.length], ps, px, at(ps, px) - .1, a, 4.2);
+      else for (let k = 0; k < 4; k++) { const q = tw(ps + rand(-1, 1), px + rand(-1, 1), at(ps, px) + .2); part(GEO.sph, lam(fl[k % 5]), scene, q.x, q.y, q.z, .22, .22, .22); }
+    }
+  }
+  bakeScenery(scene.children.slice(first));
+}
+// each frame in the Shire: the Water flows (the chimneys, butterflies and fireworks are Hobbiton's own, in updateHobbiton)
+function updateShire(dt) { if (!LV || LV.theme !== 'shirekh') return; const w = THEMES.shirekh.waterTex; if (w) w.offset.x -= dt * .05; }
+THEMES.shirekh = natTheme({
+  wallTex: TX.rock, floorTex: TX.meadow, tint: [1, .97, .9], door: 0x3a8a3a,
+  env: { sky: [0x3f86d8, 0x8cc0ec, 0xf2ecd2, 0xffd8a0], fog: [70, 360], fogC: 0xd2e2dc, amb: [0x8a8070, .45], hemi: [0xdcecff, 0x5a6a30, .62], sun: [0xffe6c0, 1.05], east: [0xffc890, .16], cloud: 0xffffff, sunDir: [-60, 75, -85] },
+  orc: MT_ORC,
+  scenery(L) { buildShire(L, this); },
+});
 function buildHelms(L, TH) {
   const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
   const stone = surf(TX.hdStone, { sky, rough: .82, bump: 3.2, wet: .75, env: .5, tri: 3.2 }), stoneDark = surf(TX.hdStone, { sky, color: 0x8a8a90, rough: .85, bump: 3.2, wet: .6, env: .4, tri: 3.2 });
@@ -8195,8 +8307,8 @@ THEMES.fall = natTheme({
 //     a leap down onto a red circle that bursts in green Morgul fire (jump the ring); a stream of lightning from his hand
 //     (DEFLECT it back into him). Half his gauge gone, he fades into the mist and strikes from behind, and calls
 //     wraith-orcs out of the dark. Beaten down near the end: FLAME OF ANOR finishes him.
-function spawnWitchKing(pl, delay = 0) {
-  const m = makeWitchKing(); m.root.visible = m.shadow.visible = false; if (m.skin) m.skin.temp = true;
+function spawnWitchKing(pl, delay = 0, slot) {
+  const m = makeWitchKing(slot); m.root.visible = m.shadow.visible = false; if (m.skin) m.skin.temp = true;
   const b = { m, boss: true, kind: 'W', name: 'WITCH-KING', hp: pl.bossHp || 760, max: pl.bossHp || 760, bars: 4, r: .7, tall: 2.9, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null,
     state: 'intro', t: -delay - .3, h: 0, cd: 1.4, n: 0, upd: wkUpdate, hitFn: wkHit, reactFn: wkReact, reaction: wkReaction, s: pl.s + 6, x: pl.x, y: pl.y };
   b.h = Math.atan2(P.x - b.x, P.s - b.s); URUKS.push(b); KH.boss = b; Music.mode = 1; return b;
@@ -8287,7 +8399,7 @@ function wkHit(b, dmg, fin, air, react) {
   if (KH.form > 0) dmg *= 1.5; if (b.state === 'stun' || (b.a && b.a.ph === 'spent')) dmg *= 1.5;
   b.hp -= dmg; b.flash = .1; if (!react) b.rev += fin ? 20 : 8; KH.target = b; KH.targetT = 6; if (KH.form <= 0) KH.drive = Math.min(100, KH.drive + 2);
   KH.hitstop = Math.max(KH.hitstop, react ? .12 : fin ? .07 : .035); cam.shake = Math.max(cam.shake, fin ? .3 : .12); sparks(p, fin ? 24 : 12, fin ? 8 : 5, [1, .7, .6], [.8, .2, .2]); S.saberHit();
-  if (b.hp <= 0) { b.hp = 0; wkEnd(b); b.state = 'fall'; b.t = 0; b.dead = true; KH.react = null; skinPlay(b.m, 'die'); for (const o of URUKS) if (!o.boss && ukLive(o)) khHit(o, 999, true); banner('THE WITCH-KING IS DRIVEN OFF!', 2.4); KH.hitstop = .35; flashV = Math.max(flashV, .5); Music.mode = 0; return; }
+  if (b.hp <= 0) { b.hp = 0; wkEnd(b); b.state = 'fall'; b.t = 0; b.dead = true; KH.react = null; skinPlay(b.m, 'die'); for (const o of URUKS) if (!o.boss && ukLive(o)) khHit(o, 999, true); banner(b.endTitle || 'THE WITCH-KING IS DRIVEN OFF!', 2.4); KH.hitstop = .35; flashV = Math.max(flashV, .5); Music.mode = 0; return; }
   if (fin && !react && b.state === 'idle') { b.state = 'stagger'; b.t = 0; const ds = b.s - P.s, dx = b.x - P.x, d = Math.hypot(ds, dx) || 1; b.vs = ds / d * 5; b.vx = dx / d * 5; }
   if (b.phase === 1 && b.hp <= b.max * .5) { b.phase = 2; wkEnd(b); b.state = 'roar'; b.t = 0; banner('THE SHADOW DEEPENS', 1.6); S.roar && S.roar(); puff(tw(b.s, b.x, b.y + 1), 30, 3, [.04, .04, .06]); }
 }
@@ -8297,7 +8409,7 @@ function wkUpdate(b, dt) {
   let walk = 0, arm = -.3;
   switch (b.state) {
     case 'intro':   // out of a pillar of black mist in the middle of the ring
-      if (b.t < 0) return; if (!b.shown) { b.shown = true; m.root.visible = m.shadow.visible = true; puff(tw(b.s, b.x, b.y + 1), 40, 3, [.03, .03, .05]); S.roar && S.roar(); cam.shake = .5; banner('THE WITCH-KING OF ANGMAR!', 2.2); flashV = Math.max(flashV, .3); }
+      if (b.t < 0) return; if (!b.shown) { b.shown = true; m.root.visible = m.shadow.visible = true; puff(tw(b.s, b.x, b.y + 1), 40, 3, [.03, .03, .05]); S.roar && S.roar(); cam.shake = .5; banner(b.title || 'THE WITCH-KING OF ANGMAR!', 2.2); flashV = Math.max(flashV, .3); }
       if (Math.random() < .6) smoke.spawn(...tw(b.s + rand(-1, 1), b.x + rand(-1, 1), b.y + rand(0, 2)).toArray(), rand(-.5, .5), rand(.5, 1.5), rand(-.5, .5), 1.4, 1.5, 3, [.03, .03, .05], [.1, .1, .12], 0, .3);
       b.h += angDiff(b.h, toP) * Math.min(1, dt * 3); arm = -2.4; if (b.t > 2.2) { b.state = 'idle'; b.t = 0; b.cd = .8; } break;
     case 'idle': {   // circling, his blade low
@@ -8702,6 +8814,7 @@ const UK_KINDS = {
   o: { hp: 11, r: .45, name: 'ORC', speed: 4.6, dmg: 6, slot: 'orc' },
   w: { hp: 15, r: .6, name: 'WARG', speed: 6.2, dmg: 9, slot: 'warg' },
   b: { hp: 16, r: .55, name: 'BERSERKER', speed: 3.8, dmg: 18, slot: 'berserker' },
+  n: { hp: 26, r: .55, name: 'BLACK RIDER', speed: 3.6, dmg: 11, slot: 'nazgul' },
 };
 const khOn = () => !!(LV && (LV.kh || LV.khl));   // (the full Kingdom Hearts levels, or the old ones with its fighting)
 function setupKH() {
@@ -9125,6 +9238,7 @@ function spawnUruk(kind, pl, a, delay) {
   if (kind === 'B') return spawnKHBalrog(pl, delay);
   if (kind === 'S') return spawnSaruman(pl, delay);
   if (kind === 'W') return spawnWitchKing(pl, delay);
+  if (kind === 'K') return Object.assign(spawnWitchKing(pl, delay, 'nazgul'), { name: 'KHAMÛL', title: 'KHAMÛL, THE BLACK RIDER!', endTitle: 'KHAMÛL FLEES THE SHIRE!' });
   if (kind === 'X') return spawnSauronKH(pl, delay);
   if (kind === 'F') return spawnFallBalrog(pl, delay);
   const K = UK_KINDS[kind], R2 = pl.r * rand(.35, .7);
