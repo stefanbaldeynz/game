@@ -5260,8 +5260,9 @@ function updateCamera(dt) {
     if (state === 'play' && cam.man <= 0 && onTower) { const inA = Math.atan2(-P.x, -P.s); cam.yaw += angDiff(cam.yaw, inA + clamp(angDiff(P.heading, inA), -.95, .95)) * (1 - Math.exp(-3 * dt)); }
     else if (state === 'play' && cam.man <= 0) { if (bo)cam.yaw += angDiff(cam.yaw, Math.atan2(bo.x - P.x, bo.s - P.s)) * (1 - Math.exp(-2.4 * dt)); else { const mv = Math.hypot(P.vs, P.vx); if (mv > 1) cam.yaw += angDiff(cam.yaw, P.heading) * (1 - Math.exp(-1.7 * dt * Math.min(1, mv / RUN))); } }
     let tgy = P.ground ? P.y : Math.min(cam.gy, P.y + 1.2); cam.gy = cam.snap ? P.y : damp(cam.gy, tgy, P.ground ? 4 : 2, dt);
-    const D = 7.4 + cam.bk * 4.4, c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw);
-    _a.copy(tw(P.s - c * D, P.x - sn * D, cam.gy + 3.9 + cam.bk * 2.2)); _b.copy(tw(P.s + c * 3, P.x + sn * 3, cam.gy + 1.1 + cam.bk * 2.6));
+    const hi = LV.theme === 'isen' ? 1 : 0;   // (on Orthanc's top it looks down over the horns instead of from among them)
+    const D = 7.4 + cam.bk * (hi ? 1.6 : 4.4), c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw);
+    _a.copy(tw(P.s - c * D, P.x - sn * D, cam.gy + 3.9 + cam.bk * (hi ? 7.5 : 2.2))); _b.copy(tw(P.s + c * 3, P.x + sn * 3, cam.gy + 1.1 + cam.bk * 2.6));
     if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; }
     const k = 1 - Math.exp(-7 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k);
     camera.position.copy(cam.wp);
@@ -7817,14 +7818,14 @@ function buildIsen(L, TH) {
   const barM = new THREE.MeshBasicMaterial({ color: 0xffd060, transparent: true, opacity: .12, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
   for (const p of Y.plazas) { const m = new THREE.Mesh(new THREE.CylinderGeometry(p.r + .5, p.r + .5, 6, 40, 1, true), barM); tw(p.s, p.x, p.y + 2.5, m.position); m.visible = false; m.userData.keep = true; scene.add(m); p.vis = m; }
   // the plain: Battle for Middle-earth's own pits, forges, diggings, furnaces and watchtowers when they're there; fire in the pits
-  const PIECES = ['ibwargpit', 'iburukpit_a', 'ibfbforgb', 'ibfbforges', 'ibfexcav', 'mbfurnace_a', 'ibfwtower', 'ibfitower'].filter(n => PROPS[n]);
+  const PIECES = ['ibwargpit', 'iburukpit_a', 'ibfbforgb', 'ibfexcav', 'mbfurnace_a', 'ibfwtower', 'ibfitower'].filter(n => PROPS[n]);
   const spots = [[-36, -28], [30, -30], [52, 2], [32, 46], [-12, 58], [-44, 44], [-66, 8], [-70, -40], [12, -62], [60, -36], [64, 34], [-24, -62]];
   spots.forEach(([s, x], k) => { if (!PIECES.length) return; const n = PIECES[k % PIECES.length]; propOne(n, s, x, at(s, x) - .2, Math.atan2(-x, -s), /tower/.test(n) ? 6 : 13); Y.blocks.push([s - 4, s + 4, x - 4, x + 4, at(s, x) + 6]); });
   if (PROPS.sarumanstatue01) propOne('sarumanstatue01', -56, 14, at(-56, 14), Math.PI / 2, 7, 'h');
   for (const [ps, px] of Y.pits) for (let k = 0; k < 3; k++) { const gl = glowSprite(0xff5a14, rand(6, 9), .55); tw(ps + rand(-2, 2), px + rand(-2, 2), at(ps, px) + 1, gl.position); gl.userData.keep = true; scene.add(gl); }
   TH.pits = Y.pits.map(([s, x]) => [s, x, at(s, x)]);
   // the ring of Isengard round it all: Battle for Middle-earth's wall when it's there, its own rock either way
-  if (PROPS.ibwalln) for (let a = 0; a < TAU; a += 14 / 92) { if (Math.abs(angDiff(a, Math.PI)) < .1) continue; const s = Math.cos(a) * 92, x = Math.sin(a) * 92; propOne('ibwalln', s, x, at(s, x) - 1, a + Math.PI / 2, 14.5); }
+  if (PROPS.ibfwtower) for (let a = .4; a < TAU - .3; a += TAU / 9) { const s = Math.cos(a) * 86, x = Math.sin(a) * 86; propOne('ibfwtower', s, x, at(s, x) - 1, a + Math.PI / 2, 14, 'h'); }   // (watchtowers along the cliffs of the ring; BFME's wall tower has only a placeholder picture)
   if (PROPS.ibgate1) propOne('ibgate1', -92, 0, at(-92, 0) - .5, Math.PI / 2, 16);
   for (let i = 0; i < 16; i++) { const a = rand(-Math.PI, Math.PI), r = rand(200, 420), h = rand(90, 200), m = gradCone(rand(60, 110), h, 6, 0x8a7a70, 0x1a1614); tw(Math.cos(a) * r, Math.sin(a) * r, h / 2 - 20, m.position); scene.add(m); }   // (the mountains)
   bakeScenery(scene.children.slice(first));
