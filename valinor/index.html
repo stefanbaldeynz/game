@@ -216,6 +216,7 @@ body.touch #bossbar .bar{width:min(50vw,420px)}
   <div id="mapPrompt"><span class="kOnly">ARROWS / WASD TO WALK &nbsp;·&nbsp; CLICK TO GO THERE &nbsp;·&nbsp; ENTER TO PLAY</span><span class="tOnly">TAP OR HOLD WHERE TO GO</span></div>
 </div>
 <div id="ov" class="dim">
+  <div class="scr" id="sChap"><div class="back" data-key="Escape">◀ MAP<small class="kOnly">ESC</small></div><div class="logo"><span class="big" id="chapName">MORIA</span><span class="sub">VALINOR</span></div><div class="menu" id="chapMenu"></div><div class="press kOnly">↑ ↓ CHOOSE &nbsp;·&nbsp; ENTER TO START</div><div class="press tOnly">TAP A LEVEL TO START</div></div>
   <div class="scr" id="sTitle">
     <div class="back" data-key="Escape">◀ MAP<small class="kOnly">ESC</small></div>
     <div class="logo"><span class="big">MINAS TIRITH</span><span class="sub">VALINOR</span></div>
@@ -2908,6 +2909,7 @@ addEventListener('mousedown', e => {
   if (e.button === 0) {
     const mi = e.target.closest && e.target.closest('.mi'), dk = e.target.closest && e.target.closest('[data-key]');
     if (state === 'play') hit.Mouse0 = true;
+    else if (CHAP && state === 'map' && mi && mi.dataset.c !== undefined) { chapSel(+mi.dataset.c); onKey('Enter'); }
     else if (dk) onKey(dk.dataset.key);
     else if (state === 'map') mapClick(e.clientX, e.clientY);
     else if (state === 'title' && !mi && !e.target.closest('.logo')) return;   // only the level buttons start a game
@@ -2921,6 +2923,7 @@ addEventListener('blur', () => { for (const k in keys) keys[k] = false; touchRes
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(true); });
 function onKey(code) {
   if (KH_PMENU.open) { khPowersKey(code); return; }   // (the powers menu has the keys while it's open)
+  if (CHAP && state === 'map') { if (!/^Key[MGZX]$/.test(code)) { chapKey(code); return; } }   // (and a level menu)
   if (code === 'Tab' && state === 'play' && LV && LV.kh) { khPowersMenu(true); return; }
   if (code === 'KeyM') { musicOn = !musicOn; syncPauseBtns(); return; }
   if (code === 'KeyG') { setLook(!RETRO); if (state !== 'paused') banner(RETRO ? 'RETRO LOOK' : 'HD LOOK', 1); syncPauseBtns(); return; }
@@ -5266,6 +5269,11 @@ function updateCamera(dt) {
     camera.lookAt(cam.wl); return;
   }
   if (LV.roam && !LV.duel) {
+    if (LV.fall) {   // (the fall: from above, looking down the shaft past Gandalf to the Balrog)
+      cam.yaw = 0; _a.copy(tw(P.s - 4.5, P.x, P.y + 15)); _b.copy(tw(P.s + 2.2, P.x, P.y - 8));
+      if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-5 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp);
+      const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
+    }
     if (LV.bridge && KH.cut && KH.cut.s2) {   // (the bridge's ending: held by the bridge, looking down after the Balrog, then after Gandalf)
       const C = KH.cut, b = C.b; if (!C.camP) C.camP = tw(P.s - 5, P.x + 5, P.y + 4); const look = C.s4 ? tw(P.s, P.x, P.y + .5) : tw(b.s, b.x, b.y + 4);
       cam.wp.lerp(C.camP, 1 - Math.exp(-3 * dt)); cam.wl.lerp(look, 1 - Math.exp(-5 * dt)); camera.position.copy(cam.wp);
@@ -5641,12 +5649,29 @@ let signShown = null, mapUIOn = null;
 const NEAR_R = 2.4;
 function nodeNear() { let best = -1, bd = NEAR_R; NODES.forEach((n, i) => { const d = Math.hypot(tok.p.x - n.x, tok.p.z - n.z); if (d < bd) { bd = d; best = i; } }); return best; }
 const onLand = (x, z) => BOARD ? boardLand(x, z) : coastAt(x, z) > .8;
+// a place with several levels opens its own menu to choose from (Moria; Minas Tirith flies down into the city instead)
+const CHAP_DESC = { moria: ['The dwarf-halls, to the doors of the bridge', 'Face the Balrog on the bridge', 'Fall with the Balrog into the deep'] };
+let CHAP = null;
+function openChap(loc) {
+  const ls = LEVELS.map((L, i) => [L, i]).filter(([L]) => L.loc === loc); CHAP = { loc, ls: ls.map(([, i]) => i), sel: 0 }; tok.dest = null;
+  document.getElementById('chapName').textContent = (NODES.find(n => n.loc === loc) || {}).name || '';
+  document.getElementById('chapMenu').innerHTML = ls.map(([L], k) => `<div class="mi${k ? '' : ' on'}" data-c="${k}"><b>${k + 1}</b><span>${L.name}</span><i>${(CHAP_DESC[loc] || [])[k] || L.sub}</i></div>`).join('');
+  showScreen('sChap');
+}
+function chapSel(k) { CHAP.sel = (k + CHAP.ls.length) % CHAP.ls.length; document.querySelectorAll('#chapMenu .mi').forEach((m, i) => m.classList.toggle('on', i === CHAP.sel)); }
+function chapKey(code) {
+  if (code === 'Escape' || code === 'Backspace' || code === 'KeyB') { CHAP = null; showScreen(null); S.click(); return; }
+  if (code === 'ArrowUp' || code === 'KeyW') chapSel(CHAP.sel - 1); else if (code === 'ArrowDown' || code === 'KeyS') chapSel(CHAP.sel + 1);
+  else if (/^(Digit|Numpad)[1-9]$/.test(code) && +code.slice(-1) <= CHAP.ls.length) { chapSel(+code.slice(-1) - 1); chapKey('Enter'); }
+  else if (code === 'Enter' || code === 'Space') { const li = CHAP.ls[CHAP.sel]; CHAP = null; showScreen(null); startGame(li); }
+}
+document.getElementById('sChap').addEventListener('mouseover', e => { const mi = e.target.closest('.mi'); if (mi && CHAP) chapSel(+mi.dataset.c); });
 function mapSelect() {
   if (tok.near < 0) { S.click(); return; }
   const n = NODES[tok.near];
   if (!n.open) { S.click(); signEl.classList.remove('shake'); void signEl.offsetWidth; signEl.classList.add('shake'); return; }
   S.dbl();
-  if (n.loc === 'mt') enterCity(false); else startGame(LEVELS.findIndex(L => L.loc === n.loc));
+  if (n.loc === 'mt') enterCity(false); else if (LEVELS.filter(L => L.loc === n.loc).length > 1) openChap(n.loc); else startGame(LEVELS.findIndex(L => L.loc === n.loc));
 }
 // after a place is finished (or quit), come back out onto the map with Gandalf standing just in front of it
 function backToMap(loc) {
@@ -5687,7 +5712,7 @@ function updateMap(dt) {
   for (const n of NODES) if (n.lock) n.lock.position.y += Math.sin(T * 2.5 + n.x) * .004;
   // Gandalf walks where he's told
   let mx = 0, mz = 0;
-  if (state === 'map') {
+  if (state === 'map' && !CHAP) {
     mx = inp.x; mz = -inp.z;
     if (mx || mz) tok.dest = null;
     else if (tok.dest) { mx = tok.dest.x - tok.p.x; mz = tok.dest.z - tok.p.z; if (Math.hypot(mx, mz) < .25) { tok.dest = null; mx = mz = 0; } }
@@ -7567,7 +7592,7 @@ function bossHit(b, dmg, fin, air, react) {
   }
 }
 function bossFall(b) {
-  if (LV.bridge) { b.hp = 0; endBossAtk(b); b.state = 'cut'; b.t = 0; KH.cut = { t: 0, b }; KH.react = null; KH.atk = null; for (const o of URUKS) if (!o.boss && ukLive(o)) khHit(o, 999, true); Music.mode = 0; return; }   // (on the bridge: the ending)
+  if (LV.bridge) { if (KH.cut) return; b.hp = 0; b.dead = true; KH.bolts = []; endBossAtk(b); b.state = 'cut'; b.t = 0; KH.cut = { t: 0, b }; KH.react = null; KH.atk = null; for (const o of URUKS) if (!o.boss && ukLive(o)) khHit(o, 999, true); Music.mode = 0; return; }   // (on the bridge: the ending)
   b.hp = 0; endBossAtk(b); b.state = 'fall'; b.t = 0; b.dead = true; KH.react = null; skinPlay(b.m, 'die');
   for (const o of URUKS) if (!o.boss && ukLive(o)) khHit(o, 999, true);
   banner('THE BALROG FALLS!', 2.4); S.roar(); cam.shake = 1; KH.hitstop = .35; flashV = Math.max(flashV, .6); Music.mode = 0;
@@ -8041,10 +8066,67 @@ function bridgeCut(dt) {
   if (C.t > 5.6 && !C.done) { C.done = true; flashV = .8; roamWin('INTO THE ABYSS!'); }
 }
 
-// --- the fall: down the shaft under Moria with the Balrog, fighting as you fall
+// --- the fall: down the shaft under Moria with the Balrog. Seen from above, looking down the shaft: Gandalf glides anywhere
+//     across it (W A S D), dodging fireballs the Balrog hurls up from below and rocks shooting up out of the dark (each marked
+//     by a red circle first). Now and then the Balrog surges up level with him and swipes; after the swipe he hangs there,
+//     open to the blade, for a few seconds. Thunder and Fire reach him wherever he is.
 function fallLayout() {
   return { field: [-13, 13, -13, 13], start: [-6, 0], fall: true,
-    layout: { blocks: [], plazas: [{ s: 0, x: 0, y: 0, r: 11.5, waves: [['B']], title: 'THE FALL', boss: true, last: true, breach: [0, 9], bossHp: 750, noAdds: true }] } };
+    layout: { blocks: [], plazas: [{ s: 0, x: 0, y: 0, r: 11.5, waves: [['F']], title: 'THE FALL', boss: true, last: true, breach: [0, 0], bossHp: 700, noAdds: true }] } };
+}
+function spawnFallBalrog(pl, delay = 0) {
+  const b = { m: makeKHBalrog(), boss: true, kind: 'B', name: 'BALROG', hp: pl.bossHp, max: pl.bossHp, bars: 4, r: 2.3, tall: 8, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null,
+    state: 'below', t: -delay, h: 0, kneel: 0, cd: 2.2, s: 0, x: 0, y: -16, ang: 0, upd: fallBossUpdate, hitFn: fallBossHit, reactFn: () => null };
+  URUKS.push(b); KH.boss = b; Music.mode = 1; return b;
+}
+const FALL_LOW = -16, FALL_UP = -2.2;
+function fallBossHit(b, dmg, fin) {
+  if (!ukLive(b) || b.state === 'die') return;
+  const p = tw(b.s, b.x, b.y + (b.state === 'open' || b.state === 'rise' ? 3 : 5));
+  if (KH.form > 0) dmg *= 1.5; if (b.state === 'open') dmg *= 1.4;
+  b.hp -= dmg; b.flash = .1; KH.target = b; KH.targetT = 6; if (KH.form <= 0) KH.drive = Math.min(100, KH.drive + 2);
+  KH.hitstop = Math.max(KH.hitstop, fin ? .07 : .035); cam.shake = Math.max(cam.shake, fin ? .3 : .12); sparks(p, fin ? 26 : 12, fin ? 8 : 5, [1, .95, .8], [1, .5, .1]); S.saberHit();
+  if (b.phase === 1 && b.hp <= b.max * .5) { b.phase = 2; S.roar(); flashV = Math.max(flashV, .3); }
+  if (b.hp <= 0) { b.hp = 0; b.dead = true; b.state = 'die'; b.t = 0; KH.react = null; banner('THE BALROG IS SLAIN!', 2.4); S.roar(); cam.shake = 1; KH.hitstop = .35; flashV = Math.max(flashV, .6); Music.mode = 0; }
+}
+// a red circle on Gandalf's level where something will come up through it, and what comes
+function fallStrike(s, x, warn, r, dmg, make) {
+  const thing = make(); scene.add(thing); const p1 = tw(s, x, 0), p0 = tw(s, x, -40);
+  khFx(warnMesh(s, x, 0, r), fm => { warnPulse(fm); const k = fm.t / warn; thing.position.lerpVectors(p0, p1, Math.min(1, k)); if (thing.isSprite) bfire(thing.position, .8, -.3);
+    if (k < 1) return true;
+    sparks(p1, 22, 7, [1, .9, .6], [1, .4, .1], .25); if (Math.hypot(P.s - s, P.x - x) < r) khHurt(dmg, { s, x }, { unblock: true, kb: 9 });
+    const v = 20; khFx(thing, (f, dt) => { thing.position.y += v * dt; if (thing.isMesh) { thing.rotation.x += dt * 2; thing.rotation.z += dt; } return f.t < 2; }); return false; });
+}
+const fallRock = () => { const m = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 0), surf(TX.hdStone, { color: 0x5a5660, rough: .6, bump: 3, tri: 1.5 })); m.scale.setScalar(rand(1.1, 1.7)); return m; };
+const fallFire = () => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: FX_TEX.exfireballc || TX.glow, color: FX_TEX.exfireballc ? 0xffffff : 0xff7a20, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); sp.scale.setScalar(2.4); return sp; };
+const fallSpot = () => { const a = rand(0, TAU), r = Math.sqrt(Math.random()) * 10.5; return [Math.cos(a) * r, Math.sin(a) * r]; };
+function fallBossUpdate(b, dt) {
+  const m = b.m; b.t += dt; b.flash -= dt; if (b.t < 0) return; m.root.visible = true; m.shadow.visible = false;
+  const p2 = b.phase > 1, A = b.a;
+  switch (b.state) {
+    case 'below': {   // circling far below, hurling fire and rock up the shaft
+      b.ang += dt * (p2 ? .55 : .4); b.s = damp(b.s, Math.cos(b.ang) * 5, 2, dt); b.x = damp(b.x, Math.sin(b.ang) * 5, 2, dt); b.y = damp(b.y, FALL_LOW, 2, dt); b.h = Math.atan2(P.x - b.x, P.s - b.s);
+      b.cd -= dt; if (state !== 'play' || b.cd > 0) break;
+      const r = Math.random(); b.n = (b.n || 0) + 1;
+      if (b.n % 3 === 0) { b.state = 'rise'; b.t = 0; b.to = [clamp(P.s, -8, 8) + rand(-2, 2), clamp(P.x, -8, 8) + rand(-2, 2)]; b.ry = b.y; S.roar(); break; }
+      if (r < .5) { const k = p2 ? 5 : 3; for (let i = 0; i < k; i++) setTimeout(() => { if (state === 'play' && ukLive(b)) fallStrike(P.s + rand(-.8, .8), P.x + rand(-.8, .8), 1, 1.5, 12, fallFire); }, i * 380); S.whoosh(); }
+      else { const k = p2 ? 5 : 4; for (let i = 0; i < k; i++) { const [s, x] = fallSpot(); setTimeout(() => { if (state === 'play' && ukLive(b) && b.state === 'below') fallStrike(s, x, 1.3, 1.6, 14, fallRock); }, i * 330); } }
+      b.cd = rand(1.6, 2.4) / (p2 ? 1.3 : 1); break;
+    }
+    case 'rise': {   // up through the dark to Gandalf's level, and a great swipe round him (the red circle)
+      const k = clamp(b.t / 1.1, 0, 1); b.s = lerp(b.s, b.to[0], Math.min(1, dt * 4)); b.x = lerp(b.x, b.to[1], Math.min(1, dt * 4)); b.y = lerp(b.ry, FALL_UP, k * k * (3 - 2 * k)); b.h = Math.atan2(P.x - b.x, P.s - b.s);
+      if (!b.wm && b.t > .2) { b.wm = khFx(warnMesh(b.to[0], b.to[1], 0, 4.6), f => { warnPulse(f); return b.state === 'rise'; }); }
+      if (b.t > 1.45) { b.wm = null; S.whip(); for (let q = 0; q < 30; q++) { const a = q / 30 * TAU; bfire(tw(b.s + Math.cos(a) * 4, b.x + Math.sin(a) * 4, .3), 1.4, .6); } if (Math.hypot(P.s - b.s, P.x - b.x) < 4.6) khHurt(16, b, { unblock: true, kb: 12 }); cam.shake = .5; b.state = 'open'; b.t = 0; }
+      break;
+    }
+    case 'open':   // spent, hanging level with Gandalf: strike now
+      b.h = Math.atan2(P.x - b.x, P.s - b.s); b.y = FALL_UP + Math.sin(b.t * 3) * .2; if (b.t > (p2 ? 3 : 4)) { b.state = 'below'; b.t = 0; b.cd = 1.2; }
+      break;
+    case 'die': b.y -= dt * (4 + b.t * 10); for (let k = 0; k < 4; k++) bfire(tw(b.s + rand(-2.5, 2.5), b.x + rand(-2.5, 2.5), b.y + rand(0, 8)), 2.4, 2.4); if (b.t > 2.5) { khRemove(b); return; } break;
+  }
+  if (b.state !== 'die' && b.state !== 'below' && Math.hypot(P.s - b.s, P.x - b.x) < b.r + .5) { const d = Math.hypot(P.s - b.s, P.x - b.x) || 1; P.s = b.s + (P.s - b.s) / d * (b.r + .5); P.x = b.x + (P.x - b.x) / d * (b.r + .5); }
+  drawBoss(b, dt, 0); m.shadow.visible = false;
+  if (b.state === 'open' && Math.random() < .3) sparks(tw(b.s, b.x, b.y + 6), 2, 2, [1, 1, .8], [1, .7, .2]);   // (the opening: he glitters)
 }
 function buildFall(L, TH) {
   const first = scene.children.length, sky = TH.env;
@@ -8071,7 +8153,7 @@ function updateFall(dt) {
   for (const r of TH.rocks) { r.y += (V + r.v) * dt * .35; if (r.y > 60) { r.y = -60; const a = rand(0, TAU), rr = rand(13, 17); r.s = Math.cos(a) * rr; r.x = Math.sin(a) * rr; } tw(r.s, r.x, r.y, r.m.position); r.m.rotation.x += r.spin * dt; r.m.rotation.y += r.spin * .7 * dt; }
   const a = TH.wind.geometry.attributes.position, w = a.array; for (let i = 0; i < w.length; i += 3) { w[i + 1] += V * 1.4 * dt; } for (let i = 0; i < w.length; i += 6) if (w[i + 1] > 30) { const x = rand(-16, 16), z = rand(-16, 16), l = rand(1.5, 3.5); w.set([x, -30, z, x, -30 + l, z], i); } a.needsUpdate = true; TH.wind.position.copy(camera.position);
   if (Math.random() < dt * 40) { const p = tw(P.s + rand(-12, 12), P.x + rand(-12, 12), P.y - rand(4, 14)); fx.spawn(p.x, p.y, p.z, 0, V * .9, 0, rand(.6, 1.2), .15, .04, [1, .7, .3], [1, .2, .05]); }   // (embers flying up past)
-  if (P.ground && Math.random() < dt * 2) { cam.shake = Math.max(cam.shake, .06); }
+
 }
 THEMES.fall = natTheme({
   wallTex: TX.hdRock, floorTex: TX.hdRock, tint: [.6, .6, .66], door: 0x6a6a7a,
@@ -8700,6 +8782,7 @@ function makeUruk(kind) {
 function spawnUruk(kind, pl, a, delay) {
   if (kind === 'B') return spawnKHBalrog(pl, delay);
   if (kind === 'S') return spawnSaruman(pl, delay);
+  if (kind === 'F') return spawnFallBalrog(pl, delay);
   const K = UK_KINDS[kind], R2 = pl.r * rand(.35, .7);
   if (pl.ladders) a = pl.ladders[Math.random() * pl.ladders.length | 0] + rand(-.15, .15);   // up the ladders, over the parapet
   if (pl.inside) {   // (inside Orthanc: down off the stair above onto the platform)
@@ -8976,7 +9059,8 @@ showScreen(null); syncPauseBtns();
 {
   const q = new URLSearchParams(location.search), li = /^\d+$/.test(q.get('play') || '') ? Number(q.get('play')) : LEVELS.findIndex(L => L.loc === q.get('play'));   // or ?play=2 for the third level in the list
   if (q.get('look')) setLook(q.get('look') === 'retro');   // ?look=retro or ?look=hd
-  if (q.get('mapat')) backToMap(q.get('mapat'));   // ?mapat=helm: the map, with Gandalf at that place (testing)
+  if (q.get('mapat')) backToMap(q.get('mapat'));
+  if (q.get('chap')) { backToMap(q.get('chap')); openChap(q.get('chap')); }   // ?chap=moria: that place's level menu (testing)   // ?mapat=helm: the map, with Gandalf at that place (testing)
   if (q.get('mappick')) setTimeout(() => { const [px, py] = q.get('mappick').split(',').map(Number), rc = new THREE.Raycaster(); rc.setFromCamera(new THREE.Vector2(px / innerWidth * 2 - 1, 1 - py / innerHeight * 2), mapCam); const h = rc.intersectObjects(mapScene.children, true)[0]; console.log('mappick', h ? h.point.toArray().map(v => v.toFixed(2)).join(',') : 'none', NODES.map(nd => nd.loc + ':' + (() => { const v = new V3(nd.x, 0, nd.z).project(mapCam); return Math.round((v.x + 1) / 2 * innerWidth) + '/' + Math.round((1 - v.y) / 2 * innerHeight); })()).join(' ')); }, 9000);   // ?mappick=x,y: where on the board that screen point is (testing)
   if (q.get('soramotion')) { const ids = q.get('soramotion').split(',').map(Number), fr = +(q.get('soraf') ?? .5); const go = async () => { if (!LOADED.gandalf || !hob.skin || !hob.skin.obj) { setTimeout(go, 200); return; } await loadSora(ids); const K = hob.skin, clip = LOADED.gandalf.animations.find(a => a.name === 'kh' + ids[0]); if (!clip) { console.log('soramotion: no clip'); return; } K.mixer.stopAllAction(); const act = K.mixer.clipAction(clip); act.play(); act.paused = true; act.time = clip.duration * fr; K.mixer.update(0); K.holdT = 1e9; console.log('soramotion', ids[0], clip.duration.toFixed(2) + 's', clip.tracks.length + ' tracks'); const cv = q.get('soracam') === 'front' ? [3.2, .6] : [.4, 3.2]; DEBUG_CAM = { p: tw(P.s + cv[0], P.x + cv[1], P.y + 1.3), l: tw(P.s, P.x, P.y + .9) }; }; setTimeout(go, 500); }   // &soramotion=604&soraf=.4: one of Sora's moves on Gandalf, held still at that point (testing)
   if (li >= 0) {
