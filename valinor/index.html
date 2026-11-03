@@ -6889,7 +6889,8 @@ function buildEdoras(L, TH) {
   if (wallP) { const len = 8; for (let a = .09; a < TAU - .09; a += len / Y.wallR) { const s = -Y.wallR * Math.cos(a), x = Y.wallR * Math.sin(a); propOne(wallP, s, x, Y.hill(s, x) - .4, a + Math.PI / 2, len); } }
   else for (let a = 0; a < TAU; a += .016) { if (Math.abs(angDiff(a, 0)) < .07) continue; const s = -Y.wallR * Math.cos(a), x = Y.wallR * Math.sin(a), p = tw(s, x, Y.hill(s, x)), h = rand(3.6, 4.4); stakes.push([p.x, p.y + h / 2 - .5, p.z, .32, h, .32]); tips.push([p.x, p.y + h - .3, p.z, .34, .7, .34]); }
   if (stakes.length) { instanced(GEO.cyl, stakeM, stakes); instanced(GEO.cone, stakeM, tips); }
-  if (gateP) { propOne(gateP, -Y.wallR, 0, Y.hill(-Y.wallR, 0) - .3, Math.PI / 2, 15); if (PROPS.rbwatchtow) for (const x of [-11, 11]) { const s = -Y.wallR + 3; propOne('rbwatchtow', s, x, Y.hill(s, x) - .2, Math.PI / 2, 4.5); Y.blocks.push([s - 1.8, s + 1.8, x - 1.8, x + 1.8, Y.hill(s, x) + 12]); } }
+  if (gateP) { propOne(gateP, -Y.wallR, 0, Y.hill(-Y.wallR, 0) - .3, 0, 15);   // (in line with the wall, the road through it)
+    if (PROPS.rbwatchtow) for (const x of [-11, 11]) { const s = -Y.wallR + 3; propOne('rbwatchtow', s, x, Y.hill(s, x) - .2, Math.PI / 2, 4.5); Y.blocks.push([s - 1.8, s + 1.8, x - 1.8, x + 1.8, Y.hill(s, x) + 12]); } }
   else for (const x of [-4.6, 4.6]) { const p = tw(-Y.wallR, x, 0); part(GEO_BOX, stakeM, scene, p.x, p.y + 4, p.z, 1.6, 8, 1.6); part(GEO.cone, lam(0x3a5a2a), scene, p.x, p.y + 8.8, p.z, 1.6, 1.8, 1.6); }
   // the banners of Rohan along the road: green, a white horse on each
   const banT = mkTex(32, 64, g => { g.fillStyle = '#2a6a2a'; g.fillRect(0, 0, 32, 64); g.fillStyle = '#f0ead8'; g.beginPath(); g.ellipse(16, 30, 9, 5, -.3, 0, TAU); g.fill(); g.fillRect(8, 33, 2, 9); g.fillRect(21, 33, 2, 9); g.beginPath(); g.ellipse(23, 22, 3, 6, .5, 0, TAU); g.fill(); g.fillStyle = '#c8a040'; g.fillRect(0, 0, 32, 3); g.fillRect(0, 61, 32, 3); }, false);
