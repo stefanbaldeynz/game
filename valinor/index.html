@@ -962,9 +962,9 @@ const landAt = (s, x) => TERR ? terrainAt(s, x) : 0;
 const NO_DECK = -1e9;
 let DECK = null;
 // each square keeps up to DECK_L surfaces one over another (a walkway over a walkway, a rail over its deck); top is the highest
-const DECK_L = 3;
+const DECK_L = 5;   // (Orthanc's stair has three turns over one spot, and the tower's top over them)
 // Isengard's stair round Orthanc: inner and outer radius, the tower's top, where the stair starts and how many turns (see ISENGARD)
-const ISEN = { R0: 10.4, R1: 15.2, TOP: 60, Y0: 6, TURNS: 2.5, A0: Math.PI };
+const ISEN = { R0: 10, TOP: 60, Y0: 6, IN0: 2.8, IN1: 8.4, INW: 9.4, YIN: 34, TURNS: 2.25, A0: Math.PI + .75 };   // (inside: the pillar, the stair's outer edge, the wall, the stair's top)
 function newDeck(s0, x0, w, h) { return { s0, x0, w, h, top: new Float32Array(w * h).fill(NO_DECK), lay: new Float32Array(w * h * DECK_L).fill(NO_DECK) }; }
 // the highest walkway surface at s, x no higher than y
 function deckAt(s, x, y = Infinity) { const D = DECK, i = Math.round(x - D.x0), j = Math.round(s - D.s0); if (i < 0 || j < 0 || i >= D.w || j >= D.h) return NO_DECK; let b = NO_DECK; for (let q = 0, k = (j * D.w + i) * DECK_L; q < DECK_L; q++) { const v = D.lay[k + q]; if (v <= y && v > b) b = v; } return b; }
@@ -5124,6 +5124,7 @@ function updateLights() {
   for (const t of torches) {
     let d = t.s - P.s; if (LV.loop) d = ((d % CIRC) + CIRC * 1.5) % CIRC - CIRC / 2;
     if (LV.arena) d = t.p.distanceTo(tw(P.s, P.x, 0, _g)) + 4;
+    if (t.d3) { d = t.p.distanceTo(tw(P.s, P.x, P.y, _g)); if (d > 14) continue; }   // (candles inside Orthanc: by how near they really are)
     if (d > -12 && d < 30) cands.push({ p: t.p, c: 0xff9a40, i: 1.5 * (.85 + .15 * Math.sin(T * 17 + t.s)), sc: Math.abs(d - 4) });
   }
   if (LV.boss) {
@@ -5255,10 +5256,17 @@ function updateCamera(dt) {
     const bo = LV.kh && KH.boss && KH.boss.m.root.visible && KH.boss.state !== 'fall' ? KH.boss : null; cam.bk = damp(cam.bk || 0, bo ? 1 : 0, 2, dt);
     // (Left Shift and / turn it by hand in the Kingdom Hearts levels; it leaves you be for a moment after)
     if (state === 'play' && inp.camT) { cam.yaw += inp.camT * 2.4 * dt; cam.man = 1.4; } cam.man = (cam.man || 0) - dt;
-    // (on Orthanc's stair it stays out over the drop, looking in at the tower, as on Kingdom Hearts II's Wayward Stairs)
-    const onTower = LV.theme === 'isen' && !bo && P.y > 3 && P.y < ISEN.TOP - .5 && Math.hypot(P.s, P.x) < ISEN.R1 + 9;
-    if (state === 'play' && cam.man <= 0 && onTower) { const inA = Math.atan2(-P.x, -P.s); cam.yaw += angDiff(cam.yaw, inA + clamp(angDiff(P.heading, inA), -.95, .95)) * (1 - Math.exp(-3 * dt)); }
-    else if (state === 'play' && cam.man <= 0) { if (bo)cam.yaw += angDiff(cam.yaw, Math.atan2(bo.x - P.x, bo.s - P.s)) * (1 - Math.exp(-2.4 * dt)); else { const mv = Math.hypot(P.vs, P.vx); if (mv > 1) cam.yaw += angDiff(cam.yaw, P.heading) * (1 - Math.exp(-1.7 * dt * Math.min(1, mv / RUN))); } }
+    // (inside Orthanc it rides behind Gandalf round the stair, looking forward and up it, as on Kingdom Hearts II's Wayward Stairs)
+    if (LV.theme === 'isen' && !bo && Math.hypot(P.s, P.x) < ISEN.INW && P.y > ISEN.Y0 - 1 && P.y < ISEN.YIN + 4) {
+      const th = Math.atan2(P.x, P.s), rc = 6.4, ca = th - .9, la = th + .55, gy = P.ground ? P.y : Math.min(cam.gy, P.y + 1.2); cam.gy = damp(cam.gy, gy, 4, dt);
+      _a.copy(tw(Math.cos(ca) * rc, Math.sin(ca) * rc, cam.gy + 2.6)); _b.copy(tw(Math.cos(la) * 5.4, Math.sin(la) * 5.4, cam.gy + 1.9));
+      cam.yaw = Math.atan2(Math.sin(la) * 5.4 - Math.sin(ca) * rc, Math.cos(la) * 5.4 - Math.cos(ca) * rc);   // (W goes the way it looks: on up the stair)
+      if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; }
+      const k = 1 - Math.exp(-6 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp);
+      const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35));
+      camera.lookAt(cam.wl); return;
+    }
+    if (state === 'play' && cam.man <= 0) { if (bo)cam.yaw += angDiff(cam.yaw, Math.atan2(bo.x - P.x, bo.s - P.s)) * (1 - Math.exp(-2.4 * dt)); else { const mv = Math.hypot(P.vs, P.vx); if (mv > 1) cam.yaw += angDiff(cam.yaw, P.heading) * (1 - Math.exp(-1.7 * dt * Math.min(1, mv / RUN))); } }
     let tgy = P.ground ? P.y : Math.min(cam.gy, P.y + 1.2); cam.gy = cam.snap ? P.y : damp(cam.gy, tgy, P.ground ? 4 : 2, dt);
     const hi = LV.theme === 'isen' ? 1 : 0;   // (on Orthanc's top it looks down over the horns instead of from among them)
     const D = 7.4 + cam.bk * (hi ? 1.6 : 4.4), c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw);
@@ -7707,37 +7715,36 @@ async function loadSora(ids) {
 }
 // =====================================================================
 //  ISENGARD: a Kingdom Hearts level, like Helm's Deep. From the plain at the foot of Orthanc, up the great stair to its doors,
-//  then round and round the tower on a stair that winds up its outside (Kingdom Hearts II's Wayward Stairs), stopping on
-//  balconies to fight orcs, Uruk-hai, berserkers and wargs, to the top between Orthanc's four horns: Saruman.
-//  The stair winds over itself, so it's a walkway (DECK, as in Mirkwood) over the land, not the land.
+//  and inside: a spiral stair winding up round a pillar in the middle of the tower, gothic and ceremonial, the White Hand on
+//  its banners, candles all the way up, stopping on two landings to fight orcs, Uruk-hai, berserkers and wargs. At the top
+//  of the stair an archway of light, and through it the top of the tower, between Orthanc's four horns: Saruman.
+//  The stair winds over itself, so it's a walkway (DECK, as in Mirkwood) over the tower's floor.
 // =====================================================================
 function isenLayout() {
-  const N = 201, C = 100, I = ISEN, hs = new Float32Array(N * N), g = new Array(N * N).fill('g'), TT = I.TURNS * TAU;
+  const N = 201, C = 100, I = ISEN, hs = new Float32Array(N * N), g = new Array(N * N).fill('g'), TT = I.TURNS * TAU, RM = (I.IN0 + I.IN1) / 2;
   const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
-  // the stair's height round the tower: climbing, but level across the two balconies (and for a little at the start)
-  const LAND = [[0, .025], [.37, .05], [.73, .05]], M = 2000, ys = new Float32Array(M + 1); let acc = 0;
-  const flat = u => LAND.some(([c, w]) => Math.abs(u - c) < w / 2 || (c === 0 && u < w));
+  // the stair's height as it climbs round inside: level on the two landings and for a little at the bottom
+  const LAND = [[0, .04], [.38, .14], [.76, .14]], M = 2000, ys = new Float32Array(M + 1); let acc = 0;
+  const flat = u => LAND.some(([c, w]) => (c === 0 ? u < w : Math.abs(u - c) < w / 2));
   for (let i = 0; i <= M; i++) { ys[i] = acc; if (!flat(i / M)) acc++; }
-  const yAt = t => { const u = clamp(t / TT, 0, 1), i = Math.round(u * M); return lerp(I.Y0, I.TOP, ys[i] / acc); };
-  const ptAt = (t, r = (I.R0 + I.R1) / 2) => { const a = I.A0 + t; return [Math.cos(a) * r, Math.sin(a) * r, yAt(t)]; };
-  // the places the enemy comes: the plain at the foot of Orthanc, its doors, the two balconies, and the top
-  const balc = (u, r, waves, title) => { const t = u * TT, a = I.A0 + t, R = I.R1 + 2.4; return { s: Math.cos(a) * R, x: Math.sin(a) * R, y: yAt(t), r, waves, title, t, ladders: [a - .7, a, a + .7], fromY: yAt(t) - 7, wallH: 1.1, balcony: true, rim: true }; };
+  const yAt = t => { const u = clamp(t / TT, 0, 1); return lerp(I.Y0, I.YIN, ys[Math.round(u * M)] / acc); };
+  const ptAt = (t, r = RM) => { const a = I.A0 + t; return [Math.cos(a) * r, Math.sin(a) * r, yAt(t)]; };
+  // the places the enemy comes: the plain at the foot of Orthanc, its doors, two landings inside, and the top
+  const landing = (u, w, waves, title) => { const t = u * TT, [s, x, y] = ptAt(t); return { s, x, y, r: 6, waves, title, t, arc: w * TT, ang: I.A0 + t, inside: true }; };
   const plazas = [
-    { s: -50, x: 0, y: 0, r: 11, waves: [['o', 'o', 'w'], ['u', 'o', 'o', 'w'], ['w', 'w', 'u']], title: 'THE RING OF ISENGARD', wallH: 0 },
-    { s: -19.5, x: 0, y: I.Y0, r: 6, waves: [['u', 'u', 'b'], ['o', 'o', 'o', 'u', 'w']], title: 'THE DOORS OF ORTHANC', wallH: 1.1, rim: true },
-    balc(.37, 6.5, [['w', 'w', 'o', 'o'], ['u', 'b', 'u', 'o'], ['w', 'w', 'w']], 'THE WAYWARD STAIR'),
-    balc(.73, 6.5, [['b', 'u', 'u', 'w'], ['w', 'w', 'u', 'u', 'b'], ['L', 'u', 'u']], 'HIGH ABOVE ISENGARD'),
+    { s: -50, x: 0, y: 0, r: 11, waves: [['o', 'o', 'w'], ['u', 'o', 'o', 'w'], ['w', 'w', 'u']], title: 'THE RING OF ISENGARD' },
+    { s: -19.5, x: 0, y: I.Y0, r: 6, waves: [['u', 'u', 'b'], ['o', 'o', 'o', 'u', 'w']], title: 'THE DOORS OF ORTHANC', ladders: [Math.PI - .9, Math.PI, Math.PI + .9], fromY: 0, rim: true },
+    landing(.38, .14, [['w', 'w', 'o', 'o'], ['u', 'b', 'u', 'o'], ['w', 'w', 'w']], 'THE STAIR OF ORTHANC'),
+    landing(.76, .14, [['b', 'u', 'u', 'w'], ['w', 'w', 'u', 'u', 'b'], ['L', 'u', 'u']], 'THE HALL OF THE WHITE HAND'),
     { s: 0, x: 0, y: I.TOP, r: 8.6, waves: [['S']], title: 'SARUMAN!', boss: true, last: true, ladders: [0, Math.PI / 2, Math.PI, Math.PI * 1.5], fromY: I.TOP - 8, breach: [0, 0] },
   ];
-  // the land: the plain of Isengard, gently uneven, pits dug in it, the cliffs of the ring round it; Orthanc's rock in the middle,
-  // up to its top; the great stair from the plain to its doors
+  // the land: the plain of Isengard, gently uneven, pits dug in it, the cliffs of the ring round it; inside Orthanc, its floor;
+  // the great stair from the plain to its doors
   const pits = [[-20, -40], [25, -42], [42, -12], [40, 26], [8, 46], [-30, 38], [-48, 18], [-58, -26]];
   const base = (s, x) => {
     const r = Math.hypot(s, x); let y = Math.sin(s * .08) * Math.cos(x * .07) * .5 + Math.sin(s * .21 + x * .17) * .25;
     for (const [ps, px] of pits) y -= 4 * (1 - ss(5, 9, Math.hypot(s - ps, x - px)));
-    y += 40 * ss(86, 97, r);
-    if (r < 10.1) y = I.TOP;   // (Orthanc)
-    return y;
+    return y + 40 * ss(86, 97, r);
   };
   const wB = new Float32Array(N * N), yR = new Float32Array(N * N), cell = (s, x) => [Math.round(C - s), Math.round(C - x)];
   const carve = (s, x, y, half, fall, kind) => {
@@ -7749,74 +7756,134 @@ function isenLayout() {
   };
   for (let s = -40; s <= -24; s += .5) carve(s, 0, lerp(0, I.Y0, ss(-40, -24, s)), 3.4, 1.5, 'p');   // the great stair to the doors
   carve(-19.5, 0, I.Y0, 6.4, 1.5, 's'); carve(-50, 0, 0, 11.5, 3, 's');
-  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = C - j, x = C - i; hs[k] = Math.hypot(s, x) < 10.1 ? I.TOP : lerp(base(s, x), yR[k], wB[k]); if (Math.hypot(s, x) < 10.1) g[k] = 'o'; }
-  // the walkway: the stair round the tower (up to three turns over one another) and the balconies
-  const D = newDeck(-27, -27, 55, 55);
+  for (let s = -14; s <= -9; s += .5) carve(s, 0, I.Y0, 3, 1.2, 's');   // (the threshold, from the landing in at the door)
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = C - j, x = C - i, r = Math.hypot(s, x); hs[k] = r < I.INW + 1.2 ? I.Y0 : lerp(base(s, x), yR[k], wB[k]); if (r < I.INW + 1.2) g[k] = 'o'; }
+  // the walkway: the stair round the pillar (its turns over one another), and the top of the tower
+  const D = newDeck(-12, -12, 25, 25);
   for (let j = 0; j < D.h; j++) for (let i = 0; i < D.w; i++) {
     const s = D.s0 + j, x = D.x0 + i, r = Math.hypot(s, x), a = Math.atan2(x, s), k = j * D.w + i;
-    if (r >= I.R0 - .3 && r <= I.R1 + .3) for (let q = 0; q < 4; q++) { const t = ((a - I.A0) % TAU + TAU) % TAU + q * TAU; if (t <= TT + .02) deckPut(D, k, yAt(t)); }
-    for (const p of plazas) if (p.balcony && Math.hypot(s - p.s, x - p.x) < p.r + .5 && r > I.R0 - .3) deckPut(D, k, p.y);
+    if (r >= I.IN0 - .2 && r <= I.IN1 + .4) for (let q = 0; q < 4; q++) { const t = ((a - I.A0) % TAU + TAU) % TAU + q * TAU; if (t <= TT + .03) deckPut(D, k, yAt(t)); }
+    if (r < 10.3) deckPut(D, k, I.TOP);
   }
   // the path the way goes (for the test autopilot): [s, x, height, half its width]
   const path = []; for (let s = -62; s < -40; s += .5) path.push([s, 0, 0, 3]); for (let s = -40; s <= -24; s += .5) path.push([s, 0, lerp(0, I.Y0, ss(-40, -24, s)), 3]);
-  for (let s = -24; s < -13; s += .5) path.push([s, 0, I.Y0, 3]);
+  for (let s = -24; s < -8; s += .5) path.push([s, 0, I.Y0, 3]);
+  { const [s1, x1] = ptAt(0); for (let k = 0; k <= 10; k++) path.push([lerp(-8, s1, k / 10), lerp(0, x1, k / 10), I.Y0, 2]); }
   for (let t = 0; t <= TT; t += .04) { const [s, x, y] = ptAt(t); path.push([s, x, y, 2.4]); }
-  for (let r = 12.8; r > 0; r -= .5) path.push([Math.cos(I.A0 + TT) * r, Math.sin(I.A0 + TT) * r, I.TOP, 3]);
-  for (const p of plazas) { let bi = 0, bd = 1e9; path.forEach((q, i) => { const d = Math.hypot(q[0] - p.s, q[1] - p.x) + Math.abs(q[2] - p.y); if (d < bd) { bd = d; bi = i; } }); p.pi = bi; }
-  // the walls: the stair's outer rail; each balcony's rim (open where the stair runs through); the rim round the top
+  for (let s = -7.5; s <= 0; s += .5) path.push([s, 0, I.TOP, 3]);
+  for (const p of plazas) { let bi = 0, bd = 1e9; path.forEach((q, i) => { const d = Math.hypot(q[0] - p.s, q[1] - p.x) + Math.abs(q[2] - p.y) * 3; if (d < bd) { bd = d; bi = i; } }); p.pi = bi; }
+  // the walls: the tower's own wall (open at the door) and the pillar in the middle; past the top of the stair, a wall
+  // across it; the doors' landing's rim (open to the great stair and the door); the rim round the top
   const blocks = [], walls = [];
-  for (let t = 0; t <= TT; t += .055) { const a = I.A0 + t, r = I.R1 + .35, s = Math.cos(a) * r, x = Math.sin(a) * r; if (plazas.some(p => p.rim && Math.hypot(s - p.s, x - p.x) < p.r + .6)) continue; walls.push([s, x, yAt(t), Math.cos(a), Math.sin(a), 1.1]); }
-  for (const p of plazas) if (p.rim) for (let a = 0; a < TAU; a += .5 / (p.r + .45)) { const ns = Math.cos(a), nx = Math.sin(a), s = p.s + ns * (p.r + .45), x = p.x + nx * (p.r + .45), r = Math.hypot(s, x); if (r < I.R1 + .7 || (!p.balcony && Math.abs(x) < 3.8 && s < p.s - 2)) continue; walls.push([s, x, p.y, ns, nx, 1.1]); }   // (open to the tower's stair, and to the great stair up to the doors)
-  const endA = I.A0 + TT;
-  for (let a = 0; a < TAU; a += .045) { if (Math.abs(angDiff(a, endA)) < .3) continue; const s = Math.cos(a) * 10.1, x = Math.sin(a) * 10.1; walls.push([s, x, I.TOP, Math.cos(a), Math.sin(a), 1.1]); }
+  for (let a = 0; a < TAU; a += .07) { if (Math.abs(angDiff(a, Math.PI)) < .27) { const s = Math.cos(a) * I.INW, x = Math.sin(a) * I.INW; blocks.push([s - .6, s + .6, x - .6, x + .6, I.TOP, 'wall', I.Y0 + 6.5]); continue; } const s = Math.cos(a) * I.INW, x = Math.sin(a) * I.INW; blocks.push([s - .6, s + .6, x - .6, x + .6, I.TOP, 'wall', -6]); }
+  blocks.push([-2.1, 2.1, -2.1, 2.1, I.TOP - .2, 'wall', -6]);   // (the pillar; the top of the tower is solid above it)
+  for (let s = -10; s < 10; s += 1) { const h = Math.sqrt(Math.max(0, 100 - Math.max(s * s, (s + 1) * (s + 1)))); if (h > .5) blocks.push([s, s + 1, -h, h, I.TOP, 'floor', I.TOP - 1]); }   // (the top of the tower: solid underfoot)
+  { const ea = I.A0 + TT + .12; for (let r = I.IN0; r <= I.IN1 + .4; r += .5) { const s = Math.cos(ea) * r, x = Math.sin(ea) * r; blocks.push([s - .35, s + .35, x - .35, x + .35, I.YIN + 8, 'wall', I.YIN - 3]); } }
+  const dp = plazas[1]; for (let a = 0; a < TAU; a += .5 / (dp.r + .45)) { const ns = Math.cos(a), nx = Math.sin(a), s = dp.s + ns * (dp.r + .45), x = dp.x + nx * (dp.r + .45); if (Math.abs(x) < 3.8 && (s < dp.s - 2 || s > dp.s + 2)) continue; walls.push([s, x, dp.y, ns, nx, 1.1]); }   // (open to the great stair and to the door)
+  for (let a = 0; a < TAU; a += .045) { const s = Math.cos(a) * 10.1, x = Math.sin(a) * 10.1; walls.push([s, x, I.TOP, Math.cos(a), Math.sin(a), 1.1]); }
   for (const [s, x, y, , , hh] of walls) blocks.push([s - .4, s + .4, x - .4, x + .4, y + hh + .2, 'wall', y - 2]);
   for (const k of [0, 1, 2, 3]) { const a = Math.PI / 4 + k * Math.PI / 2, s = Math.cos(a) * 8.6, x = Math.sin(a) * 8.6; blocks.push([s - 1.2, s + 1.2, x - 1.2, x + 1.2, I.TOP + 14, 'wall', I.TOP - 1]); }   // (the four horns)
-  return { field: [-96, 96, -96, 96], start: [-64, 0], deck: D, terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g }, layout: { blocks, path, plazas, walls, pits, yAt, TT } };
+  const end = ptAt(TT, RM + .8);
+  return { field: [-96, 96, -96, 96], start: [-64, 0], deck: D, terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g }, layout: { blocks, path, plazas, walls, pits, yAt, ptAt, TT, RM, exit: end } };
 }
 function isenContent(L) {
-  const Y = L.layout;
+  const Y = L.layout, I = ISEN;
   khRings(Y);
+  // a landing inside is shut by a wall of light across the stair at each end, not a ring
+  for (const p of Y.plazas) if (p.arc) { p.walls = []; for (const e of [-1, 1]) { const a = p.ang + e * (p.arc / 2 + .06); for (let r = I.IN0; r <= I.IN1 + .4; r += .5) { const s = Math.cos(a) * r, x = Math.sin(a) * r, b = solid(s - .35, s + .35, x - .35, x + .35, p.y - 3, p.y + 8, 'wall'); b.on = false; p.walls.push(b); } } }
   for (let i = 30; i < Y.path.length - 20; i += 22) { const [s, x, y] = Y.path[i]; if (Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 1 && Math.abs(y - p.y) < 3)) continue; addApple(s, x, y + .8); }
-  Y.plazas.forEach((p, n) => { if (p.boss) return; for (const [a, k] of [[.9, 'b'], [2.6, n % 2 ? 'su' : 'q'], [4.3, 'b']]) { const s = p.s + Math.cos(a) * (p.r - 1.6), x = p.x + Math.sin(a) * (p.r - 1.6); if (p.balcony && Math.hypot(s, x) < ISEN.R1 + .8) continue; addCrate(k, s, x, 0, p.y + 2); } });   // (a Summon crate on every other)
+  Y.plazas.forEach((p, n) => { if (p.boss) return;
+    const spots = p.arc ? [-.32, 0, .32].map(f => { const a = p.ang + f * p.arc, r = f ? I.IN1 - .6 : I.IN0 + .9; return [p.ang + f * p.arc, Math.cos(a) * r, Math.sin(a) * r]; }) : [.9, 2.6, 4.3].map(a => [a, p.s + Math.cos(a) * (p.r - 1.6), p.x + Math.sin(a) * (p.r - 1.6)]);
+    spots.forEach(([, s, x], k) => { if (!p.arc && Math.hypot(s, x) < 11) return; addCrate(k === 1 ? (n % 2 ? 'su' : 'q') : 'b', s, x, 0, p.y + 2); }); });   // (a Summon crate on every other)
 }
+// a White Hand: the palm and five fingers, white, on a field (on a canvas, w x h, centred at cx, cy, s its size)
+function whiteHand(g, cx, cy, s, col = '#f2f2f4') {
+  g.fillStyle = col; g.beginPath(); g.ellipse(cx, cy + s * .18, s * .26, s * .3, 0, 0, TAU); g.fill();
+  [[-.2, -.18, .3], [-.07, -.3, .38], [.07, -.32, .4], [.2, -.24, .34]].forEach(([dx, dy, l]) => { g.save(); g.translate(cx + dx * s, cy + dy * s * .4); g.rotate(dx * .5); g.beginPath(); g.ellipse(0, -l * s * .45, s * .065, l * s * .55, 0, 0, TAU); g.fill(); g.restore(); });
+  g.save(); g.translate(cx - s * .3, cy + s * .2); g.rotate(-.9); g.beginPath(); g.ellipse(0, -s * .12, s * .07, s * .2, 0, 0, TAU); g.fill(); g.restore();
+}
+TX.whBanner = mkTex(64, 160, g => {
+  g.fillStyle = '#0b0b0e'; g.fillRect(0, 0, 64, 160); g.fillStyle = '#2a2a30'; g.fillRect(0, 0, 64, 6); g.fillRect(0, 0, 4, 160); g.fillRect(60, 0, 4, 160);
+  for (let x = 0; x < 64; x += 16) { g.fillStyle = '#0b0b0e'; g.beginPath(); g.moveTo(x, 150); g.lineTo(x + 8, 160); g.lineTo(x + 16, 150); g.lineTo(x + 16, 160); g.lineTo(x, 160); g.fill(); }
+  g.fillStyle = 'rgba(0,0,0,0)'; g.clearRect(0, 150, 64, 10); for (let x = 0; x < 64; x += 16) { g.fillStyle = '#0b0b0e'; g.beginPath(); g.moveTo(x, 150); g.lineTo(x + 16, 150); g.lineTo(x + 8, 159); g.fill(); }
+  whiteHand(g, 32, 70, 46); g.fillStyle = '#c8c8d0'; g.fillRect(14, 112, 36, 2);
+}, false);
+TX.whFloor = mkTex(128, 128, g => {
+  g.fillStyle = '#16161c'; g.fillRect(0, 0, 128, 128); g.strokeStyle = '#8a8a96'; g.lineWidth = 3; g.beginPath(); g.arc(64, 64, 58, 0, TAU); g.stroke(); g.lineWidth = 1.5; g.beginPath(); g.arc(64, 64, 52, 0, TAU); g.stroke();
+  for (let k = 0; k < 12; k++) { const a = k / 12 * TAU; g.beginPath(); g.moveTo(64 + Math.cos(a) * 52, 64 + Math.sin(a) * 52); g.lineTo(64 + Math.cos(a) * 58, 64 + Math.sin(a) * 58); g.stroke(); }
+  whiteHand(g, 64, 66, 70, '#e8e8ee');
+}, false);
 function buildIsen(L, TH) {
   const Y = L.layout, T_ = L.terrain, I = ISEN, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
-  const rotOf = (ns, nx) => Math.atan2(-nx, ns);
+  const rotOf = (ns, nx) => Math.atan2(-nx, ns), W0 = tw(0, 0, 0);
   const obsid = surf(TX.hdRock, { sky, color: 0x24262e, rough: .28, metal: .2, bump: 2.2, env: 1.1 }), stone = surf(TX.hdStone, { sky, color: 0x5a5c66, rough: .5, bump: 3, env: .6, tri: 3.2 });
-  const stepM = surf(TX.hdStone, { sky, color: 0x4a4e5c, rough: .35, bump: 2.6, env: .9, tri: 2.4 }), flagM = surf(TX.hdFlag, { sky, color: 0x8a8e9a, rough: .4, bump: 3, env: .8 });
+  const stepM = surf(TX.hdStone, { sky, color: 0x3a3c48, rough: .3, bump: 2.6, env: .9, tri: 2.4 }), flagM = surf(TX.hdFlag, { sky, color: 0x8a8e9a, rough: .4, bump: 3, env: .8 });
+  const inner = surf(TX.hdStone, { sky, color: 0x4a4650, rough: .55, bump: 3.2, env: .4, tri: 2.6, side: THREE.BackSide }), gold = lam(0xc8a050, { emissive: 0x3a2808 });
   // the ground: ash and mud on the plain, scorched round the pits, rock in the cliffs of the ring
   const grd = surf(TX.hdMud, { sky, vc: true, rough: .9, bump: 2.2, env: .3 });
   groundMesh(T_, TX.hdMud, (k, sl, y) => k === 'p' || k === 's' ? [.55, .55, .58] : k === 'o' ? [.15, .15, .18] : y < -1.5 ? [.35, .2, .14] : sl > 1.2 ? [.55, .5, .48] : [.45, .4, .34], 9, () => grd);
   wideFloor(TX.hdMud, 0x2a2420, 120, -1.2, 600);
-  // Orthanc: a core of black stone, four great piers with thorns up their edges, a door at the top of the great stair, and four
-  // horns round the top
-  { const core = new THREE.Mesh(new THREE.CylinderGeometry(9.4, 10.2, I.TOP, 40), obsid); tw(0, 0, I.TOP / 2, core.position); core.userData.cast = true; scene.add(core);
+  // Orthanc: a shell of black stone, open at the door (three.js's cylinders start at +z: the door is at -z, an angle of pi)
+  { const cyl = (r, y0, y1, gap, mat, side) => { const g_ = gap ? new THREE.CylinderGeometry(r, r, y1 - y0, 56, 1, true, Math.PI + gap, TAU - gap * 2) : new THREE.CylinderGeometry(r, r, y1 - y0, 56, 1, true); const m = new THREE.Mesh(g_, mat); tw(0, 0, (y0 + y1) / 2, m.position); m.userData.cast = true; scene.add(m); return m; };
+    cyl(10.2, -2, I.Y0, 0, obsid); cyl(10.2, I.Y0, I.Y0 + 7, .25, obsid); cyl(10.2, I.Y0 + 7, I.TOP, 0, obsid);
+    cyl(8.95, I.Y0, I.Y0 + 7, .28, inner); cyl(8.95, I.Y0 + 7, I.YIN + 8, 0, inner);
+    // the doorway's sides, and a pointed gothic arch over it
+    const fr = []; for (const sd of [-1, 1]) { const a = Math.PI + sd * .27, p = tw(Math.cos(a) * 9.6, Math.sin(a) * 9.6, I.Y0 + 3.5); fr.push([p.x, p.y, p.z, 1.4, 7, 1.6, rotOf(Math.cos(a), Math.sin(a))]); }
+    stoneBox(fr, obsid);
+    for (const sd of [-1, 1]) { const arc = new THREE.Mesh(GEO_BOX, obsid); tw(-10.25, sd * 1.15, I.Y0 + 7.9, arc.position); arc.scale.set(.8, 3.4, .7); arc.rotation.x = -sd * .55; scene.add(arc); }
+    const lid = new THREE.Mesh(new THREE.CylinderGeometry(10.3, 10.3, .6, 48), flagM); tw(0, 0, I.TOP - .3, lid.position); scene.add(lid);
+    const ceil = new THREE.Mesh(new THREE.CircleGeometry(9, 48), lam(0x0e0e12, { side: THREE.DoubleSide })); ceil.rotation.x = Math.PI / 2; tw(0, 0, I.YIN + 8, ceil.position); scene.add(ceil);
     const piers = [], thorns = [];
     for (let k = 0; k < 4; k++) { const a = Math.PI / 4 + k * Math.PI / 2, ns = Math.cos(a), nx = Math.sin(a);
-      for (let y = 0; y < I.TOP; y += 6) { const w = 4.6 - y / I.TOP * 1.4, p = tw(ns * (10.3 - w / 2), nx * (10.3 - w / 2), y + 3); piers.push([p.x, p.y, p.z, w, 6.05, w * .8, rotOf(ns, nx)]); }
-      for (let y = 4; y < I.TOP; y += 4.5) for (const sd of [-1, 1]) { const ta = a + sd * .2, p = tw(Math.cos(ta) * 10.3, Math.sin(ta) * 10.3, y); thorns.push(p); } }
+      for (let y = 0; y < I.TOP; y += 6) { const w = 4.6 - y / I.TOP * 1.4, p = tw(ns * (10 + w * .4), nx * (10 + w * .4), y + 3); piers.push([p.x, p.y, p.z, w, 6.05, w * .8, rotOf(ns, nx)]); }
+      for (let y = 4; y < I.TOP; y += 4.5) for (const sd of [-1, 1]) { const ta = a + sd * .2, p = tw(Math.cos(ta) * 10.5, Math.sin(ta) * 10.5, y); thorns.push(p); } }
     stoneBox(piers, obsid);
-    for (const p of thorns) { const c = new THREE.Mesh(new THREE.ConeGeometry(.35, 2.2, 6), obsid); c.position.copy(p); c.lookAt(_a.set(0, p.y + 40, 0).add(new V3(p.x, 0, p.z).multiplyScalar(1.6))); c.rotateX(Math.PI / 2); scene.add(c); }
-    const top = new THREE.Mesh(new THREE.CylinderGeometry(10.3, 10.3, .6, 40), flagM); tw(0, 0, I.TOP - .28, top.position); scene.add(top);
-    // the horns: thick at the root, curving out and up to points
+    for (const p of thorns) { const c = new THREE.Mesh(new THREE.ConeGeometry(.35, 2.2, 6), obsid); c.position.copy(p); c.lookAt(_a.set(W0.x, p.y + 40, W0.z).add(p.clone().sub(W0).setY(0).multiplyScalar(1.6))); c.rotateX(Math.PI / 2); scene.add(c); }
     for (let k = 0; k < 4; k++) { const a = Math.PI / 4 + k * Math.PI / 2, ns = Math.cos(a), nx = Math.sin(a), pts = [[8.6, 0], [9.2, 4], [10.4, 8.5], [10.2, 12], [8.8, 15.5]].map(([r, h]) => tw(ns * r, nx * r, I.TOP + h));
       const curve = new THREE.CatmullRomCurve3(pts); for (let q = 0; q < 10; q++) { const p0 = curve.getPoint(q / 10), p1 = curve.getPoint((q + 1) / 10), r = lerp(1.3, .12, q / 10), seg = new THREE.Mesh(new THREE.CylinderGeometry(r * .85, r, p0.distanceTo(p1) * 1.05, 10), obsid); seg.position.copy(p0).add(p1).multiplyScalar(.5); seg.quaternion.setFromUnitVectors(UPV, p1.clone().sub(p0).normalize()); scene.add(seg); } }
-    const door = new THREE.Mesh(GEO_BOX, lam(0x07080c)); tw(-10.1, 0, I.Y0 + 4, door.position); door.scale.set(.2, 8, 4.2); door.rotation.y = 0; scene.add(door);
-    for (let k = 0; k < 14; k++) { const a = rand(0, TAU), y = rand(12, I.TOP - 4), w = new THREE.Mesh(GEO_BOX, lam(0xffa050, { emissive: 0xc05010 })), p = tw(Math.cos(a) * 9.5, Math.sin(a) * 9.5, y); w.position.copy(p); w.scale.set(.5, 1.6, .5); scene.add(w); }   // (lit slits)
+    for (let k = 0; k < 14; k++) { const a = rand(.4, TAU - .4) + Math.PI, y = rand(14, I.TOP - 4), w = new THREE.Mesh(GEO_BOX, lam(0xffa050, { emissive: 0xc05010 })), p = tw(Math.cos(a) * 10.25, Math.sin(a) * 10.25, y); w.position.copy(p); w.scale.set(.5, 1.6, .5); scene.add(w); }   // (lit slits)
   }
   // the great stair from the plain to the doors
   { const st = []; for (let s = -40; s <= -24; s += .55) { const y = lerp(0, I.Y0, clamp((s + 40) / 16, 0, 1)), p = tw(s, 0, y - .5); st.push([p.x, p.y, p.z, 6.8, 1, .6, 0]); } stoneBox(st, stepM); }
-  // the stair round the tower, Kingdom Hearts II's Wayward Stairs: a ribbon of black steps with a rail on its outer edge
-  { const st = [], rail = [], R = (I.R0 + I.R1) / 2;
-    for (let t = 0; t <= Y.TT; t += .05) { const a = I.A0 + t, y = Y.yAt(t), p = tw(Math.cos(a) * R, Math.sin(a) * R, y - .45); st.push([p.x, p.y, p.z, I.R1 - I.R0 + .3, .9, .05 * R + .08, rotOf(Math.cos(a), Math.sin(a))]); }
-    stoneBox(st, stepM);
-    for (const [s, x, y, ns, nx, hh] of Y.walls) { const p = tw(s, x, y + hh / 2); rail.push([p.x, p.y, p.z, .45, hh, .72, rotOf(ns, nx)]); }
-    stoneBox(rail, stone); }
-  // the balconies' floors, and the top's
-  for (const p of Y.plazas) if (p.balcony || p === Y.plazas[1]) { const geo = new THREE.CylinderGeometry(p.r + .4, p.r + .4, .9, 40), m = new THREE.Mesh(geo, flagM); tw(p.s, p.x, p.y - .45, m.position); m.receiveShadow = true; scene.add(m); }
-  // the barrier round each place, while it's locked
-  const barM = new THREE.MeshBasicMaterial({ color: 0xffd060, transparent: true, opacity: .12, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
-  for (const p of Y.plazas) { const m = new THREE.Mesh(new THREE.CylinderGeometry(p.r + .5, p.r + .5, 6, 40, 1, true), barM); tw(p.s, p.x, p.y + 2.5, m.position); m.visible = false; m.userData.keep = true; scene.add(m); p.vis = m; }
+  // inside: the floor with the White Hand inlaid, the pillar with ribs, and the stair round it
+  { const fl = new THREE.Mesh(new THREE.RingGeometry(I.IN0, 9, 64), flagM); fl.rotation.x = -Math.PI / 2; tw(0, 0, I.Y0 + .05, fl.position); scene.add(fl);
+    const em = new THREE.Mesh(new THREE.CircleGeometry(2.4, 40), lam(0xffffff)); em.material = new THREE.MeshLambertMaterial({ map: TX.whFloor }); em.rotation.x = -Math.PI / 2; tw(-6, 0, I.Y0 + .08, em.position); scene.add(em);
+    const pil = new THREE.Mesh(new THREE.CylinderGeometry(I.IN0, I.IN0 + .2, I.YIN + 8 - I.Y0, 32), stone); tw(0, 0, (I.YIN + 8 + I.Y0) / 2, pil.position); pil.userData.cast = true; scene.add(pil);
+    const ribs = []; for (let k = 0; k < 12; k++) { const a = k / 12 * TAU; for (const [r, w] of [[I.IN0 + .1, .35], [8.85, .5]]) { const p = tw(Math.cos(a) * r, Math.sin(a) * r, (I.Y0 + I.YIN + 8) / 2); ribs.push([p.x, p.y, p.z, w, I.YIN + 8 - I.Y0, w, rotOf(Math.cos(a), Math.sin(a))]); } }
+    stoneBox(ribs, obsid);
+    const st = [], trim = [];
+    for (let t = 0; t <= Y.TT; t += .07) { const a = I.A0 + t, y = Y.yAt(t), p = tw(Math.cos(a) * Y.RM, Math.sin(a) * Y.RM, y - .4), r = rotOf(Math.cos(a), Math.sin(a)); st.push([p.x, p.y, p.z, .07 * 8.6 + .12, .8, I.IN1 - I.IN0 + .7, r]); const q = tw(Math.cos(a) * (I.IN0 + .3), Math.sin(a) * (I.IN0 + .3), y + .05); trim.push([q.x, q.y, q.z, .07 * I.IN0 + .1, .1, .25, r]); }
+    stoneBox(st, stepM); instanced(GEO_BOX, gold, trim);
+  }
+  // candles everywhere: on the steps by the pillar and the wall, a few lighting the stair (by distance, not along the track)
+  { const wax = [], wick = [], cand = (s, x, y, h, light) => { const p = tw(s, x, y); wax.push([p.x, p.y + h / 2, p.z, .07, h, .07, 0]); const f = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.fire, color: 0xffe0a0, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); f.position.set(p.x, p.y + h + .14, p.z); f.scale.set(.16, .3, 1); scene.add(f); torchSprites.push(f); wick.push(f); const gl = glowSprite(0xffb050, .9, .45); gl.position.copy(f.position); scene.add(gl); if (light) buildL.torches.push({ s, p: f.position.clone(), d3: true }); };
+    let n = 0; for (let t = .1; t <= Y.TT; t += .2) { const a = I.A0 + t, y = Y.yAt(t); for (const r of [I.IN0 + .45, I.IN1 + .05]) cand(Math.cos(a) * r, Math.sin(a) * r, y, rand(.25, .55), n++ % 7 === 0); }
+    for (let k = 0; k < 24; k++) { const a = Math.PI + .5 + k / 24 * (TAU - 1); cand(Math.cos(a) * 8.4, Math.sin(a) * 8.4, I.Y0, rand(.4, .9), k % 6 === 0); }   // (round the floor)
+    instanced(new THREE.CylinderGeometry(1, 1, 1, 6), lam(0xf4eedc, { emissive: 0x2a2418 }), wax);
+    // the landings: a ring of tall candles and a hanging candle-crown
+    for (const p of Y.plazas) if (p.arc) { for (let k = 0; k < 9; k++) { const a = p.ang + (k / 8 - .5) * p.arc; cand(Math.cos(a) * (I.IN1 - .1), Math.sin(a) * (I.IN1 - .1), p.y, 1.1, k === 4); }
+      const cr = tw(p.s, p.x, p.y + 6); for (let k = 0; k < 10; k++) { const a = k / 10 * TAU, f = glowSprite(0xffc070, .7, .8); f.position.set(cr.x + Math.cos(a) * 1.2, cr.y, cr.z + Math.sin(a) * 1.2); scene.add(f); } const ring = new THREE.Mesh(new THREE.TorusGeometry(1.2, .06, 6, 24), gold); ring.position.copy(cr); ring.rotation.x = Math.PI / 2; scene.add(ring);
+      const em = new THREE.Mesh(new THREE.CircleGeometry(1.8, 32), new THREE.MeshLambertMaterial({ map: TX.whFloor })); em.rotation.x = -Math.PI / 2; tw(p.s, p.x, p.y + .07, em.position); scene.add(em); }
+  }
+  // White Hand banners on the wall the whole way up, between the ribs
+  { const bm = new THREE.MeshLambertMaterial({ map: TX.whBanner, side: THREE.DoubleSide, transparent: true, alphaTest: .5 });
+    for (let t = .5; t <= Y.TT; t += TAU / 6) { const a = I.A0 + t + TAU / 24, y = Y.yAt(Math.min(Y.TT, t)) + 4.6, b = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 3.8), bm); place(b, Math.cos(a) * 8.8, Math.sin(a) * 8.8, y, a - Math.PI / 2); scene.add(b); }
+    for (const a of [Math.PI + .9, Math.PI - .9]) { const b = new THREE.Mesh(new THREE.PlaneGeometry(2, 5), bm); place(b, Math.cos(a) * 8.8, Math.sin(a) * 8.8, I.Y0 + 4, a - Math.PI / 2); scene.add(b); }
+    for (const sd of [-1, 1]) { const b = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 6), bm); place(b, -10.6, sd * 3.6, I.Y0 + 5, -Math.PI / 2); scene.add(b); }   // (and either side of the door outside)
+  }
+  // the archway of light at the top of the stair, through to the top of the tower
+  { const ex = Y.exit, a = Math.atan2(ex[1], ex[0]), lt = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 4.4), new THREE.MeshBasicMaterial({ color: 0xfff6dc, transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    const e2 = Y.ptAt(Y.TT + .14, Y.RM); place(lt, e2[0], e2[1], I.YIN + 2.2, a); scene.add(lt); TH.exitGlow = lt; const g2 = glowSprite(0xfff0c0, 7, .6); tw(e2[0], e2[1], I.YIN + 2.2, g2.position); g2.userData.keep = true; scene.add(g2); }
+  // the doors' landing's rim and the rim round the top
+  { const rail = []; for (const [s, x, y, ns, nx, hh] of Y.walls) { const p = tw(s, x, y + hh / 2); rail.push([p.x, p.y, p.z, .45, hh, .72, rotOf(ns, nx)]); } stoneBox(rail, stone); }
+  { const fl = new THREE.Mesh(new THREE.CylinderGeometry(6.4, 6.4, .9, 40), flagM); tw(-19.5, 0, I.Y0 - .45, fl.position); scene.add(fl); const th = tw(-11.3, 0, I.Y0 - .45), tb = new THREE.Mesh(GEO_BOX, stepM); tb.position.copy(th); tb.scale.set(4.4, .9, 4.6); scene.add(tb); }
+  // the barrier round each place outside (and across the stair at each end of a landing inside), while it's locked
+  const barM = new THREE.MeshBasicMaterial({ color: 0xffd060, transparent: true, opacity: .14, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  for (const p of Y.plazas) {
+    let m; if (p.arc) { m = new THREE.Group(); for (const e of [-1, 1]) { const a = p.ang + e * (p.arc / 2 + .06), pl = new THREE.Mesh(new THREE.PlaneGeometry(I.IN1 - I.IN0 + .6, 7), barM); place(pl, Math.cos(a) * Y.RM, Math.sin(a) * Y.RM, p.y + 3, a); m.add(pl); } }
+    else { m = new THREE.Mesh(new THREE.CylinderGeometry(p.r + .5, p.r + .5, 6, 40, 1, true), barM); tw(p.s, p.x, p.y + 2.5, m.position); }
+    m.visible = false; m.userData.keep = true; scene.add(m); p.vis = m;
+  }
   // the plain: Battle for Middle-earth's own pits, forges, diggings, furnaces and watchtowers when they're there; fire in the pits
   const PIECES = ['ibwargpit', 'iburukpit_a', 'ibfbforgb', 'ibfexcav', 'mbfurnace_a', 'ibfwtower', 'ibfitower'].filter(n => PROPS[n]);
   const spots = [[-36, -28], [30, -30], [52, 2], [32, 46], [-12, 58], [-44, 44], [-66, 8], [-70, -40], [12, -62], [60, -36], [64, 34], [-24, -62]];
@@ -7824,17 +7891,22 @@ function buildIsen(L, TH) {
   if (PROPS.sarumanstatue01) propOne('sarumanstatue01', -56, 14, at(-56, 14), Math.PI / 2, 7, 'h');
   for (const [ps, px] of Y.pits) for (let k = 0; k < 3; k++) { const gl = glowSprite(0xff5a14, rand(6, 9), .55); tw(ps + rand(-2, 2), px + rand(-2, 2), at(ps, px) + 1, gl.position); gl.userData.keep = true; scene.add(gl); }
   TH.pits = Y.pits.map(([s, x]) => [s, x, at(s, x)]);
-  // the ring of Isengard round it all: Battle for Middle-earth's wall when it's there, its own rock either way
   if (PROPS.ibfwtower) for (let a = .4; a < TAU - .3; a += TAU / 9) { const s = Math.cos(a) * 86, x = Math.sin(a) * 86; propOne('ibfwtower', s, x, at(s, x) - 1, a + Math.PI / 2, 14, 'h'); }   // (watchtowers along the cliffs of the ring; BFME's wall tower has only a placeholder picture)
   if (PROPS.ibgate1) propOne('ibgate1', -92, 0, at(-92, 0) - .5, Math.PI / 2, 16);
   for (let i = 0; i < 16; i++) { const a = rand(-Math.PI, Math.PI), r = rand(200, 420), h = rand(90, 200), m = gradCone(rand(60, 110), h, 6, 0x8a7a70, 0x1a1614); tw(Math.cos(a) * r, Math.sin(a) * r, h / 2 - 20, m.position); scene.add(m); }   // (the mountains)
   bakeScenery(scene.children.slice(first));
 }
-// each frame at Isengard: fire licking up out of the pits, smoke rising from them
+// each frame at Isengard: fire and smoke from the pits; the archway of light at the top of the stair takes you to the top
 function updateIsen(dt) {
   const H = THEMES.isen; if (!LV || LV.theme !== 'isen' || state === 'map' || state === 'title' || !H.pits) return;
   if (FIRE) FIRE.update(dt);
   for (const [s, x, y] of H.pits) { if (Math.random() < dt * 6) bfire(tw(s + rand(-3, 3), x + rand(-3, 3), y + .3), rand(1.4, 2.4), 2.2); if (Math.random() < dt * 2) smoke.spawn(...tw(s + rand(-2, 2), x + rand(-2, 2), y + 2).toArray(), rand(-.3, .3), rand(2, 3.5), rand(-.3, .3), rand(4, 6), 2, 7, [.12, .1, .1], [.25, .22, .22], -.2, .3); }
+  if (H.exitGlow) H.exitGlow.material.opacity = .6 + Math.sin(T * 3) * .2;
+  if (state === 'play' && KH.plaza && KH.plaza.boss && P.y < ISEN.TOP - 6) { P.s = -5; P.x = 0; P.y = ISEN.TOP + .5; P.vs = P.vx = P.vy = 0; KH.hp = Math.max(1, KH.hp - 10); KH.invT = 1.5; cam.snap = true; flashV = .6; }   // (thrown off the top: back up onto it)
+  const Y = LV.layout, e = Y.ptAt(Y.TT, Y.RM);
+  if (state === 'play' && !KH.plaza && Math.hypot(P.s - e[0], P.x - e[1]) < 2.6 && Math.abs(P.y - e[2]) < 2.5) {   // through the archway: out onto the top of Orthanc
+    P.s = -7.4; P.x = 0; P.y = ISEN.TOP + .3; P.vs = P.vx = P.vy = 0; P.heading = 0; cam.yaw = 0; cam.snap = true; flashV = 1; S.whoosh(); banner('THE TOP OF ORTHANC', 1.6);
+  }
 }
 THEMES.isen = natTheme({
   wallTex: TX.hdStone, floorTex: TX.hdFlag, tint: [.7, .7, .74], door: 0x3a3a44,
@@ -8009,7 +8081,7 @@ function sarUpdate(b, dt) {
       if (b.t > 4.5) { khRemove(b); return; } break;
   }
   if (b.rev >= 100 && (b.state === 'idle' || (b.state === 'atk' && b.a && b.a.ph === 'wind' && b.a.type !== 'blast'))) { b.rev = 0; sarEnd(b); sarStart(b, 'blast'); b.a.wT = .3; }   // (too many blows at once: he bursts free)
-  if (d < b.r + .45 && b.state !== 'fall') { P.s = b.s - ds / d * (b.r + .45); P.x = b.x - dx / d * (b.r + .45); }
+  if (d < b.r + .45 && b.state !== 'fall') { P.s = b.s + ds / d * (b.r + .45); P.x = b.x + dx / d * (b.r + .45); }   // (Gandalf eased out of him, on his own side)
   if (b.state !== 'fall') b.y = khLand(b.s, b.x, pl.y);
   // drawing: he floats a hand's breadth off the stone; the staff goes up to cast, the crystal on it burns brighter
   place(m.root, b.s, b.x, b.y + (b.state === 'fall' ? 0 : .08 + Math.sin(T * 2) * .05), b.h); tw(b.s, b.x, khLand(b.s, b.x, b.y) + .04, m.shadow.position); m.shadow.visible = m.root.visible && b.state !== 'fall';
@@ -8463,6 +8535,12 @@ function spawnUruk(kind, pl, a, delay) {
   if (kind === 'S') return spawnSaruman(pl, delay);
   const K = UK_KINDS[kind], R2 = pl.r * rand(.35, .7);
   if (pl.ladders) a = pl.ladders[Math.random() * pl.ladders.length | 0] + rand(-.15, .15);   // up the ladders, over the parapet
+  if (pl.arc) {   // (inside Orthanc: down from the gallery by the wall onto the landing)
+    const aa = pl.ang + rand(-.35, .35) * pl.arc, rr = rand(ISEN.IN0 + 1.2, ISEN.IN1 - .6), K_ = UK_KINDS[kind];
+    const u = { m: makeUruk(kind), kind, lite: kind === 'o' || kind === 'w', lurtz: kind === 'L', armor: !!K_.armor, hp: K_.hp, max: K_.hp, name: K_.name, r: K_.r, plaza: pl, stag: 0, dizzy: 0, flash: 0, h: aa + Math.PI, t: -delay, cd: rand(.6, 1.8), vs: 0, vx: 0, vy: 0, seed: rand(0, 6), state: 'spawn',
+      from: [Math.cos(aa) * (ISEN.IN1 + .3), Math.sin(aa) * (ISEN.IN1 + .3)], to: [Math.cos(aa) * rr, Math.sin(aa) * rr] };
+    u.s = u.from[0]; u.x = u.from[1]; u.y0 = pl.y + 4; u.y = u.y0; u.m.root.visible = u.m.shadow.visible = false; URUKS.push(u); return u;
+  }
   const R1 = pl.r + (pl.ladders ? 1.2 : 5);
   const u = { m: makeUruk(kind), kind, lite: kind === 'o' || kind === 'w', lurtz: kind === 'L', armor: !!K.armor, hp: K.hp, max: K.hp, name: K.name, r: K.r, plaza: pl, stag: 0, dizzy: 0, flash: 0,
     h: a + Math.PI, t: -delay, cd: rand(.6, 1.8), vs: 0, vx: 0, vy: 0, seed: rand(0, 6), state: 'spawn',
@@ -8742,7 +8820,7 @@ showScreen(null); syncPauseBtns();
     if (q.get('spring') && LV.springs && LV.springs[+q.get('spring')]) { const sp = LV.springs[+q.get('spring')]; Object.assign(gs.cp, { s: sp.s, x: sp.x, y: sp.y }); respawn(true); console.log('spring', JSON.stringify(sp)); }   // &spring=0 starts on that web spring
     if (q.get('walkto')) WALKTO = q.get('walkto').split(',').map(Number);
     if (q.get('autofight')) AUTOFIGHT = { next: () => { const p = LV.layout.plazas.find(p => !p.done), W_ = LV.layout.path;
-      if (W_ && p && p.pi !== undefined && Math.hypot(P.s - p.s, P.x - p.x) > p.r - 2) { let bi = 0, bd = 1e9; for (let i = 0; i < W_.length; i += 2) { const d = Math.hypot(W_[i][0] - P.s, W_[i][1] - P.x) + Math.abs(W_[i][2] - P.y); if (d < bd) { bd = d; bi = i; } } const ti = Math.min(p.pi, bi + 14); if (ti < p.pi - 1) return [W_[ti][0], W_[ti][1]]; }   // (along the way, at Helm's Deep)
+      if (W_ && p && p.pi !== undefined && (Math.hypot(P.s - p.s, P.x - p.x) > p.r - 2 || Math.abs(P.y - p.y) > 3)) { let bi = 0, bd = 1e9; for (let i = 0; i < W_.length; i += 2) { const d = Math.hypot(W_[i][0] - P.s, W_[i][1] - P.x) + Math.abs(W_[i][2] - P.y) * 3; if (d < bd) { bd = d; bi = i; } } const ti = Math.min(p.pi, bi + 8); if (ti < p.pi - 1) return [W_[ti][0], W_[ti][1]]; }   // (along the way, at Helm's Deep)
       const dr = LV.layout.hall && LV.layout.hall.door; return p ? [p.s, p.x] : dr ? [dr.s, dr.x] : [P.s, P.x]; } };
     if (q.get('sim')) { cheats.god = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (q.get('cast') === 'all' && LV.kh) { const bad = []; for (const p of KH_POWERS) { try { KH.mp = 100; KH.magicCD = 0; KH.atk = null; if (!khCast(p.id)) bad.push(p.id + ' (not cast)'); for (let i = 0; i < 90; i++) step(1 / 60, true); } catch (e) { bad.push(p.id + ': ' + e.message); } } console.log('castall ' + KH_POWERS.length + ' powers, problems: ' + (bad.join('; ') || 'none') + ', kills ' + gs.kills); }   // (&cast=all: every power in turn, for testing)
     if (q.get('powers') && LV.kh) setTimeout(() => { KH_PMENU.page = q.get('powers') === 'tech' ? 'tech' : 'magic'; khPowersMenu(true); }, 3000);
@@ -8750,7 +8828,7 @@ showScreen(null); syncPauseBtns();
     if (q.get('drive') && LV.kh) { KH.drive = 100; khDrive(); }   // (&drive=1: the White Wizard, for testing)
     if (q.get('menu') && LV.kh) { KH.sub = q.get('menu'); KH.cur = KH_MENU.findIndex(c => c.sub === KH.sub); }   // (&menu=magic: that list open, for testing)
     if (q.get('cast') && q.get('cast') !== 'all' && LV.kh) { KH.mp = 100; KH.magicCD = 0; KH.atk = null; khCast(q.get('cast')); for (let i = 0; i < 12; i++) step(1 / 60, true); }   // (&cast=thunder: a spell just before the picture)
-    if (LV.kh) console.log(`${LV.name} after ${q.get('sim')}s:${KH.boss ? ` boss ${KH.boss.state}${KH.boss.a ? '/' + KH.boss.a.type + '/' + KH.boss.a.ph : ''} hp ${Math.round(KH.boss.hp)} phase ${KH.boss.phase},` : ''} drive ${Math.round(KH.drive)} form ${KH.form.toFixed(1)}, reactions ${JSON.stringify(KH.rx || {})}, squares done ${LV.layout.plazas.filter(p => p.done).length}/${LV.layout.plazas.length}, in ${KH.plaza ? LV.layout.plazas.indexOf(KH.plaza) : '-'} wave ${KH.plaza ? KH.plaza.wave : '-'}, uruks ${URUKS.length} (${URUKS.map(u => u.state + ':' + Math.round(u.hp)).join(' ')}), HP ${Math.round(KH.hp)} MP ${Math.round(KH.mp)}, kills ${gs.kills}, at ${P.s.toFixed(0)},${P.x.toFixed(0)},${P.y.toFixed(1)} (ground ${TERR ? terrainAt(P.s, P.x).toFixed(1) : 'none'}, on ${P.ground} ${P.standOn ? P.standOn.kind + ' ' + [P.standOn.y0, P.standOn.y1].map(v => v && v.toFixed(1)) : ''}), state ${state}`);
+    if (LV.kh) console.log(`${LV.name} after ${q.get('sim')}s: walkto ${WALKTO ? WALKTO.map(v => v.toFixed(1)).join(',') : '-'},${KH.boss ? ` boss ${KH.boss.state}${KH.boss.a ? '/' + KH.boss.a.type + '/' + KH.boss.a.ph : ''} hp ${Math.round(KH.boss.hp)} phase ${KH.boss.phase},` : ''} drive ${Math.round(KH.drive)} form ${KH.form.toFixed(1)}, reactions ${JSON.stringify(KH.rx || {})}, squares done ${LV.layout.plazas.filter(p => p.done).length}/${LV.layout.plazas.length}, in ${KH.plaza ? LV.layout.plazas.indexOf(KH.plaza) : '-'} wave ${KH.plaza ? KH.plaza.wave : '-'}, uruks ${URUKS.length} (${URUKS.map(u => u.state + ':' + Math.round(u.hp)).join(' ')}), HP ${Math.round(KH.hp)} MP ${Math.round(KH.mp)}, kills ${gs.kills}, at ${P.s.toFixed(0)},${P.x.toFixed(0)},${P.y.toFixed(1)} (ground ${TERR ? terrainAt(P.s, P.x).toFixed(1) : 'none'}, on ${P.ground} ${P.standOn ? P.standOn.kind + ' ' + [P.standOn.y0, P.standOn.y1].map(v => v && v.toFixed(1)) : ''}), state ${state}`);
       if (q.get('pos') || q.get('spring')) console.log(`after ${q.get('sim')}s: s ${P.s.toFixed(1)} x ${P.x.toFixed(1)} y ${P.y.toFixed(1)} ground ${P.ground}`); }   // &sim=6 plays 6 seconds first (invincible)
     if (q.get('info')) setTimeout(() => { renderer.info.autoReset = false; renderer.info.reset(); renderer.setRenderTarget(rt); renderer.render(scene, camera); console.log('scene: ' + renderer.info.render.calls + ' draw calls, ' + renderer.info.render.triangles + ' triangles'); renderer.info.autoReset = true; }, 500);   // &info=1 logs how much one frame draws
     if (q.get('cam')) { const [s, x, y, ls, lx, ly] = q.get('cam').split(',').map(Number); DEBUG_CAM = { p: tw(s, x, y), l: tw(ls, lx, ly) }; }   // &cam=s,x,y,ls,lx,ly: a fixed camera in the level
