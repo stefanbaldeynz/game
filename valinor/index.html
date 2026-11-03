@@ -7749,12 +7749,13 @@ function isenLayout() {
     for (const [ps, px] of pits) y -= 4 * (1 - ss(5, 9, Math.hypot(s - ps, x - px)));
     return y + 40 * ss(86, 97, r);
   };
-  const wB = new Float32Array(N * N), yR = new Float32Array(N * N), cell = (s, x) => [Math.round(C - s), Math.round(C - x)];
+  const wB = new Float32Array(N * N), yR = new Float32Array(N * N), dB = new Float32Array(N * N).fill(1e9), cell = (s, x) => [Math.round(C - s), Math.round(C - x)];
   const carve = (s, x, y, half, fall, kind) => {
     const [j0, i0] = cell(s, x), R_ = Math.ceil(half + fall);
     for (let j = j0 - R_; j <= j0 + R_; j++) for (let i = i0 - R_; i <= i0 + R_; i++) {
       if (i < 0 || j < 0 || i >= N || j >= N) continue; const d = Math.hypot(C - j - s, C - i - x), e = clamp((d - half) / fall, 0, 1), w = 1 - e * e * (3 - 2 * e), k = j * N + i;
-      if (w > wB[k]) { wB[k] = w; yR[k] = y; } if (kind && d < half - .3) g[k] = kind;
+      if (w > wB[k] || (w === wB[k] && d < dB[k])) { wB[k] = w; yR[k] = y; dB[k] = d; }   // (the nearest point of the stair sets the height, so its slope comes out true)
+      if (kind && d < half - .3) g[k] = kind;
     }
   };
   for (let s = -40; s <= -24; s += .5) carve(s, 0, lerp(0, I.Y0, ss(-40, -24, s)), 3.4, 1.5, 'p');   // the great stair to the doors
