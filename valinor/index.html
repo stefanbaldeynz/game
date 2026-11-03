@@ -952,7 +952,8 @@ function groundBelow(s, x, y, skip) { let g = -100; for (const b of solids) { if
 // Its height under any point, smoothly between the metre-square corners; the sea floor counts as just under the water, for wading.
 let TERR = null;
 function terrainAt(s, x, real) {
-  const T_ = TERR, fx = clamp(T_.cx - x, 0, T_.w - 1.001), fy = clamp(T_.cy - s, 0, T_.h - 1.001), i = fx | 0, j = fy | 0, u = fx - i, v = fy - j, H = T_.hs, w = T_.w;
+  const T_ = TERR, q = T_.sc || 1, fx = clamp(T_.cx - x / q, 0, T_.w - 1.001), fy = clamp(T_.cy - s / q, 0, T_.h - 1.001),   // (sc: metres to a square, where it isn't 1)
+    i = fx | 0, j = fy | 0, u = fx - i, v = fy - j, H = T_.hs, w = T_.w;
   const h = (H[j * w + i] * (1 - u) + H[j * w + i + 1] * u) * (1 - v) + (H[(j + 1) * w + i] * (1 - u) + H[(j + 1) * w + i + 1] * u) * v;
   return real ? h : Math.max(h, T_.sea - .6);
 }
@@ -1006,7 +1007,7 @@ const wallShFor = base => (s, x, y) => clamp(.5 + (y - base) / (12 - base) * .5,
 function buildRoam(L) {
   const [S0, S1, X0, X1] = L.field, P0 = L.layout.pool;
   const pieces = P0 ? [[S0, P0[0], X0, X1], [P0[1], S1, X0, X1], [P0[0], P0[1], X0, P0[2]], [P0[0], P0[1], P0[3], X1]] : [[S0, S1, X0, X1]];
-  if (!L.terrain) for (const [a, b, c, d] of pieces) if (b > a && d > c) solid(a, b, c, d, -30, 0, 'floor');   // (on a heightmap the ground is the floor)
+  if (!L.terrain && !L.noFloor) for (const [a, b, c, d] of pieces) if (b > a && d > c) solid(a, b, c, d, -30, 0, 'floor');   // (on a heightmap the ground is the floor)
   if (P0) solid(P0[0], P0[1], P0[2], P0[3], -30, -.55, 'floor');   // wade into the pool
   solid(S0 - 6, S0, X0 - 6, X1 + 6, -30, 60, 'wall'); solid(S1, S1 + 6, X0 - 6, X1 + 6, -30, 60, 'wall');
   solid(S0, S1, X0 - 6, X0, -30, 60, 'wall'); solid(S0, S1, X1, X1 + 6, -30, 60, 'wall');
@@ -2632,10 +2633,9 @@ const LEVELS = [
   },
   {
     straight: true, name: 'THE MINES OF MORIA', sub: "DURIN'S BANE AWAKES", loc: 'moria', theme: 'moria', next: 'RETURN TO THE MAP', R: 36, Y0: 0, CX: 15000, CZ: 0, base: -40, wallH: 16,
-    floors: [[-16.6, 26, -3.5], [30, 52, -3.5], [52, 66, .2], [70, 96, -3.5], [108, 128, -3.5], [131.5, 152, -3.5], [152, 202, -1.4, 1.4], [202, 1e9, -3.5]],
+    floors: [[-16.6, 26, -3.5], [30, 52, -3.5], [52, 66, .2], [70, 96, -3.5], [108, 128, -3.5], [131.5, 1e9, -3.5]],   // (to the doors of the bridge: the Bridge of Khazad-dûm is the next part)
     pillars: [[99, 100.8, -1.4, 1.4, 0], [103, 104.8, -.6, 2.2, .6]], bars: [],
-    open: [[152, 202]], gateS: 200.5,   // the Bridge of Khazad-dûm, and a wall of fire at its far end until the Balrog falls
-    dz: [], balrogs: [{ boss: true, big: 2.1, bx: -16.5, sink: .63, r0: 156, r1: 210, hp: 9, seq: ['smash', 'crack', 'smash', 'sweep', 'smash', 'crack'] }],
+    dz: [], balrogs: [],
     content() {
       crateList([
         ['b', 6, -1.5], ['b', 6, 1.5], ['q', 12, 0], ['t', 18, 2], ['b', 22, -2], ['r', 24, 2.4], ['b', 34, 2], ['b', 35, 2], ['bo', 40, -2], ['c', 46, 0], ['n', 50, -1], ['b', 56, 2], ['b', 60, 2.6], ['q', 64, 1.5],
@@ -2649,6 +2649,21 @@ const LEVELS = [
       addOrc('archer', 94, -2.4); addOrc('grunt', 112, 0, { patrol: { ax: 'x', amp: 2, sp: 2.4 } }); addOrc('grunt', 116, -3, { ladder: true }); addOrc('archer', 124, 2.6);
       addOrc('grunt', 138, 0, { patrol: { ax: 'x', amp: 2, sp: 2.6 } }); addOrc('grunt', 144, -3, { ladder: true });
     },
+  },
+  {
+    // Moria's second part: the goblins on the ledge, then the Balrog head on at the far end of the bridge; it ends with the
+    // bridge breaking and both of them falling into the abyss (see THE BRIDGE OF KHAZAD-DÛM)
+    straight: true, roam: true, kh: true, name: 'THE BRIDGE OF KHAZAD-DÛM', sub: "DURIN'S BANE", loc: 'moria', theme: 'khazad', next: 'THE FALL', R: 40, Y0: 0, CX: 65000, CZ: 0, base: -4, wallH: 0, bridge: true,
+    ...khazadLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { khazadContent(this); },
+  },
+  {
+    // Moria's third part: falling down the shaft with the Balrog, fighting as you fall
+    straight: true, roam: true, kh: true, name: 'THE FALL', sub: 'INTO THE DEEP', loc: 'moria', theme: 'fall', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 70000, CZ: 0, base: -4, wallH: 0, winTitle: 'THE BALROG IS SLAIN!',
+    ...fallLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { khRings(this.layout); },
   },
   {
     // up the hill through Edoras to Meduseld, fighting Uruk-hai the Kingdom Hearts II way: each square locks behind a
@@ -3136,7 +3151,7 @@ function updatePlayer(dt) {
   for (const a of apples) if (a.alive && (LV.arena ? hd(a.s, a.x, P.s, P.x) < ar : Math.abs(a.s - P.s) < ar && Math.abs(a.x - P.x) < ar) && Math.abs(a.y - (P.y + ay)) < 1.1) { a.alive = false; collectApple(tw(a.s, a.x, a.y)); }
   // barricades of stakes
   for (const k of spikes) if (Math.abs(P.s - k.s) < .3 + PR && P.x + PR > k.x0 && P.x - PR < k.x1 && P.y < 1.05) { hurt('hit'); break; }
-  if (P.y < -7) die('fall');
+  if (P.y < -7 && !KH.cut) die('fall');   // (not while the bridge breaks under you)
   if (LV.door && P.s > END_S - 1.7 && state === 'play') startWin();
   if (P.ground && P.standOn && P.standOn.kind === 'floor') P.safe = { s: P.s, x: P.x, y: P.y };
 }
@@ -5113,7 +5128,7 @@ function updateAmbient(dt) {
   if (THEMES.riv.bigFall) THEMES.riv.bigFall.offset.y += dt * .6;
   if (THEMES.mordor.lava) THEMES.mordor.lava.offset.x += dt * .01;
   torchSprites.forEach((s, i) => s.scale.set(.7 + Math.sin(T * 13 + i) * .06, 1.15 + Math.sin(T * 11 + i * 2) * .1, 1));
-  clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt);
+  clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt); updateKhazad(dt); updateFall(dt);
   doomGlow.material.opacity = .8 + Math.sin(T * 1.7) * .2;
   // embers rising from the burning city below
   if (ENV.embers) for (let k = 0; k < 2; k++) { tw(P.s + rand(-6, 26), rand(-14, -4), rand(-8, 0), _a); fx.spawn(_a.x, _a.y, _a.z, rand(-.5, .5), rand(1.5, 3), rand(-.5, .5), rand(2, 3.5), .12, .05, [1, .7, .3], [1, .2, .05]); }
@@ -5251,6 +5266,11 @@ function updateCamera(dt) {
     camera.lookAt(cam.wl); return;
   }
   if (LV.roam && !LV.duel) {
+    if (LV.bridge && KH.cut && KH.cut.s2) {   // (the bridge's ending: held by the bridge, looking down after the Balrog, then after Gandalf)
+      const C = KH.cut, b = C.b; if (!C.camP) C.camP = tw(P.s - 5, P.x + 5, P.y + 4); const look = C.s4 ? tw(P.s, P.x, P.y + .5) : tw(b.s, b.x, b.y + 4);
+      cam.wp.lerp(C.camP, 1 - Math.exp(-3 * dt)); cam.wl.lerp(look, 1 - Math.exp(-5 * dt)); camera.position.copy(cam.wp);
+      const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
+    }
     // open country: a chase camera behind Gandalf that slowly swings round to follow where he's heading
     // (in a Kingdom Hearts boss fight it pulls back and turns to keep the boss in view beyond Gandalf)
     const bo = LV.kh && KH.boss && KH.boss.m.root.visible && KH.boss.state !== 'fall' ? KH.boss : null; cam.bk = damp(cam.bk || 0, bo ? 1 : 0, 2, dt);
@@ -5269,7 +5289,7 @@ function updateCamera(dt) {
     }
     if (state === 'play' && cam.man <= 0) { if (bo)cam.yaw += angDiff(cam.yaw, Math.atan2(bo.x - P.x, bo.s - P.s)) * (1 - Math.exp(-2.4 * dt)); else { const mv = Math.hypot(P.vs, P.vx); if (mv > 1) cam.yaw += angDiff(cam.yaw, P.heading) * (1 - Math.exp(-1.7 * dt * Math.min(1, mv / RUN))); } }
     let tgy = P.ground ? P.y : Math.min(cam.gy, P.y + 1.2); cam.gy = cam.snap ? P.y : damp(cam.gy, tgy, P.ground ? 4 : 2, dt);
-    const hi = LV.theme === 'isen' ? 1 : 0;   // (on Orthanc's top it looks down over the horns instead of from among them)
+    const hi = LV.theme === 'isen' || LV.fall ? 1 : 0;   // (on Orthanc's top it looks down over the horns instead of from among them)
     let D = 7.4 + cam.bk * (hi ? 3 : 4.4); const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw);
     if (onDisk) { D = 5.5; for (let k = 0; k < 12 && Math.hypot(P.s - c * D, P.x - sn * D) > ISEN.IN1 - .2; k++) D *= .85; }   // (on a round platform inside: kept within the tower's wall)
     _a.copy(tw(P.s - c * D, P.x - sn * D, cam.gy + (onDisk ? 4.6 : 3.9) + cam.bk * (hi ? 5.5 : 2.2))); _b.copy(tw(P.s + c * 3, P.x + sn * 3, cam.gy + 1.1 + cam.bk * 2.6));
@@ -5562,7 +5582,7 @@ for (let i = 0; i < 12; i++) {
 const NODES = [
   { name: 'THE SHIRE', x: -50, z: -2.5, open: true, loc: 'shire', sub: 'OPEN COUNTRY · DEFEAT THE NINE NAZGÛL' },
   { name: 'RIVENDELL', x: -20, z: -23.5, open: true, loc: 'riv', sub: 'OPEN VALLEY · FIND THE FELLOWSHIP' },
-  { name: 'MORIA', x: -14.5, z: -3.5, open: true, loc: 'moria', sub: "THE MINES · BALROG BOSS" },
+  { name: 'MORIA', x: -14.5, z: -3.5, open: true, loc: 'moria', sub: "THE MINES · THE BRIDGE · THE FALL" },
   { name: 'EDORAS', x: 10, z: 16.8, open: true, loc: 'rohan', sub: 'TO THE GOLDEN HALL · URUK-HAI' },
   { name: 'MINAS TIRITH', x: 42.2, z: 21, open: true, loc: 'mt', sub: 'THE SIEGE OF GONDOR · 3 LEVELS' },
   { name: 'CIRITH UNGOL', x: 50.5, z: 10, open: true, loc: 'ungol', sub: "THE PASS · RUN FROM SHELOB!" },
@@ -5827,7 +5847,7 @@ function step(dt, noRender) {
     }
     updateDragons(dt); updateApples(); updatePhial(dt); updateLightning(dt); updateAmbient(dt); updateTree(dt);
     fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt); poseDuelGandalf(dt);
-    skinPlay(hob, state === 'dying' ? 'die' : !P.ground && P.airT > .1 ? 'jump' : P.spinT > 0 || (LV && LV.duel && duel.atk) ? 'attack' : Math.hypot(P.vs, P.vx) > 1 ? 'walk' : 'idle');
+    skinPlay(hob, state === 'dying' ? 'die' : LV && LV.fall && state === 'play' ? 'jump' : !P.ground && P.airT > .1 ? 'jump' : P.spinT > 0 || (LV && LV.duel && duel.atk) ? 'attack' : Math.hypot(P.vs, P.vx) > 1 ? 'walk' : 'idle');
     updateSkins(dt); khAfterSkins();
   }
   updateCamera(state === 'paused' ? 0 : dt); if (DEBUG_CAM) { camera.position.copy(DEBUG_CAM.p); camera.lookAt(DEBUG_CAM.l); }
@@ -6332,7 +6352,7 @@ function buildOakvale(L, TH) {
 function groundMesh(T_, tex, colAt, rep = 3, mat) {   // (mat: make its material from the texture, instead of plain lit paint)
   const W = T_.w, H = T_.h, pos = new Float32Array(W * H * 3), col = new Float32Array(W * H * 3), uv = new Float32Array(W * H * 2), idx = [];
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
-    const k = j * W + i, y = T_.hs[k], p = tw(T_.cy - j, T_.cx - i, y, _a); pos.set([p.x, p.y, p.z], k * 3); uv.set([i / rep, j / rep], k * 2);
+    const k = j * W + i, y = T_.hs[k], q = T_.sc || 1, p = tw((T_.cy - j) * q, (T_.cx - i) * q, y, _a); pos.set([p.x, p.y, p.z], k * 3); uv.set([i / rep, j / rep], k * 2);
     const sl = Math.max(Math.abs((T_.hs[k + 1] ?? y) - y), Math.abs((T_.hs[k + W] ?? y) - y)), c = colAt(T_.g ? T_.g[k] : 'g', sl, y), n = .92 + Math.random() * .16;
     col.set([c[0] * n, c[1] * n, c[2] * n], k * 3);
     if (i < W - 1 && j < H - 1) idx.push(k, k + 1, k + W, k + 1, k + W + 1, k + W);
@@ -7364,8 +7384,8 @@ function makeKHBalrog() {
   addSkin(M, 'balrog', body, root, [halo]); if (M.skin) M.skin.temp = true; return M;
 }
 function spawnKHBalrog(pl, delay = 0) {
-  const b = { m: makeKHBalrog(), boss: true, kind: 'B', name: 'BALROG', hp: 800, max: 800, bars: 4, r: 2.3, tall: 8, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null,
-    state: 'intro', t: -delay - .6, from: [pl.breach[0], pl.breach[1]], to: [lerp(pl.s, pl.breach[0], .2), lerp(pl.x, pl.breach[1], .2)], h: 0, kneel: 0, cd: 1.5 };
+  const b = { m: makeKHBalrog(), boss: true, kind: 'B', name: 'BALROG', hp: pl.bossHp || 800, max: pl.bossHp || 800, bars: 4, r: 2.3, tall: 8, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null,
+    state: 'intro', t: -delay - .6, from: [pl.breach[0], pl.breach[1]], to: pl.bossTo || [lerp(pl.s, pl.breach[0], .2), lerp(pl.x, pl.breach[1], .2)], h: 0, kneel: 0, cd: 1.5 };
   b.s = b.from[0]; b.x = b.from[1]; b.y0 = landAt(b.s, b.x) - 6; b.y = b.y0; b.h = Math.atan2(P.x - b.x, P.s - b.s); b.m.root.visible = b.m.shadow.visible = false;
   URUKS.push(b); KH.boss = b; Music.mode = 1; return b;
 }
@@ -7391,7 +7411,7 @@ function bossWave(b, s, x, maxR, speed, dmg) {
     return r < maxR;
   });
 }
-function bossMove(b, ds, dx) { const pl = b.plaza, ns = b.s + ds, nx = b.x + dx; if (Math.hypot(ns - pl.s, nx - pl.x) < pl.r - 3) { b.s = ns; b.x = nx; } }
+function bossMove(b, ds, dx) { const pl = b.plaza, ns = b.s + ds, nx = b.x + dx; if (pl.bound ? pl.bound(ns, nx) : Math.hypot(ns - pl.s, nx - pl.x) < pl.r - 3) { b.s = ns; b.x = nx; } }
 function endBossAtk(b) { if (b.a) { for (const f of b.a.fx || []) f.dead = true; b.a = null; } if (b.state === 'atk') { b.state = 'idle'; b.t = 0; } }
 function bossPick(b, d) {
   const p2 = b.phase > 1, r = Math.random(); let t;
@@ -7547,6 +7567,7 @@ function bossHit(b, dmg, fin, air, react) {
   }
 }
 function bossFall(b) {
+  if (LV.bridge) { b.hp = 0; endBossAtk(b); b.state = 'cut'; b.t = 0; KH.cut = { t: 0, b }; KH.react = null; KH.atk = null; for (const o of URUKS) if (!o.boss && ukLive(o)) khHit(o, 999, true); Music.mode = 0; return; }   // (on the bridge: the ending)
   b.hp = 0; endBossAtk(b); b.state = 'fall'; b.t = 0; b.dead = true; KH.react = null; skinPlay(b.m, 'die');
   for (const o of URUKS) if (!o.boss && ukLive(o)) khHit(o, 999, true);
   banner('THE BALROG FALLS!', 2.4); S.roar(); cam.shake = 1; KH.hitstop = .35; flashV = Math.max(flashV, .6); Music.mode = 0;
@@ -7573,7 +7594,7 @@ function bossUpdate(b, dt) {
     case 'atk': bossAttack(b, dt, d, toP); if (!b.a) b.cd = rand(.9, 1.8) / f; break;
     case 'stun': if (b.t > b.stunT) { b.state = 'idle'; b.t = 0; b.cd = .6; } break;
     case 'roar':
-      if (b.addsT > 0) { b.addsT -= dt; if (b.addsT <= 0) ['o', 'o', 'b', 'o'].forEach((k, i) => spawnUruk(k, b.plaza, rand(0, TAU), i * .3)); }
+      if (b.addsT > 0 && !b.plaza.noAdds) { b.addsT -= dt; if (b.addsT <= 0) ['o', 'o', 'b', 'o'].forEach((k, i) => spawnUruk(k, b.plaza, rand(0, TAU), i * .3)); }
       if (b.t > 2.4) { b.state = 'idle'; b.t = 0; b.cd = .5; }
       break;
     case 'fall':   // down to its knees, and down into the fire under the coomb
@@ -7585,8 +7606,9 @@ function bossUpdate(b, dt) {
   // too many blows at once and it bursts free (KH II's revenge value)
   if (b.rev >= 100 && (b.state === 'idle' || (b.state === 'atk' && b.a && b.a.ph === 'wind' && b.a.type !== 'burst'))) { b.rev = 0; endBossAtk(b); bossStart(b, 'burst'); }
   // Gandalf can't stand inside it
-  if (d < b.r + .45 && b.state !== 'fall' && b.state !== 'intro' && P.y - b.y < b.tall) { P.s = b.s + ds / d * (b.r + .45); P.x = b.x + dx / d * (b.r + .45); }
-  if (b.state !== 'intro' && b.state !== 'fall' && !(b.a && b.a.air)) b.y = landAt(b.s, b.x);
+  if (d < b.r + .45 && b.state !== 'fall' && b.state !== 'intro' && b.state !== 'cut' && b.state !== 'cutfall' && P.y - b.y < b.tall) { P.s = b.s + ds / d * (b.r + .45); P.x = b.x + dx / d * (b.r + .45); }
+  if (b.state === 'cutfall') { b.vy += 14 * dt; b.y -= b.vy * dt; for (let k = 0; k < 4; k++) bfire(tw(b.s + rand(-2.5, 2.5), b.x + rand(-2.5, 2.5), b.y + rand(0, 8)), 2.2, 2); }   // (falling from the broken bridge)
+  if (b.state !== 'intro' && b.state !== 'fall' && b.state !== 'cut' && b.state !== 'cutfall' && !(b.a && b.a.air)) b.y = landAt(b.s, b.x);
   drawBoss(b, dt, walk);
 }
 function drawBoss(b, dt, walk) {
@@ -7612,7 +7634,7 @@ function drawBoss(b, dt, walk) {
   m.fires.forEach(fi => { const k = (.8 + .25 * Math.sin(T * 9 + fi.ph) + .1 * Math.sin(T * 23 + fi.ph * 2)) * hot; fi.sp.scale.set(fi.s * .6 * k, fi.s * (.85 + .3 * Math.sin(T * 7 + fi.ph)) * hot, 1); });
   m.halo.material.opacity = (b.phase > 1 ? .48 : .32) + Math.sin(T * 3) * .05;
   if (m.root.visible && b.state !== 'fall') { m.root.updateMatrixWorld(true); for (let k = 0; k < (b.phase > 1 ? 4 : 2); k++) bfire(_a.set(rand(-1.4, 1.4), rand(3, 8.5), rand(-1.2, .6)).applyMatrix4(m.root.matrixWorld), 1.5, 1.6); }
-  skinPlay(m, b.state === 'fall' ? 'die' : b.state === 'stun' ? 'hit' : walk ? 'walk' : 'idle');
+  skinPlay(m, b.state === 'fall' || b.state === 'cutfall' ? 'die' : b.state === 'stun' ? 'hit' : walk ? 'walk' : 'idle');
 }
 
 // =====================================================================
@@ -7724,7 +7746,7 @@ async function loadSora(ids) {
 //  The stair winds over itself, so it's a walkway (DECK, as in Mirkwood) over the tower's floor.
 // =====================================================================
 function isenLayout() {
-  const N = 201, C = 100, I = ISEN, hs = new Float32Array(N * N), g = new Array(N * N).fill('g'), TT = I.TURNS * TAU, RM = (I.IN0 + I.IN1) / 2;
+  const N = 201, C = 100, SC = 2, I = ISEN, hs = new Float32Array(N * N), g = new Array(N * N).fill('g'), TT = I.TURNS * TAU, RM = (I.IN0 + I.IN1) / 2;   // (SC: metres to a square of the ground)
   const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
   // the stair's height as it climbs round inside: level on the two landings and for a little at the bottom
   const LAND = [[0, .04], [.38, .06], [.76, .06]], M = 2000, ys = new Float32Array(M + 1); let acc = 0;
@@ -7743,17 +7765,17 @@ function isenLayout() {
   ];
   // the land: the plain of Isengard, gently uneven, pits dug in it, the cliffs of the ring round it; inside Orthanc, its floor;
   // the great stair from the plain to its doors
-  const pits = [[-20, -40], [25, -42], [42, -12], [40, 26], [8, 46], [-30, 38], [-48, 18], [-58, -26]];
+  const pits = [[-20, -40], [25, -42], [42, -12], [40, 26], [8, 46], [-30, 38], [-48, 18], [-58, -26], [-90, 60], [80, 80], [110, -20], [60, -100], [-30, -110], [-120, -50], [-110, 100], [20, 130], [130, 50], [-70, -130]];
   const base = (s, x) => {
     const r = Math.hypot(s, x); let y = Math.sin(s * .08) * Math.cos(x * .07) * .5 + Math.sin(s * .21 + x * .17) * .25;
     for (const [ps, px] of pits) y -= 4 * (1 - ss(5, 9, Math.hypot(s - ps, x - px)));
-    return y + 40 * ss(86, 97, r);
+    return y + 60 * ss(168, 190, r);
   };
-  const wB = new Float32Array(N * N), yR = new Float32Array(N * N), dB = new Float32Array(N * N).fill(1e9), cell = (s, x) => [Math.round(C - s), Math.round(C - x)];
+  const wB = new Float32Array(N * N), yR = new Float32Array(N * N), dB = new Float32Array(N * N).fill(1e9), cell = (s, x) => [Math.round(C - s / SC), Math.round(C - x / SC)];
   const carve = (s, x, y, half, fall, kind) => {
-    const [j0, i0] = cell(s, x), R_ = Math.ceil(half + fall);
+    const [j0, i0] = cell(s, x), R_ = Math.ceil((half + fall) / SC) + 1;
     for (let j = j0 - R_; j <= j0 + R_; j++) for (let i = i0 - R_; i <= i0 + R_; i++) {
-      if (i < 0 || j < 0 || i >= N || j >= N) continue; const d = Math.hypot(C - j - s, C - i - x), e = clamp((d - half) / fall, 0, 1), w = 1 - e * e * (3 - 2 * e), k = j * N + i;
+      if (i < 0 || j < 0 || i >= N || j >= N) continue; const d = Math.hypot((C - j) * SC - s, (C - i) * SC - x), e = clamp((d - half) / fall, 0, 1), w = 1 - e * e * (3 - 2 * e), k = j * N + i;
       if (w > wB[k] || (w === wB[k] && d < dB[k])) { wB[k] = w; yR[k] = y; dB[k] = d; }   // (the nearest point of the stair sets the height, so its slope comes out true)
       if (kind && d < half - .3) g[k] = kind;
     }
@@ -7761,7 +7783,7 @@ function isenLayout() {
   for (let s = -40; s <= -24; s += .5) carve(s, 0, lerp(0, I.Y0, ss(-40, -24, s)), 3.4, 1.5, 'p');   // the great stair to the doors
   carve(-19.5, 0, I.Y0, 6.4, 1.5, 's'); carve(-50, 0, 0, 11.5, 3, 's');
   for (let s = -14; s <= -9; s += .5) carve(s, 0, I.Y0, 3, 1.2, 's');   // (the threshold, from the landing in at the door)
-  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = C - j, x = C - i, r = Math.hypot(s, x); hs[k] = r < I.INW + 1.2 ? I.Y0 : lerp(base(s, x), yR[k], wB[k]); if (r < I.INW + 1.2) g[k] = 'o';
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = (C - j) * SC, x = (C - i) * SC, r = Math.hypot(s, x); hs[k] = r < I.INW + 1.2 ? I.Y0 : lerp(base(s, x), yR[k], wB[k]); if (r < I.INW + 1.2) g[k] = 'o';
     // (where the stair is still low over the floor the floor rises under it, so there's no walking in beneath its first steps)
     if (r > I.IN0 - .4 && r < I.IN1 + .6) { const t0 = ((Math.atan2(x, s) - I.A0) % TAU + TAU) % TAU, ys0 = yAt(t0); if (ys0 < I.Y0 + 2.6) hs[k] = Math.max(I.Y0, ys0 - .3); } }
   // the walkway: the stair round the pillar (its turns over one another), and the top of the tower
@@ -7793,7 +7815,7 @@ function isenLayout() {
   for (const [s, x, y, , , hh, k] of walls) { const e = k === 'rim' ? .28 : .4; blocks.push([s - e, s + e, x - e, x + e, y + hh + .2, 'wall', k === 'rim' ? y - .2 : y - 2]); }
   for (const k of [0, 1, 2, 3]) { const a = Math.PI / 4 + k * Math.PI / 2, s = Math.cos(a) * 8.6, x = Math.sin(a) * 8.6; blocks.push([s - 1.2, s + 1.2, x - 1.2, x + 1.2, I.TOP + 14, 'wall', I.TOP - 1]); }   // (the four horns)
   const end = ptAt(TT, RM + .8);
-  return { field: [-96, 96, -96, 96], start: [-64, 0], deck: D, terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g }, layout: { blocks, path, plazas, walls, pits, yAt, ptAt, TT, RM, exit: end } };
+  return { field: [-185, 185, -185, 185], start: [-64, 0], deck: D, terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g, sc: SC }, layout: { blocks, path, plazas, walls, pits, yAt, ptAt, TT, RM, exit: end } };
 }
 function isenContent(L) {
   const Y = L.layout, I = ISEN;
@@ -7898,14 +7920,16 @@ function buildIsen(L, TH) {
   // the plain: Battle for Middle-earth's own pits, forges, diggings, furnaces and watchtowers when they're there; fire in the pits
   const PIECES = ['ibwargpit', 'iburukpit_a', 'ibfbforgb', 'ibfexcav', 'mbfurnace_a', 'ibfwtower', 'ibfitower'].filter(n => PROPS[n]);
   const spots = [[-36, -28], [30, -30], [52, 2], [32, 46], [-12, 58], [-44, 44], [-66, 8], [-70, -40], [12, -62], [60, -36], [64, 34], [-24, -62]];
+  for (let k = 0; k < 44; k++) { const a = k * 2.399, r = 85 + (k * 37 % 80); spots.push([Math.cos(a) * r, Math.sin(a) * r]); }   // (and out across the whole ring)
   spots.forEach(([s, x], k) => { if (!PIECES.length) return; const n = PIECES[k % PIECES.length]; propOne(n, s, x, at(s, x) - .2, Math.atan2(-x, -s), /tower/.test(n) ? 6 : 13); Y.blocks.push([s - 4, s + 4, x - 4, x + 4, at(s, x) + 6]); });
   if (PROPS.sarumanstatue01) propOne('sarumanstatue01', -56, 14, at(-56, 14), Math.PI / 2, 7, 'h');
-  TH.plumes = spots.map(([s, x]) => [s, x, at(s, x) + 8]);
+  TH.plumes = spots.filter((_, k) => !/tower/.test(PIECES[k % PIECES.length] || '')).map(([s, x]) => [s, x, at(s, x) + 8]);
+  for (const [s, x] of spots) { const g = glowSprite(0xff6a20, 12, .4); tw(s, x, at(s, x) + 3, g.position); g.userData.keep = true; scene.add(g); }   // (forge-glow under each)
   // Saruman's army mustering on the plain: ranks of dark helmets and pikes, a torch to every few (seen from the top of the tower)
   { const bodies = [], heads = [], pikes = [], torches = [];
-    for (let i = 0, n = 0; i < 12000 && n < 1800; i++) {
-      const s = rand(-82, 82), x = rand(-82, 82), r = Math.hypot(s, x), y = at(s, x);
-      if (r > 80 || r < 17 || Math.hypot(s + 50, x) < 15 || (Math.abs(x) < 7 && s < -8 && s > -46) || Y.pits.some(([ps, px]) => Math.hypot(s - ps, x - px) < 9) || spots.some(([ps, px]) => Math.hypot(s - ps, x - px) < 8)) continue;
+    for (let i = 0, n = 0; i < 40000 && n < 6000; i++) {
+      const s = rand(-165, 165), x = rand(-165, 165), r = Math.hypot(s, x), y = at(s, x);
+      if (r > 162 || r < 17 || Math.hypot(s + 50, x) < 15 || (Math.abs(x) < 7 && s < -8 && s > -46) || Y.pits.some(([ps, px]) => Math.hypot(s - ps, x - px) < 9) || spots.some(([ps, px]) => Math.hypot(s - ps, x - px) < 8)) continue;
       n++; const p = tw(s, x, y), h = Math.atan2(-x, -s) + rand(-.3, .3);
       bodies.push([p.x, p.y + .75, p.z, .55, 1.4, .36, h]); heads.push([p.x, p.y + 1.62, p.z, .19, .2, .19, h]);
       if (n % 2) pikes.push([p.x + rand(-.3, .3), p.y + 1.9, p.z + rand(-.3, .3), .035, 3.4, .035, 0]);
@@ -7917,8 +7941,8 @@ function buildIsen(L, TH) {
   }
   for (const [ps, px] of Y.pits) for (let k = 0; k < 3; k++) { const gl = glowSprite(0xff5a14, rand(6, 9), .55); tw(ps + rand(-2, 2), px + rand(-2, 2), at(ps, px) + 1, gl.position); gl.userData.keep = true; scene.add(gl); }
   TH.pits = Y.pits.map(([s, x]) => [s, x, at(s, x)]);
-  if (PROPS.ibfwtower) for (let a = .4; a < TAU - .3; a += TAU / 9) { const s = Math.cos(a) * 86, x = Math.sin(a) * 86; propOne('ibfwtower', s, x, at(s, x) - 1, a + Math.PI / 2, 14, 'h'); }   // (watchtowers along the cliffs of the ring; BFME's wall tower has only a placeholder picture)
-  if (PROPS.ibgate1) propOne('ibgate1', -92, 0, at(-92, 0) - .5, Math.PI / 2, 16);
+  if (PROPS.ibfwtower) for (let a = .3; a < TAU - .2; a += TAU / 20) { const s = Math.cos(a) * 166, x = Math.sin(a) * 166; propOne('ibfwtower', s, x, at(s, x) - 1, a + Math.PI / 2, 14, 'h'); }   // (watchtowers along the cliffs of the ring; BFME's wall tower has only a placeholder picture)
+  if (PROPS.ibgate1) propOne('ibgate1', -170, 0, at(-170, 0) - .5, Math.PI / 2, 22);
   for (let i = 0; i < 16; i++) { const a = rand(-Math.PI, Math.PI), r = rand(200, 420), h = rand(90, 200), m = gradCone(rand(60, 110), h, 6, 0x8a7a70, 0x1a1614); tw(Math.cos(a) * r, Math.sin(a) * r, h / 2 - 20, m.position); scene.add(m); }   // (the mountains)
   bakeScenery(scene.children.slice(first));
 }
@@ -7928,7 +7952,7 @@ function updateIsen(dt) {
   if (FIRE) FIRE.update(dt);
   for (const [s, x, y] of H.pits) { if (Math.random() < dt * 6) bfire(tw(s + rand(-3, 3), x + rand(-3, 3), y + .3), rand(1.4, 2.4), 2.2); if (Math.random() < dt * 2) smoke.spawn(...tw(s + rand(-2, 2), x + rand(-2, 2), y + 2).toArray(), rand(-.3, .3), rand(2, 3.5), rand(-.3, .3), rand(4, 6), 2, 7, [.12, .1, .1], [.25, .22, .22], -.2, .3); }
   if (H.exitGlow) H.exitGlow.material.opacity = .6 + Math.sin(T * 3) * .2;
-  for (const [s, x, y] of H.plumes || []) { if (Math.random() < dt * 4) smoke.spawn(...tw(s + rand(-1.5, 1.5), x + rand(-1.5, 1.5), y).toArray(), rand(-.4, .4), rand(3, 5), rand(-.4, .4), rand(7, 10), 3, 12, [.08, .07, .07], [.22, .2, .2], -.15, .2); if (Math.random() < dt * 5) bfire(tw(s + rand(-1, 1), x + rand(-1, 1), y - 2), 1.6, 2); }   // (the forges and furnaces smoking)
+  for (const [s, x, y] of H.plumes || []) { if (Math.random() < dt * 2.5) smoke.spawn(...tw(s + rand(-1.5, 1.5), x + rand(-1.5, 1.5), y).toArray(), rand(-.4, .4), rand(3, 5), rand(-.4, .4), rand(7, 10), 3, 12, [.08, .07, .07], [.22, .2, .2], -.15, .2); if (Math.random() < dt * 5) bfire(tw(s + rand(-1, 1), x + rand(-1, 1), y - 2), 1.6, 2); }   // (the forges and furnaces smoking)
   if (state === 'play' && KH.plaza && KH.plaza.boss && P.y < ISEN.TOP - 6) { P.s = -5; P.x = 0; P.y = ISEN.TOP + .5; P.vs = P.vx = P.vy = 0; KH.hp = Math.max(1, KH.hp - 10); KH.invT = 1.5; cam.snap = true; flashV = .6; }   // (thrown off the top: back up onto it)
   const Y = LV.layout, e = Y.ptAt(Y.TT, Y.RM);
   if (state === 'play' && !KH.plaza && Math.hypot(P.s - e[0], P.x - e[1]) < 2.6 && Math.abs(P.y - e[2]) < 2.5) {   // through the archway: out onto the top of Orthanc
@@ -7940,6 +7964,120 @@ THEMES.isen = natTheme({
   env: { sky: [0x1a1418, 0x3a2a26, 0x8a5a3e, 0xd08a4a], fog: [45, 280], fogC: 0x3a2c26, amb: [0x6a5a50, .7], hemi: [0xb0a090, 0x2a1a12, .6], sun: [0xffc090, .7], east: [0xff7a30, .35], cloud: 0x5a4a42, embers: true, bloom: .9, sunDir: [-60, 70, 40] },
   orc: MT_ORC,
   scenery(L) { buildIsen(L, this); },
+});
+
+// =====================================================================
+//  THE BRIDGE OF KHAZAD-DÛM and THE FALL: Moria's second and third parts, Kingdom Hearts levels like Helm's Deep.
+//  The bridge: goblins on the ledge, then out along the narrow bridge over the abyss to face the Balrog at its far end,
+//  head on. Beaten, he's held at the bridge: YOU SHALL NOT PASS! Gandalf strikes the bridge in a blaze of light, it breaks
+//  under the Balrog, and as he falls his whip catches Gandalf and drags him down too. Then the fall: down and down the
+//  shaft under Moria, fighting the Balrog as they fall.
+// =====================================================================
+function khazadLayout() {
+  const plazas = [
+    { s: -14, x: 0, y: 0, r: 8.5, waves: [['o', 'o', 'o', 'o'], ['o', 'o', 'u', 'o', 'o']], title: 'THE GOBLINS OF MORIA' },
+    { s: 40, x: 0, y: 0, r: 10, waves: [['B']], title: "DURIN'S BANE!", boss: true, last: true, breach: [57, 0], bossTo: [54, 0], bossHp: 900, noAdds: true,
+      bound: (s, x) => s > 31 && s < 57.5 && Math.abs(x) < .6 },   // (he stands on the bridge itself, and comes along it at you)
+  ];
+  return { field: [-26, 82, -11, 11], start: [-22, 0], noFloor: true, layout: { blocks: [], plazas } };
+}
+function khazadContent(L) {
+  const Y = L.layout; khRings(Y);
+  Y.segSol = []; for (let s = -2; s < 58; s++) Y.segSol.push({ s, b: solid(s, s + 1, -1.6, 1.6, -6, 0, 'floor') });   // (the bridge, a metre at a time: it breaks)
+  solid(-26, -2, -11, 11, -8, 0, 'floor'); solid(58, 82, -11, 11, -8, 0, 'floor');
+  solid(-2, 58, 1.6, 2.4, -6, 2.6, 'wall'); solid(-2, 58, -2.4, -1.6, -6, 2.6, 'wall');   // (no rails on the bridge, but you can't step off it)
+  for (const g of THEMES.khazad.segs || []) { g.m.position.copy(g.p); g.m.rotation.copy(g.r); g.vy = 0; g.fall = false; g.m.visible = true; }
+  for (const [k, s, x] of [['b', -20, 7], ['q', -20, -7], ['su', -8, 8], ['b', -8, -8]]) addCrate(k, s, x, 0, 4);
+  for (let s = 2; s < 28; s += 3) addApple(s, 0, .8);
+}
+function buildKhazad(L, TH) {
+  const first = scene.children.length, sky = TH.env;
+  const rock = surf(TX.hdRock, { sky, color: 0x3a3a44, rough: .7, bump: 2.6, env: .3, tri: 4 }), stone = surf(TX.hdStone, { sky, color: 0x5a5660, rough: .6, bump: 3, env: .4, tri: 2.2 });
+  // the two ledges, falling away into the dark
+  for (const [s0, s1] of [[-26, -2], [58, 82]]) { const m = new THREE.Mesh(GEO_BOX, rock); tw((s0 + s1) / 2, 0, -14, m.position); m.scale.set(22, 28, s1 - s0); scene.add(m); }
+  // the bridge: a narrow span of stone with no rail, built a metre at a time (it breaks), deeper towards its ends
+  TH.segs = [];
+  for (let s = -2; s < 58; s++) { const u = Math.abs((s + .5 - 28) / 30), th = .9 + u * u * 5, m = new THREE.Mesh(GEO_BOX, stone); tw(s + .5, 0, -th / 2, m.position); m.scale.set(3.2, th, 1.02); m.userData.keep = true; scene.add(m); TH.segs.push({ m, s, p: m.position.clone(), r: m.rotation.clone(), vy: 0 }); }
+  // the great pillars of Dwarrowdelf rising out of the abyss on either side, flaring into the dark above
+  const pil = []; for (let s = -24; s <= 82; s += 13) for (const x of [-15, 15, -27, 27]) { const p = tw(s, x, -40); pil.push([p.x, p.y, p.z, 1.6, 150, 1.6, 0]); }
+  instanced(new THREE.CylinderGeometry(1, 1.15, 1, 10), surf(TX.hdStone, { sky, color: 0x3a3842, rough: .7, bump: 2.6, env: .2, tri: 3 }), pil).userData.noCast = true;
+  // fire far below, and braziers on the ledges
+  for (let k = 0; k < 14; k++) { const g = glowSprite(0xff4a10, rand(30, 60), .35); tw(rand(-20, 80), rand(-30, 30), rand(-90, -60), g.position); g.userData.keep = true; scene.add(g); }
+  for (const [s, x] of [[-24, 9], [-24, -9], [-4, 4], [-4, -4], [60, 4], [60, -4], [80, 9], [80, -9]]) { const p = tw(s, x, 0); const b = new THREE.Mesh(new THREE.CylinderGeometry(.5, .3, 1, 8), lam(0x2a2226)); b.position.set(p.x, p.y + .5, p.z); scene.add(b); const f = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.fire, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); f.position.set(p.x, p.y + 1.6, p.z); f.scale.set(1.1, 1.8, 1); scene.add(f); torchSprites.push(f); buildL.torches.push({ s, p: f.position.clone(), d3: true }); }
+  { const d = new THREE.Mesh(GEO_BOX, lam(0x050405)); tw(81.8, 0, 4, d.position); d.scale.set(6, 8, .3); scene.add(d); }   // (the way on, dark)
+  bakeScenery(scene.children.slice(first));
+}
+function updateKhazad(dt) {
+  if (!LV || LV.theme !== 'khazad' || state === 'map' || state === 'title') return;
+  if (FIRE) FIRE.update(dt);
+  if (Math.random() < dt * 30) { const p = tw(P.s + rand(-15, 25), P.x + rand(-14, 14), P.y - rand(6, 20)); fx.spawn(p.x, p.y, p.z, rand(-.3, .3), rand(2, 5), rand(-.3, .3), rand(1.5, 3), .2, .05, [1, .7, .3], [1, .2, .05]); }   // (embers rising from the deep)
+  for (const g of THEMES.khazad.segs || []) if (g.fall) { g.vy += 14 * dt; g.m.position.y -= g.vy * dt; g.m.rotation.x += g.spin * dt; g.m.rotation.z += g.spin * .6 * dt; if (g.m.position.y < -120) g.m.visible = false; }
+}
+THEMES.khazad = natTheme({
+  wallTex: TX.hdStone, floorTex: TX.hdStone, tint: [.62, .6, .66], door: 0x9aa0b8,
+  env: { sky: [0x020406, 0x04080a, 0x081010, 0x200a04], fog: [20, 170], fogC: 0x08121a, amb: [0x3a5a6a, .7], hemi: [0x6aa0b8, 0x3a1408, .45], sun: [0x80a8c0, .25], east: [0xff6a30, .35], embers: true, bloom: 1 },
+  orc: { sk: 0x8a907a, ska: 0xa0a488, ar: 0x2a2630, le: 0x3a2a1a, met: 0x1e1c22, sc: .85 },
+  scenery(L) { buildKhazad(L, this); },
+});
+// the end of the fight on the bridge: YOU SHALL NOT PASS!, the strike, the bridge breaking, the fall
+function bridgeCut(dt) {
+  const C = KH.cut, b = C.b, Y = LV.layout, TH = THEMES.khazad; C.t += dt; KH.invT = 9;
+  if (P.ground) { P.vs = P.vx = 0; }
+  const breakFrom = s0 => { for (const g of Y.segSol) if (g.s >= s0 && g.b.on) g.b.on = false; for (const g of TH.segs || []) if (g.s >= s0 && !g.fall) { g.fall = true; g.vy = rand(0, 2); g.spin = rand(-1.5, 1.5); } };
+  if (!C.s1 && C.t > .15) { C.s1 = true; P.heading = Math.atan2(b.x - P.x, b.s - P.s); banner('YOU SHALL NOT PASS!', 2.6); S.roar(); skinClip(hob, khc(KH_SORA.ground[4], 'attack_e'), 1); }
+  if (!C.s2 && C.t > 1) {   // the staff... the blade comes down on the bridge in a blaze of white light
+    C.s2 = true; flashV = 1; cam.shake = 1.2; S.smash(); KH.hitstop = .3;
+    const p = tw(P.s + Math.cos(P.heading) * 1.4, P.x + Math.sin(P.heading) * 1.4, .2), lt = glowSprite(0xffffff, 2, 1); lt.position.copy(p); khFx(lt, f => { lt.scale.setScalar(2 + f.t * 40); lt.material.opacity = 1 - f.t / 1.4; return f.t < 1.4; });
+    sparks(p, 90, 14, [1, 1, 1], [.8, .9, 1], .35);
+    breakFrom(Math.floor(P.s + 1.6)); b.state = 'cutfall'; b.vy = 0; skinPlay(b.m, 'die'); S.roar();
+  }
+  if (!C.s3 && C.t > 2.6) {   // ...but as he falls, his whip lashes up and catches Gandalf
+    C.s3 = true; S.whip(); banner('', .1);
+    const from = () => tw(b.s, b.x, b.y + 6), to = () => tw(P.s, P.x, P.y + .8);
+    khLast(1.2, () => { for (let k = 0; k < 6; k++) bfire(from().lerp(to(), Math.random()), .7, .3); });
+    C.drag = true;
+  }
+  if (C.drag && C.t > 3.1 && !C.s4) { C.s4 = true; breakFrom(Math.floor(P.s - 4)); P.vy = 2; P.vs = (b.s - P.s) * .3; S.whoosh(); }
+  if (C.t > 5.6 && !C.done) { C.done = true; flashV = .8; roamWin('INTO THE ABYSS!'); }
+}
+
+// --- the fall: down the shaft under Moria with the Balrog, fighting as you fall
+function fallLayout() {
+  return { field: [-13, 13, -13, 13], start: [-6, 0], fall: true,
+    layout: { blocks: [], plazas: [{ s: 0, x: 0, y: 0, r: 11.5, waves: [['B']], title: 'THE FALL', boss: true, last: true, breach: [0, 9], bossHp: 750, noAdds: true }] } };
+}
+function buildFall(L, TH) {
+  const first = scene.children.length, sky = TH.env;
+  // the shaft, its rock rushing upward past you (the picture scrolls)
+  const t = TX.hdRock.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(10, 16);
+  const wallM = surf(t, { sky, color: 0x3a3a46, rough: .7, bump: 2.8, env: .25, side: THREE.BackSide }); TH.wallM = wallM;
+  const sh = new THREE.Mesh(new THREE.CylinderGeometry(18, 18, 400, 40, 1, true), wallM); tw(0, 0, 0, sh.position); sh.userData.keep = true; scene.add(sh);
+  // fire far below, where the Balrog's light falls ahead of you
+  for (let k = 0; k < 6; k++) { const g = glowSprite(0xff5a14, rand(40, 70), .35); tw(rand(-8, 8), rand(-8, 8), -rand(120, 180), g.position); g.userData.keep = true; scene.add(g); }
+  // boulders and pieces of the broken bridge falling with you
+  TH.rocks = []; const rm = surf(TX.hdStone, { sky, color: 0x5a5660, rough: .6, bump: 3, tri: 1.5 });
+  for (let k = 0; k < 36; k++) { const big = k < 10, m = new THREE.Mesh(big ? GEO_BOX : new THREE.DodecahedronGeometry(1, 0), rm); const a = rand(0, TAU), r = rand(13, 17), sc = big ? [3.2, .9, rand(1, 3)] : [rand(.4, 1.6), rand(.4, 1.6), rand(.4, 1.6)];
+    m.scale.set(...sc); m.userData.keep = true; scene.add(m); TH.rocks.push({ m, s: Math.cos(a) * r, x: Math.sin(a) * r, y: rand(-60, 60), v: rand(-6, 10), spin: rand(-1, 1) }); }
+  // streaks of wind rushing up past you
+  { const n = 500, pos = new Float32Array(n * 6), geo = new THREE.BufferGeometry(); for (let i = 0; i < n; i++) { const x = rand(-16, 16), y = rand(-30, 30), z = rand(-16, 16); pos.set([x, y, z, x, y + rand(1.5, 3.5), z], i * 6); }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); const w = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xb0c0d8, transparent: true, opacity: .22, depthWrite: false })); w.frustumCulled = false; w.visible = false; w.userData.keep = true; scene.add(w); TH.wind = w; }
+  bakeScenery(scene.children.slice(first));
+}
+function updateFall(dt) {
+  const TH = THEMES.fall, on = !!(LV && LV.fall) && state !== 'map' && state !== 'title'; if (TH.wind) TH.wind.visible = on; if (!on) return;
+  if (FIRE) FIRE.update(dt);
+  const V = 34;   // (how fast the world rushes up past you)
+  for (const m of [TH.wallM.map, TH.wallM.normalMap]) if (m) m.offset.y -= V * dt / 400 * 16;
+  for (const r of TH.rocks) { r.y += (V + r.v) * dt * .35; if (r.y > 60) { r.y = -60; const a = rand(0, TAU), rr = rand(13, 17); r.s = Math.cos(a) * rr; r.x = Math.sin(a) * rr; } tw(r.s, r.x, r.y, r.m.position); r.m.rotation.x += r.spin * dt; r.m.rotation.y += r.spin * .7 * dt; }
+  const a = TH.wind.geometry.attributes.position, w = a.array; for (let i = 0; i < w.length; i += 3) { w[i + 1] += V * 1.4 * dt; } for (let i = 0; i < w.length; i += 6) if (w[i + 1] > 30) { const x = rand(-16, 16), z = rand(-16, 16), l = rand(1.5, 3.5); w.set([x, -30, z, x, -30 + l, z], i); } a.needsUpdate = true; TH.wind.position.copy(camera.position);
+  if (Math.random() < dt * 40) { const p = tw(P.s + rand(-12, 12), P.x + rand(-12, 12), P.y - rand(4, 14)); fx.spawn(p.x, p.y, p.z, 0, V * .9, 0, rand(.6, 1.2), .15, .04, [1, .7, .3], [1, .2, .05]); }   // (embers flying up past)
+  if (P.ground && Math.random() < dt * 2) { cam.shake = Math.max(cam.shake, .06); }
+}
+THEMES.fall = natTheme({
+  wallTex: TX.hdRock, floorTex: TX.hdRock, tint: [.6, .6, .66], door: 0x6a6a7a,
+  env: { sky: [0x010203, 0x02040a, 0x050a14, 0x1a0804], fog: [12, 90], fogC: 0x04070c, amb: [0x4a5a70, .75], hemi: [0x8aa0c0, 0x3a1408, .5], sun: [0x9ab0d0, .35], east: [0xff6a30, .45], bloom: 1 },
+  orc: MT_ORC,
+  scenery(L) { buildFall(L, this); },
 });
 
 // --- wargs: great wolves, low and quick; they circle like the orcs and pounce from further off
@@ -8115,7 +8253,7 @@ function sarUpdate(b, dt) {
   m.arm.rotation.x = damp(m.arm.rotation.x, cast ? -2.4 : -.3 - walk * .2, 10, dt); m.body.rotation.x = damp(m.body.rotation.x, b.state === 'stun' ? .5 : b.state === 'fall' ? 1.2 : 0, 6, dt);
   m.glow.material.opacity = .5 + cast * .45 + Math.sin(T * 9) * .1; m.glow.scale.setScalar(1 + cast * 1.6);
   if (cast && Math.random() < .5) { const p = sarTip(b); fx.spawn(p.x, p.y, p.z, rand(-1, 1), rand(-1, 1), rand(-1, 1), .3, .25, .05, [1, 1, 1], [.5, .6, 1]); }
-  skinPlay(m, b.state === 'fall' ? 'die' : b.state === 'stun' || b.state === 'stagger' ? 'hit' : b.state === 'atk' || b.state === 'roar' ? 'attack' : walk > .5 ? 'walk' : 'idle');
+  skinPlay(m, b.state === 'fall' || b.state === 'cutfall' ? 'die' : b.state === 'stun' || b.state === 'stagger' ? 'hit' : b.state === 'atk' || b.state === 'roar' ? 'attack' : walk > .5 ? 'walk' : 'idle');
 }
 // =====================================================================
 //  KH: fighting the way Sora does in Kingdom Hearts II (Edoras and Helm's Deep, LV.kh)
@@ -8162,6 +8300,7 @@ function setupKH() {
 }
 function resetKH(fresh) {
   const hadBoss = !!KH.boss;
+  KH.cut = null;
   Object.assign(KH, { slowT: 0, sightT: 0, multiT: 0, berserkT: 0, shield: 0, reflectT: 0 });
   Object.assign(KH, { hp: KH.max, mp: KH.maxMp, combo: 0, airN: 0, atk: null, buf: false, hover: 0, guardT: 0, rollT: 0, invT: 1, react: null, reacting: null, bolts: [], target: null, form: 0, winT: 0 });
   if (KH.plaza) { const p = KH.plaza; for (const u of URUKS.slice()) khRemove(u); khBarrier(p, false); p.wave = -1; KH.plaza = null; }   // a square you fell in starts again
@@ -8185,6 +8324,7 @@ function khTarget(range) {
   return best;
 }
 function khInput() {
+  if (KH.cut) return;
   if (inp.upP) khMenuMove(-1); if (inp.downP) khMenuMove(1); if (inp.backP) { KH.sub = null; S.click(); }
   if (KH.reacting) return;
   if (KH.react && inp.reactP) { khReaction(); return; }
@@ -8695,6 +8835,7 @@ function updateKH(dt) {
   if (!LV || !LV.kh) return;
   khWhite(KH.form > 0);   // (Grey or White, whichever the drive form says, once both models are in)
   saberToBone(KH.sword, hob);
+  if (KH.cut && state === 'play') bridgeCut(dt);
   const play = state === 'play', A = KH.atk, form = KH.form > 0;
   KH.mp = Math.min(KH.maxMp, KH.mp + dt * (form ? 6 : 2.5));
   for (const c in KH.cmdT) KH.cmdT[c] -= dt;
@@ -8850,6 +8991,7 @@ showScreen(null); syncPauseBtns();
       if (W_ && p && p.pi !== undefined && (Math.hypot(P.s - p.s, P.x - p.x) > p.r - 2 || Math.abs(P.y - p.y) > 3)) { let bi = 0, bd = 1e9; for (let i = 0; i < W_.length; i += 2) { const d = Math.hypot(W_[i][0] - P.s, W_[i][1] - P.x) + Math.abs(W_[i][2] - P.y) * 3; if (d < bd) { bd = d; bi = i; } } const ti = Math.min(p.pi, bi + 8); if (ti < p.pi - 1) return [W_[ti][0], W_[ti][1]]; }   // (along the way, at Helm's Deep)
       const dr = LV.layout.hall && LV.layout.hall.door; return p ? [p.s, p.x] : dr ? [dr.s, dr.x] : [P.s, P.x]; } };
     if (q.get('sim')) { cheats.god = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (q.get('cast') === 'all' && LV.kh) { const bad = []; for (const p of KH_POWERS) { try { KH.mp = 100; KH.magicCD = 0; KH.atk = null; if (!khCast(p.id)) bad.push(p.id + ' (not cast)'); for (let i = 0; i < 90; i++) step(1 / 60, true); } catch (e) { bad.push(p.id + ': ' + e.message); } } console.log('castall ' + KH_POWERS.length + ' powers, problems: ' + (bad.join('; ') || 'none') + ', kills ' + gs.kills); }   // (&cast=all: every power in turn, for testing)
+    if (q.get('cutnow') && KH.boss) { bossFall(KH.boss); for (let i = 0; i < Number(q.get('cutnow')) * 60; i++) step(1 / 60, true); }   // (&cutnow=2: the bridge's ending, 2 seconds in, for testing)
     if (q.get('powers') && LV.kh) setTimeout(() => { KH_PMENU.page = q.get('powers') === 'tech' ? 'tech' : 'magic'; khPowersMenu(true); }, 3000);
     if (q.get('techs') && LV.kh) { KH_POWER_SET.tech = KH_TECHS.map(t => t.id); const bad = []; try { for (let i = 0; i < 240; i++) { KH.mp = 100; step(1 / 60, true); } P.ground = true; KH.atk = null; khBattleCharge(); for (let i = 0; i < 40; i++) step(1 / 60, true); P.vy = 9; P.ground = false; khForceJump(); for (let i = 0; i < 30; i++) step(1 / 60, true); KH.mp = 50; for (let i = 0; i < 60; i++) step(1 / 60, true); } catch (e) { bad.push(e.message); } console.log('techs: problems ' + (bad.join('; ') || 'none') + ', MP drained to ' + KH.mp.toFixed(1) + ' in a second, shield ' + (KH.shield || 0).toFixed(1) + ', kills ' + gs.kills); }   // (&techs=1: every technique on, for testing)   // (&powers=1: the powers menu, for testing)
     if (q.get('drive') && LV.kh) { KH.drive = 100; khDrive(); }   // (&drive=1: the White Wizard, for testing)
