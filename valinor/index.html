@@ -2876,7 +2876,7 @@ function respawn(fresh) {
   cratesDirty = 2;
   P.s = cp.s; P.x = cp.x; P.y = cp.y + .05; P.vs = P.vx = P.vy = 0; P.heading = LV.arena ? Math.PI / 2 : 0; P.spinT = 0; P.invT = 1; P.ground = false; P.standOn = null; P.fireAnim = 0; P.safe = null;
   if (cp.s > 1.5 && !LV.arena && !LV.roam) P.s = cp.s - 1.2;
-  cam.yaw = 0; resetNazgul(); resetFellowship(); if (LV.duel && duel.wk) resetDuel(); if (LV.kh) resetKH(fresh);
+  cam.yaw = 0; resetNazgul(); resetFellowship(); if (LV.duel && duel.wk) resetDuel(); if (khOn()) resetKH(fresh);
   for (const f of fireballs) killWarn(f.warn), scene.remove(f.mesh); fireballs = [];
   for (const a of arrows) scene.remove(a.mesh); arrows = [];
   for (const r of rockets) scene.remove(r.mesh); rockets = [];
@@ -2924,7 +2924,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && sta
 function onKey(code) {
   if (KH_PMENU.open) { khPowersKey(code); return; }   // (the powers menu has the keys while it's open)
   if (CHAP && state === 'map') { if (!/^Key[MGZX]$/.test(code)) { chapKey(code); return; } }   // (and a level menu)
-  if (code === 'Tab' && state === 'play' && LV && LV.kh) { khPowersMenu(true); return; }
+  if (code === 'Tab' && state === 'play' && khOn()) { khPowersMenu(true); return; }
   if (code === 'KeyM') { musicOn = !musicOn; syncPauseBtns(); return; }
   if (code === 'KeyG') { setLook(!RETRO); if (state !== 'paused') banner(RETRO ? 'RETRO LOOK' : 'HD LOOK', 1); syncPauseBtns(); return; }
   if (code === 'KeyZ') { cheats.god = !cheats.god; if (state !== 'paused') banner(cheats.god ? 'INVINCIBLE ON' : 'INVINCIBLE OFF', 1); syncPauseBtns(); return; }
@@ -2974,7 +2974,7 @@ function pollPad() {
   if (!gp) return;
   const b = i => !!(gp.buttons[i] && gp.buttons[i].pressed), pr = i => b(i) && !pad.prev[i];
   const dz = v => Math.abs(v) < .2 ? 0 : v;
-  const dp = !(LV && LV.kh && state === 'play');   // (in the Kingdom Hearts levels the d-pad moves round the command menu instead)
+  const dp = !(khOn() && state === 'play');   // (in the Kingdom Hearts levels the d-pad moves round the command menu instead)
   pad.x = clamp(dz(gp.axes[0] || 0) + (dp ? (b(15) ? 1 : 0) - (b(14) ? 1 : 0) : 0), -1, 1);
   pad.z = clamp(-dz(gp.axes[1] || 0) + (dp ? (b(12) ? 1 : 0) - (b(13) ? 1 : 0) : 0), -1, 1);
   pad.jump = b(0); pad.jumpP = pr(0); pad.spinP = pr(2) || pr(4); pad.fireP = pr(1) || pr(5) || pr(7);
@@ -2999,8 +2999,9 @@ function readInput() {
   inp.guardP = !!(hit.KeyE || hit.TGuard || pad.guardP); inp.reactP = !!(hit.KeyR || hit.TReact || pad.reactP);   // Edoras: guard (or roll), and the reaction command
   inp.driveP = !!(hit.KeyQ || hit.TDrive || pad.driveP);   // (and the drive form)
   if (AUTOFIGHT && LV && LV.kh) { const u = URUKS.find(o => ukLive(o) && o.state !== 'spawn'); WALKTO = u ? [u.s, u.x] : AUTOFIGHT.next(); if (u && Math.hypot(u.s - P.s, u.x - P.x) < 4 + (u.boss ? u.r : 0) && T % .3 < .02 && !KH.sub && KH.cur === 0) hit.KeyK = true; if (u && KH.mp >= 25 && T % 3 < .02) hit.KeyF = true; if (KH.react) hit.KeyR = true; if (KH.drive >= 100) hit.TDrive = true; }   // testing: &autofight=1
+  if (AUTOK && LV && LV.khl && T % .35 < .02) hit.KeyK = true;   // (testing: &autok=1 attacks every moment)
   inp.spinP = inp.spinP || !!hit.KeyJ; inp.fireP = inp.fireP || !!hit.KeyF; inp.reactP = inp.reactP || !!hit.KeyR; inp.driveP = inp.driveP || !!hit.KeyQ;
-  if (LV && LV.kh) {   // the Kingdom Hearts levels: W A S D move; K does the command chosen on the menu (attack); L jumps; J dodges; Space guards;
+  if (khOn()) {   // the Kingdom Hearts levels: W A S D move; K does the command chosen on the menu (attack); L jumps; J dodges; Space guards;
     // I is the reaction command; F casts Thunder and H Fire; Q and E (or the arrows, or the mouse wheel) move up and down the menu, and
     // Backspace or the left arrow backs out of a list; Left Shift and / turn the camera
     const pb = pad.b || [], pp = pad.p || []; let mx = 0, mz = 0;
@@ -3017,7 +3018,7 @@ function readInput() {
   } else { inp.camT = 0; inp.chargeP = inp.fjumpP = false; }
   if (WALKTO) { const ds = WALKTO[0] - P.s, dx = WALKTO[1] - P.x, d = Math.hypot(ds, dx); if (d > .5) { const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw), us = ds / d, ux = dx / d; inp.z = us * c + ux * sn; inp.x = -us * sn + ux * c; } else inp.x = inp.z = 0; }   // testing: &walkto=s,x
 }
-let WALKTO = null, AUTOFIGHT = null;
+let WALKTO = null, AUTOFIGHT = null, AUTOK = new URLSearchParams(location.search).get('autok');
 
 // ---- touch: a floating stick under the left thumb, JUMP / SPIN / FIRE under the right ----
 // the buttons press the same keys/hit slots as the keyboard (TJump, TSpin, TFire), so the game reads them like any other key
@@ -3133,11 +3134,11 @@ function updatePlayer(dt) {
   P.spinCD -= dt; P.fireCD -= dt; P.fireAnim -= dt; P.invT -= dt;
   if (P.spinT > 0) { P.spinT -= dt; if (P.spinT <= 0) P.spinCD = .18; }
   if (LV.duel) { if (inp.spinP) duelSwing(); if (inp.fireP) duelPush(); }
-  else if (LV.kh) khInput(dt);
+  else if (khOn()) khInput(dt);
   else if (inp.spinP && P.spinT <= 0 && P.spinCD <= 0) { P.spinT = .5; P.spinId = (P.spinId || 0) + 1; S.spin(); }
-  if (!LV.duel && !LV.kh && inp.fireP && P.fireCD <= 0) fireRocket();
-  if (LV.kh) khMove(dt);
-  P.vy = Math.max(P.vy - GRAV * dt * (LV.kh && KH.hover > 0 ? .12 : 1), -32);
+  if (!LV.duel && !khOn() && inp.fireP && P.fireCD <= 0) fireRocket();
+  if (khOn()) khMove(dt);
+  P.vy = Math.max(P.vy - GRAV * dt * (khOn() && KH.hover > 0 ? .12 : 1), -32);
   // in the courtyard the ring is small, so a step along it has to be scaled to its radius here
   moveH('s', P.vs * dt * (LV.arena ? R / Math.max(2, R - P.x) : 1)); moveH('x', P.vx * dt);
   const wasGround = P.ground, fallV = P.vy;
@@ -3187,7 +3188,7 @@ function moveV(d, lands, bonks) {
 }
 const TERR_FLOOR = { kind: 'floor' };
 function dustAt(s, x, y, n) { tw(s, x, y + .1, _a); for (let i = 0; i < n; i++) smoke.spawn(_a.x + rand(-.3, .3), _a.y, _a.z + rand(-.3, .3), rand(-1.2, 1.2), rand(.3, 1), rand(-1.2, 1.2), rand(.4, .7), .35, .9, CDUST, CDUST, 0, 3); }
-function hurt(kind) { die(kind); }
+function hurt(kind) { if (LV && LV.khl && kind !== 'squash' && state === 'play') { if (P.invT > 0 || KH.invT > 0) return; khHurt(kind === 'burn' ? 22 : 18, { s: P.s + Math.cos(P.heading), x: P.x + Math.sin(P.heading) }, { unblock: kind === 'burn', kb: 5 }); return; } die(kind); }   // (with Kingdom Hearts' fighting, a blow costs HP)
 function die(kind) {
   if (state !== 'play') return;
   if (cheats.god) {
@@ -5204,7 +5205,7 @@ function animHobbit(dt) {
   }
   if (P.spinT > 0) {
     H.body.rotation.y += dt * 32; H.armL.rotation.z = 1.4; H.armR.rotation.z = -1.4;
-    H.swirl.visible = true; H.swirl.rotation.y += dt * 40; H.swirl.material.opacity = Math.min(1, P.spinT * 4);
+    H.swirl.visible = !khOn(); H.swirl.rotation.y += dt * 40; H.swirl.material.opacity = Math.min(1, P.spinT * 4);
   } else H.body.rotation.y = 0;
   if (riding) {
     // astride: legs either side of the horse, one hand in the mane, the staff held high
@@ -5864,7 +5865,7 @@ function step(dt, noRender) {
   pollPad(); readInput();
   if (LV && LV.boss && (boss.state === 'intro' || boss.state === 'transform')) { inp.x = inp.z = 0; inp.jump = inp.jumpP = inp.spinP = inp.fireP = false; }   // hands off during cutscenes
   T += dt;
-  const gdt = LV && LV.kh && KH.hitstop > 0 ? dt * .08 : dt; KH.hitstop -= dt;   // (a hit in Edoras freezes the moment for a blink)
+  const gdt = khOn() && KH.hitstop > 0 ? dt * .08 : dt; KH.hitstop -= dt;   // (a hit in Edoras freezes the moment for a blink)
   if (state === 'play') { gs.time += dt; updatePlatforms(dt); updatePlayer(gdt); }
   else if (state === 'dying') updateDying(dt);
   else if (state === 'win') updateWin(dt);
@@ -5980,7 +5981,7 @@ function attachSkin(K) {
 }
 function skinPlay(M, key) {
   const K = M && M.skin; if (!K || !K.mixer || K.cur === key || (K.holdT > T && key !== 'die')) return;   // a one-off clip (skinClip) plays to the end
-  const A_ = LV && LV.kh && K.khActs && K.khActs[key] ? K.khActs : K.acts;   // (Sora's own, in the Kingdom Hearts levels)
+  const A_ = khOn() && K.khActs && K.khActs[key] ? K.khActs : K.acts;   // (Sora's own, in the Kingdom Hearts levels)
   const next = A_[key] || (key === 'jump' || key === 'hit' ? K.acts.idle : key === 'attack' ? K.acts.walk || K.acts.idle : K.acts.idle);
   const prev = K.curAct || K.acts[K.cur] || null; if (next === prev) { K.cur = key; return; }
   next.reset().fadeIn(.18).play(); if (prev) prev.fadeOut(.18); K.cur = key; K.curAct = next;
@@ -8375,8 +8376,10 @@ const UK_KINDS = {
   w: { hp: 15, r: .6, name: 'WARG', speed: 6.2, dmg: 9, slot: 'warg' },
   b: { hp: 16, r: .55, name: 'BERSERKER', speed: 3.8, dmg: 18, slot: 'berserker' },
 };
+const khOn = () => !!(LV && (LV.kh || LV.khl));   // (the full Kingdom Hearts levels, or the old ones with its fighting)
 function setupKH() {
-  const on = !!(LV && LV.kh); document.body.classList.toggle('kh', on); khWhite(false);
+  if (LV) LV.khl = !LV.kh && !LV.duel && !LV.ride;
+  const on = khOn(); document.body.classList.toggle('kh', on); khWhite(false);
   if (KH.spirit) { scene.remove(KH.spirit.sp); KH.spirit = null; } if (KH.ghost) KH.ghost.visible = false; if (KH.shieldFx) KH.shieldFx.material.opacity = 0;
   if (!KH.sword) { KH.sword = makeSaber(0xcfe6ff); KH.sword.g.position.set(0, -.42, .04); hob.armR.add(KH.sword.g); KH.ring = glowSprite(0x9ad8ff, 3, 0); hob.root.add(KH.ring); KH.ring.position.y = 1; }
   KH.sword.g.visible = on;
@@ -8386,7 +8389,7 @@ function setupKH() {
   hob.staff.visible = false;
   document.getElementById('tSpin').firstChild.textContent = 'ATTACK'; document.getElementById('tFire').firstChild.textContent = 'MAGIC'; document.getElementById('tRk').style.display = 'none';
   if (!KH.theoden) KH.theoden = { m: makeHero('theoden') };
-  for (const p of LV.layout.plazas) { p.done = false; p.wave = -1; }
+  for (const p of (LV.layout && LV.layout.plazas) || []) { p.done = false; p.wave = -1; }
   if (!SORA.list || KH_SORA_IDS.some(i => !SORA.clips[i])) loadSora(KH_SORA_IDS).then(ok => { if (ok) { soraActs(); if (hob.skin) hob.skin.cur = ''; } });   // (Sora's moves for Gandalf, when they're here)
   KH.plaza = null; KH.drive = 0; KH.items = { potion: 4, ether: 2 }; KH.cur = 0; KH.sub = null; KH.spell = 'thunder'; resetKH(true);
 }
@@ -8441,6 +8444,7 @@ function khAttack() {
   if (air) { KH.airN = fin ? last + 1 : n + 1; if (fin) { P.vy = -22; KH.hover = 0; } else { P.vy = Math.max(P.vy, tgt && tgt.boss ? 3 : 1.5); KH.hover = .4; } }
   else KH.combo = fin ? 0 : n + 1;
   KH.comboT = 1; khFlash('A');
+  if (LV.khl) { P.spinT = A.dur + .05; P.spinId = (P.spinId || 0) + 1; }
   skinClip(hob, khc(KH_SORA[air ? 'air' : 'ground'][Math.min(n, 4)], KH_CLIPS[Math.min(n, 4)]), A.dur * (SORA.clips[KH_SORA.ground[0]] ? 2.2 : 1.15)); S.saberSwing();   // (Sora's own swing, the follow-through too)
 }
 function khGuard(dodge) {   // (dodge: Space always rolls, the way you're pushing or else straight back)
@@ -8568,6 +8572,7 @@ function khCast(id) {
   const cost = khCost(p); if (KH.mp < cost) { S.click(); return false; }
   KH.mp -= cost; KH.magicCD = .6; P.fireAnim = .5; KH.spell = id; khFlash('M');
   if (p.anim) skinClip(hob, khc(KH_SORA[p.anim], 'attack_c'), .9);
+  if (LV.khl && p.anim !== 'cure') { const n = id === 'thunder' ? 3 : id === 'divine' || id === 'wrath' ? 6 : 1, am = cheats.ammo; cheats.ammo = true; for (let k = 0; k < n; k++) setTimeout(() => { if (state === 'play') { P.fireCD = 0; fireRocket(); } }, k * 140); cheats.ammo = am; S.zap(); return true; }   // (the old levels: homing bolts at their enemies)
   p.cast(KH.form > 0); return true;
 }
 function khItem(id) {
@@ -8658,7 +8663,7 @@ function khDrive() {
 // after the animations each frame: in the Kingdom Hearts levels Gandalf's staff is folded away to nothing (just the
 // lightsaber), and the White Wizard glows softly
 function khAfterSkins() {
-  const kh = !!(LV && LV.kh);
+  const kh = khOn();
   for (const K of [hob.skinG || hob.skin, hob.skinW]) {
     if (!K || !K.obj) continue;
     if (!K.staff) { K.staff = []; K.obj.traverse(o => { if (/^(B_BOWBONE|STAFF|STAFF_LIGHT)$/.test(o.name)) K.staff.push(o); }); }
@@ -8925,7 +8930,7 @@ function updateOrbs(dt) {
   }
 }
 function updateKH(dt) {
-  if (!LV || !LV.kh) return;
+  if (!khOn()) return;
   khWhite(KH.form > 0);   // (Grey or White, whichever the drive form says, once both models are in)
   saberToBone(KH.sword, hob);
   if (KH.cut && state === 'play') bridgeCut(dt);
@@ -8986,7 +8991,7 @@ function updateKH(dt) {
   KH.targetT -= dt; if (KH.target && (!ukLive(KH.target) || KH.targetT <= 0)) KH.target = null;
   if (KH.boss && ukLive(KH.boss) && KH.boss.state !== 'intro') { KH.target = KH.boss; KH.targetT = 1; }   // a boss's gauge stays up
   // the squares: walk into one and it locks, the enemies come in waves; when the last is beaten it opens again
-  const Y = LV.layout;
+  const Y = LV.layout && LV.layout.plazas ? LV.layout : { plazas: [] };
   if (!KH.plaza) { if (play) for (const p of Y.plazas) if (!p.done && Math.hypot(P.s - p.s, P.x - p.x) < p.r - 1.5 && Math.abs(P.y - p.y) < 4) { KH.plaza = p; p.wave = 0; khBarrier(p, true); KH.waveT = p.boss ? .2 : .7; banner(p.title, 1.6); S.orcGrunt(); break; } }
   else {
     const p = KH.plaza;
@@ -9003,7 +9008,7 @@ function updateKH(dt) {
   }
   if (KH.winT > 0 && play) { KH.winT -= dt; if (KH.winT <= 0) roamWin(LV.winTitle || "HELM'S DEEP HOLDS!"); }
   // Théoden, out on the steps of Meduseld once the last square is won: go to him to finish
-  const th = KH.theoden, won = !!Y.hall && Y.plazas[Y.plazas.length - 1].done;
+  const th = KH.theoden, won = !!Y.hall && !!Y.plazas.length && Y.plazas[Y.plazas.length - 1].done;
   if (th) {
     th.m.root.visible = th.m.shadow.visible = won;
     if (won) {
@@ -9021,7 +9026,7 @@ function updateKH(dt) {
 }
 const BOSS_COLS = ['#e02a2a', '#ff8a20', '#e8d030', '#40c840'];   // a boss's gauge: the bar on top green, then yellow, orange and red
 function khHud() {
-  const on = !!(LV && LV.kh) && state !== 'title' && state !== 'map' && state !== 'complete';
+  const on = khOn() && state !== 'title' && state !== 'map' && state !== 'complete';
   const hud = document.getElementById('khhud'); hud.style.display = on ? 'flex' : 'none'; document.getElementById('khcmd').style.display = on ? 'block' : 'none';
   if (!on) { document.getElementById('khtarget').style.display = document.getElementById('khreact').style.display = 'none'; return; }
   document.getElementById('khHP').style.width = (KH.hp / KH.max * 100) + '%'; document.getElementById('khMP').style.width = (KH.mp / KH.maxMp * 100) + '%';
