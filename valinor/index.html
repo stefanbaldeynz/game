@@ -2661,6 +2661,13 @@ const LEVELS = [
     },
   },
   {
+    // Moria's second level: Balin's Chamber, goblins through the door in waves and then a cave troll (see BALIN)
+    straight: true, roam: true, kh: true, balin: true, name: "BALIN'S CHAMBER", sub: 'DRUMS IN THE DEEP', loc: 'moria', theme: 'balin', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 100000, CZ: 0, base: -4, wallH: 0, winTitle: 'THE TROLL IS SLAIN!',
+    ...balinLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { balinContent(this); },
+  },
+  {
     // Moria's second part: the goblins on the ledge, then the Balrog head on at the far end of the bridge; it ends with the
     // bridge breaking and both of them falling into the abyss (see THE BRIDGE OF KHAZAD-DÛM)
     straight: true, roam: true, kh: true, name: 'THE BRIDGE OF KHAZAD-DÛM', sub: "DURIN'S BANE", loc: 'moria', theme: 'khazad', next: 'THE FALL', R: 40, Y0: 0, CX: 65000, CZ: 0, base: -4, wallH: 0, bridge: true,
@@ -2868,7 +2875,7 @@ function loadLevel(li) {
   gs.crateTotal = crates.filter(c => c.type !== 'i' && c.type !== 'ib').length;
   // in the courtyard you start on the south side, facing the tree
   gs.cp = LV.arena ? { s: R * Math.PI / 2, x: R - 9.5, y: 0, t: -1, deaths: 0 } : { s: START_S, x: LV.roam ? LV.start[1] : 0, y: LV.startY ?? (TERR ? terrainAt(START_S, LV.start[1]) : 0), t: -1, deaths: 0 };
-  setupNazgul(); setupRace(); setupDuel(); setupFellowship(); setupKH(); setupDeep();
+  setupNazgul(); setupRace(); setupDuel(); setupFellowship(); setupKH(); setupDeep(); setupBalin();
   chase.active = chase.done = false;
   if (LV.door) { LV.door.endBlock.on = true; LV.door.L.rotation.y = LV.door.Rr.rotation.y = 0; LV.door.light.visible = LV.door.glow.visible = false; }
   dragons.forEach((d, i) => { d.active = i < 2 && LV.dz.length > 0; d.away = 0; d.hits = 0; d.spitT = 0; d.s = START_S + rand(30, 60); d.x = -70; d.y = 45; });
@@ -2906,7 +2913,7 @@ function respawn(fresh) {
   cratesDirty = 2;
   P.s = cp.s; P.x = cp.x; P.y = cp.y + .05; P.vs = P.vx = P.vy = 0; P.heading = LV.arena ? Math.PI / 2 : LV.startH || 0; P.spinT = 0; P.invT = 1; P.ground = false; P.standOn = null; P.fireAnim = 0; P.safe = null;
   if (cp.s > 1.5 && !LV.arena && !LV.roam) P.s = cp.s - 1.2;
-  cam.yaw = 0; resetNazgul(); resetFellowship(); if (LV.duel && duel.wk) resetDuel(); if (khOn()) resetKH(fresh);
+  cam.yaw = LV.startH || 0; resetNazgul(); resetFellowship(); if (LV.duel && duel.wk) resetDuel(); if (khOn()) resetKH(fresh);
   for (const f of fireballs) killWarn(f.warn), scene.remove(f.mesh); fireballs = [];
   for (const a of arrows) scene.remove(a.mesh); arrows = [];
   for (const r of rockets) scene.remove(r.mesh); rockets = [];
@@ -5169,7 +5176,7 @@ function updateAmbient(dt) {
   if (THEMES.riv.bigFall) THEMES.riv.bigFall.offset.y += dt * .6;
   if (THEMES.mordor.lava) THEMES.mordor.lava.offset.x += dt * .01;
   torchSprites.forEach((s, i) => s.scale.set(.7 + Math.sin(T * 13 + i) * .06, 1.15 + Math.sin(T * 11 + i * 2) * .1, 1));
-  clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt); updateKhazad(dt); updateFall(dt); updateWeathertop(dt); updateCitadel(dt); updateRivKH(dt); updateErebor(dt); updateBow(dt); updateDeep(dt);
+  clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt); updateKhazad(dt); updateFall(dt); updateWeathertop(dt); updateCitadel(dt); updateRivKH(dt); updateErebor(dt); updateBow(dt); updateDeep(dt); updateBalin(dt);
   doomGlow.material.opacity = .8 + Math.sin(T * 1.7) * .2;
   // embers rising from the burning city below
   if (ENV.embers) for (let k = 0; k < 2; k++) { tw(P.s + rand(-6, 26), rand(-14, -4), rand(-8, 0), _a); fx.spawn(_a.x, _a.y, _a.z, rand(-.5, .5), rand(1.5, 3), rand(-.5, .5), rand(2, 3.5), .12, .05, [1, .7, .3], [1, .2, .05]); }
@@ -5642,7 +5649,7 @@ for (let i = 0; i < 12; i++) {
 const NODES = [
   { name: 'THE SHIRE', x: -50, z: -2.5, open: true, loc: 'shire', sub: 'OPEN COUNTRY · DEFEAT THE NINE NAZGÛL' },
   { name: 'RIVENDELL', x: -20, z: -23.5, open: true, loc: 'riv', sub: 'OPEN VALLEY · FIND THE FELLOWSHIP' },
-  { name: 'MORIA', x: -14.5, z: -3.5, open: true, loc: 'moria', sub: "THE MINES · THE BRIDGE · THE FALL" },
+  { name: 'MORIA', x: -14.5, z: -3.5, open: true, loc: 'moria', sub: "THE MINES · BALIN'S CHAMBER · THE BRIDGE · THE FALL" },
   { name: 'EDORAS', x: 10, z: 16.8, open: true, loc: 'rohan', sub: 'TO THE GOLDEN HALL · URUK-HAI' },
   { name: 'MINAS TIRITH', x: 42.2, z: 21, open: true, loc: 'mt', sub: 'THE SIEGE OF GONDOR · 3 LEVELS' },
   { name: 'CIRITH UNGOL', x: 50.5, z: 10, open: true, loc: 'ungol', sub: "THE PASS · RUN FROM SHELOB!" },
@@ -5703,7 +5710,7 @@ const NEAR_R = 2.4;
 function nodeNear() { let best = -1, bd = NEAR_R; NODES.forEach((n, i) => { const d = Math.hypot(tok.p.x - n.x, tok.p.z - n.z); if (d < bd) { bd = d; best = i; } }); return best; }
 const onLand = (x, z) => BOARD ? boardLand(x, z) : coastAt(x, z) > .8;
 // a place with several levels opens its own menu to choose from (Moria; Minas Tirith flies down into the city instead)
-const CHAP_DESC = { helm: ['Down through the Hornburg to the Balrog', 'The Deeping Wall blows: hold the breach'], erebor: ['The ramparts before the Gate: shoot down the dragon', 'The treasure hall: the dragon in his hoard'], riv: ['Find the Fellowship in the hidden valley', 'Race the Nine to the Ford of Bruinen'], moria: ['The dwarf-halls, to the doors of the bridge', 'Face the Balrog on the bridge', 'Fall with the Balrog into the deep'] };
+const CHAP_DESC = { helm: ['Down through the Hornburg to the Balrog', 'The Deeping Wall blows: hold the breach'], erebor: ['The ramparts before the Gate: shoot down the dragon', 'The treasure hall: the dragon in his hoard'], riv: ['Find the Fellowship in the hidden valley', 'Race the Nine to the Ford of Bruinen'], moria: ['The dwarf-halls, to the doors of the bridge', 'Goblins and a cave troll at the tomb of Balin', 'Face the Balrog on the bridge', 'Fall with the Balrog into the deep'] };
 let CHAP = null;
 function openChap(loc) {
   const ls = LEVELS.map((L, i) => [L, i]).filter(([L]) => L.loc === loc); CHAP = { loc, ls: ls.map(([, i]) => i), sel: 0 }; tok.dest = null;
@@ -5982,6 +5989,7 @@ const MODEL_SLOTS = {
   fellbeast: { height: 7.5, turn: -Math.PI / 2 }, horse: { height: 2.5, turn: -Math.PI / 2, hide: /gandalf/i, anims: { walk: /^run_a/i, jump: /^fly/i } },
   sauron: { height: 20, turn: -Math.PI / 2 },   // in his own units: the game builds Sauron at .28 scale (about 5.6 tall)
   spider: { height: 1.6, turn: -Math.PI / 2, src: 'shelob' },
+  troll: { height: 5.4, turn: -Math.PI / 2 },   // (Balin's Chamber: Rise of the Witch-king's hill troll)
   urukp: { height: 2.2, turn: -Math.PI / 2 }, urukx: { height: 2.1, turn: -Math.PI / 2 }, fanatic: { height: 2.1, turn: -Math.PI / 2 }, overseer: { height: 2.8, turn: -Math.PI / 2 },   // (the Uruk-hai's pikemen, crossbowmen, fanatics and their overseer)
   dragon: { height: 7, turn: -Math.PI / 2, anims: { fly: /^fly_a/i, idle: /^idle_a/i, attack: /^attack_a/i, hit: /^hurt_a/i, die: /^die_k/i } },   // (Erebor: Drogoth, Rise of the Witch-king's dragon)
   floodhorse: { height: 4, turn: -Math.PI / 2, anims: { walk: /^run/i }, glow: .5 },   // (the Ford: the water horses of Battle for Middle-earth's flood)
@@ -8033,6 +8041,110 @@ THEMES.deeping = natTheme({
   orc: MT_ORC,
   scenery(L) { buildDeep(L, this); },
 });
+// --- Balin's Chamber, Moria's second level: the hall with the tomb in a shaft of daylight, drums in the deep, goblins through the door in waves, and then
+//     the door comes in and a cave troll with it, the Kingdom Hearts way: he smashes his club onto a red circle (and it sticks: strike), sweeps it round
+//     (jump, or guard), charges along a red line until he hits something (and reels: strike), and hurls lumps of the wall. UP HIS BACK finishes him.
+function balinLayout() {
+  const tomb = [[3, 6.2, -2, 2, 1.5, 'wall']], pil = []; for (const sx of [-1, 1]) for (const s of [-15, -7, 1, 9, 17]) { pil.push([s, sx * 10]); tomb.push([s - 1, s + 1, sx * 10 - 1, sx * 10 + 1, 16, 'wall']); }
+  return { field: [-22, 22, -16, 16], start: [12, 0], startH: Math.PI, layout: { blocks: tomb, pil, plazas: [{ s: 0, x: 0, y: 0, r: 15.5, waves: [['o', 'o', 'o'], ['o', 'o', 'o', 'a'], ['o', 'o', 's', 'a'], ['T']], names: ['', 'DRUMS IN THE DEEP! THEY ARE COMING!', 'MORE THROUGH THE DOOR!', 'THE DOOR! A CAVE TROLL!'], title: 'THEY HAVE A CAVE TROLL', boss: true, last: true, breach: [-20, 0], ladders: [Math.PI - .25, Math.PI, Math.PI + .25], noAdds: true }] } };
+}
+function balinContent(L) { khRings(L.layout); for (const [k, s, x] of [['q', 14, 7], ['b', 14, -7], ['su', 16, 0], ['b', -2, -13], ['q', -2, 13]]) addCrate(k, s, x, 0, 4); }
+function buildBalin(L, TH) {
+  const Y = L.layout, first = scene.children.length, sky = TH.env, H_ = 15;
+  const ftx = TX.hdFlag.clone(); ftx.needsUpdate = true; ftx.wrapS = ftx.wrapT = THREE.RepeatWrapping; ftx.repeat.set(9, 12);
+  const flag = surf(ftx, { sky, color: 0x6a6670, rough: .55, bump: 3, env: .4 }), st = surf(TX.hdStone, { sky, color: 0x5a5660, rough: .75, bump: 3.2, env: .3, tri: 3 });
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(36, 48), flag); fl.rotation.x = -Math.PI / 2; tw(0, 0, 0, fl.position); fl.receiveShadow = true; scene.add(fl);
+  const roof = new THREE.Mesh(GEO_BOX, st); tw(0, 0, H_ + .5, roof.position); roof.scale.set(38, 1, 50); scene.add(roof);
+  const boxes = []; const add = (s, x, y, w, h, d) => { const q = tw(s, x, y); boxes.push([q.x, q.y, q.z, w, h, d, 0]); };
+  add(23, 0, H_ / 2, 38, H_, 2); add(0, 17, H_ / 2, 2, H_, 48); add(0, -17, H_ / 2, 2, H_, 48);
+  for (const sx of [-1, 1]) add(-23, sx * 11, H_ / 2, 16, H_, 2); add(-23, 0, 11.5, 6, 7, 2);
+  for (const [s, x] of Y.pil) { const q = tw(s, x, 0); part(new THREE.CylinderGeometry(.85, 1, H_, 10), st, scene, q.x, q.y + H_ / 2, q.z); part(new THREE.CylinderGeometry(1.25, 1.25, .6, 10), st, scene, q.x, q.y + .3, q.z); part(new THREE.CylinderGeometry(1.25, .85, 1, 10), st, scene, q.x, q.y + H_ - .5, q.z); }
+  stoneBox(boxes, st);
+  // the tomb in its shaft of daylight, from the high window in the north wall
+  { const pr = PROPS.pmtomb01 && propOne('pmtomb01', 4.6, 0, 0, Math.PI / 2, 4.4); if (!pr) { const q = tw(4.6, 0, 0); part(GEO_BOX, surf(TX.marble, { sky, color: 0xd0ccc4, rough: .5 }), scene, q.x, q.y + .75, q.z, 3.6, 1.5, 2.6); part(GEO_BOX, lam(0x8a8a90), scene, q.x, q.y + 1.56, q.z, 3.8, .14, 2.8); } }
+  { const q = tw(22, 0, 12); part(GEO_BOX, bas(0xfff4d0), scene, q.x, q.y, q.z, 4, 4, .3); const c = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 3.4, 22, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff0c8, transparent: true, opacity: .16, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); c.position.copy(tw(13.5, 0, 6.8)); c.rotation.x = -Math.atan2(17, 10.4); c.userData.keep = true; scene.add(c); const gl = glowSprite(0xfff0c8, 9, .5); gl.position.copy(tw(4.6, 0, 1.8)); scene.add(gl); }
+  // bones of Balin's folk, a well in the corner, torches on the columns
+  const bone = lam(0xd8d0b8), list = []; for (let k = 0; k < 110; k++) { const q = tw(rand(-20, 20), rand(-15, 15), .05); list.push([q.x, q.y, q.z, rand(.04, .08), rand(.04, .08), rand(.3, .7), rand(0, 3)]); } instanced(GEO_BOX, bone, list);
+  for (let k = 0; k < 8; k++) { const q = tw(rand(-20, 20), rand(-15, 15), .16); part(GEO.sph, bone, scene, q.x, q.y, q.z, .16, .18, .18); }
+  { const q = tw(17, 12.5, 0); part(new THREE.CylinderGeometry(1.3, 1.4, 1, 14, 1, true), st, scene, q.x, q.y + .5, q.z); part(new THREE.CircleGeometry(1.3, 14), bas(0x020202), scene, q.x, q.y + .3, q.z).rotation.x = -Math.PI / 2; L.layout.blocks.push([15.6, 18.4, 11, 14, 1, 'wall']); }
+  for (const [s, x] of Y.pil) addTorch(s, x * .84, 3.4);
+  bakeScenery(scene.children.slice(first));
+  // the door (it comes in with the troll)
+  const dr = new THREE.Group(), wd = lam(0x4a3420); for (const sx of [-1, 1]) { const q = tw(-22.6, sx * 1.5, 4); part(GEO_BOX, wd, dr, q.x, q.y, q.z, 2.9, 8, .4); } scene.add(dr); TH.door = dr;
+}
+function makeTroll() {
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body); const SK = lam(0x6a6a58, { emissive: 0x0c0c08 }), DK = lam(0x3a3a30), WD = lam(0x4a3420);
+  part(GEO.sph, SK, body, 0, 3.1, 0, 1.25, 1.35, 1); part(GEO.sph, SK, body, 0, 4.3, .15, 1, .8, .85); const head = new THREE.Group(); head.position.set(0, 5, .55); body.add(head); part(GEO.sph, SK, head, 0, 0, 0, .46, .4, .52); for (const sx of [-1, 1]) { part(GEO.sph, bas(0xffb030), head, sx * .2, .08, .42, .06, .05, .05); part(GEO.cone, DK, head, sx * .18, -.28, .36, .04, .2, .04); }
+  const legs = [-1, 1].map(sx => { const g = new THREE.Group(); g.position.set(sx * .62, 2, 0); body.add(g); part(GEO.cylT, SK, g, 0, 0, 0, .42, 2, .42); part(GEO_BOX, DK, g, 0, -2, .2, .6, .24, .9); return g; });
+  const arm = sx => { const g = new THREE.Group(); g.position.set(sx * 1.2, 4.3, 0); body.add(g); part(GEO.cylT, SK, g, 0, 0, 0, .32, 2.6, .32); return g; };
+  const armR = arm(1), armL = arm(-1), club = new THREE.Group(); club.position.set(0, -2.6, .1); armR.add(club); part(GEO.cyl, WD, club, 0, 0, 1, .16, 2.4, .16).rotation.x = Math.PI / 2; part(GEO.sph, WD, club, 0, 0, 2.3, .42, .42, .7);
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(1.8, 14), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .45, depthWrite: false })); shadow.rotation.x = -Math.PI / 2; scene.add(shadow); scene.add(root); root.visible = shadow.visible = false;
+  const M = { root, body, head, legs, armR, armL, club, shadow }; addSkin(M, 'troll', body, root); if (M.skin) M.skin.temp = true; return M;
+}
+function spawnTroll(pl, delay = 0) {
+  const b = { m: makeTroll(), boss: true, kind: 'T', name: 'CAVE TROLL', hp: pl.bossHp || 850, max: pl.bossHp || 850, bars: 3, r: 1.5, tall: 5.4, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null, state: 'intro', t: -delay - .5, s: -21, x: 0, y: 0, h: 0, cd: 1.2, n: 0, upd: trUpdate, hitFn: trHit, reactFn: (u, d) => u.state === 'stun' && u.hp <= u.max * .3 && d < 6 ? 'climb' : null, reaction: trReaction };
+  URUKS.push(b); KH.boss = b; Music.mode = 1; return b;
+}
+function trEnd(b) { if (b.a) for (const f of b.a.fx) f.dead = true; b.a = null; b.state = 'idle'; b.t = 0; b.cd = rand(.8, 1.5) / (b.phase > 1 ? 1.3 : 1); }
+function trHit(b, dmg, fin, air, react) {
+  if (!ukLive(b) || b.state === 'intro') return; const p = tw(lerp(b.s, P.s, .4), lerp(b.x, P.x, .4), P.y + 1.3);
+  if (b.state === 'stun' || (b.a && b.a.ph === 'stuck')) dmg *= 1.6; if (KH.form > 0) dmg *= 1.5;
+  b.hp -= dmg; b.flash = .1; if (!react) b.rev += fin ? 18 : 7; KH.target = b; KH.targetT = 6; if (KH.form <= 0) KH.drive = Math.min(100, KH.drive + 2); KH.hitstop = Math.max(KH.hitstop, fin ? .07 : .035); cam.shake = Math.max(cam.shake, fin ? .3 : .12); sparks(p, fin ? 24 : 12, fin ? 8 : 5, [1, .9, .7], [.5, .4, .2]); S.saberHit();
+  if (b.hp <= 0) { b.hp = 0; trEnd(b); b.state = 'fall'; b.t = 0; b.dead = true; KH.react = null; skinPlay(b.m, 'die'); banner('THE TROLL IS SLAIN!', 2.2); S.roar(); cam.shake = .7; KH.hitstop = .3; Music.mode = 0; for (const o of URUKS) if (!o.boss && ukLive(o)) khHit(o, 999, true); return; }
+  if (b.phase === 1 && b.hp <= b.max * .5) { b.phase = 2; trEnd(b); b.state = 'roar'; b.t = 0; banner('HE RAGES!', 1.4); S.roar(); }
+}
+function trReaction() { const b = KH.boss; if (!b) return; S.smash(); KH.hitstop = .4; cam.shake = 1; flashV = Math.max(flashV, .6); banner('UP HIS BACK!', 1.8); skinClip(hob, khc(KH_SORA.ground[4], 'attack_e'), .8); P.y = 4.8; P.ground = false; P.vy = 3; sparks(tw(b.s, b.x, 5), 60, 11, [1, 1, 1], [.7, .85, 1], .3); trHit(b, 9999, true, false, true); }
+function trUpdate(b, dt) {
+  const m = b.m; b.t += dt; b.flash -= dt; b.rev = Math.max(0, b.rev - dt * 10); if (b.t < 0) return;
+  const ds = P.s - b.s, dx = P.x - b.x, d = Math.hypot(ds, dx) || .01, toP = Math.atan2(dx, ds), live = state === 'play', pl = b.plaza, A = b.a, p2 = b.phase > 1;
+  const keep = (s, x) => [clamp(s, -20.5, 20.5), clamp(x, -14.5, 14.5)]; let walk = 0, arm = -.25;
+  const fxm = (mm) => { const f = khFx(mm, g => { warnPulse(g); return true; }); b.a.fx.push(f); };
+  switch (b.state) {
+    case 'intro':
+      if (!b.shown) { b.shown = true; m.root.visible = m.shadow.visible = true; S.smash(); S.roar(); cam.shake = 1; flashV = Math.max(flashV, .25); const D = THEMES.balin.door; D.visible = false; const c = tw(-22, 0, 3); sparks(c, 60, 12, [.8, .6, .4], [.4, .3, .2], .35); for (let k = 0; k < 14; k++) { const q = new THREE.Mesh(GEO_BOX, lam(0x4a3420)), v = new V3(rand(-5, 5), rand(3, 8), rand(5, 14)); q.scale.set(rand(.3, 1.2), rand(.3, 1.6), .15); q.position.copy(tw(-22, rand(-3, 3), rand(.5, 7))); khFx(q, (f, dd) => { v.y -= 20 * dd; q.position.addScaledVector(v, dd); q.rotation.x += dd * 5; if (q.position.y < .1) { q.position.y = .1; v.set(0, 0, 0); } return f.t < 3; }); } skinClip(m, 'attack_a', 1); }
+      b.s = lerp(-21, -13, Math.min(1, b.t / 1.6)); b.h = toP; walk = 1; if (b.t > 1.9) trEnd(b); break;
+    case 'idle': {
+      b.h += angDiff(b.h, toP) * Math.min(1, dt * 3); if (d > 3.4) { [b.s, b.x] = keep(b.s + ds / d * (p2 ? 3 : 2.4) * dt, b.x + dx / d * (p2 ? 3 : 2.4) * dt); walk = 1; }
+      b.cd -= dt; if (!live || b.cd > 0) break; b.n++;
+      const r = Math.random(); let t = d < 5 ? (r < .5 ? 'smash' : 'sweep') : d < 11 ? (r < .4 ? 'charge' : r < .7 ? 'throw' : 'smash') : r < .6 ? 'charge' : 'throw'; if (b.rev >= 100) { b.rev = 0; t = 'sweep'; } if (b.last === t && Math.random() < .5) t = d < 5 ? 'sweep' : 'throw'; b.last = t;
+      const a = b.a = { type: t, t: 0, ph: 'wind', fx: [], w: { smash: .95, sweep: .8, charge: .9, throw: .8 }[t] * (p2 ? .85 : 1) }; b.state = 'atk'; a.h = toP; b.h = toP; S.orcGrunt();
+      if (t === 'smash') { a.at = keep(b.s + Math.cos(toP) * 3.4, b.x + Math.sin(toP) * 3.4); fxm(warnMesh(a.at[0], a.at[1], 0, 2.9)); skinClip(m, 'attack_a', a.w + .5); }
+      if (t === 'sweep') { fxm(warnMesh(b.s, b.x, 1, 5.8, toP - 1.45, toP + 1.45)); skinClip(m, 'attack_b', a.w + .5); }
+      if (t === 'charge') { fxm(warnMesh(b.s, b.x, 1, 16, toP - .2, toP + .2)); S.roar(); a.v = [Math.cos(toP) * 15, Math.sin(toP) * 15]; }
+      if (t === 'throw') { a.at = [P.s + P.vs * .7, P.x + P.vx * .7]; a.at = keep(a.at[0], a.at[1]); fxm(warnMesh(a.at[0], a.at[1], 0, 2.4)); skinClip(m, 'attack_c', a.w + .5); }
+      break;
+    }
+    case 'atk': {
+      A.t += dt; if (A.ph === 'wind') { arm = -2.6; if (A.t >= A.w) { A.ph = 'go'; A.t = 0; } break; }
+      arm = .7;
+      switch (A.type) {
+        case 'smash': if (!A.hit) { A.hit = true; A.fx.forEach(f => f.dead = true); const p = tw(A.at[0], A.at[1], .2); sparks(p, 40, 9, [.9, .8, .6], [.5, .4, .2], .3); dustAt(A.at[0], A.at[1], 0, 16); S.smash(); cam.shake = .9; if (Math.hypot(P.s - A.at[0], P.x - A.at[1]) < 2.9 && P.y < 1) khHurt(20, b, { kb: 13 }); if (p2) bossWave(b, A.at[0], A.at[1], 9, 8, 10); } A.ph = 'stuck'; if (A.t > 1.5) trEnd(b); break;   // (the club sticks: strike him)
+        case 'sweep': if (!A.hit && A.t > .1) { A.hit = true; A.fx.forEach(f => f.dead = true); S.whoosh(); cam.shake = .4; if (d < 5.8 && Math.abs(angDiff(toP, A.h)) < 1.5 && P.y < 1.1) khHurt(16, b, { kb: 13 }); } b.h = A.h + lerp(1.2, -1.2, Math.min(1, A.t / .35)); if (A.t > .8) { b.h = A.h; trEnd(b); } break;
+        case 'charge': { const ns = b.s + A.v[0] * dt, nx = b.x + A.v[1] * dt, [ks, kx] = keep(ns, nx), hitPil = THEMES.balin && LV.layout.pil.some(q => Math.hypot(q[0] - ns, q[1] - nx) < 2.4); walk = 2; if (ks !== ns || kx !== nx || hitPil || A.t > 1.5) { A.fx.forEach(f => f.dead = true); S.smash(); cam.shake = .9; dustAt(b.s, b.x, 0, 14); b.a = null; b.state = 'stun'; b.t = 0; b.stunT = 2.4; banner('HE REELS!', .9); break; } b.s = ks; b.x = kx; if (!A.hit && d < 2.5) { A.hit = true; khHurt(18, b, { unblock: true, kb: 15 }); } break; }
+        case 'throw': if (!A.thrown) { A.thrown = true; const rock = fallRock(), p0 = tw(b.s, b.x, 5.4), p1 = tw(A.at[0], A.at[1], .4), at = A.at; scene.add(rock); S.whoosh(); khFx(rock, f => { const k = Math.min(1, f.t / .85); rock.position.lerpVectors(p0, p1, k); rock.position.y += Math.sin(k * Math.PI) * 4; rock.rotation.x += .1; if (k < 1) return true; sparks(p1, 24, 7, [.8, .7, .6], [.4, .3, .2], .25); S.stomp(); if (Math.hypot(P.s - at[0], P.x - at[1]) < 2.4 && P.y < 1.2) khHurt(14, { s: at[0], x: at[1] }, { unblock: true, kb: 8 }); A.fx.forEach(q => q.dead = true); return false; }); } if (A.t > 1) { b.a = null; b.state = 'idle'; b.t = 0; b.cd = rand(.5, 1); } break;
+      }
+      break;
+    }
+    case 'stun': arm = .4; if (Math.random() < .3) sparks(tw(b.s, b.x, 5.6), 2, 2, [1, 1, .8], [1, .8, .2]); if (b.t > b.stunT) trEnd(b); break;
+    case 'roar': arm = -2.6; if (!b.called && b.t > .6) { b.called = true; for (let k = 0; k < 3; k++) spawnUruk('o', pl, Math.PI + (k - 1) * .25, k * .3); } if (b.t > 1.5) trEnd(b); break;
+    case 'fall': m.body.rotation.x = damp(m.body.rotation.x, -1.45, 2, dt); if (b.t > 1.4 && !b.thud) { b.thud = true; S.smash(); cam.shake = 1; dustAt(b.s, b.x, 0, 22); } if (b.t > 3) { khRemove(b); return; } break;
+  }
+  if (d < b.r + .5 && b.state !== 'fall' && m.root.visible) { P.s = b.s + ds / d * (b.r + .5); P.x = b.x + dx / d * (b.r + .5); }
+  place(m.root, b.s, b.x, 0, b.h); tw(b.s, b.x, .03, m.shadow.position); const ph = T * 5; m.legs.forEach((l, i) => l.rotation.x = Math.sin(ph + i * Math.PI) * .45 * Math.min(1, walk)); m.armR.rotation.x = damp(m.armR.rotation.x, arm, 12, dt); m.armL.rotation.x = -.3 + Math.sin(ph) * .25 * Math.min(1, walk); if (b.state !== 'fall') m.body.rotation.x = b.state === 'stun' ? .3 : 0;
+  skinPlay(m, b.state === 'fall' ? 'die' : b.state === 'stun' ? 'hit' : b.state === 'roar' ? 'attack' : walk ? 'walk' : 'idle');
+}
+function setupBalin() { if (LV && LV.balin) THEMES.balin.door.visible = true; }
+function updateBalin(dt) {   // the drums in the deep, until the troll is in; dust shaken down from the roof
+  if (!LV || !LV.balin || state !== 'play') return; const b = KH.boss; if (b && b.kind === 'T') return; BALIN_T -= dt;
+  if (BALIN_T < 0) { BALIN_T = 1.05; S.stomp(); cam.shake = Math.max(cam.shake, .1); for (let k = 0; k < 3; k++) smoke.spawn(...tw(rand(-20, 20), rand(-15, 15), rand(11, 14.5)).toArray(), 0, -1.6, 0, 1.4, 1, 2.4, [.5, .48, .45], [.6, .58, .55], .5, .2); }
+}
+let BALIN_T = 3;
+THEMES.balin = natTheme({
+  wallTex: TX.hdStone, floorTex: TX.hdFlag, tint: [.7, .7, .74], door: 0x6a6a7a,
+  env: { sky: [0x020203, 0x040406, 0x08080c, 0x0c0c10], fog: [24, 90], fogC: 0x0c0e12, amb: [0x5a6a7a, .85], hemi: [0x9aa8b8, 0x2a2018, .6], sun: [0xfff0c8, .55], east: [0xffa060, .25], embers: true, sunDir: [10, 80, 60] },
+  orc: { sk: 0x8a907a, ska: 0xa0a488, ar: 0x2a2630, le: 0x3a2a1a, met: 0x1e1c22, sc: .85 },
+  scenery(L) { buildBalin(L, this); },
+});
 function buildHelms(L, TH) {
   const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
   const stone = surf(TX.hdStone, { sky, rough: .82, bump: 3.2, wet: .75, env: .5, tri: 3.2 }), stoneDark = surf(TX.hdStone, { sky, color: 0x8a8a90, rough: .85, bump: 3.2, wet: .6, env: .4, tri: 3.2 });
@@ -9864,7 +9976,7 @@ function khWhite(on) {
   hob.skin = on ? hob.skinW : hob.skinG; hob.skin.cur = ''; hob.skin.holdT = 0; skinPlay(hob, 'idle');
 }
 // the reaction commands: what the green prompt does depends on whose moment it is
-const KH_REACT = { takedown: 'TAKEDOWN', repel: 'REPEL', sword: 'SWORD RUN', stand: 'YOU SHALL NOT PASS!', duel: "WIZARDS' DUEL", staff: 'BREAK HIS STAFF', deflect: 'DEFLECT', anor: 'FLAME OF ANOR', narsil: 'CUT THE RING', black: 'THE BLACK ARROW' };
+const KH_REACT = { takedown: 'TAKEDOWN', repel: 'REPEL', sword: 'SWORD RUN', stand: 'YOU SHALL NOT PASS!', duel: "WIZARDS' DUEL", staff: 'BREAK HIS STAFF', deflect: 'DEFLECT', anor: 'FLAME OF ANOR', narsil: 'CUT THE RING', black: 'THE BLACK ARROW', climb: 'UP HIS BACK' };
 function khReaction() {
   const R_ = KH.react; if (!R_) return;
   const u = R_.u; KH.react = null; KH.atk = null; KH.rx = KH.rx || {}; KH.rx[R_.cmd] = (KH.rx[R_.cmd] || 0) + 1;   // (KH.rx: a tally, for testing)
@@ -9876,7 +9988,7 @@ function khReaction() {
   }
   if (R_.cmd === 'sword') { KH.reacting = { u, t: 0, cmd: 'sword', hits: 0, from: [P.s, P.x, P.y] }; KH.invT = 2.4; P.ground = false; skinClip(hob, 'attack_a', .5); S.whoosh(); return; }
   if (R_.cmd === 'stand') { KH.reacting = { u, t: 0, cmd: 'stand' }; KH.invT = 2.5; bossStand(u); return; }
-  if (R_.cmd === 'duel' || R_.cmd === 'staff' || R_.cmd === 'deflect' || R_.cmd === 'anor' || R_.cmd === 'narsil' || R_.cmd === 'black') { KH.reacting = { u, t: 0, cmd: R_.cmd }; KH.invT = 2.5; u.reaction(R_.cmd); return; }   // (Saruman's)
+  if (R_.cmd === 'duel' || R_.cmd === 'staff' || R_.cmd === 'deflect' || R_.cmd === 'anor' || R_.cmd === 'narsil' || R_.cmd === 'black' || R_.cmd === 'climb') { KH.reacting = { u, t: 0, cmd: R_.cmd }; KH.invT = 2.5; u.reaction(R_.cmd); return; }   // (Saruman's)
   KH.reacting = { u, t: 0, hit: false, cmd: 'takedown' }; KH.invT = 1.6;
   P.vy = 11; P.ground = false; skinClip(hob, 'attack_c', .85); S.saberSwing();
 }
@@ -9986,6 +10098,7 @@ function spawnUruk(kind, pl, a, delay) {
   if (kind === 'W') return spawnWitchKing(pl, delay);
   if (kind === 'K') return Object.assign(spawnWitchKing(pl, delay, 'nazgul'), { name: 'KHAMÛL', title: 'KHAMÛL, THE BLACK RIDER!', endTitle: 'KHAMÛL FLEES THE SHIRE!' });
   if (kind === 'X') return spawnSauronKH(pl, delay);
+  if (kind === 'T') return spawnTroll(pl, delay);
   if (kind === 'D') return spawnDragonRamparts(pl, delay);
   if (kind === 'G') return spawnDragonHoard(pl, delay);
   if (kind === 'F') return spawnFallBalrog(pl, delay);
