@@ -2521,6 +2521,7 @@ function rivendellLayout() {
   for (const [s, x, w, d, h] of L.houses) L.blocks.push([s - w / 2, s + w / 2, x - d / 2, x + d / 2, h]);
   return L;
 }
+const USTAIR = { FLIGHTS: 6, STEPS: 30, RISE: 7, X: 18, LAND: 23 }, OSG = { TOP: 30, R: 8.6 };   // (the Stairs of Cirith Ungol's size; Osgiliath's tower)
 const RACE_FORD = 520, RACE_END = 572;
 const ER = { WALK: 12, X0: -46, X1: 46, TOWERS: [-46, -23, 0, 23, 46], TOP: 20 };   // (Erebor's ramparts: the walk's height and ends, its towers, their tops)   // (the race to the Ford: where the river crosses the road, and where the road ends)
 const LEVELS = [
@@ -2737,6 +2738,13 @@ const LEVELS = [
     content() { khRings(this.layout); for (const [k, s, x] of [['q', -12, 4], ['su', -12, -4], ['b', 12, 0]]) addCrate(k, s, x, 0, 4); },
   },
   {
+    // Cirith Ungol's second level: the stairs, climbed from the side (see the Stairs of Cirith Ungol)
+    straight: true, roam: true, name: 'THE STAIRS OF CIRITH UNGOL', sub: 'THE LONG CLIMB', loc: 'ungol', theme: 'ustair', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 105000, CZ: 0, base: -8, wallH: 0,
+    ...ustairLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { ustairContent(this); },
+  },
+  {
     // a climb up the side of the mountain on spires of rock, with the lava rising underneath
     straight: true, name: 'MOUNT DOOM', sub: 'CLIMB TO THE CRACK OF DOOM', loc: 'doom', theme: 'doom', next: 'RETURN TO THE MAP', R: 22, Y0: 0, CX: 35000, CZ: 0, base: -40, wallH: 50, wallTop: 70,
     floors: [[-16.6, 6.5, -3.5]],
@@ -2809,6 +2817,13 @@ const LEVELS = [
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { hoardContent(this); },
   },
+  {
+    // Osgiliath: the top of a round tower in the ruins, shooting down the Nine on their fell beasts (see Osgiliath)
+    straight: true, roam: true, kh: true, bow: true, bow360: true, flyers: true, name: 'OSGILIATH', sub: 'THE NINE ON THE WING', loc: 'osgil', theme: 'osg', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 110000, CZ: 0, base: -30, wallH: 0,
+    ...osgLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { osgContent(this); },
+  },
 ];
 
 for (const L of LEVELS) if (L.lava) L.endY = L.pillars[L.pillars.length - 1][4];   // the climb's last gate stands on the top spire
@@ -2875,7 +2890,7 @@ function loadLevel(li) {
   gs.crateTotal = crates.filter(c => c.type !== 'i' && c.type !== 'ib').length;
   // in the courtyard you start on the south side, facing the tree
   gs.cp = LV.arena ? { s: R * Math.PI / 2, x: R - 9.5, y: 0, t: -1, deaths: 0 } : { s: START_S, x: LV.roam ? LV.start[1] : 0, y: LV.startY ?? (TERR ? terrainAt(START_S, LV.start[1]) : 0), t: -1, deaths: 0 };
-  setupNazgul(); setupRace(); setupDuel(); setupFellowship(); setupKH(); setupDeep(); setupBalin();
+  setupNazgul(); setupRace(); setupDuel(); setupFellowship(); setupKH(); setupDeep(); setupBalin(); setupUstair(); setupFly();
   chase.active = chase.done = false;
   if (LV.door) { LV.door.endBlock.on = true; LV.door.L.rotation.y = LV.door.Rr.rotation.y = 0; LV.door.light.visible = LV.door.glow.visible = false; }
   dragons.forEach((d, i) => { d.active = i < 2 && LV.dz.length > 0; d.away = 0; d.hits = 0; d.spitT = 0; d.s = START_S + rand(30, 60); d.x = -70; d.y = 45; });
@@ -5176,7 +5191,7 @@ function updateAmbient(dt) {
   if (THEMES.riv.bigFall) THEMES.riv.bigFall.offset.y += dt * .6;
   if (THEMES.mordor.lava) THEMES.mordor.lava.offset.x += dt * .01;
   torchSprites.forEach((s, i) => s.scale.set(.7 + Math.sin(T * 13 + i) * .06, 1.15 + Math.sin(T * 11 + i * 2) * .1, 1));
-  clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt); updateKhazad(dt); updateFall(dt); updateWeathertop(dt); updateCitadel(dt); updateRivKH(dt); updateErebor(dt); updateBow(dt); updateDeep(dt); updateBalin(dt);
+  clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt); updateKhazad(dt); updateFall(dt); updateWeathertop(dt); updateCitadel(dt); updateRivKH(dt); updateErebor(dt); updateBow(dt); updateDeep(dt); updateBalin(dt); updateUstair(dt);
   doomGlow.material.opacity = .8 + Math.sin(T * 1.7) * .2;
   // embers rising from the burning city below
   if (ENV.embers) for (let k = 0; k < 2; k++) { tw(P.s + rand(-6, 26), rand(-14, -4), rand(-8, 0), _a); fx.spawn(_a.x, _a.y, _a.z, rand(-.5, .5), rand(1.5, 3), rand(-.5, .5), rand(2, 3.5), .12, .05, [1, .7, .3], [1, .2, .05]); }
@@ -5314,6 +5329,9 @@ function updateCamera(dt) {
     camera.lookAt(cam.wl); return;
   }
   if (LV.roam && !LV.duel) {
+    if (LV.sideview) {   // (the Stairs of Cirith Ungol: from the side)
+      cam.yaw = 0; _a.copy(tw(-13, P.x * .92, P.y + 3.6)); _b.copy(tw(1, P.x, P.y + 1.8)); if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-6 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp); const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
+    }
     if (LV.deeping && !DEEP.blown) {   // (the Deeping Wall's scene: over Gandalf's shoulder, down at the coomb and the torch running in)
       _a.copy(tw(6, -3.5, LV.layout.WH + 4.5)); _b.copy(tw(-22, 0, 1)); cam.wp.copy(_a); cam.wl.copy(_b); camera.position.copy(_a); camera.lookAt(_b); cam.snap = true; return;
     }
@@ -5414,7 +5432,7 @@ function updateHUD(dt) {
     bb.style.display = duel.wk.state === 'intro' ? 'none' : 'flex'; document.getElementById('bossfill').style.width = duel.wk.hp + '%';
     const ne = document.getElementById('bossName'); if (ne.textContent !== 'THE WITCH-KING') ne.textContent = 'THE WITCH-KING';
   }
-  const nz = document.getElementById('hNaz'), showN = !!(LV && (LV.nazgul || LV.race)) && state !== 'title' && state !== 'map'; nz.style.display = showN ? '' : 'none'; if (showN) { document.getElementById('nNaz').textContent = LV.race ? RACE.left : NAZ.left; document.getElementById('lNaz').textContent = LV.hunt === 'spider' ? 'SPIDERS' : 'NAZGÛL'; }
+  const nz = document.getElementById('hNaz'), showN = !!(LV && (LV.nazgul || LV.race || LV.flyers)) && state !== 'title' && state !== 'map'; nz.style.display = showN ? '' : 'none'; if (showN) { document.getElementById('nNaz').textContent = LV.flyers ? FLY.left : LV.race ? RACE.left : NAZ.left; document.getElementById('lNaz').textContent = LV.hunt === 'spider' ? 'SPIDERS' : 'NAZGÛL'; }
   const fe = document.getElementById('hFel'), showF = !!(LV && LV.layout && LV.layout.fellowship) && state !== 'title' && state !== 'map'; fe.style.display = showF ? '' : 'none'; if (showF) document.getElementById('nFel').textContent = FEL.found + '/' + FEL.total;
   document.getElementById('nLives').textContent = Math.max(0, gs.lives);
 }
@@ -5652,7 +5670,7 @@ const NODES = [
   { name: 'MORIA', x: -14.5, z: -3.5, open: true, loc: 'moria', sub: "THE MINES · BALIN'S CHAMBER · THE BRIDGE · THE FALL" },
   { name: 'EDORAS', x: 10, z: 16.8, open: true, loc: 'rohan', sub: 'TO THE GOLDEN HALL · URUK-HAI' },
   { name: 'MINAS TIRITH', x: 42.2, z: 21, open: true, loc: 'mt', sub: 'THE SIEGE OF GONDOR · 3 LEVELS' },
-  { name: 'CIRITH UNGOL', x: 50.5, z: 10, open: true, loc: 'ungol', sub: "THE PASS · RUN FROM SHELOB!" },
+  { name: 'CIRITH UNGOL', x: 50.5, z: 10, open: true, loc: 'ungol', sub: "THE PASS · THE STAIRS · 2 LEVELS" },
   { name: 'MORDOR', x: 57, z: -3, open: true, loc: 'mordor', sub: 'IN THE SHADOW OF THE EYE · 1 LEVEL' },
   { name: 'MOUNT DOOM', x: 62.5, z: 11.5, open: true, loc: 'doom', sub: 'THE CLIMB · OUTRUN THE LAVA' },
   { name: 'WEATHERTOP', x: -34, z: -14, open: true, loc: 'weather', sub: 'DUEL THE WITCH-KING' },   // added last: the road and Minas Tirith go by position in this list
@@ -5660,6 +5678,7 @@ const NODES = [
   { name: 'ISENGARD', x: -18, z: 9, open: true, loc: 'isen', sub: 'UP THE TOWER OF ORTHANC · SARUMAN BOSS' },
   { name: "HELM'S DEEP", x: -14.6, z: 15.8, open: true, loc: 'helm', sub: 'DOWN THE RAMP · BALROG BOSS' },
   { name: 'EREBOR', x: 24, z: -34, open: true, loc: 'erebor', sub: 'THE LONELY MOUNTAIN · DRAGON BOSS · 2 LEVELS' },
+  { name: 'OSGILIATH', x: 47.5, z: 19.5, open: true, loc: 'osgil', sub: 'THE RUINED CITY · SHOOT DOWN THE NINE' },
 ];
 const ROAD = (() => {
   const way = [NODES[0], [-40, -6], [-30, -17], NODES[1], [-18.5, -13], NODES[2], [-5, 3], [1, 11], NODES[3], [21, 17], [31, 14.5], [40, 15.5], NODES[4], [46, 14.5], NODES[5], [54, 3], NODES[6], [62, 0], [65, 6], NODES[7]];
@@ -5710,7 +5729,7 @@ const NEAR_R = 2.4;
 function nodeNear() { let best = -1, bd = NEAR_R; NODES.forEach((n, i) => { const d = Math.hypot(tok.p.x - n.x, tok.p.z - n.z); if (d < bd) { bd = d; best = i; } }); return best; }
 const onLand = (x, z) => BOARD ? boardLand(x, z) : coastAt(x, z) > .8;
 // a place with several levels opens its own menu to choose from (Moria; Minas Tirith flies down into the city instead)
-const CHAP_DESC = { helm: ['Down through the Hornburg to the Balrog', 'The Deeping Wall blows: hold the breach'], erebor: ['The ramparts before the Gate: shoot down the dragon', 'The treasure hall: the dragon in his hoard'], riv: ['Find the Fellowship in the hidden valley', 'Race the Nine to the Ford of Bruinen'], moria: ['The dwarf-halls, to the doors of the bridge', 'Goblins and a cave troll at the tomb of Balin', 'Face the Balrog on the bridge', 'Fall with the Balrog into the deep'] };
+const CHAP_DESC = { ungol: ['The pass: run from Shelob', 'The stairs: the long climb up the cliff'], helm: ['Down through the Hornburg to the Balrog', 'The Deeping Wall blows: hold the breach'], erebor: ['The ramparts before the Gate: shoot down the dragon', 'The treasure hall: the dragon in his hoard'], riv: ['Find the Fellowship in the hidden valley', 'Race the Nine to the Ford of Bruinen'], moria: ['The dwarf-halls, to the doors of the bridge', 'Goblins and a cave troll at the tomb of Balin', 'Face the Balrog on the bridge', 'Fall with the Balrog into the deep'] };
 let CHAP = null;
 function openChap(loc) {
   const ls = LEVELS.map((L, i) => [L, i]).filter(([L]) => L.loc === loc); CHAP = { loc, ls: ls.map(([, i]) => i), sel: 0 }; tok.dest = null;
@@ -5821,7 +5840,7 @@ function updateMap(dt) {
 
 // --- your own War of the Ring board (models/livingmap.glb and livingmap.json, from Battle for Middle-earth II: see
 //     models/README.md): it replaces the little diorama, each stop moves onto its region, and Gandalf walks over its hills ---
-const STOP_REGION = { shire: 'The_Shire', riv: 'Rhudaur', moria: 'Redhorn_Pass', weather: 'Amon_Sul', rohan: 'Rohan', mt: 'Minas_Tirith', ungol: 'Minas_Morgul', mordor: 'Mordor', doom: 'Mount_Doom', mirk: 'Mirkwood', helm: 'Helms_Deep', isen: 'Isengard', erebor: 'Erebor' };
+const STOP_REGION = { shire: 'The_Shire', riv: 'Rhudaur', moria: 'Redhorn_Pass', weather: 'Amon_Sul', rohan: 'Rohan', mt: 'Minas_Tirith', ungol: 'Minas_Morgul', mordor: 'Mordor', doom: 'Mount_Doom', mirk: 'Mirkwood', helm: 'Helms_Deep', isen: 'Isengard', erebor: 'Erebor', osgil: 'Osgiliath' };
 // what's hidden (clouds, smoke and BFME's own markers), what's water, and what's the ground itself (its 20 painted tiles)
 const BOARD_HIDE = /^(.*(cloud|pick|smok|sunray|flash|marker|brdr|rallyflag|hero)|impassable|lm_coast)/i, BOARD_WATER = /ocean|water|sea\b|wtr/i, BOARD_GROUND = /^LM_\d\d(_\d+)?$/;   // (three.js adds _1 when a part shares its name with the node holding it)
 // the tiles' pictures, small, so the map can tell the painted sea (blue) from land where Gandalf may walk
@@ -5930,7 +5949,7 @@ function step(dt, noRender) {
   else if (state === 'win') updateWin(dt);
   if (state !== 'paused') {
     if (state !== 'title' && state !== 'map' && state !== 'gameover' && state !== 'complete') {
-      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateRace(dt); updateFellowship(dt); updateHobbiton(dt); updateDuel(dt); updateSprings(dt); updateKH(gdt);
+      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateRace(dt); updateFly(dt); updateFellowship(dt); updateHobbiton(dt); updateDuel(dt); updateSprings(dt); updateKH(gdt);
     }
     updateDragons(dt); updateApples(); updatePhial(dt); updateLightning(dt); updateAmbient(dt); updateTree(dt);
     fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt); poseDuelGandalf(dt);
@@ -8144,6 +8163,144 @@ THEMES.balin = natTheme({
   env: { sky: [0x020203, 0x040406, 0x08080c, 0x0c0c10], fog: [24, 90], fogC: 0x0c0e12, amb: [0x5a6a7a, .85], hemi: [0x9aa8b8, 0x2a2018, .6], sun: [0xfff0c8, .55], east: [0xffa060, .25], embers: true, sunDir: [10, 80, 60] },
   orc: { sk: 0x8a907a, ska: 0xa0a488, ar: 0x2a2630, le: 0x3a2a1a, met: 0x1e1c22, sc: .85 },
   scenery(L) { buildBalin(L, this); },
+});
+// --- the Stairs of Cirith Ungol, a level of its own: seen from the side, climbing a cliff in flights that double back, one lane in front and one behind,
+//     landings between them. Steps grind back into the rock in a wave (they flush red first), boulders bound down the flights (jump them), orcs hold the
+//     landings. Each landing is a checkpoint. At the top, the tunnel.
+function ustairLayout() {
+  const { FLIGHTS, STEPS, RISE, X, LAND } = USTAIR, steps = [], blocks = [], lands = [];
+  for (let i = 0; i <= FLIGHTS; i++) { const left = i % 2 === 0, y = i * RISE, x0 = left ? -LAND : X, x1 = left ? -X : LAND; lands.push({ x0, x1, y, mid: (x0 + x1) / 2 }); blocks.push([-3.4, 3.4, x0, x1, y, 'floor', y - 1]); }
+  for (let i = 0; i < FLIGHTS; i++) {
+    const dir = i % 2 === 0 ? 1 : -1, front = i % 2 === 0, s0 = front ? -3.4 : .2, s1 = front ? -.2 : 3.4, w = 2 * X / STEPS, slide = i % 2 === 1 || i === 4, per = i < 3 ? 3.6 : 3;
+    for (let k = 0; k < STEPS; k++) { const xa = dir * (-X + k * w), xb = dir * (-X + (k + 1) * w), y = i * RISE + (k + 1) * RISE / STEPS, g = slide && k > 2 && k < STEPS - 2 && (k % 8 < 3) ? (k / 8 | 0) : -1; steps.push({ i, k, s0, s1, x0: Math.min(xa, xb), x1: Math.max(xa, xb), y, g, per }); }
+  }
+  return { field: [-3.4, 3.4, -LAND, LAND], start: [0, lands[0].mid], noFloor: true, sideview: true, layout: { blocks, steps, lands, plazas: [] } };
+}
+function ustairContent(L) {
+  const Y = L.layout, { RISE } = USTAIR;
+  for (const q of Y.steps) if (q.k % 5 === 2 && q.g < 0) addApple((q.s0 + q.s1) / 2, (q.x0 + q.x1) / 2, q.y + 1);
+  for (let i = 1; i < Y.lands.length - 1; i++) { const l = Y.lands[i], at = (s, x) => addCrate(s, x, l.mid + (l.mid > 0 ? 1.4 : -1.4)); addCrate(i % 2 ? 'q' : 'b', 2.4, l.mid + (l.mid > 0 ? 1.6 : -1.6), l.y, 4); if (i % 2 === 0) addCrate('su', -2.4, l.mid + (l.mid > 0 ? 1.6 : -1.6), l.y, 4); }
+  for (const [i, kind] of [[1, 'grunt'], [2, 'grunt'], [3, 'archer'], [4, 'grunt'], [5, 'archer']]) { const l = Y.lands[i]; addOrc(kind, 0, l.mid, { y: l.y, patrol: kind === 'grunt' ? { ax: 's', amp: 2, sp: 1.6 } : null }); }
+}
+function buildUstair(L, TH) {
+  const Y = L.layout, first = scene.children.length, sky = TH.env;
+  const st = surf(TX.hdStone || TX.rock, { sky, color: 0xf0ead8, rough: .8, bump: 3, tri: 2.4 }), rk = surf(TX.rock, { sky, color: 0x38342e, rough: .9, bump: 3.4, tri: 6 });
+  { const q = tw(6, 0, 28); part(GEO_BOX, rk, scene, q.x, q.y, q.z, 150, 110, 5); }
+  for (let k = 0; k < 40; k++) { const q = tw(rand(3.2, 4), rand(-28, 28), rand(0, 50)), r = rand(1, 3); part(new THREE.DodecahedronGeometry(1, 0), rk, scene, q.x, q.y, q.z, r, r * .8, r * .5).rotation.set(rand(0, 3), rand(0, 3), 0); }
+  wideFloor(TX.rock, 0x1a1c14, 90, -12, 900);
+  const boxes = []; for (const l of Y.lands) { const q = tw(0, (l.x0 + l.x1) / 2, l.y - .4); boxes.push([q.x, q.y, q.z, l.x1 - l.x0, .8, 6.8, 0]); const c = tw(2.4, (l.x0 + l.x1) / 2, l.y - 2); boxes.push([c.x, c.y, c.z, 3.6, 3.2, 2, 0]); }
+  const fixed = Y.steps.filter(q => q.g < 0); for (const q of fixed) { const c = tw((q.s0 + q.s1) / 2, (q.x0 + q.x1) / 2, q.y - .3); boxes.push([c.x, c.y, c.z, q.x1 - q.x0 + .02, .6, q.s1 - q.s0, 0]); }
+  stoneBox(boxes, st);
+  for (const l of Y.lands) addTorch(3.1, l.mid, l.y + 2.6);
+  // the tunnel mouth at the top of the last flight: Shelob's lair and the way into Mordor
+  { const l = Y.lands[Y.lands.length - 1], q = tw(3.2, l.mid, l.y + 2.4); part(GEO_BOX, bas(0x020302), scene, q.x, q.y, q.z, 3.6, 4.8, .2); const gl = glowSprite(0x9aff6a, 7, .35); gl.position.copy(tw(2.6, l.mid, l.y + 2.4)); scene.add(gl); TH.door = { s: 2.2, x: l.mid, y: l.y }; }
+  bakeScenery(scene.children.slice(first));
+  // the steps that move, each its own
+  TH.warnM = surf(TX.hdStone || TX.rock, { sky, color: 0xff5a30, rough: .7, bump: 2, glow: .35 }); TH.stM = st; TH.moving = [];
+  for (const q of Y.steps) if (q.g >= 0) { const m = new THREE.Mesh(GEO_BOX, st), c = tw((q.s0 + q.s1) / 2, (q.x0 + q.x1) / 2, q.y - .3); m.position.copy(c); m.scale.set(q.x1 - q.x0 + .02, .6, q.s1 - q.s0); scene.add(m); q.mesh = m; q.home = c.clone(); TH.moving.push(q); }
+  TH.rocks = [];
+}
+function setupUstair() {
+  if (!LV || !LV.sideview) return; const Y = LV.layout; USTAIR.t = 0; USTAIR.land = 0; USTAIR.bt = 2; for (const r of THEMES.ustair.rocks) scene.remove(r.m); THEMES.ustair.rocks = [];
+  for (const q of Y.steps) q.b = solid(q.s0, q.s1, q.x0, q.x1, q.y - .6, q.y, 'floor');
+}
+function updateUstair(dt) {
+  if (!LV || !LV.sideview || state === 'map' || state === 'title') return; const TH = THEMES.ustair, Y = LV.layout; USTAIR.t += dt; const t = USTAIR.t;
+  for (const q of TH.moving) {   // red for a moment, then back into the rock, and out again
+    const ph = (t + q.g * .75 + q.i) % q.per, warn = ph > q.per - 2.2 && ph <= q.per - 1.3, gone = ph > q.per - 1.3; q.mesh.material = warn ? TH.warnM : TH.stM; q.b.on = !gone;
+    const ty = gone ? q.home.y - 2.2 : q.home.y, sh = warn ? Math.sin(t * 40) * .03 : 0; q.mesh.position.y = damp(q.mesh.position.y, ty, 12, dt) + sh; q.mesh.visible = !gone || q.mesh.position.y > q.home.y - 2;
+  }
+  if (state !== 'play') return;
+  // the landing he last stood on is where he comes back
+  Y.lands.forEach((l, i) => { if (i > USTAIR.land && P.ground && P.x > l.x0 && P.x < l.x1 && Math.abs(P.y - l.y) < .3) { USTAIR.land = i; Object.assign(gs.cp, { s: 0, x: l.mid, y: l.y, t: gs.time }); S.check && S.check(); if (i < Y.lands.length - 1) banner(`LANDING ${i} OF ${Y.lands.length - 1}`, 1); } });
+  // boulders down the flight he's on, on the flights that have them
+  const flight = Math.floor(clamp(P.y, 0, USTAIR.RISE * USTAIR.FLIGHTS - .01) / USTAIR.RISE); USTAIR.bt -= dt;
+  if ((flight === 2 || flight === 3 || flight === 5) && USTAIR.bt <= 0) {
+    USTAIR.bt = flight === 5 ? 2.2 : 2.9; const front = flight % 2 === 0, dir = front ? -1 : 1, m = fallRock(); m.scale.setScalar(1.2); scene.add(m);
+    TH.rocks.push({ m, x: -dir * USTAIR.X, dir, s: front ? -1.8 : 1.8, flight, ph: 0 }); S.stomp();
+  }
+  for (let i = TH.rocks.length - 1; i >= 0; i--) {
+    const r = TH.rocks[i]; r.x += r.dir * 9.5 * dt; r.ph += dt * 6; const u = (r.flight % 2 === 0 ? r.x + USTAIR.X : USTAIR.X - r.x) / (2 * USTAIR.X), gy = r.flight * USTAIR.RISE + u * USTAIR.RISE, y = gy + 1.1 + Math.abs(Math.sin(r.ph)) * .7; tw(r.s, r.x, y, r.m.position); r.m.rotation.z += r.dir * dt * 7;
+    if (Math.abs(P.x - r.x) < 1.3 && Math.abs(P.s - r.s) < 1.7 && Math.abs(P.y + .6 - y) < 1.4 && P.invT <= 0) { hurt('hit'); P.invT = 1; }
+    if (u < -.02 || u > 1.02) { sparks(r.m.position, 14, 6, [.7, .7, .6], [.3, .3, .2], .25); scene.remove(r.m); TH.rocks.splice(i, 1); }
+  }
+  const D = TH.door; if (Math.hypot(P.s - D.s, P.x - D.x) < 2.2 && Math.abs(P.y - D.y) < 2) roamWin('THE TOP OF THE STAIRS!');
+}
+THEMES.ustair = natTheme({
+  wallTex: TX.rock, floorTex: TX.rock, tint: [.8, .84, .74], door: 0x4a5a3a,
+  env: { sky: [0x06060a, 0x141420, 0x2a2438, 0x5a3a48], fog: [34, 180], fogC: 0x1a1824, amb: [0x7a7a80, .95], hemi: [0xc8c8d8, 0x2a2420, .7], sun: [0xe0d8c8, .85], east: [0x90ff70, .18], sunDir: [-30, 60, -70], embers: true },
+  orc: MT_ORC,
+  scenery(L) { buildUstair(L, this); },
+});
+
+// --- Osgiliath: on the top of a round tower in the ruins, with a bow, the Nine wheeling round it on their fell beasts, three at a time. Each circles, then
+//     spits fire onto a red circle or swoops across the tower along a red line. U takes aim; three arrows each.
+const FLY = { list: [], left: 9, wave: 0, t: 0 };
+const flyLive = f => f.on && (f.state === 'in' || f.state === 'circle' || f.state === 'swoop');
+function osgLayout() {
+  const SC = 3, N = 161, C = 80, hs = new Float32Array(N * N), g = new Array(N * N).fill('g'), riv = x => -38 + Math.sin(x * .012) * 16;
+  const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = (C - j) * SC, x = (C - i) * SC, rd = Math.abs(s - riv(x)); hs[k] = lerp(-3, Math.sin(s * .05) * Math.cos(x * .04) * .7, ss(14, 24, rd)) + 10 * ss(170, 240, Math.hypot(s, x)); g[k] = rd < 16 ? 'r' : 'g'; }
+  const blocks = [[-9.5, 9.5, -9.5, 9.5, OSG.TOP, 'floor', -30]]; for (let k = 0; k < 44; k++) { const a = k / 44 * TAU, s = Math.cos(a) * (OSG.R + .9), x = Math.sin(a) * (OSG.R + .9); blocks.push([s - .9, s + .9, x - .9, x + .9, OSG.TOP + 5, 'wall', -30]); }
+  return { field: [-12, 12, -12, 12], start: [-3, 0], startY: OSG.TOP, terrain: { w: N, h: N, hs, cx: C, cy: C, sc: SC, sea: -999, g }, layout: { blocks, riv, plazas: [] } };
+}
+function osgContent(L) { for (const [k, s, x] of [['q', 4, 5], ['b', 4, -5], ['su', -5, 4], ['q', -5, -4]]) addCrate(k, s, x, OSG.TOP, 4); }
+function buildOsg(L, TH) {
+  const T_ = L.terrain, Y = L.layout, first = scene.children.length, sky = TH.env, at = (s, x) => terrainAt(s, x, true), TOP = OSG.TOP;
+  const grd = surf(TX.rock, { sky, vc: true, color: 0xb0a890, rough: .9, bump: 2.4 }), st = surf(TX.hdStone || TX.marble, { sky, color: 0xc8c0b0, rough: .75, bump: 3, tri: 3 });
+  groundMesh(T_, TX.rock, (k, sl, y) => k === 'r' ? [.3, .3, .28] : [.72, .7, .55], 7, () => grd);
+  wideFloor(TX.rock, 0x6a6650, 90, 8, 1200);
+  const wt = TX.sea.clone(); wt.needsUpdate = true; wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(30, 3); TH.waterTex = wt;
+  const wg = new THREE.PlaneGeometry(1, 1, 80, 1), wp = wg.attributes.position; for (let i = 0; i < wp.count; i++) { const u = wp.getX(i), v = wp.getY(i), x = u * 560, s = Y.riv(x) + v * 44, q = tw(s, x, -1); wp.setXYZ(i, q.x, q.y, q.z); } wg.computeVertexNormals();
+  const water = new THREE.Mesh(wg, new THREE.MeshPhongMaterial({ map: wt, color: 0x3a6a80, specular: 0xffe0b0, shininess: 70, transparent: true, opacity: .88, side: THREE.DoubleSide })); water.userData.keep = true; scene.add(water);
+  // the tower: a great drum of stone, its top ringed with broken merlons, a mosaic underfoot, and a stump of the old dome
+  const q0 = tw(0, 0, 0); part(new THREE.CylinderGeometry(OSG.R + .6, OSG.R + 2, TOP + 6, 28), st, scene, q0.x, q0.y + TOP / 2 - 3.05, q0.z);
+  { const m = new THREE.Mesh(new THREE.CircleGeometry(OSG.R + .6, 40), surf(TX.mosaic, { sky, color: 0xc8c0b0, rough: .7, bump: 1.4 })); m.rotation.x = -Math.PI / 2; tw(0, 0, TOP + .02, m.position); scene.add(m); }
+  for (let k = 0; k < 30; k++) { if (k % 7 === 3) continue; const a = k / 30 * TAU, q = tw(Math.cos(a) * (OSG.R + .35), Math.sin(a) * (OSG.R + .35), TOP + .7); const h = k % 2 ? 1.4 : 1 + (k % 3) * .3; part(GEO_BOX, st, scene, q.x, q.y + (h - 1.4) / 2, q.z, 1.1, h, .6).rotation.y = -a + Math.PI / 2; }
+  for (let k = 0; k < 6; k++) addTorch(Math.cos(k / 6 * TAU + .3) * (OSG.R - .3), Math.sin(k / 6 * TAU + .3) * (OSG.R - .3), TOP + 1.8);
+  // the ruined city on both banks, Battle for Middle-earth's where it's here, and broken arches of the bridge
+  const ruins = propsOf(['osbruin01', 'osbruin02', 'osbruin03', 'osbruin04', 'osbruin05', 'osbruin06', 'osbruin07', 'osbruin08', 'osbruin09', 'osbruin10', 'ruintwr']);
+  for (let k = 0; k < 150; k++) { const a = rand(0, TAU), r = rand(20, 210), s = Math.cos(a) * r, x = Math.sin(a) * r; if (Math.abs(s - Y.riv(x)) < 26) continue; const y = at(s, x); if (ruins.length && k % 3) { propOne(ruins[k % ruins.length], s, x, y - .4, rand(0, TAU), rand(10, 22), 'w'); continue; } const h = rand(3, 16), q = tw(s, x, y + h / 2); part(GEO_BOX, st, scene, q.x, q.y, q.z, rand(4, 11), h, rand(4, 11)).rotation.y = rand(0, 2); if (k % 4 === 0) { const c = tw(s + 3, x, y + h + 1); part(GEO_BOX, st, scene, c.x, c.y, c.z, 1.2, 2.5, 1.2); } }
+  for (let k = 0; k < 7; k++) { if (k === 3) continue; const s = Y.riv(0) - 18 + k * 6, q = tw(s, 0, -1); part(GEO_BOX, st, scene, q.x, q.y + 4, q.z, 8, 8, 3); if (k % 2) { const d = tw(s + 3, 0, 8); part(GEO_BOX, st, scene, d.x, d.y, d.z, 8, 1, 6.5); } }
+  bakeScenery(scene.children.slice(first));
+}
+function setupFly() {
+  const on = !!(LV && LV.flyers); for (const f of FLY.list) { f.on = false; f.m.root.visible = false; } if (!on) return;
+  while (FLY.list.length < 9) { const f = { m: makeDragon(), hitFn: flyHit, aimY: 0, hitR: 3.8 }; FLY.list.push(f); }
+  FLY.left = 9; FLY.wave = 0; FLY.t = 0; FLY.list.forEach((f, i) => Object.assign(f, { on: true, state: 'wait', hp: 24, wave: i / 3 | 0, s: 200, x: rand(-200, 200), y: 70, ang: i * 2.1, R: rand(30, 48), alt: rand(42, 56), cd: rand(2, 5), t: 0, ph: rand(0, 6), flash: 0, h: 0 }));
+}
+function flyHit(f, dmg) {
+  if (!flyLive(f)) return; f.hp -= dmg; f.flash = .15; sparks(tw(f.s, f.x, f.y), 20, 7, [1, .9, .7], [.5, .5, .7]); S.screech(); KH.drive = Math.min(100, KH.drive + 3);
+  if (f.hp <= 0) { f.state = 'fall'; f.t = 0; FLY.left--; gs.kills++; if (f.wm) f.wm.dead = true; banner(FLY.left ? `A NAZGÛL FALLS! ${FLY.left} LEFT` : 'THE NINE ARE DRIVEN OFF!', 2); if (!FLY.left) FLY.winT = 3; }
+}
+function updateFly(dt) {
+  if (!LV || !LV.flyers) return; const live = state === 'play', TOP = OSG.TOP, th = THEMES.osg; if (th.waterTex) th.waterTex.offset.x -= dt * .02;
+  if (FLY.winT > 0 && live) { FLY.winT -= dt; if (FLY.winT <= 0) roamWin('THE NINE ARE DRIVEN OFF!'); }
+  if (live && !FLY.list.some(f => f.wave === FLY.wave && flyLive(f)) && FLY.wave < 3) { FLY.t += dt; if (FLY.t > (FLY.wave ? 1.5 : 2.5)) { const w = FLY.wave + (FLY.list.some(f => f.state === 'wait' && f.wave === FLY.wave) ? 0 : 1); FLY.t = 0; FLY.wave = w; if (w < 3) { for (const f of FLY.list) if (f.wave === w && f.state === 'wait') { f.state = 'in'; f.t = 0; } S.screech(); banner(w ? 'MORE OF THE NINE!' : 'THE NINE ARE COMING!', 1.8); } } }
+  for (const f of FLY.list) {
+    if (!f.on || f.state === 'wait' || f.state === 'gone') { f.m.root.visible = false; continue; } f.m.root.visible = true; f.t += dt; f.flash -= dt; const px = f.s, pz = f.x, py = f.y;
+    if (f.state === 'in' || f.state === 'circle') {
+      f.ang += dt * .36 * (1 + f.wave * .15); const ts = Math.cos(f.ang) * f.R, tx = Math.sin(f.ang) * f.R, ty = f.alt + Math.sin(f.t * .8 + f.ph) * 3; f.s = damp(f.s, ts, 1.1, dt); f.x = damp(f.x, tx, 1.1, dt); f.y = damp(f.y, ty, 1.1, dt);
+      if (f.state === 'in' && Math.hypot(f.s - ts, f.x - tx) < 6) f.state = 'circle';
+      f.cd -= dt; if (f.state === 'circle' && live && f.cd <= 0) {
+        if (Math.random() < .6) { f.cd = rand(3.5, 6.5); const s = P.s + P.vs * .5, x = P.x + P.vx * .5, n = Math.min(OSG.R - 1, Math.hypot(s, x)), a = Math.atan2(x, s), ss = Math.cos(a) * n, xx = Math.sin(a) * n; const fb = fallFire(); scene.add(fb); const p0 = tw(f.s, f.x, f.y); khFx(warnMesh(ss, xx, TOP, 2.6), g => { warnPulse(g); const k = Math.min(1, g.t / 1.5); fb.position.lerpVectors(p0, tw(ss, xx, TOP + .3), k); bfire(fb.position, .9, .3); if (k < 1) return true; scene.remove(fb); const q = tw(ss, xx, TOP + .3); sparks(q, 26, 8, [1, .9, .6], [1, .4, .1], .25); bblast(q, 2.4); S.boom && S.boom(); if (Math.hypot(P.s - ss, P.x - xx) < 2.6) khHurt(14, { s: ss, x: xx }, { unblock: true, kb: 8 }); return false; }); }
+        else { f.state = 'swoop'; f.t = 0; const a = Math.atan2(P.x - f.x, P.s - f.s); f.dirA = a; f.from = [f.s, f.x, f.y]; f.line = Math.atan2(P.x, P.s); S.screech(); f.at = [P.s, P.x]; f.wm = khFx(warnMesh(P.s, P.x, TOP, 3.4), g => { warnPulse(g); return f.state === 'swoop' && f.t < 1.6; }); }
+      }
+    } else if (f.state === 'swoop') {   // down across the tower, through the red circle, and out the far side
+      const k = f.t / 2.6, e = f.at, a = f.dirA, d0 = Math.hypot(f.from[0] - e[0], f.from[1] - e[1]); f.s = lerp(f.from[0], e[0] + Math.cos(a) * d0, k); f.x = lerp(f.from[1], e[1] + Math.sin(a) * d0, k); f.y = lerp(f.from[2], TOP + 3.2, 1 - Math.abs(k * 2 - 1)) ;
+      if (!f.hitP && Math.hypot(f.s - e[0], f.x - e[1]) < 2.2 && Math.abs(k - .5) < .1) { f.hitP = true; cam.shake = .6; S.smash(); if (Math.hypot(P.s - e[0], P.x - e[1]) < 3.4) khHurt(18, { s: f.s, x: f.x }, { unblock: true, kb: 12 }); }
+      if (k >= 1) { f.state = 'circle'; f.hitP = false; f.t = 0; f.cd = rand(3, 6); f.ang = Math.atan2(f.x, f.s); }
+    } else if (f.state === 'fall') { f.y -= dt * (4 + f.t * 12); f.ang += dt * 3; f.s += Math.cos(f.ang) * dt * 8; f.x += Math.sin(f.ang) * dt * 8; if (Math.random() < .7) smoke.spawn(...tw(f.s, f.x, f.y).toArray(), 0, 1, 0, 1.4, 1.6, 4, [.08, .08, .08], [.2, .2, .2], 0, .3); if (f.y < terrainAt(f.s, f.x, true) + 1) { sparks(tw(f.s, f.x, f.y + 1), 40, 12, [1, .9, .7], [.5, .4, .3], .35); f.state = 'gone'; continue; } }
+    const pos = tw(f.s, f.x, f.y), prev = tw(px, pz, py); f.m.root.position.copy(pos); _a.subVectors(pos, prev); if (_a.lengthSq() > 1e-6) { _a.y *= .5; f.m.root.lookAt(_b.copy(pos).add(_a)); }
+    if (f.state === 'fall') f.m.root.rotateZ(f.t * 4);
+    f.m.wings.forEach(w => w.update(Math.sin(T * 6 + f.ph * 3), 0)); f.m.tail.forEach((t, i) => t.position.x = Math.sin(T * 3 - i * .5) * .1 * i); const tip = f.m.tail[12].position; f.m.spade.position.set(tip.x, tip.y, tip.z - .45); skinPlay(f.m, f.state === 'swoop' ? 'attack' : 'fly');
+  }
+}
+THEMES.osg = natTheme({
+  wallTex: TX.rock, floorTex: TX.rock, tint: [1, .96, .9], door: 0x5a4a3a,
+  env: { sky: [0x1a1c34, 0x4a4a6a, 0xc08a68, 0xffb070], fog: [120, 520], fogC: 0xa88878, amb: [0x7a7270, .55], hemi: [0xd0c8c0, 0x4a4030, .55], sun: [0xffd0a0, .95], east: [0xff8a50, .3], sunDir: [-80, 30, 40] },
+  orc: MT_ORC,
+  scenery(L) { buildOsg(L, this); },
 });
 function buildHelms(L, TH) {
   const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
