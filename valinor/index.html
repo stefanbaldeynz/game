@@ -83,7 +83,7 @@ body.touch #khcmd{display:none!important}
 #khpow .tabs{display:flex;align-items:baseline;gap:1.2em;font-size:1.6em}#khpow .tabs span{color:#7a8aa8;padding:.05em .5em;border-radius:8px}#khpow .tabs span.sel{color:#ffe060;background:rgba(60,110,220,.45)}#khpow .tabs small{font-size:.45em;color:#bcd}#khpow b.on{color:#6aff7a}#khpow b.off{color:#8a8aa0}#khpow u{text-decoration:none;color:#ffe9a0}#khpow .slots{margin:.6em 0 1em;color:#cde}#khpow .slots i{font-style:normal;color:#ffe9a0;margin-right:.7em}
 #khpow .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4vw}#khpow .g{color:#7fd0ff;font-size:1.15em;margin-bottom:.4em;border-bottom:2px solid #2a4a8a}
 #khpow .p{display:grid;grid-template-columns:1fr auto auto;gap:.5em;padding:.25em .5em;margin:.15em 0;border-radius:6px;background:rgba(30,60,140,.35);cursor:pointer}#khpow .p.sel{background:linear-gradient(90deg,#3a8aff,#1a4ab0);box-shadow:0 0 10px #8ac8ff}
-#khpow .p small{opacity:.8}#khpow .p em{font-style:normal;color:#ffe060}#khpow .p em b{margin-left:.3em}#khpow .p .d{grid-column:1/-1;font-size:.75em;opacity:.75;-webkit-text-stroke:0}
+#bowX{position:absolute;width:6vh;height:6vh;margin:-3vh 0 0 -3vh;display:none;pointer-events:none;border:3px solid #fff;border-radius:50%;box-shadow:0 0 6px #000,inset 0 0 6px #000;z-index:20}#bowX i{position:absolute;left:50%;top:-30%;bottom:-30%;width:2px;margin-left:-1px;background:#fff}#bowX b{position:absolute;top:50%;left:-30%;right:-30%;height:2px;margin-top:-1px;background:#fff}#bowX.on{border-color:#ff4030}#bowX.on i,#bowX.on b{background:#ff4030}#khpow kbd{font:inherit;color:#ffe060;background:rgba(0,0,0,.5);border:1px solid #6a8ac8;border-radius:5px;padding:0 .4em}#khpow .p.kb{cursor:default;grid-template-columns:auto 1fr;font-size:.9em}#khpow .p small{opacity:.8}#khpow .p em{font-style:normal;color:#ffe060}#khpow .p em b{margin-left:.3em}#khpow .p .d{grid-column:1/-1;font-size:.75em;opacity:.75;-webkit-text-stroke:0}
 .menu{margin:3.5vh auto 0;display:flex;flex-direction:column;gap:1.1vh;width:min(560px,90vw)}
 .mi{display:grid;grid-template-columns:2.1em 1fr;align-items:center;column-gap:.6em;text-align:left;padding:.45em .8em;border:3px solid #000;border-radius:12px;background:rgba(14,4,36,.7);box-shadow:4px 4px 0 #000;cursor:pointer;transition:transform .15s,background .15s}
 .mi b{grid-row:span 2;font-weight:normal;font-size:clamp(26px,4.4vh,44px);color:var(--gold);-webkit-text-stroke:2px var(--ink);text-align:center}
@@ -2521,6 +2521,7 @@ function rivendellLayout() {
   for (const [s, x, w, d, h] of L.houses) L.blocks.push([s - w / 2, s + w / 2, x - d / 2, x + d / 2, h]);
   return L;
 }
+const USTAIR = { FLIGHTS: 6, STEPS: 30, RISE: 7, X: 18, LAND: 23 }, OSG = { TOP: 30, R: 8.6 };   // (the Stairs of Cirith Ungol's size; Osgiliath's tower)
 const RACE_FORD = 520, RACE_END = 572;
 const ER = { WALK: 12, X0: -46, X1: 46, TOWERS: [-46, -23, 0, 23, 46], TOP: 20 };   // (Erebor's ramparts: the walk's height and ends, its towers, their tops)   // (the race to the Ford: where the river crosses the road, and where the road ends)
 const LEVELS = [
@@ -2621,7 +2622,7 @@ const LEVELS = [
   // ---- one level for each of the other places on the map; each ring sits far out on its own so they never see each other ----
   {
     // a Kingdom Hearts level like Helm's Deep: up the lane through Hobbiton, over the Water, round the Party Field to Bag End (see HOBBITON)
-    straight: true, roam: true, kh: true, name: 'HOBBITON', sub: 'THE BLACK RIDERS', loc: 'shire', theme: 'shirekh', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 5000, CZ: 0, base: -6, wallH: 0, winTitle: 'KHAMÛL FLEES THE SHIRE!',
+    straight: true, roam: true, kh: true, stepUp: true, camWalls: true, name: 'HOBBITON', sub: 'THE BLACK RIDERS', loc: 'shire', theme: 'shirekh', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 5000, CZ: 0, base: -6, wallH: 0, winTitle: 'KHAMÛL FLEES THE SHIRE!',
     ...shireLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { shireContent(this); },
@@ -2629,7 +2630,7 @@ const LEVELS = [
   {
     // the hidden valley, rebuilt like the film's model: over the gorge, up the terraces to the Last Homely House; find the
     // other eight of the Fellowship, who follow Gandalf once found (see RIVENDELL)
-    straight: true, roam: true, name: 'RIVENDELL', sub: 'THE FELLOWSHIP OF THE RING', loc: 'riv', theme: 'rivkh', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 10000, CZ: 0, base: -6, wallH: 0,
+    straight: true, roam: true, stepUp: true, camWalls: true, name: 'RIVENDELL', sub: 'THE FELLOWSHIP OF THE RING', loc: 'riv', theme: 'rivkh', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 10000, CZ: 0, base: -6, wallH: 0,
     ...rivLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { rivContent(this); },
@@ -2642,23 +2643,18 @@ const LEVELS = [
     content() { raceContent(this); },
   },
   {
-    straight: true, name: 'THE MINES OF MORIA', sub: "DURIN'S BANE AWAKES", loc: 'moria', theme: 'moria', next: 'RETURN TO THE MAP', R: 36, Y0: 0, CX: 15000, CZ: 0, base: -40, wallH: 16,
-    floors: [[-16.6, 26, -3.5], [30, 52, -3.5], [52, 66, .2], [70, 96, -3.5], [108, 128, -3.5], [131.5, 1e9, -3.5]],   // (to the doors of the bridge: the Bridge of Khazad-dûm is the next part)
-    pillars: [[99, 100.8, -1.4, 1.4, 0], [103, 104.8, -.6, 2.2, .6]], bars: [],
-    dz: [], balrogs: [],
-    content() {
-      crateList([
-        ['b', 6, -1.5], ['b', 6, 1.5], ['q', 12, 0], ['t', 18, 2], ['b', 22, -2], ['r', 24, 2.4], ['b', 34, 2], ['b', 35, 2], ['bo', 40, -2], ['c', 46, 0], ['n', 50, -1], ['b', 56, 2], ['b', 60, 2.6], ['q', 64, 1.5],
-        ['b', 74, -2], ['b', 74, 0], ['b', 74, 2], ['l', 82, 2.6], ['t', 88, 0], ['b', 92, -2.4], ['b', 99.9, 0], ['q', 104, .8], ['b', 112, 2], ['bo', 118, 0], ['b', 122, -2.4], ['n', 126, 1],
-        ['c', 136, 0], ['r', 140, -2], ['r', 140, 2], ['p', 146, 0], ['r', 170, 0], ['r', 186, 0], ['l', 196, 0],
-      ]);
-      aLine(2, 5, 0, .7, 4); aArc(25, 31, 0, .7, 2.6, 5); aLine(36, 44, 0, .7, 6); aLine(40, 40, -2, 3.6, 1); aLine(40, 40, -2, 4.5, 1); aLine(54, 64, 1.8, .7, 8); aArc(65, 71, 1.5, .7, 2.6, 5); aLine(76, 86, 0, .7, 8);
-      aArc(96, 99, 0, .7, 2, 4); aArc(100.8, 103, .4, 1.1, 2, 3); aArc(104.8, 108, .8, 1.7, 2, 4); aLine(110, 126, 0, .7, 10); aArc(127, 132.5, 0, .7, 2.6, 5); aLine(134, 150, 0, .7, 10); aLine(154, 166, 0, .7, 8);
-      addOrc('grunt', 10, 0, { patrol: { ax: 'x', amp: 2, sp: 1.8 } }); addOrc('archer', 20, 2.6); addOrc('grunt', 32, -3, { ladder: true }); addOrc('grunt', 38, 1, { patrol: { ax: 'x', amp: 1.8, sp: 2 } });
-      addOrc('archer', 48, 2.6); addOrc('grunt', 58, 2, { patrol: { ax: 's', amp: 1.4, sp: 1.6 } }); addOrc('grunt', 80, 0, { patrol: { ax: 'x', amp: 2.2, sp: 2.2 } }); addOrc('grunt', 86, -3, { ladder: true });
-      addOrc('archer', 94, -2.4); addOrc('grunt', 112, 0, { patrol: { ax: 'x', amp: 2, sp: 2.4 } }); addOrc('grunt', 116, -3, { ladder: true }); addOrc('archer', 124, 2.6);
-      addOrc('grunt', 138, 0, { patrol: { ax: 'x', amp: 2, sp: 2.6 } }); addOrc('grunt', 144, -3, { ladder: true });
-    },
+    // Moria's first level, a Kingdom Hearts level: caverns and tunnels in the spirit of Unreal Tournament 2004's Rrajigar mines (see the Mines of Moria)
+    straight: true, roam: true, kh: true, stepUp: true, camWalls: true, name: 'THE MINES OF MORIA', sub: "DURIN'S BANE AWAKES", loc: 'moria', theme: 'minekh', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 15000, CZ: 0, base: -30, wallH: 0, winTitle: 'THE WAY TO THE BRIDGE IS OPEN!',
+    ...mineLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { mineContent(this); },
+  },
+  {
+    // Moria's second level: Balin's Chamber, goblins through the door in waves and then a cave troll (see BALIN)
+    straight: true, roam: true, kh: true, balin: true, name: "BALIN'S CHAMBER", sub: 'DRUMS IN THE DEEP', loc: 'moria', theme: 'balin', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 100000, CZ: 0, base: -4, wallH: 0, winTitle: 'THE TROLL IS SLAIN!',
+    ...balinLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { balinContent(this); },
   },
   {
     // Moria's second part: the goblins on the ledge, then the Balrog head on at the far end of the bridge; it ends with the
@@ -2730,6 +2726,13 @@ const LEVELS = [
     content() { khRings(this.layout); for (const [k, s, x] of [['q', -12, 4], ['su', -12, -4], ['b', 12, 0]]) addCrate(k, s, x, 0, 4); },
   },
   {
+    // Cirith Ungol's second level: the stairs, climbed from the side (see the Stairs of Cirith Ungol)
+    straight: true, roam: true, stepUp: true, name: 'THE STAIRS OF CIRITH UNGOL', sub: 'THE LONG CLIMB', loc: 'ungol', theme: 'ustair', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 105000, CZ: 0, base: -8, wallH: 0,
+    ...ustairLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { ustairContent(this); },
+  },
+  {
     // a climb up the side of the mountain on spires of rock, with the lava rising underneath
     straight: true, name: 'MOUNT DOOM', sub: 'CLIMB TO THE CRACK OF DOOM', loc: 'doom', theme: 'doom', next: 'RETURN TO THE MAP', R: 22, Y0: 0, CX: 35000, CZ: 0, base: -40, wallH: 50, wallTop: 70,
     floors: [[-16.6, 6.5, -3.5]],
@@ -2774,6 +2777,13 @@ const LEVELS = [
     content() { helmsContent(this); },
   },
   {
+    // Helm's Deep's second level: the Deeping Wall blows up, and wave after wave comes through the breach (see DEEP)
+    straight: true, roam: true, kh: true, deeping: true, name: 'THE DEEPING WALL', sub: 'THE BREACH', loc: 'helm', theme: 'deeping', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 95000, CZ: 0, base: -4, wallH: 0, winTitle: 'THE BREACH IS HELD!',
+    ...deepLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { deepContent(this); },
+  },
+  {
     // a Kingdom Hearts level like Helm's Deep: from the foot of Orthanc up the stair winding round it, fighting on its balconies,
     // to Saruman on the top (see ISENGARD)
     straight: true, roam: true, kh: true, name: 'ISENGARD', sub: 'THE TOWER OF ORTHANC', loc: 'isen', theme: 'isen', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 60000, CZ: 0, base: -4, wallH: 0, winTitle: 'SARUMAN IS DEFEATED!',
@@ -2794,6 +2804,13 @@ const LEVELS = [
     ...hoardLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { hoardContent(this); },
+  },
+  {
+    // Osgiliath: the top of a round tower in the ruins, shooting down the Nine on their fell beasts (see Osgiliath)
+    straight: true, roam: true, kh: true, bow: true, bow360: true, flyers: true, name: 'OSGILIATH', sub: 'THE NINE ON THE WING', loc: 'osgil', theme: 'osg', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 110000, CZ: 0, base: -30, wallH: 0,
+    ...osgLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { osgContent(this); },
   },
 ];
 
@@ -2861,7 +2878,7 @@ function loadLevel(li) {
   gs.crateTotal = crates.filter(c => c.type !== 'i' && c.type !== 'ib').length;
   // in the courtyard you start on the south side, facing the tree
   gs.cp = LV.arena ? { s: R * Math.PI / 2, x: R - 9.5, y: 0, t: -1, deaths: 0 } : { s: START_S, x: LV.roam ? LV.start[1] : 0, y: LV.startY ?? (TERR ? terrainAt(START_S, LV.start[1]) : 0), t: -1, deaths: 0 };
-  setupNazgul(); setupRace(); setupDuel(); setupFellowship(); setupKH();
+  setupNazgul(); setupRace(); setupDuel(); setupFellowship(); setupKH(); setupDeep(); setupBalin(); setupUstair(); setupFly();
   chase.active = chase.done = false;
   if (LV.door) { LV.door.endBlock.on = true; LV.door.L.rotation.y = LV.door.Rr.rotation.y = 0; LV.door.light.visible = LV.door.glow.visible = false; }
   dragons.forEach((d, i) => { d.active = i < 2 && LV.dz.length > 0; d.away = 0; d.hits = 0; d.spitT = 0; d.s = START_S + rand(30, 60); d.x = -70; d.y = 45; });
@@ -2899,7 +2916,7 @@ function respawn(fresh) {
   cratesDirty = 2;
   P.s = cp.s; P.x = cp.x; P.y = cp.y + .05; P.vs = P.vx = P.vy = 0; P.heading = LV.arena ? Math.PI / 2 : LV.startH || 0; P.spinT = 0; P.invT = 1; P.ground = false; P.standOn = null; P.fireAnim = 0; P.safe = null;
   if (cp.s > 1.5 && !LV.arena && !LV.roam) P.s = cp.s - 1.2;
-  cam.yaw = 0; resetNazgul(); resetFellowship(); if (LV.duel && duel.wk) resetDuel(); if (khOn()) resetKH(fresh);
+  cam.yaw = LV.startH || 0; resetNazgul(); resetFellowship(); if (LV.duel && duel.wk) resetDuel(); if (khOn()) resetKH(fresh);
   for (const f of fireballs) killWarn(f.warn), scene.remove(f.mesh); fireballs = [];
   for (const a of arrows) scene.remove(a.mesh); arrows = [];
   for (const r of rockets) scene.remove(r.mesh); rockets = [];
@@ -2949,6 +2966,7 @@ function onKey(code) {
   if (KH_PMENU.open) { khPowersKey(code); return; }   // (the powers menu has the keys while it's open)
   if (CHAP && state === 'map') { if (!/^Key[MGZX]$/.test(code)) { chapKey(code); return; } }   // (and a level menu)
   if (code === 'Tab' && state === 'play' && khOn()) { khPowersMenu(true); return; }
+  if (code === 'KeyU' && state === 'play' && LV && LV.bow) { BOW.aim = !BOW.aim; BOW.cx = 0; BOW.cy = .3; S.click(); return; }
   if (code === 'KeyM') { musicOn = !musicOn; syncPauseBtns(); return; }
   if (code === 'KeyG') { setLook(!RETRO); if (state !== 'paused') banner(RETRO ? 'RETRO LOOK' : 'HD LOOK', 1); syncPauseBtns(); return; }
   if (code === 'KeyZ') { cheats.god = !cheats.god; if (state !== 'paused') banner(cheats.god ? 'INVINCIBLE ON' : 'INVINCIBLE OFF', 1); syncPauseBtns(); return; }
@@ -3022,7 +3040,7 @@ function readInput() {
   inp.fireP = !!(hit.KeyL || hit.KeyF || hit.Mouse0 || hit.TFire || pad.fireP);
   inp.guardP = !!(hit.KeyE || hit.TGuard || pad.guardP); inp.reactP = !!(hit.KeyR || hit.TReact || pad.reactP);   // Edoras: guard (or roll), and the reaction command
   inp.driveP = !!(hit.KeyQ || hit.TDrive || pad.driveP);   // (and the drive form)
-  if (AUTOFIGHT && LV && LV.kh) { const u = URUKS.find(o => ukLive(o) && o.state !== 'spawn'); WALKTO = u ? [u.s, u.x] : AUTOFIGHT.next(); if (u && Math.hypot(u.s - P.s, u.x - P.x) < 4 + (u.boss ? u.r : 0) && T % .3 < .02 && !KH.sub && KH.cur === 0) hit.KeyK = true; if (u && KH.mp >= 25 && T % 3 < .02) hit.KeyF = true; if (KH.react) hit.KeyR = true; if (KH.drive >= 100) hit.TDrive = true; }   // testing: &autofight=1
+  if (AUTOFIGHT && LV && LV.kh) { const u = URUKS.find(o => ukLive(o) && o.state !== 'spawn'); WALKTO = u ? [u.s, u.x] : AUTOFIGHT.next(); if (LV.theme === 'minekh' && P.s < -6 && WALKTO[0] > -6) WALKTO = P.s < -20 && Math.abs(P.x) > 1 ? [-22, 0] : [-5, 0]; if (u && Math.hypot(u.s - P.s, u.x - P.x) < 4 + (u.boss ? u.r : 0) && T % .3 < .02 && !KH.sub && KH.cur === 0) hit.KeyK = true; if (u && KH.mp >= 25 && T % 3 < .02) hit.KeyF = true; if (KH.react) hit.KeyR = true; if (KH.drive >= 100) hit.TDrive = true; }   // testing: &autofight=1
   if (AUTOK && LV && (LV.khl || LV.bow) && T % .35 < .02) hit.KeyK = true;   // (testing: &autok=1 attacks every moment; on the ramparts it looses arrows, aimed for it)
   inp.spinP = inp.spinP || !!hit.KeyJ; inp.fireP = inp.fireP || !!hit.KeyF; inp.reactP = inp.reactP || !!hit.KeyR; inp.driveP = inp.driveP || !!hit.KeyQ;
   if (khOn()) {   // the Kingdom Hearts levels: W A S D move; K does the command chosen on the menu (attack); L jumps; J dodges; Space guards;
@@ -3118,6 +3136,8 @@ function updateTouchUI() {
 let cratesDirty = 0;
 function bounce(v) { P.vy = inp.jump ? v * 1.22 : v; P.ground = false; P.jumpHeld = inp.jump; P.coyote = 0; P.dbl = false; }
 function updatePlayer(dt) {
+  if (LV.deeping && !DEEP.blown) { inp.x = inp.z = 0; inp.spinP = false; }   // (the Deeping Wall's scene: hands off until it goes up)
+  if (LV.bow && BOW.aim) { BOW.cx = clamp(BOW.cx + inp.x * 1.4 * dt, -.97, .97); BOW.cy = clamp(BOW.cy + inp.z * 1.4 * dt, -.7, .94); inp.x = inp.z = 0; }   // (taking aim: W A S D move the sight, and Gandalf stands)
   let ix = inp.x, iz = inp.z;
   if (cam.m > .5) ix = -ix;
   if (LV.arena) {
@@ -3136,9 +3156,10 @@ function updatePlayer(dt) {
   const acc = P.ground ? ACC : AIR;
   if (LV.ride) {
     // Shadowfax gallops on by himself: steer, push on to go faster, pull back to steady him
-    P.vs = approach(P.vs, RIDE_V + inp.z * 3.4, (P.ground ? 16 : 6) * dt);
+    if (LV.race && RACE.cut) { inp.x = inp.z = 0; ix = 0; inp.jumpP = inp.spinP = inp.fireP = false; }   // (the Ford's scene: he reins in)
+    P.vs = approach(P.vs, LV.race && RACE.cut ? 0 : RIDE_V + inp.z * 3.4, (P.ground ? 16 : 6) * dt);
     P.vx = approach(P.vx, ix * 6.8, (P.ground ? 46 : 24) * dt);
-    P.heading = damp(P.heading, Math.atan2(P.vx, Math.max(4, P.vs)) * .8, 10, dt);
+    if (!(LV.race && RACE.cut)) P.heading = damp(P.heading, Math.atan2(P.vx, Math.max(4, P.vs)) * .8, 10, dt);
   } else {
     if (P.launchT > 0 && !P.ground) P.launchT -= dt;   // thrown by a web spring: the throw carries him, whatever the stick says
     else { P.launchT = 0; P.vs = approach(P.vs, iz * RUN, acc * dt); P.vx = approach(P.vx, ix * RUN, acc * dt); }
@@ -3193,7 +3214,7 @@ function moveH(ax, d) {
     if (b.kind === 'crate' && b.ref.type === 'n') { crateExplode(b.ref); continue; }
     // Shadowfax charges straight through crates (TNT included, so mind those)
     if (LV.ride && b.kind === 'crate' && b.ref.type !== 'i' && b.ref.type !== 'ib') { if (b.ref.type === 't') crateExplode(b.ref); else breakCrate(b.ref); continue; }
-    if (P.ground && b.y1 - P.y <= .36 && b.kind !== 'crate') { P.y = b.y1; continue; }
+    if ((P.ground || (LV.stepUp && P.vy <= .1)) && b.y1 - P.y <= .36 && b.kind !== 'crate') { P.y = b.y1; continue; }   // (LV.stepUp: bridges and stairs of many small steps, so the moment between two of them isn't a wall)
     if (ax === 's') { P.s = d > 0 ? b.s0 - PR - 1e-4 : b.s1 + PR + 1e-4; P.vs = 0; }
     else { P.x = d > 0 ? b.x0 - PR - 1e-4 : b.x1 + PR + 1e-4; P.vx = 0; }
   }
@@ -5158,7 +5179,7 @@ function updateAmbient(dt) {
   if (THEMES.riv.bigFall) THEMES.riv.bigFall.offset.y += dt * .6;
   if (THEMES.mordor.lava) THEMES.mordor.lava.offset.x += dt * .01;
   torchSprites.forEach((s, i) => s.scale.set(.7 + Math.sin(T * 13 + i) * .06, 1.15 + Math.sin(T * 11 + i * 2) * .1, 1));
-  clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt); updateKhazad(dt); updateFall(dt); updateWeathertop(dt); updateCitadel(dt); updateRivKH(dt); updateErebor(dt); updateBow(dt);
+  clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt); updateKhazad(dt); updateFall(dt); updateWeathertop(dt); updateCitadel(dt); updateRivKH(dt); updateErebor(dt); updateBow(dt); updateDeep(dt); updateBalin(dt); updateUstair(dt); updateMine(dt);
   doomGlow.material.opacity = .8 + Math.sin(T * 1.7) * .2;
   // embers rising from the burning city below
   if (ENV.embers) for (let k = 0; k < 2; k++) { tw(P.s + rand(-6, 26), rand(-14, -4), rand(-8, 0), _a); fx.spawn(_a.x, _a.y, _a.z, rand(-.5, .5), rand(1.5, 3), rand(-.5, .5), rand(2, 3.5), .12, .05, [1, .7, .3], [1, .2, .05]); }
@@ -5181,6 +5202,8 @@ function updateLights() {
   for (const p of patches) cands.push({ p: p.p.clone().setY(p.y + 1), c: 0xff7a20, i: 2, sc: 1 });
   for (let i = tempLights.length - 1; i >= 0; i--) { const l = tempLights[i]; l.life -= 1 / 60; if (l.life <= 0) { tempLights.splice(i, 1); continue; } cands.push({ p: l.p, c: l.c, i: l.i * l.life / l.max, sc: -1 }); }
   if (gs.phial > 0) cands.push({ p: phial.g.position, c: 0x9ad8ff, i: gs.superT > 0 ? 2.5 : 1, sc: 2 });
+  if (LV.glows) { tw(P.s, P.x, P.y, _g); for (const g of LV.glows) { const dd = g.p.distanceTo(_g); if (dd < 34 || g.pri !== undefined) cands.push({ p: g.p, c: g.c, i: g.i * (.94 + .06 * Math.sin(T * 3 + g.p.x)), sc: g.pri ?? dd * .3 }); } }
+  if (LV.fall && KH.boss && KH.boss.m.root.visible) cands.push({ p: tw(KH.boss.s, KH.boss.x, KH.boss.y + 7), c: 0xffa060, i: 11, sc: -3 });
   cands.sort((a, b) => a.sc - b.sc);
   plights.forEach((l, i) => { const c = cands[i]; if (c) { l.position.copy(c.p); l.color.setHex(c.c); l.intensity = c.i; } else l.intensity = 0; });
 }
@@ -5296,14 +5319,26 @@ function updateCamera(dt) {
     camera.lookAt(cam.wl); return;
   }
   if (LV.roam && !LV.duel) {
-    if (LV.bow) {   // (Erebor's ramparts: from the Mountain's side over Gandalf's shoulder, out over the valley; Shift and / turn it, which is how you aim)
-      cam.by = clamp((cam.by || 0) + (inp.camT || 0) * 1.5 * dt, -1.3, 1.3); cam.yaw = Math.PI + cam.by;
-      const fs = Math.cos(cam.yaw), fx_ = Math.sin(cam.yaw); _a.copy(tw(P.s - fs * 6.5, P.x - fx_ * 6.5, P.y + 3.2)); _b.copy(tw(P.s + fs * 30, P.x + fx_ * 30, P.y + 7));
+    if (LV.sideview) {   // (the Stairs of Cirith Ungol: from the side)
+      cam.yaw = 0; _a.copy(tw(-13, P.x * .92, P.y + 3.6)); _b.copy(tw(1, P.x, P.y + 1.8)); if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-6 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp); const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
+    }
+    if (LV.deeping && !DEEP.blown) {   // (the Deeping Wall's scene: over Gandalf's shoulder, down at the coomb and the torch running in)
+      _a.copy(tw(6, -3.5, LV.layout.WH + 4.5)); _b.copy(tw(-22, 0, 1)); cam.wp.copy(_a); cam.wl.copy(_b); camera.position.copy(_a); camera.lookAt(_b); cam.snap = true; return;
+    }
+    if (LV.race && RACE.cut) {   // (the Ford's scene: from the far bank, looking back over the water, the wave coming across)
+      _a.copy(tw(RACE_FORD + 23, 9, 7.5)); _b.copy(tw(RACE_FORD - 2, -2, 1.5)); if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } camera.position.copy(cam.wp);
+      const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
+    }
+    if (LV.bow) {   // (with a bow: from over Gandalf's shoulder, out at the sky; Shift and / turn it, and the sight turns it from the edge of the screen)
+      const eX = BOW.aim && Math.abs(BOW.cx) > .7 ? Math.sign(BOW.cx) * (Math.abs(BOW.cx) - .7) * 4 : 0, eY = BOW.aim ? (BOW.cy > .7 ? (BOW.cy - .7) * 3 : BOW.cy < -.4 ? (BOW.cy + .4) * 3 : 0) : -(cam.bp || 0) * .8;
+      cam.by = (cam.by || 0) + ((inp.camT || 0) * 1.5 - eX) * dt; if (!LV.bow360) cam.by = clamp(cam.by, -1.3, 1.3); cam.bp = clamp((cam.bp || 0) + eY * dt, 0, 1); cam.yaw = (LV.bow360 ? 0 : Math.PI) + cam.by;
+      const fs = Math.cos(cam.yaw), fx_ = Math.sin(cam.yaw); _a.copy(tw(P.s - fs * 6.5, P.x - fx_ * 6.5, P.y + 3.2)); _b.copy(tw(P.s + fs * 30, P.x + fx_ * 30, P.y + 7 + cam.bp * 32));
       if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-8 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp);
       const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
     }
     if (LV.fall) {   // (the fall: from above, looking down the shaft past Gandalf to the Balrog)
-      cam.yaw = 0; _a.copy(tw(P.s - 4.5, P.x, P.y + 15)); _b.copy(tw(P.s + 2.2, P.x, P.y - 8));
+      cam.yaw = 0; _a.copy(tw(-1.2, 0, 23)); _b.copy(tw(0, 0, -5));   // (fixed on the middle of the shaft, the Balrog in the middle of the screen, Gandalf gliding over him)
+     
       if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-5 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp);
       const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
     }
@@ -5333,6 +5368,7 @@ function updateCamera(dt) {
     const hi = LV.theme === 'isen' || LV.fall ? 1 : 0;   // (on Orthanc's top it looks down over the horns instead of from among them)
     let D = 7.4 + cam.bk * (hi ? 3 : 4.4); const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw);
     if (onDisk) { D = 5.5; for (let k = 0; k < 12 && Math.hypot(P.s - c * D, P.x - sn * D) > ISEN.IN1 - .2; k++) D *= .85; }   // (on a round platform inside: kept within the tower's wall)
+    if (LV.camWalls && TERR) { const cy = cam.gy + 3.9 + cam.bk * 2.2 - .9; let dd = 1.5; while (dd < D) { const y_ = terrainAt(P.s - c * dd, P.x - sn * dd, true); if (y_ > cy) { D = Math.max(2.4, dd - 1); break; } dd += .5; } }   // (between hills and tunnel walls it comes in closer rather than into the rock)
     _a.copy(tw(P.s - c * D, P.x - sn * D, cam.gy + (onDisk ? 4.6 : 3.9) + cam.bk * (hi ? 5.5 : 2.2))); _b.copy(tw(P.s + c * 3, P.x + sn * 3, cam.gy + 1.1 + cam.bk * 2.6));
     if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; }
     const k = 1 - Math.exp(-7 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k);
@@ -5388,7 +5424,7 @@ function updateHUD(dt) {
     bb.style.display = duel.wk.state === 'intro' ? 'none' : 'flex'; document.getElementById('bossfill').style.width = duel.wk.hp + '%';
     const ne = document.getElementById('bossName'); if (ne.textContent !== 'THE WITCH-KING') ne.textContent = 'THE WITCH-KING';
   }
-  const nz = document.getElementById('hNaz'), showN = !!(LV && (LV.nazgul || LV.race)) && state !== 'title' && state !== 'map'; nz.style.display = showN ? '' : 'none'; if (showN) { document.getElementById('nNaz').textContent = LV.race ? RACE.left : NAZ.left; document.getElementById('lNaz').textContent = LV.hunt === 'spider' ? 'SPIDERS' : 'NAZGÛL'; }
+  const nz = document.getElementById('hNaz'), showN = !!(LV && (LV.nazgul || LV.race || LV.flyers)) && state !== 'title' && state !== 'map'; nz.style.display = showN ? '' : 'none'; if (showN) { document.getElementById('nNaz').textContent = LV.flyers ? FLY.left : LV.race ? RACE.left : NAZ.left; document.getElementById('lNaz').textContent = LV.hunt === 'spider' ? 'SPIDERS' : 'NAZGÛL'; }
   const fe = document.getElementById('hFel'), showF = !!(LV && LV.layout && LV.layout.fellowship) && state !== 'title' && state !== 'map'; fe.style.display = showF ? '' : 'none'; if (showF) document.getElementById('nFel').textContent = FEL.found + '/' + FEL.total;
   document.getElementById('nLives').textContent = Math.max(0, gs.lives);
 }
@@ -5623,10 +5659,10 @@ for (let i = 0; i < 12; i++) {
 const NODES = [
   { name: 'THE SHIRE', x: -50, z: -2.5, open: true, loc: 'shire', sub: 'OPEN COUNTRY · DEFEAT THE NINE NAZGÛL' },
   { name: 'RIVENDELL', x: -20, z: -23.5, open: true, loc: 'riv', sub: 'OPEN VALLEY · FIND THE FELLOWSHIP' },
-  { name: 'MORIA', x: -14.5, z: -3.5, open: true, loc: 'moria', sub: "THE MINES · THE BRIDGE · THE FALL" },
+  { name: 'MORIA', x: -14.5, z: -3.5, open: true, loc: 'moria', sub: "THE MINES · BALIN'S CHAMBER · THE BRIDGE · THE FALL" },
   { name: 'EDORAS', x: 10, z: 16.8, open: true, loc: 'rohan', sub: 'TO THE GOLDEN HALL · URUK-HAI' },
   { name: 'MINAS TIRITH', x: 42.2, z: 21, open: true, loc: 'mt', sub: 'THE SIEGE OF GONDOR · 3 LEVELS' },
-  { name: 'CIRITH UNGOL', x: 50.5, z: 10, open: true, loc: 'ungol', sub: "THE PASS · RUN FROM SHELOB!" },
+  { name: 'CIRITH UNGOL', x: 50.5, z: 10, open: true, loc: 'ungol', sub: "THE PASS · THE STAIRS · 2 LEVELS" },
   { name: 'MORDOR', x: 57, z: -3, open: true, loc: 'mordor', sub: 'IN THE SHADOW OF THE EYE · 1 LEVEL' },
   { name: 'MOUNT DOOM', x: 62.5, z: 11.5, open: true, loc: 'doom', sub: 'THE CLIMB · OUTRUN THE LAVA' },
   { name: 'WEATHERTOP', x: -34, z: -14, open: true, loc: 'weather', sub: 'DUEL THE WITCH-KING' },   // added last: the road and Minas Tirith go by position in this list
@@ -5634,6 +5670,7 @@ const NODES = [
   { name: 'ISENGARD', x: -18, z: 9, open: true, loc: 'isen', sub: 'UP THE TOWER OF ORTHANC · SARUMAN BOSS' },
   { name: "HELM'S DEEP", x: -14.6, z: 15.8, open: true, loc: 'helm', sub: 'DOWN THE RAMP · BALROG BOSS' },
   { name: 'EREBOR', x: 24, z: -34, open: true, loc: 'erebor', sub: 'THE LONELY MOUNTAIN · DRAGON BOSS · 2 LEVELS' },
+  { name: 'OSGILIATH', x: 47.5, z: 19.5, open: true, loc: 'osgil', sub: 'THE RUINED CITY · SHOOT DOWN THE NINE' },
 ];
 const ROAD = (() => {
   const way = [NODES[0], [-40, -6], [-30, -17], NODES[1], [-18.5, -13], NODES[2], [-5, 3], [1, 11], NODES[3], [21, 17], [31, 14.5], [40, 15.5], NODES[4], [46, 14.5], NODES[5], [54, 3], NODES[6], [62, 0], [65, 6], NODES[7]];
@@ -5684,7 +5721,7 @@ const NEAR_R = 2.4;
 function nodeNear() { let best = -1, bd = NEAR_R; NODES.forEach((n, i) => { const d = Math.hypot(tok.p.x - n.x, tok.p.z - n.z); if (d < bd) { bd = d; best = i; } }); return best; }
 const onLand = (x, z) => BOARD ? boardLand(x, z) : coastAt(x, z) > .8;
 // a place with several levels opens its own menu to choose from (Moria; Minas Tirith flies down into the city instead)
-const CHAP_DESC = { erebor: ['The ramparts before the Gate: shoot down the dragon', 'The treasure hall: the dragon in his hoard'], riv: ['Find the Fellowship in the hidden valley', 'Race the Nine to the Ford of Bruinen'], moria: ['The dwarf-halls, to the doors of the bridge', 'Face the Balrog on the bridge', 'Fall with the Balrog into the deep'] };
+const CHAP_DESC = { ungol: ['The pass: run from Shelob', 'The stairs: the long climb up the cliff'], helm: ['Down through the Hornburg to the Balrog', 'The Deeping Wall blows: hold the breach'], erebor: ['The ramparts before the Gate: shoot down the dragon', 'The treasure hall: the dragon in his hoard'], riv: ['Find the Fellowship in the hidden valley', 'Race the Nine to the Ford of Bruinen'], moria: ['The dwarf-halls, to the doors of the bridge', 'Goblins and a cave troll at the tomb of Balin', 'Face the Balrog on the bridge', 'Fall with the Balrog into the deep'] };
 let CHAP = null;
 function openChap(loc) {
   const ls = LEVELS.map((L, i) => [L, i]).filter(([L]) => L.loc === loc); CHAP = { loc, ls: ls.map(([, i]) => i), sel: 0 }; tok.dest = null;
@@ -5795,7 +5832,7 @@ function updateMap(dt) {
 
 // --- your own War of the Ring board (models/livingmap.glb and livingmap.json, from Battle for Middle-earth II: see
 //     models/README.md): it replaces the little diorama, each stop moves onto its region, and Gandalf walks over its hills ---
-const STOP_REGION = { shire: 'The_Shire', riv: 'Rhudaur', moria: 'Redhorn_Pass', weather: 'Amon_Sul', rohan: 'Rohan', mt: 'Minas_Tirith', ungol: 'Minas_Morgul', mordor: 'Mordor', doom: 'Mount_Doom', mirk: 'Mirkwood', helm: 'Helms_Deep', isen: 'Isengard', erebor: 'Erebor' };
+const STOP_REGION = { shire: 'The_Shire', riv: 'Rhudaur', moria: 'Redhorn_Pass', weather: 'Amon_Sul', rohan: 'Rohan', mt: 'Minas_Tirith', ungol: 'Minas_Morgul', mordor: 'Mordor', doom: 'Mount_Doom', mirk: 'Mirkwood', helm: 'Helms_Deep', isen: 'Isengard', erebor: 'Erebor', osgil: 'Osgiliath' };
 // what's hidden (clouds, smoke and BFME's own markers), what's water, and what's the ground itself (its 20 painted tiles)
 const BOARD_HIDE = /^(.*(cloud|pick|smok|sunray|flash|marker|brdr|rallyflag|hero)|impassable|lm_coast)/i, BOARD_WATER = /ocean|water|sea\b|wtr/i, BOARD_GROUND = /^LM_\d\d(_\d+)?$/;   // (three.js adds _1 when a part shares its name with the node holding it)
 // the tiles' pictures, small, so the map can tell the painted sea (blue) from land where Gandalf may walk
@@ -5904,12 +5941,12 @@ function step(dt, noRender) {
   else if (state === 'win') updateWin(dt);
   if (state !== 'paused') {
     if (state !== 'title' && state !== 'map' && state !== 'gameover' && state !== 'complete') {
-      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateRace(dt); updateFellowship(dt); updateHobbiton(dt); updateDuel(dt); updateSprings(dt); updateKH(gdt);
+      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateRace(dt); updateFly(dt); updateFellowship(dt); updateHobbiton(dt); updateDuel(dt); updateSprings(dt); updateKH(gdt);
     }
     updateDragons(dt); updateApples(); updatePhial(dt); updateLightning(dt); updateAmbient(dt); updateTree(dt);
     fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt); poseDuelGandalf(dt);
     skinPlay(hob, state === 'dying' ? 'die' : LV && LV.fall && state === 'play' ? 'jump' : !P.ground && P.airT > .1 ? 'jump' : P.spinT > 0 || (LV && LV.duel && duel.atk) ? 'attack' : Math.hypot(P.vs, P.vx) > 1 ? 'walk' : 'idle');
-    updateSkins(dt); khAfterSkins();
+    updateSkins(dt); khAfterSkins(); if (LV && LV.fall && KH.boss && KH.boss.state !== 'die') fallBones(KH.boss);
   }
   updateCamera(state === 'paused' ? 0 : dt); if (DEBUG_CAM) { camera.position.copy(DEBUG_CAM.p); camera.lookAt(DEBUG_CAM.l); }
   updateSabers(state === 'paused' ? 0 : dt);
@@ -5963,12 +6000,15 @@ const MODEL_SLOTS = {
   fellbeast: { height: 7.5, turn: -Math.PI / 2 }, horse: { height: 2.5, turn: -Math.PI / 2, hide: /gandalf/i, anims: { walk: /^run_a/i, jump: /^fly/i } },
   sauron: { height: 20, turn: -Math.PI / 2 },   // in his own units: the game builds Sauron at .28 scale (about 5.6 tall)
   spider: { height: 1.6, turn: -Math.PI / 2, src: 'shelob' },
+  troll: { height: 5.8, turn: -Math.PI / 2, hide: /^BOX|FORGED_BLADE/i },   // (Balin's Chamber: Rise of the Witch-king's hill troll)
+  urukp: { height: 3, turn: -Math.PI / 2, hide: /FORGED_BLADE/i }, urukx: { height: 2.1, turn: -Math.PI / 2, hide: /FIREAROWTIP/i }, fanatic: { height: 2.1, turn: -Math.PI / 2 }, overseer: { height: 2.8, turn: -Math.PI / 2, hide: /^BOX/i },   // (the Uruk-hai's pikemen, crossbowmen, fanatics and their overseer)
   dragon: { height: 7, turn: -Math.PI / 2, anims: { fly: /^fly_a/i, idle: /^idle_a/i, attack: /^attack_a/i, hit: /^hurt_a/i, die: /^die_k/i } },   // (Erebor: Drogoth, Rise of the Witch-king's dragon)
-  blackrider: { height: 3.1, turn: -Math.PI / 2, anims: { walk: /run|wlk|gallop/i } },   // (the race to the Ford: Rise of the Witch-king's Black Rider, on his horse)   // Mirkwood's spiders: Shelob again (src: whose model it is), smaller
+  floodhorse: { height: 4, turn: -Math.PI / 2, anims: { walk: /^run/i }, glow: .5 },   // (the Ford: the water horses of Battle for Middle-earth's flood)
+  blackrider: { height: 3.1, turn: -Math.PI / 2, hide: /CINEMA|_NEW/i, anims: { walk: /^run_a/i } },   // (its cinematic duplicates hidden: it has one horse and one rider)   // (the race to the Ford: Rise of the Witch-king's Black Rider, on his horse)   // Mirkwood's spiders: Shelob again (src: whose model it is), smaller
 };
 // which animation plays for each action: the first clip whose name matches (case doesn't matter)
 const ANIM_NAMES = { idle: /idle|stand|breath|ready/i, fly: /fly|glid|hover/i, walk: /walk|wala|run|move|gallop/i, attack: /attack|atk|smash|swing|slash|strike|hit_?a/i, hit: /hurt|damage|stun|flinch|react/i, die: /die|death|dead|dtha/i, jump: /jump|fall|air/i };
-const TEXTURE_SLOTS = ['meadow', 'grass', 'rock', 'path', 'turf', 'moss', 'marble', 'floor', 'dark', 'lavaRock', 'wood', 'roof', 'plains', 'metal', 'mosaic'];
+const TEXTURE_SLOTS = ['meadow', 'grass', 'rock', 'path', 'turf', 'moss', 'marble', 'floor', 'dark', 'lavaRock', 'wood', 'roof', 'plains', 'metal', 'mosaic', 'rrRock', 'rrWood', 'rrFern', 'rrGrass', 'rrWeb', 'rrBarrel', 'rrCrate', 'rrPlate'];
 const LOADED = {}, SKINS = [];
 // game models keep their flames, glows and eyes as flat cards: drawn as plain added light, never lit or shadowed
 const FX_MAT = /fire|flame|cloud|flar|glow|light|eyes?\b|spark|smoke/i, SKIN_MATS = new Map();
@@ -6812,15 +6852,15 @@ function buildMirkwood(L, TH) {
   const clearOf = (s, x, r) => !Y.trunks.some(t => Math.hypot(s - t.s, x - t.x) < t.r + r) && !Y.springs.some(p => Math.hypot(s - p.s, x - p.x) < r + 2) && Math.hypot(s - L.start[0], x - L.start[1]) > r + 5 && !(Y.lair && Math.hypot(s - Y.lair.s, x - Y.lair.x) < 9);
   const overhead = (s, x, y) => { for (let ds = -3; ds <= 3; ds += 1.5) for (let dx = -3; dx <= 3; dx += 1.5) { const dk = deckAt_(L.deck, s + ds, x + dx); if (dk > NO_DECK && dk - y < 26) return true; } return false; };
   const rimD = (s, x) => { const k = Math.round(T_.cy - s) * T_.w + Math.round(T_.cx - x); return T_.g[k]; };
-  for (let s = S0 + 2; s < S1 - 2; s += 6) for (let x = X0 + 2; x < X1 - 2; x += 6) {
-    const ss = s + rand(-2.5, 2.5), xx = x + rand(-2.5, 2.5), y = at(ss, xx), outside = rimD(ss, xx) === 't';
+  for (let s = S0 + 2; s < S1 - 2; s += 11) for (let x = X0 + 2; x < X1 - 2; x += 11) {
+    const ss = s + rand(-3.5, 3.5), xx = x + rand(-3.5, 3.5), y = at(ss, xx), outside = rimD(ss, xx) === 't';
     if (outside && Math.random() < .55) continue;   // thinner further out, where nobody goes
-    if (!clearOf(ss, xx, 3) || overhead(ss, xx, y)) { if (Math.random() < .5 && clearOf(ss, xx, 1)) { const p = tw(ss, xx, y); shrubs.push([p.x, p.y, p.z, rand(1.2, 2.4), rand(0, TAU)]); } continue; }
+    if (!clearOf(ss, xx, 3) || overhead(ss, xx, y)) { if (Math.random() < .2 && clearOf(ss, xx, 1)) { const p = tw(ss, xx, y); shrubs.push([p.x, p.y, p.z, rand(1.2, 2.4), rand(0, TAU)]); } continue; }
     const p = tw(ss, xx, y), near = Math.hypot(ss - (Y.lair ? Y.lair.s : 0), xx - (Y.lair ? Y.lair.x : 0)) < 40;
     if (!outside) Y.blocks.push([ss - .6, ss + .6, xx - .6, xx + .6, y + 9]);
     if (treeP.length) (near && webbedP.length ? webbed : trees).push([p.x, p.y - .3, p.z, rand(15, 24), rand(0, TAU)]);
     else { const k = rand(1.4, 2.2); trunks.push([p.x, p.y + 3 * k, p.z, .3 * k, 6 * k, .3 * k]); crowns.push([p.x, p.y + 6.5 * k, p.z, 2 * k, 1.8 * k, 2 * k]); }
-    for (let q = 0; q < 2; q++) { const ps = ss + rand(-3, 3), px = xx + rand(-3, 3), py = at(ps, px), pp = tw(ps, px, py); (shrubP.length ? shrubs : bushes).push(shrubP.length ? [pp.x, pp.y, pp.z, rand(1.2, 2.4), rand(0, TAU)] : [pp.x, pp.y + .4, pp.z, rand(.6, 1.1), rand(.5, .8), rand(.6, 1.1)]); }
+    for (let q = 0; q < 1; q++) { const ps = ss + rand(-3, 3), px = xx + rand(-3, 3), py = at(ps, px), pp = tw(ps, px, py); (shrubP.length ? shrubs : bushes).push(shrubP.length ? [pp.x, pp.y, pp.z, rand(1.2, 2.4), rand(0, TAU)] : [pp.x, pp.y + .4, pp.z, rand(.6, 1.1), rand(.5, .8), rand(.6, 1.1)]); }
   }
   treeP.forEach((n, q) => propScatter(n, trees.filter((_, i) => i % treeP.length === q)));
   webbedP.forEach((n, q) => propScatter(n, webbed.filter((_, i) => i % webbedP.length === q)));
@@ -7226,31 +7266,29 @@ function shireLayout() {
   const N = 161, C = 80, hs = new Float32Array(N * N), g = new Array(N * N).fill('g');
   const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
   const dome = (s, x, cs, cx, r, h) => { const d = Math.hypot(s - cs, x - cx) / r; return d >= 1 ? 0 : h * (1 - d * d) * (1 - d * d); };
-  // the lane, as points [s, x, half its width]
-  const WAY = [[-68, 0, 3], [-52, 0, 3], [-34, 3, 2.6], [-21, 1, 2.4], [-3, 0, 2.4], [6, -6, 2.6], [10, -18, 2.8], [12, -30, 3], [20, -22, 2.8], [26, -10, 2.8], [34, -2, 3], [37, 0, 3]];
-  const path = []; for (let i = 0; i < WAY.length - 1; i++) { const [s0, x0, h0] = WAY[i], [s1, x1, h1] = WAY[i + 1], n = Math.ceil(Math.hypot(s1 - s0, x1 - x0) / .5); for (let k = 0; k < n; k++) { const t = k / n; path.push([lerp(s0, s1, t), lerp(x0, x1, t), 0, lerp(h0, h1, t)]); } }
-  path.push([...WAY[WAY.length - 1].slice(0, 2), 0, 3]);
+  // the lane, winding: points [s, x, half its width]
+  const WAY = [[-68, 0, 2.6], [-56, -2, 2.6], [-44, 3, 2.4], [-30, 2, 2.4], [-21, .6, 2.2], [-3, 0, 2.2], [8, -5, 2.4], [14, -16, 2.4], [14, -28, 2.6], [22, -24, 2.4], [28, -12, 2.4], [33, -3, 2.6], [37, 0, 2.8]];
+  const P_ = (i, k) => WAY[clamp(i, 0, WAY.length - 1)][k], cr = (a, b, c, d, t) => .5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (3 * b - a - 3 * c + d) * t * t * t), path = [];
+  for (let i = 0; i < WAY.length - 1; i++) { const n = Math.ceil(Math.hypot(WAY[i + 1][0] - WAY[i][0], WAY[i + 1][1] - WAY[i][1]) / .5); for (let k = 0; k < n; k++) { const t = k / n; path.push([cr(P_(i - 1, 0), P_(i, 0), P_(i + 1, 0), P_(i + 2, 0), t), cr(P_(i - 1, 1), P_(i, 1), P_(i + 1, 1), P_(i + 2, 1), t), 0, lerp(WAY[i][2], WAY[i + 1][2], t)]); } }
+  path.push([WAY[WAY.length - 1][0], WAY[WAY.length - 1][1], 0, 2.8]);
   const plazas = [
     { s: -54, x: 0, r: 9, waves: [['o', 'o', 'o'], ['n', 'o', 'o', 'o']], title: 'BLACK RIDERS ON THE ROAD!' },
     { s: -28, x: 4, r: 8, waves: [['w', 'o', 'o'], ['n', 'w', 'w', 'o']], title: 'THE BRIDGE OF THE WATER!' },
     { s: 12, x: -32, r: 10, waves: [['o', 'o', 'u', 'o'], ['n', 'n', 'o', 'o'], ['u', 'n', 'n', 'o', 'o']], title: 'THE PARTY FIELD!' },
     { s: 36, x: 0, r: 11, waves: [['K']], title: 'BAG END', boss: true, last: true, breach: [44, 0], bossHp: 620, noAdds: true },
   ];
-  const holes = [[-64, 9], [-64, -9], [-44, 10], [-42, -10], [2, 12], [-34, 20], [-34, -14], [20, 12], [26, 22], [38, -24], [30, -34], [44, 17], [2, -40], [-6, 26], [16, 32], [-58, 22], [-58, -24], [46, -10]];
+  // the hobbit holes' doors; each is dug into its own hill, which rises behind it, and the hills run together into one green hillside
   const nearPath = (s, x) => { let b = 1e9, bi = 0; path.forEach((q, i) => { const d = Math.hypot(s - q[0], x - q[1]); if (d < b) { b = d; bi = i; } }); return [b, path[bi]]; };
   const homes = [];
-  for (const [s, x] of holes) {
-    const [d, q] = nearPath(s, x); if (d < 6 || plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 5)) continue;
-    const f = Math.atan2(q[1] - x, q[0] - s); homes.push([s - Math.cos(f) * 2, x - Math.sin(f) * 2, f]);   // (where its mound stands: the round door looks out 2.6 ahead of the spot, down to the lane)
+  for (const [s, x] of [[-66, 9], [-66, -10], [-41, 10], [-40, -10], [-30, 18], [-26, -12], [0, 11], [1, -13], [12, 10], [22, 14], [30, 18], [-2, -34], [26, -38], [34, -24], [44, -16], [44, 16], [-14, 38], [3, 30]]) {
+    const [d, q] = nearPath(s, x); if (d < 5 || plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 4)) continue; homes.push({ s, x, f: Math.atan2(q[1] - x, q[0] - s), to: [q[0], q[1]] });
   }
-  const bagEnd = [46.6, 0, Math.PI];   // (facing south, down to the court)
+  const riverW = x => 3.4 + 7 * ss(14, 24, x) * ss(44, 34, x);   // (the Water widens into the pond by the Green Dragon)
+  const lie = (s, x) => .8 + Math.sin(s * .06) * Math.cos(x * .05) * .7 + Math.sin(s * .17 + x * .11) * .2 + 20 * Math.max(ss(66, 84, Math.abs(s)), ss(66, 84, Math.abs(x)));   // (the lie of the land, before the hills)
+  const hills = [[60, 0, 26, 11], [-20, -50, 24, 8], [-52, 42, 24, 7], [14, 56, 22, 9], [24, -60, 20, 6]]; for (const h of homes) hills.push([h.s - Math.cos(h.f) * 8, h.x - Math.sin(h.f) * 8, 12, 7.2]);
   const base = (s, x) => {
-    let y = .9 + Math.sin(s * .07) * Math.cos(x * .06) * .7 + Math.sin(s * .19 + x * .13) * .25;
-    y += 20 * Math.max(ss(66, 84, Math.abs(s)), ss(66, 84, Math.abs(x)));   // (green hills all round)
-    y += dome(s, x, 60, 0, 26, 10) + 4 * ss(44, 50, s) * ss(18, 7, Math.abs(x));   // (the Hill, Bag End cut into its face)
-    for (const [hs_, hx] of homes) y += dome(s, x, hs_, hx, 10, 1.8);   // (a gentle knoll under each hobbit hole's mound)
-    const rd = Math.abs(s - shireRiv(x)); y = lerp(-1.6, y, ss(3.2, 6, rd));   // (the Water)
-    return y;
+    let k = 0; for (const [cs, cx, r, h] of hills) { const q = dome(s, x, cs, cx, r, h); k += q * q * q; }   // (they run together smoothly)
+    const y = lie(s, x) + Math.cbrt(k), rd = Math.abs(s - shireRiv(x)), w = riverW(x); return lerp(-1.6, y, ss(w - .2, w + 2.6, rd));
   };
   const wB = new Float32Array(N * N), yR = new Float32Array(N * N), cell = (s, x) => [Math.round(C - s), Math.round(C - x)];
   const carve = (s, x, y, half, fall, kind) => {
@@ -7260,21 +7298,22 @@ function shireLayout() {
       if (w > wB[k]) { wB[k] = w; yR[k] = y; } if (kind && d < half - .3) g[k] = kind;
     }
   };
-  for (const p of plazas) p.y = base(p.s, p.x) * (p.boss ? 1 : 1);
-  plazas[3].y = Math.max(1, base(30, 0));
-  for (const q of path) { const rd = Math.abs(q[0] - shireRiv(q[1])); q[2] = rd < 7 ? 1 : base(q[0], q[1]); for (const p of plazas) if (Math.hypot(q[0] - p.s, q[1] - p.x) < p.r) q[2] = p.y; }
-  for (let i = 0; i < path.length; i += 2) { const [s, x, y, h] = path[i]; if (Math.abs(s - shireRiv(x)) < 6.5) continue; carve(s, x, y, h + .3, 2.2, 'p'); }
-  for (const p of plazas) carve(p.s, p.x, p.y, p.r + .5, p.boss ? 3 : 4, p.boss ? 'a' : 's');
-  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = C - j, x = C - i, b0 = base(s, x); hs[k] = lerp(b0, yR[k], wB[k]); if (Math.abs(s - shireRiv(x)) < 3.6) g[k] = 'r'; }
-  // the stone bridge over the Water: a hump of floor in steps, low walls along both sides
+  for (const p of plazas) p.y = lie(p.s, p.x);
+  plazas[3].y = Math.max(1, lie(30, 0));
+  for (const q of path) { const rd = Math.abs(q[0] - shireRiv(q[1])); q[2] = lerp(1.03, lie(q[0], q[1]), ss(7.5, 14, rd)); for (const p of plazas) if (Math.hypot(q[0] - p.s, q[1] - p.x) < p.r) q[2] = p.y; }
+  for (let i = 0; i < path.length; i += 2) { const [s, x, y, h] = path[i]; if (Math.abs(s - shireRiv(x)) < 6.5) continue; carve(s, x, y, h + .5, 3, 'p'); }
+  for (const p of plazas) carve(p.s, p.x, p.y, p.r + .5, p.boss ? 3 : 5, p.boss ? 'a' : 's');
+  for (const sgn of [-1, 1]) carve(shireRiv(0) + sgn * 7.8, 0, 1.03, 2.8, 3.4);   // (the banks rise to meet the bridge at either end)
+  // the ground before each door, cut level into the foot of its hill
+  for (const h of homes) { h.y = lie(h.s, h.x) + .1; carve(h.s + Math.cos(h.f) * 2, h.x + Math.sin(h.f) * 2, h.y, 2.7, 2.4); }
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = C - j, x = C - i; hs[k] = lerp(base(s, x), yR[k], wB[k]); if (Math.abs(s - shireRiv(x)) < riverW(x)) g[k] = 'r'; }
   const blocks = [], bs = shireRiv(0), BL = 13, BW = 2.2;
   for (let k = 0; k < 26; k++) { const t0 = k / 26, t1 = (k + 1) / 26, s0 = bs - BL / 2 + t0 * BL, s1 = bs - BL / 2 + t1 * BL, y = 1 + Math.sin((t0 + t1) / 2 * Math.PI) * 1.1; blocks.push([s0, s1, -BW, BW, y, 'floor', -6]); }
   for (const sx of [-1, 1]) blocks.push([bs - BL / 2 + 1.5, bs + BL / 2 - 1.5, sx * BW + (sx > 0 ? 0 : -.5), sx * BW + (sx > 0 ? .5 : 0), 3.4, 'wall', -6]);
-  for (const [cs, cx] of homes) blocks.push([cs - 3.1, cs + 3.1, cx - 3.1, cx + 3.1, base(cs, cx) + 3.2, 'wall', -10]);   // (each hobbit hole's mound is solid)
-  blocks.push([47.4, 56, -5.6, 5.6, plazas[3].y + 6.5, 'wall', -10]);   // (and Bag End's)
-  // the Hill and the knolls are walls where they rise steeply (the ground itself carries Gandalf over the gentle parts)
+  for (const h of homes) { const cs = h.s - Math.cos(h.f) * 1.7, cx = h.x - Math.sin(h.f) * 1.7; blocks.push([cs - 2.3, cs + 2.3, cx - 2.3, cx + 2.3, h.y + 3.6, 'wall', -10]); }   // (the front and the hole behind it are solid)
+  blocks.push([47.4, 52, -4, 4, plazas[3].y + 4.6, 'wall', -10]);
   return { field: [-74, 74, -74, 74], start: [-66, 0], terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g },
-    layout: { blocks, path, plazas, homes, bagEnd, bridge: [bs, 0, BL, BW], chimneys: [], mill: [shireRiv(-26) + 6.5, -26], dragon: [-2, 16, -Math.PI / 2], partyTree: [20, -44], pavilion: [2, -46], base } };
+    layout: { blocks, path, plazas, homes, bagEnd: [46.8, 0, Math.PI], bridge: [bs, 0, BL, BW], chimneys: [], mill: [shireRiv(-26) + 6.5, -26], dragon: [shireRiv(26) + 15, 26, Math.PI], partyTree: [20, -44], pavilion: [2, -46], riverW } };
 }
 function shireContent(L) {
   const Y = L.layout; khRings(Y);
@@ -7283,88 +7322,101 @@ function shireContent(L) {
   addCrate('q', 30, -6, Y.plazas[3].y, 4); addCrate('su', 30, 6, Y.plazas[3].y, 4);
 }
 function buildShire(L, TH) {
-  const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
-  const grd = surf(TX.meadow, { sky, vc: true, rough: .95, bump: 1.2, env: .15 });
-  groundMesh(T_, TX.meadow, (k, sl, y) => k === 'p' ? [.86, .7, .5] : k === 'r' ? [.45, .42, .32] : k === 's' || k === 'a' ? [.7, .86, .54] : [.56, .84, .42], 10, () => grd);
-  wideFloor(TX.meadow, 0x7aa850, 90, 14, 900);
-  // the Water: a strip of moving water down the river bed
-  const wt = TX.sea.clone(); wt.needsUpdate = true; wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(30, 3); TH.waterTex = wt;
-  const wg = new THREE.PlaneGeometry(1, 1, 80, 1), wp = wg.attributes.position; for (let i = 0; i < wp.count; i++) { const u = wp.getX(i), v = wp.getY(i), x = u * 150, s = shireRiv(x) + v * 8, q = tw(s, x, -.45); wp.setXYZ(i, q.x, q.y, q.z); }
-  wg.computeVertexNormals(); const water = new THREE.Mesh(wg, new THREE.MeshPhongMaterial({ map: wt, color: 0x5aa0c0, specular: 0xfff0d0, shininess: 80, transparent: true, opacity: .82, side: THREE.DoubleSide })); water.userData.keep = true; scene.add(water);
-  const stone = surf(TX.rock, { sky, color: 0xd0c4a8, rough: .8, bump: 2.2 }), wood = lam(0x6a4a2a), thatch = lam(0xb89a5a), hedgeM = lam(0x2e6a22);
-  // the bridge: Battle for Middle-earth's, or a hump of stone with low walls
-  { const [bs, bx, BL, BW] = Y.bridge; if (!(PROPS.sbbridge && propOne('sbbridge', bs, bx, .2, 0, BL + 1, 'w'))) { for (let k = 0; k < 13; k++) { const t = (k + .5) / 13, s = bs - BL / 2 + t * BL, y = 1 + Math.sin(t * Math.PI) * 1.1; const q = tw(s, bx, y - .4); part(GEO_BOX, stone, scene, q.x, q.y, q.z, BW * 2 + 1, .8, BL / 13 + .05); for (const sx of [-1, 1]) { const w = tw(s, bx + sx * (BW + .25), y + .35); part(GEO_BOX, stone, scene, w.x, w.y, w.z, .5, .7, BL / 13 + .05); } } } }
-  // the hobbit holes: a grassy mound, its front cut back to a stone face with a round painted door and round windows in it,
-  // a doorstep and stepping stones, a little fenced garden full of flowers, a lantern, and a chimney poking up through the turf
-  const moundM = surf(TX.meadow, { sky, color: 0x84b858, rough: .95, bump: 1.4 }), frameM = lam(0x6a4422), winM = lam(0xfff0b0, { emissive: 0xa08040 }), knobM = lam(0xffd040, { emissive: 0x6a4a10 });
-  const doorCols = [0x2a8a3a, 0xf0c020, 0xc03a28, 0x2a5ab0, 0x7a4ab0, 0x2a8a3a], fl = [0xff5a7a, 0xffe040, 0xffffff, 0xb070ff, 0xff9a30, 0xff4040];
-  const posts = [], rails = [], blooms = [];
-  const smial = (s, x, f, r, col, big) => {
-    const y0 = at(s + Math.cos(f) * r * .9, x + Math.sin(f) * r * .9) - .05, g = new THREE.Group(); place(g, s, x, y0, f); scene.add(g); g.updateMatrixWorld(true);
-    const MH = big ? .78 : .86, m = new THREE.Mesh(new THREE.SphereGeometry(r, 26, 12, 0, TAU, 0, Math.PI / 2), moundM); m.scale.y = MH; g.add(m);
-    const sfc = (xx, yy) => Math.sqrt(Math.max(0, r * r * (1 - (yy / (MH * r)) ** 2) - xx * xx));
-    const zf = sfc(0, .1) + .05, zb = zf - 1.4, fw = big ? 5 : 4.1, dr = big ? 1.15 : .92;
-    part(GEO_BOX, stone, g, 0, 1.25, (zf + zb) / 2, fw, 2.5, zf - zb);                                     // the stone face
-    part(GEO_BOX, moundM, g, 0, 2.6, (zf + zb) / 2 + .1, fw + .5, .45, zf - zb + .5);                     // turf over its lip
-    part(new THREE.CircleGeometry(dr + .16, 28), frameM, g, 0, dr + .08, zf + .01);
-    part(new THREE.CircleGeometry(dr, 28), lam(col, { emissive: col, emissiveIntensity: .12 }), g, 0, dr + .08, zf + .02);   // the round door
-    for (let k = -2; k <= 2; k++) { const px = k * dr * .38; part(GEO_BOX, frameM, g, px, dr + .08, zf + .03, .035, Math.sqrt(dr * dr - px * px) * 1.9, .01); }   // (its planks)
-    part(GEO.sph, knobM, g, 0, dr + .08, zf + .1, .11, .11, .11);
-    part(GEO_BOX, stone, g, 0, .07, zf + .55, 2, .14, 1);                                                  // the doorstep
-    for (const sx of [-1, 1]) { part(new THREE.CircleGeometry(.52, 18), frameM, g, sx * (fw / 2 - .85), 1.35, zf + .01); part(new THREE.CircleGeometry(.42, 18), winM, g, sx * (fw / 2 - .85), 1.35, zf + .02);
-      part(GEO_BOX, frameM, g, sx * (fw / 2 - .85), .74, zf + .15, 1, .16, .3); for (let k = 0; k < 5; k++) part(GEO.sph, lam(fl[k % 6]), g, sx * (fw / 2 - .85) - .36 + k * .18, .88, zf + .15, .09, .09, .09); }
-    const ln = glowSprite(0xffc860, 1.1, .7); ln.position.set(dr + .55, 2, zf + .15); g.add(ln); part(GEO_BOX, lam(0x3a2a1a), g, dr + .55, 2, zf + .12, .18, .28, .18);
-    part(GEO.cyl, stone, g, r * .35, r * MH * .78 + .4, -r * .25, .26, 1.6, .26); part(GEO_BOX, stone, g, r * .35, r * MH * .78 + 1.25, -r * .25, .62, .14, .62);
-    Y.chimneys.push(g.localToWorld(new V3(r * .35, r * MH * .78 + 1.4, -r * .25)));
-    for (let k = 0; k < 4; k++) { const p = g.localToWorld(new V3((k % 2 - .5) * .25, 0, zf + 1.3 + k * .6)); part(new THREE.CylinderGeometry(.34, .36, .08, 10), stone, scene, p.x, p.y + .04, p.z); }
-    // the garden fence round the front, a gap for the gate, and flowers in the beds along it
-    const fz = zf + 2.8, fx = fw / 2 + .7, run = (x0, z0, x1, z1) => { const n = Math.max(1, Math.round(Math.hypot(x1 - x0, z1 - z0) / .9)); for (let k = 0; k <= n; k++) { const p = g.localToWorld(new V3(lerp(x0, x1, k / n), .4, lerp(z0, z1, k / n))); posts.push([p.x, p.y, p.z, .09, .8, .09, 0]); }
-      const a = g.localToWorld(new V3(x0, .55, z0)), b = g.localToWorld(new V3(x1, .55, z1)), mid = a.clone().lerp(b, .5); rails.push([mid.x, mid.y, mid.z, a.distanceTo(b), .07, .05, Math.atan2(-(b.z - a.z), b.x - a.x)]); };
-    run(-fx, zf + .3, -fx, fz); run(fx, zf + .3, fx, fz); run(-fx, fz, -.9, fz); run(.9, fz, fx, fz);
-    for (let k = 0; k < (big ? 40 : 26); k++) { const side = k % 2 ? 1 : -1, t = Math.random(), p = g.localToWorld(t < .5 ? new V3(side * (fx - .35), .12, lerp(zf + .5, fz - .3, t * 2)) : new V3(side * lerp(1.3, fx - .3, (t - .5) * 2), .12, fz - .35)); blooms.push([p.x, p.y, p.z, fl[k % 6]]); }
-    for (let k = 0; k < 9; k++) { const a = (k / 8 - .5) * 2.2, p = g.localToWorld(new V3(Math.sin(a) * (r + .2), .15, Math.cos(a) * (r + .2) - .4)); blooms.push([p.x, p.y, p.z, fl[(k + 2) % 6]]); }
+  const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env, rep = (t, a, b) => { const c = t.clone(); c.needsUpdate = true; c.wrapS = c.wrapT = THREE.RepeatWrapping; c.repeat.set(a, b); return c; };
+  // lush grass: deep in the hollows, golden-green on the tops, the river bed and the lane's soil under its cobbles
+  const grd = surf(TX.lush, { sky, vc: true, rough: 1, bump: 1, env: .08 });
+  groundMesh(T_, TX.lush, (k, sl, y) => k === 'r' ? [.42, .4, .3] : k === 'p' ? [.5, .48, .34] : [.5 + clamp(y / 16, 0, 1) * .3 + (sl > .9 ? -.08 : 0), .74 + clamp(y / 16, 0, 1) * .12 + (sl > .9 ? -.1 : 0), .34], 6, () => grd);
+  wideFloor(TX.lush, 0x6a9a48, 90, 14, 900);
+  // the lane: a ribbon of cobbles over the ground
+  { const cob = surf(rep(TX.cobble, 1, 1), { sky, rough: .8, bump: 3, env: .15 }), pos = [], uv = [], idx = []; const P0 = Y.path, n = P0.length; let vv = 0, out = 0;
+    for (let i = 0; i < n; i++) { const a = P0[Math.max(0, i - 1)], b = P0[Math.min(n - 1, i + 1)], h = Math.atan2(b[1] - a[1], b[0] - a[0]), [s, x, , hw] = P0[i], wob = Math.sin(i * .37) * .15; if (i) vv += Math.hypot(P0[i][0] - P0[i - 1][0], P0[i][1] - P0[i - 1][1]) / 4; const on = Math.abs(s - shireRiv(x)) > 7;
+      for (let e = 0; e <= 6; e++) { const t = e / 6 * 2 - 1, ps = s - Math.sin(h) * t * (hw + wob), px = x + Math.cos(h) * t * (hw + wob), q = tw(ps, px, on ? at(ps, px) + .07 : -9); pos.push(q.x, q.y, q.z); uv.push((t + 1) * hw / 1.1, vv * 2.2); }
+      if (i && on && out) for (let e = 0; e < 6; e++) { const a0 = (i - 1) * 7 + e, b0 = a0 + 7; idx.push(a0, a0 + 1, b0, b0, a0 + 1, b0 + 1); } out = on; }
+    const gm = new THREE.BufferGeometry(); gm.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); gm.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); gm.setIndex(idx); gm.computeVertexNormals(); cob.side = THREE.DoubleSide; const m = new THREE.Mesh(gm, cob); m.receiveShadow = true; m.userData.keep = true; scene.add(m); }
+  // the Water and the pond
+  const wt = TX.sea.clone(); wt.needsUpdate = true; wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(30, 5); TH.waterTex = wt;
+  const wg = new THREE.PlaneGeometry(1, 1, 80, 1), wp = wg.attributes.position; for (let i = 0; i < wp.count; i++) { const u = wp.getX(i), v = wp.getY(i), x = u * 150, s = shireRiv(x) + v * 32, q = tw(s, x, -.45); wp.setXYZ(i, q.x, q.y, q.z); }
+  wg.computeVertexNormals(); const water = new THREE.Mesh(wg, new THREE.MeshPhongMaterial({ map: wt, color: 0x4a88a8, specular: 0xffe8c0, shininess: 90, transparent: true, opacity: .86, side: THREE.DoubleSide })); water.userData.keep = true; scene.add(water);
+  const stoneM = surf(TX.hdStone || TX.rock, { sky, color: 0xc8bea8, rough: .85, bump: 2.6, tri: 1.6 }), wood = lam(0x6a4a2a), dark = lam(0x4a3018), thatch = lam(0xb89a5a);
+  // the arched stone bridge
+  { const [bs, bx, BL, BW] = Y.bridge; if (!(PROPS.sbbridge && propOne('sbbridge', bs, bx, .2, 0, BL + 1, 'w'))) for (let k = 0; k < 13; k++) { const t = (k + .5) / 13, s = bs - BL / 2 + t * BL, y = 1 + Math.sin(t * Math.PI) * 1.1, q = tw(s, bx, y - .4); part(GEO_BOX, stoneM, scene, q.x, q.y, q.z, BW * 2 + 1, .8, BL / 13 + .05); for (const sx of [-1, 1]) { const w = tw(s, bx + sx * (BW + .25), y + .35); part(GEO_BOX, stoneM, scene, w.x, w.y, w.z, .5, .7, BL / 13 + .05); } } }
+  // the hobbit holes: dug into the foot of the hill. A cream plaster front under a curved timber beam and a lip of turf, a brick arch round a round painted plank
+  // door with a brass knob in the middle, round brick-edged windows with flower boxes, a curved stone doorstep, lanterns either side, a brick chimney up in the turf
+  const plasterM = surf(rep(TX.plaster, 2, 1), { sky, color: 0xc8b890, rough: .95, bump: 1.4, env: .05 }), brickM = surf(rep(TX.brick, 3, 3), { sky, rough: .85, bump: 2.6 }), winM = lam(0xf0c870, { emissive: 0x806020, emissiveIntensity: .7 }), knobM = lam(0xffd040, { emissive: 0x6a4a10 }), turfM = surf(rep(TX.lush, 2, 1), { sky, color: 0x90b868, rough: 1, bump: 1, env: .05 });
+  const doorCols = [0x1e6a44, 0xc89a18, 0x96301f, 0x204e90, 0x1f7050, 0x6a3a8a, 0x1e6a44], blooms = {}, bushes = [], stones = [], cs = [0x9a5ae0, 0xffd040, 0xff6a9a, 0xffffff, 0x6a5af0, 0xff9a30];
+  const bloom = (x, y, z, c, r = .11) => (blooms[c] = blooms[c] || []).push([x, y, z, r, r, r]);
+  const bed = (g, lx, lz, n, spread) => { for (let k = 0; k < 4; k++) { const p = g.localToWorld(new V3(lx + rand(-spread, spread) * .7, 0, lz + rand(-.5, .5))); p.y = T_at(p); bushes.push([p.x, p.y + .4, p.z, rand(.5, .8), rand(.45, .7), rand(.5, .8)]); } const c0 = cs[(Math.abs(lx * 7 + lz * 3) | 0) % 6], c1 = cs[(Math.abs(lx * 5 + lz) + 2 | 0) % 6]; for (let k = 0; k < n; k++) { const p = g.localToWorld(new V3(lx + rand(-spread, spread), 0, lz + rand(-.7, .7))); p.y = T_at(p); bloom(p.x, p.y + rand(.45, 1), p.z, k % 3 ? c0 : c1); } };
+  const T_at = p => { const q = toTrack(p); return tw(q.s, q.x, at(q.s, q.x)).y; };
+  const hole = (s, x, f, y, col, big) => {
+    const K = big ? 1.3 : 1, W = 5.6 * K, H = 3.3 * K, dr = 1.08 * K, wx = 1.85 * K, g = new THREE.Group(); place(g, s, x, y, f); scene.add(g); g.updateMatrixWorld(true);
+    part(GEO_BOX, plasterM, g, 0, H / 2 - .3, -1.5, W, H + .6, 3);                                           // the plaster front, going back into the hill
+    part(GEO_BOX, stoneM, g, 0, .12, .02, W + .2, .5, .14);                                                  // its stone footing
+    for (const sx of [-1, 1]) part(GEO_BOX, dark, g, sx * (W / 2 - .06), H / 2, .05, .2, H, .16);
+    const beam = new THREE.Mesh(new THREE.TorusGeometry(W * .62, .13, 6, 18, Math.PI * .56), dark); beam.position.set(0, H - W * .62 * .94 + .1, .1); beam.rotation.z = Math.PI * .22; g.add(beam);   // the curved beam under the eaves
+    part(GEO_BOX, turfM, g, 0, H + .2, -.65, W + 1, .55, 1.6);                                               // a lip of turf over it
+    part(new THREE.RingGeometry(dr * 1.0, dr * 1.32, 30), brickM, g, 0, dr + .22, .05);                     // the brick arch
+    const door = part(new THREE.CircleGeometry(dr, 30), lam(col), g, 0, dr + .22, .06);
+    for (let k = -2; k <= 2; k++) { const px = k * dr * .38; part(GEO_BOX, lam(new THREE.Color(col).multiplyScalar(.6).getHex()), g, px, dr + .22, .07, .03, Math.sqrt(dr * dr - px * px) * 1.92, .015); }
+    part(GEO.sph, knobM, g, 0, dr + .22, .14, .11 * K, .11 * K, .08);
+    for (let k = 0; k < 2; k++) part(new THREE.CylinderGeometry((dr * 1.3) - k * .22 * K, (dr * 1.3) - k * .22 * K, .16, 20, 1, false, -Math.PI / 2, Math.PI), stoneM, g, 0, .16 - k * .14 + .02, .1 + k * .34);   // the curved doorstep
+    for (const sx of [-1, 1]) { const wy = 1.45 * K; part(new THREE.RingGeometry(.44 * K, .64 * K, 22), brickM, g, sx * wx, wy, .05); part(new THREE.CircleGeometry(.44 * K, 22), winM, g, sx * wx, wy, .055); part(GEO_BOX, dark, g, sx * wx, wy, .065, .05, .88 * K, .02); part(GEO_BOX, dark, g, sx * wx, wy, .065, .88 * K, .05, .02);
+      part(GEO_BOX, dark, g, sx * wx, wy - .62 * K, .18, 1.1 * K, .14, .3); for (let k = 0; k < 7; k++) { const b = g.localToWorld(new V3(sx * wx - .42 + k * .14, wy - .5 * K, .2)); bloom(b.x, b.y, b.z, cs[(k + (sx > 0 ? 1 : 3)) % 6], .08); } }
+    for (const sx of [-1, 1]) { part(GEO.cyl, dark, g, sx * (W / 2 + .45), 1, .7, .05, 2, .05); part(GEO_BOX, lam(0x2a2a20), g, sx * (W / 2 + .45), 2.05, .7, .22, .3, .22); const gl = glowSprite(0xffc870, .9, .45); gl.position.set(sx * (W / 2 + .45), 2.05, .7); g.add(gl); }
+    // a brick chimney up in the turf
+    { const ch = g.localToWorld(new V3((big ? 3.6 : 1.6) * (col % 2 ? 1 : -1), 0, -5 * K)), q = toTrack(ch), cy = at(q.s, q.x), p = tw(q.s, q.x, cy); part(GEO_BOX, brickM, scene, p.x, p.y + .7, p.z, .95, 2, .95); part(GEO_BOX, stoneM, scene, p.x, p.y + 1.74, p.z, 1.2, .16, 1.2); Y.chimneys.push(new V3(p.x, p.y + 1.9, p.z)); }
+    bed(g, -W / 2 - 1.5, .9, big ? 20 : 12, .9); bed(g, W / 2 + 1.5, .9, big ? 20 : 12, .9);
     return g;
   };
-  Y.homes.forEach(([s, x, f], i) => smial(s, x, f, 4.6, doorCols[i % doorCols.length]));
-  // Bag End: the biggest, green door, cut into the face of the Hill above the court, the great tree on the Hill over it
-  { const [s, x, f] = Y.bagEnd; smial(s + 6.3, x, f, 7, 0x2a8a3a, true); const q = [60, 0]; if (!(PROPS.sb_tree02 && propOne('sb_tree02', q[0], q[1], at(q[0], q[1]) - .3, 0, 15, 'h'))) { const p = tw(q[0], q[1], at(q[0], q[1])); part(GEO.cyl, wood, scene, p.x, p.y + 4, p.z, 1, 8, 1); part(GEO.sph, lam(0x4a9a3a), scene, p.x, p.y + 10, p.z, 7, 5, 7); } }
-  instanced(GEO.cyl, wood, posts); instanced(GEO_BOX, wood, rails);
-  // flowers: little clusters on the ground, a colour each
-  { const byCol = {}; for (const [x, y, z, c] of blooms) (byCol[c] = byCol[c] || []).push([x, y, z, .12, .12, .12]); for (const c in byCol) instanced(new THREE.SphereGeometry(1, 6, 4), lam(+c, { emissive: +c, emissiveIntensity: .15 }), byCol[c]); }
-  // the mill on the Water, the Green Dragon, the Party Tree and the pavilion
-  { const [s, x] = Y.mill; if (!(PROPS.sbmill && propOne('sbmill', s, x, at(s, x) - .2, Math.PI, 11))) { const q = tw(s, x, at(s, x)); part(GEO_BOX, stone, scene, q.x, q.y + 2.5, q.z, 6, 5, 6); } }
-  { const [s, x, f] = Y.dragon; if (!(PROPS.sbgrndrg && propOne('sbgrndrg', s, x, at(s, x) - .2, f, 13))) { const gg = new THREE.Group(); place(gg, s, x, at(s, x), f); scene.add(gg); part(GEO_BOX, lam(0xe8dcc0), gg, 0, 2, 0, 9, 4, 7); const rf = part(new THREE.ConeGeometry(6.4, 3, 4), thatch, gg, 0, 5.5, 0); rf.rotation.y = Math.PI / 4; rf.scale.z = .8; } }
-  { const [s, x] = Y.partyTree, q = tw(s, x, at(s, x)); if (!(PROPS.sb_tree02 && propOne('sb_tree02', s, x, at(s, x) - .2, 0, 16, 'h'))) { part(GEO.cyl, wood, scene, q.x, q.y + 4, q.z, 1.2, 8, 1.2); part(GEO.sph, lam(0x3a7a2a), scene, q.x, q.y + 10, q.z, 7, 5, 7); } }
+  Y.homes.forEach((h, i) => {
+    hole(h.s, h.x, h.f, h.y, doorCols[i % doorCols.length]);
+    const n = Math.max(3, Math.round(Math.hypot(h.to[0] - h.s, h.to[1] - h.x) / .75)); for (let k = 1; k < n - 3; k++) { const t = k / n, wob = Math.sin(t * 7 + i) * .45, ns = -Math.sin(h.f), nx = Math.cos(h.f), s = lerp(h.s, h.to[0], t) + ns * wob, x = lerp(h.x, h.to[1], t) + nx * wob, q = tw(s, x, at(s, x) + .05), r = rand(.26, .4); stones.push([q.x, q.y, q.z, r, .1, r * rand(.8, 1)]); }
+  });
+  // Bag End: the biggest, its green door in the face of the Hill above the court, the Party-sized oak over it
+  { const [s, x, f] = Y.bagEnd; hole(s, x, f, Y.plazas[3].y, 0x1e6a44, true); }
+  instanced(new THREE.CylinderGeometry(1, 1.05, 1, 9), stoneM, stones);
+  // low stone garden walls and lamp posts along the lane; wooden fences along the ridges
+  { const wallBits = [], caps = []; for (let i = 12; i < Y.path.length - 8; i += 3) { const [s, x, , hw] = Y.path[i], a = Math.atan2(Y.path[i + 1][1] - Y.path[i - 1][1], Y.path[i + 1][0] - Y.path[i - 1][0]), run = (i / 24 | 0) % 3; if (run === 2) continue;
+      const side = (i / 24 | 0) % 2 ? 1 : -1, ps = s - Math.sin(a) * side * (hw + 1.1), px = x + Math.cos(a) * side * (hw + 1.1); if (Math.abs(ps - shireRiv(px)) < 8 || Y.plazas.some(p => Math.hypot(ps - p.s, px - p.x) < p.r + 1.5) || Y.homes.some(h => Math.hypot(h.s - ps, h.x - px) < 5.5)) continue; const q = tw(ps, px, at(ps, px) + .32), ry = Math.atan2(-Math.cos(a), -Math.sin(a)); wallBits.push([q.x, q.y, q.z, 1.7, .78, .55, ry]); caps.push([q.x, q.y + .44, q.z, 1.75, .14, .66, ry]); }
+    instanced(GEO_BOX, stoneM, wallBits); instanced(GEO_BOX, stoneM, caps);
+    for (let i = 20; i < Y.path.length - 8; i += 34) { const [s, x, , hw] = Y.path[i], a = Math.atan2(Y.path[i + 1][1] - Y.path[i - 1][1], Y.path[i + 1][0] - Y.path[i - 1][0]), side = i % 68 ? 1 : -1, ps = s - Math.sin(a) * side * (hw + .6), px = x + Math.cos(a) * side * (hw + .6); if (Math.abs(ps - shireRiv(px)) < 7) continue; const q = tw(ps, px, at(ps, px)); part(GEO.cyl, dark, scene, q.x, q.y + 1.2, q.z, .07, 2.4, .07); part(GEO_BOX, lam(0x2a2a20), scene, q.x, q.y + 2.5, q.z, .3, .34, .3); const gl = glowSprite(0xffc870, 1, .45); gl.position.set(q.x, q.y + 2.5, q.z); scene.add(gl); }
+    const posts = [], rails = [], fenceRun = (pts) => { for (let k = 0; k < pts.length - 1; k++) { const [s0, x0] = pts[k], [s1, x1] = pts[k + 1], n = Math.round(Math.hypot(s1 - s0, x1 - x0) / 2.6); for (let j = 0; j < n; j++) { const a = tw(lerp(s0, s1, j / n), lerp(x0, x1, j / n), 0), b = tw(lerp(s0, s1, (j + 1) / n), lerp(x0, x1, (j + 1) / n), 0), ya = at(lerp(s0, s1, j / n), lerp(x0, x1, j / n)), yb = at(lerp(s0, s1, (j + 1) / n), lerp(x0, x1, (j + 1) / n)); posts.push([a.x, ya + .6, a.z, .09, 1.3, .09, 0]); for (const h of [.55, 1]) { const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2, my = (ya + yb) / 2 + h; rails.push([mx, my, mz, Math.hypot(b.x - a.x, b.z - a.z) + .1, .07, .06, Math.atan2(-(b.z - a.z), b.x - a.x)]); } } } };
+    fenceRun([[62, -46], [66, -20], [68, 8], [62, 34], [52, 58]]); fenceRun([[-8, 50], [8, 64], [30, 68]]); fenceRun([[-58, -64], [-40, -60], [-20, -66], [2, -68]]);
+    instanced(new THREE.CylinderGeometry(1, 1, 1, 6), wood, posts); instanced(GEO_BOX, wood, rails); }
+  // the Green Dragon by the pond, the mill on the Water, the pavilion
+  { const [s, x, f] = Y.dragon; if (!(PROPS.sbgrndrg && propOne('sbgrndrg', s, x, at(s, x) - .2, f, 17))) { const gg = new THREE.Group(); place(gg, s, x, at(s, x), f); scene.add(gg); part(GEO_BOX, plasterM, gg, 0, 2, 0, 14, 4, 7); const rf = part(new THREE.ConeGeometry(9.4, 3.4, 4), thatch, gg, 0, 5.6, 0); rf.rotation.y = Math.PI / 4; rf.scale.z = .6; } const gl = glowSprite(0xffc070, 9, .35); gl.position.copy(tw(s - 3, x, at(s, x) + 2.2)); scene.add(gl); }
+  { const [s, x] = Y.mill; if (!(PROPS.sbmill && propOne('sbmill', s, x, at(s, x) - .2, Math.PI, 11))) { const q = tw(s, x, at(s, x)); part(GEO_BOX, stoneM, scene, q.x, q.y + 2.5, q.z, 6, 5, 6); } }
   { const [s, x] = Y.pavilion; if (!(PROPS.sbparty01 && propOne('sbparty01', s, x, at(s, x) - .1, Math.PI / 2, 10))) { const q = tw(s, x, at(s, x)); part(new THREE.ConeGeometry(5, 4, 10), lam(0xf0ece0), scene, q.x, q.y + 4, q.z); } }
-  // trees well back from the lane, round green hedges along it with flowers between
-  const trees = propsOf(['sb_tree01', 'sb_tree03', 'sb_tree04', 'sb_tree02']); let n = 0;
-  for (let k = 0; k < 160 && n < 40; k++) {
-    const s = rand(-68, 66), x = rand(-68, 68); if (Math.abs(s - shireRiv(x)) < 6 || Y.path.some(q => Math.hypot(q[0] - s, q[1] - x) < q[3] + 11) || Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 10) || Y.homes.some(h => Math.hypot(h[0] - s, h[1] - x) < 10) || Math.hypot(s - 52, x) < 12) continue;
-    n++; const y = at(s, x);
-    if (trees.length) { propOne(trees[n % trees.length], s, x, y - .2, rand(0, TAU), rand(8, 13), 'h'); continue; }
-    const q = tw(s, x, y); part(GEO.cyl, wood, scene, q.x, q.y + 2, q.z, .5, 4, .5); part(GEO.sph, lam(0x4a9a3a), scene, q.x, q.y + 5, q.z, 3, 2.6, 3);
-  }
-  const hedges = [], fls = {};
-  for (let i = 6; i < Y.path.length - 6; i += 5) {
-    const [s, x, y, h] = Y.path[i], a = Math.atan2(Y.path[i + 1][1] - Y.path[i - 1][1], Y.path[i + 1][0] - Y.path[i - 1][0]);
-    for (const side of [-1, 1]) {
-      const ps = s - Math.sin(a) * side * (h + 1.3), px = x + Math.cos(a) * side * (h + 1.3); if (Math.abs(ps - shireRiv(px)) < 7 || Y.plazas.some(p => Math.hypot(ps - p.s, px - p.x) < p.r + 1.5) || Y.homes.some(hm => Math.hypot(hm[0] - ps, hm[1] - px) < 6)) continue;
-      const q = tw(ps, px, at(ps, px) + .35);
-      if ((i / 5 | 0) % 4 === 1) hedges.push([q.x, q.y - .1, q.z, 1.1, .55, .55, Math.atan2(-Math.cos(a), -Math.sin(a))]);
-      else for (let k = 0; k < 6; k++) { const c = fl[k % 6], b = tw(ps + rand(-.8, .8), px + rand(-.8, .8), at(ps, px) + .1); (fls[c] = fls[c] || []).push([b.x, b.y, b.z, .11, .11, .11]); }
-    }
-  }
-  instanced(new THREE.SphereGeometry(1, 10, 6), hedgeM, hedges);
-  for (const c in fls) instanced(new THREE.SphereGeometry(1, 6, 4), lam(+c, { emissive: +c, emissiveIntensity: .15 }), fls[c]);
+  // big leafy oaks: a thick trunk, boughs, and clumps of leaves, lighter on top
+  const leafA = [], leafB = [], leafC = [], barkM = surf(TX.rock, { sky, color: 0x6a5238, rough: .95, bump: 3 });
+  const oak = (s, x, sz) => { const y = at(s, x), q = tw(s, x, y), h = 5.4 * sz; part(new THREE.CylinderGeometry(.42 * sz, .78 * sz, h, 9), barkM, scene, q.x, q.y + h / 2 - .1, q.z);
+    for (let k = 0; k < 5; k++) { const a = rand(0, TAU), b = part(new THREE.CylinderGeometry(.14 * sz, .32 * sz, 3.2 * sz, 6), barkM, scene, q.x + Math.cos(a) * 1.1 * sz, q.y + h + .5 * sz, q.z + Math.sin(a) * 1.1 * sz); b.rotation.set(Math.sin(a) * .9, 0, -Math.cos(a) * .9); }
+    for (let k = 0; k < 34; k++) { const a = rand(0, TAU), r = Math.sqrt(Math.random()) * 3.9 * sz, ly = h + rand(.4, 4.4) * sz - r * .24, sc = rand(.8, 1.45) * sz; (ly > h + 3 * sz ? leafA : k % 2 ? leafB : leafC).push([q.x + Math.cos(a) * r, q.y + ly, q.z + Math.sin(a) * r, sc, sc * .8, sc]); } };
+  oak(Y.partyTree[0], Y.partyTree[1], 1.7); oak(60, 0, 1.6);
+  let n = 0; for (let k = 0; k < 220 && n < 36; k++) { const s = rand(-68, 66), x = rand(-68, 68); if (Math.abs(s - shireRiv(x)) < Y.riverW(x) + 3 || Y.path.some(q => Math.hypot(q[0] - s, q[1] - x) < q[3] + 8) || Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 7) || Y.homes.some(h => Math.hypot(h.s + Math.cos(h.f) * 2 - s, h.x + Math.sin(h.f) * 2 - x) < 8) || Math.hypot(s - 46, x) < 9) continue; n++; oak(s, x, rand(.95, 1.5)); }
+  const leaf = new THREE.IcosahedronGeometry(1, 1); const leafTx = surf(rep(TX.leaf, 1, 1), { sky, rough: 1, bump: 3, env: .05 }), lf = c => { const m = leafTx.clone(); m.color.setHex(c); m.onBeforeCompile = leafTx.onBeforeCompile; return m; }; instanced(leaf, lf(0xd0e898), leafA); instanced(leaf, lf(0xa8cc78), leafB); instanced(leaf, lf(0x84ac60), leafC);
+  instanced(new THREE.IcosahedronGeometry(1, 1), lf(0x6a9a4c), bushes);
+  // long grass and wildflowers scattered over everything but the lane
+  { const tufts = []; for (let k = 0; k < 2400; k++) { const s = rand(-70, 68), x = rand(-70, 70); if (Math.abs(s - shireRiv(x)) < Y.riverW(x) + .6) continue; if (Y.path.some((q, i) => i % 6 === 0 && Math.hypot(q[0] - s, q[1] - x) < q[3] + .6)) continue; const q = tw(s, x, at(s, x)); if (k % 4 === 0) bloom(q.x, q.y + .22, q.z, cs[k % 6], .07); else tufts.push([q.x, q.y + .12, q.z, rand(.03, .06), rand(.2, .38), rand(.03, .06), rand(0, 3)]); } instanced(new THREE.ConeGeometry(1, 1, 3), lam(0x5a9030), tufts); }
+  for (const c in blooms) instanced(new THREE.SphereGeometry(1, 6, 4), lam(+c), blooms[c]);
   bakeScenery(scene.children.slice(first));
 }
+TX.lush = smoothTex(mkTex(128, 128, g => { g.fillStyle = '#4e9a2c'; g.fillRect(0, 0, 128, 128); for (let i = 0; i < 2600; i++) { const v = Math.random(); g.fillStyle = v < .35 ? '#438c26' : v < .7 ? '#5aa834' : v < .92 ? '#68b63e' : '#7cc44a'; const x = Math.random() * 128, y = Math.random() * 128; g.fillRect(x, y, 1, 2 + Math.random() * 4); } }));
+TX.lush.wrapS = TX.lush.wrapT = THREE.RepeatWrapping;
+TX.leaf = mkTex(64, 64, g => { g.fillStyle = '#5a8a3a'; g.fillRect(0, 0, 64, 64); for (let i = 0; i < 420; i++) { const v = Math.random(); g.fillStyle = v < .35 ? '#3e6e2a' : v < .7 ? '#6a9a44' : v < .9 ? '#86b254' : '#2e5420'; g.beginPath(); g.ellipse(Math.random() * 64, Math.random() * 64, 1 + Math.random() * 2.4, 1 + Math.random(), Math.random() * 3, 0, 7); g.fill(); } });
+TX.leaf.wrapS = TX.leaf.wrapT = THREE.RepeatWrapping;
+TX.cobble = mkTex(128, 128, g => { g.fillStyle = '#4a4032'; g.fillRect(0, 0, 128, 128); for (let j = 0; j < 7; j++) for (let i = 0; i < 7; i++) { const x = (i + (j % 2) * .5) * 19 + Math.random() * 3, y = j * 19 + Math.random() * 3, v = Math.random(), r = 7.5 + Math.random() * 1.6; g.fillStyle = v < .3 ? '#b8a888' : v < .6 ? '#a89878' : v < .85 ? '#9a8a6c' : '#c8b898'; for (const [ox, oy] of [[0, 0], [128, 0], [-128, 0], [0, 128], [0, -128]]) { g.beginPath(); g.ellipse(x + ox, y + oy, r, r * .85, Math.random(), 0, 7); g.fill(); } } });
+TX.cobble.wrapS = TX.cobble.wrapT = THREE.RepeatWrapping;
+TX.brick = mkTex(64, 64, g => { g.fillStyle = '#7a5a48'; g.fillRect(0, 0, 64, 64); for (let j = 0; j < 8; j++) for (let i = -1; i < 5; i++) { const v = Math.random(); g.fillStyle = v < .4 ? '#a8583a' : v < .75 ? '#b86a44' : '#8e4a30'; g.fillRect(i * 16 + (j % 2) * 8 + 1, j * 8 + 1, 14, 6); } });
+TX.brick.wrapS = TX.brick.wrapT = THREE.RepeatWrapping;
+TX.plaster = mkTex(64, 64, g => { g.fillStyle = '#e8d8a8'; g.fillRect(0, 0, 64, 64); for (let i = 0; i < 500; i++) { g.fillStyle = Math.random() < .5 ? '#ecdeb2' : '#dccb98'; g.fillRect(Math.random() * 64, Math.random() * 64, 2, 2); } });
+TX.plaster.wrapS = TX.plaster.wrapT = THREE.RepeatWrapping;
 // each frame in the Shire: the Water flows (the chimneys, butterflies and fireworks are Hobbiton's own, in updateHobbiton)
 function updateShire(dt) { if (!LV || LV.theme !== 'shirekh') return; const w = THEMES.shirekh.waterTex; if (w) w.offset.x -= dt * .05; }
 THEMES.shirekh = natTheme({
   wallTex: TX.rock, floorTex: TX.meadow, tint: [1, .97, .9], door: 0x3a8a3a,
-  env: { sky: [0x2a7ae8, 0x7ab8f0, 0xe8f4ff, 0xfff0c0], fog: [90, 420], fogC: 0xcfe6f0, amb: [0x9a9a80, .5], hemi: [0xe8f4ff, 0x5a8a3a, .66], sun: [0xfff0d0, 1.1], east: [0xffd8a0, .14], cloud: 0xffffff, bloom: .55, sunDir: [-60, 75, -85] },   // (bright, green, a clear summer's day)
+  env: { sky: [0x2f6ec8, 0x7ab0e8, 0xfff0d8, 0xffd8a0], fog: [100, 460], fogC: 0xe8e4c8, amb: [0x8a8070, .42], hemi: [0xdce8ff, 0x4a6028, .44], sun: [0xffd8a0, 1.02], east: [0xffc890, .12], cloud: 0xffffff, bloom: .18, sunDir: [-70, 42, -60] },   // (the late sun, gold on green)
   orc: MT_ORC,
-  scenery(L) { buildShire(L, this); },
+scenery(L) { buildShire(L, this); },
 });
 // --- Rivendell, rebuilt like the film's model: a high bridge over the gorge of the Bruinen onto a promontory of three
 //     terraces climbing to the Last Homely House, elven halls and towers on each, waterfalls falling from the cliffs
@@ -7497,7 +7549,7 @@ THEMES.rivkh = natTheme({
 //     riding him down. They close up alongside and raise their swords (their eyes go red): spin to cut first, or fire at
 //     them; three blows unhorse one. Fallen trees across the road to jump. Over the Ford, the river rises in a flood of
 //     white horses and sweeps away every rider still behind.
-const RACE = { list: [], left: 0, flood: -1, cpN: 0 };
+const RACE = { list: [], left: 0, cut: null, cpN: 0 };
 function raceGround(s, x) {
   const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
   let y = 2 * Math.sin(s * .012) + 1.4 * Math.sin(s * .031 + 1) + 1;
@@ -7525,11 +7577,11 @@ function buildRace(L, TH) {
   groundMesh(T_, TX.meadow, (k, sl, y) => k === 'p' ? [.85, .7, .5] : k === 'r' ? [.45, .42, .35] : [.55, .7, .45], 3, () => grd);
   wideFloor(TX.meadow, 0x3a4a2a, 90, 8, 900);
   const wt = TX.sea.clone(); wt.needsUpdate = true; wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(10, 2); TH.waterTex = wt;
-  const ford = new THREE.Mesh(new THREE.PlaneGeometry(90, 13), new THREE.MeshPhongMaterial({ map: wt, color: 0x5a8aa0, specular: 0xffffff, shininess: 90, transparent: true, opacity: .85 })); ford.rotation.x = -Math.PI / 2; ford.rotation.z = Math.PI / 2; tw(RACE_FORD, 0, -.4, ford.position); scene.add(ford);
+  const ford = new THREE.Mesh(new THREE.PlaneGeometry(90, 13), new THREE.MeshPhongMaterial({ map: wt, color: 0x5a8aa0, specular: 0xffffff, shininess: 90, transparent: true, opacity: .85 })); ford.rotation.x = -Math.PI / 2; tw(RACE_FORD, 0, -.4, ford.position); scene.add(ford);
   // the flood: a wall of white water held back upstream, loosed when Gandalf is over
   const fl = new THREE.Group(); TH.flood = fl; fl.visible = false; scene.add(fl);
   const foam = new THREE.MeshBasicMaterial({ map: TX.falls, color: 0xf4faff, transparent: true, opacity: .9, side: THREE.DoubleSide, depthWrite: false });
-  for (let k = 0; k < 7; k++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(13, 4 + k % 3), foam); m.position.set(0, 2 + (k % 3), (k - 3) * 1.4); m.rotation.y = Math.PI / 2; fl.add(m); }
+  for (let k = 0; k < 8; k++) { const h = k === 3 ? 9 : 4 + k % 3 * 2, m = new THREE.Mesh(new THREE.PlaneGeometry(19, h), foam); m.position.set((3 - k) * 1.8, h / 2 - .5, 0); m.rotation.y = Math.PI / 2; fl.add(m); }
   // trees on the banks, Battle for Middle-earth's or built; fallen ones across the road
   const trees = propsOf(['ptree01', 'ptree02', 'sb_tree01', 'sb_tree03', 'ptelvnwood01']), wood = lam(0x5a3e24), leaf = lam(0x3a5a2a), list = [];
   for (let k = 0; k < 260; k++) { const s = rand(-10, RACE_END + 20), side = k % 2 ? 1 : -1, x = side * rand(9, 38); if (Math.abs(s - RACE_FORD) < 10) continue; list.push([s, x]); }
@@ -7545,13 +7597,18 @@ function makeRaceRider() {
   hz.root.traverse(o => { if (o.isMesh && o.material && o.material.color) { o.material = o.material.clone(); o.material.color.multiplyScalar(.12); if (o.material.emissive) o.material.emissive.setHex(0x020203); } });
   hz.root.visible = false; scene.add(hz.root); return { m, hz };
 }
+function raceGallop(hz, spd) {   // (a horse's legs, body, neck and tail at a gallop)
+  const g = clamp(spd / 8, 0, 1); hz.ph += (1 / 60) * (2 + spd * .62); hz.body.position.y = Math.abs(Math.sin(hz.ph)) * .16 * g; hz.body.rotation.x = Math.sin(hz.ph) * .09 * g; hz.neck.rotation.x = .62 + Math.sin(hz.ph + 1) * .14 * g; hz.tail.rotation.x = -.4 - g * .7 + Math.sin(T * 9) * .1;
+  hz.legs.forEach((l, i) => { const off = [0, .55, Math.PI, Math.PI + .55][i], a = Math.sin(hz.ph + off); l.up.rotation.x = -a * .85 * g; l.lo.rotation.x = (l.front > 0 ? 1 : -1) * Math.max(0, Math.cos(hz.ph + off)) * 1.4 * g; });
+}
 const raceLive = n => n.state === 'ride' || n.state === 'wind' || n.state === 'recover';
 function setupRace() {
+  BOW.aim = false; BOW.hintAt = LV && LV.bow ? T + 4.5 : 0; cam.by = 0; cam.bp = 0;
   const defs = (LV && LV.race && LV.layout.riders) || [];
   for (const n of RACE.list) { n.m.root.visible = n.m.shadow.visible = false; n.hz.root.visible = false; }
   while (RACE.list.length < defs.length) RACE.list.push(makeRaceRider());
   RACE.list.forEach((n, i) => { const d = defs[i]; n.on = !!d; if (d) Object.assign(n, { at: d[0], side: d[1], state: 'wait', hp: 3, s: -14 - i * 2, x: d[1] * 3, y: 0, vs: 0, h: 0, cd: rand(1, 3), off: -4, wt: 0, flash: 0, t: rand(0, 6) }); });
-  RACE.left = defs.length; RACE.flood = -1; RACE.cpN = 0; if (THEMES.ford && THEMES.ford.flood) THEMES.ford.flood.visible = false;
+  RACE.left = defs.length; RACE.cut = null; RACE.cpN = 0; if (THEMES.ford && THEMES.ford.flood) THEMES.ford.flood.visible = false; for (const h of RACE.horses || []) h.hz.root.visible = false;
 }
 function resetRace() {   // after a fall: those already riding come up again from behind
   for (const [i, n] of RACE.list.entries()) if (n.on && (raceLive(n) || n.state === 'fall')) { if (n.state === 'fall') continue; Object.assign(n, { state: 'ride', s: P.s - 14 - i * 1.5, vs: RIDE_V, off: -4, cd: rand(1.5, 3) }); }
@@ -7568,18 +7625,27 @@ function updateRace(dt) {
   if (live && P.ground && P.s > (RACE.cpN + 1) * 110 && P.s < RACE_FORD - 10) { RACE.cpN++; Object.assign(gs.cp, { s: P.s, x: P.x, y: P.y, t: T }); }   // (a checkpoint every 110 m)
   // the fallen trees: jump them or fall
   if (live && P.invT <= 0) for (const [s, x0, x1] of LV.layout.logs) if (Math.abs(P.s - s) < .55 && P.x > x0 - .4 && P.x < x1 + .4 && P.y - terrainAt(P.s, P.x, true) < .85) { hurt('hit'); break; }
-  // the Ford: once Gandalf is over, the flood comes down the river
-  if (RACE.flood < 0 && live && P.s > RACE_FORD + 8) { RACE.flood = 0; banner('THE FLOOD OF BRUINEN!', 2.4); S.thunder && S.thunder(); cam.shake = .8; }
-  const FL = THEMES.ford.flood;
-  if (RACE.flood >= 0) {
-    RACE.flood += dt; const fx_ = lerp(-60, 60, Math.min(1, RACE.flood / 3)); FL.visible = RACE.flood < 3.4; tw(RACE_FORD, fx_, 0, FL.position); FL.rotation.y = 0;
-    for (let k = 0; k < 6; k++) fx.spawn(FL.position.x + rand(-1, 1), FL.position.y + rand(0, 5), FL.position.z + rand(-6.5, 6.5), rand(-2, 2), rand(1, 4), rand(-1, 1), rand(.6, 1.2), .9, .3, [1, 1, 1], [.7, .85, 1], .5, 0);
-    for (const n of RACE.list) if (raceLive(n) && n.s < RACE_FORD + 7 && RACE.flood > 1.2) { n.state = 'swept'; n.wt = 0; RACE.left--; }
-    if (RACE.flood > 1.2 && !RACE.sweptMsg) { RACE.sweptMsg = true; if (RACE.list.some(n => n.state === 'swept')) banner('THE RIVER TAKES THEM!', 2); }
-  } else RACE.sweptMsg = false;
-  if (live && P.s > RACE_END - 6) roamWin('YOU REACH RIVENDELL!');
+  // the Ford: once Gandalf is over he stops and turns on the far bank, the Nine ride into the water after him, and the river rises in a wave of white horses
+  if (!RACE.cut && live && P.s > RACE_FORD + 12) {
+    RACE.cut = { t: 0, hit: false }; setLetterbox(true); cam.snap = true; P.invT = 30; RACE.left = 9; banner('THE NINE AT THE FORD', 2.2);
+    RACE.list.forEach((n, i) => { n.on = true; Object.assign(n, { state: 'ford', s: RACE_FORD - 9 - (i % 3) * 2.4, x: -8.8 + i * 2.2, vs: 6, h: 0, wt: 0, flash: 0 }); n.m.body.rotation.set(0, 0, 0); n.m.root.rotation.set(0, 0, 0); });
+    if (!RACE.horses) RACE.horses = Array.from({ length: 14 }, (_, k) => { const hz = makeHorse(); if (hz.skin) { const i = SKINS.indexOf(hz.skin); if (i >= 0) SKINS.splice(i, 1); hz.skin = null; } hz.root.traverse(o => { if (o.isMesh) { o.material = new THREE.MeshPhongMaterial({ color: 0xd8f0ff, emissive: 0x4a7a9a, specular: 0xffffff, shininess: 90, transparent: true, opacity: .78 }); } }); addSkin(hz, 'floodhorse', hz.body, hz.root); hz.root.visible = false; hz.root.scale.setScalar(1.7); scene.add(hz.root); return { hz, ds: (k % 5 - 2) * 2.9 + rand(-.6, .6), lag: rand(-1, 7), bob: rand(0, 6) }; });
+  }
+  const FL = THEMES.ford.flood, C = RACE.cut;
+  if (C) {
+    C.t += dt; P.invT = 5; P.heading = damp(P.heading, Math.PI, 3, dt);
+    if (C.t > 2.4 && !C.rum) { C.rum = true; S.thunder && S.thunder(); S.roar(); banner('THE RIVER RISES!', 2); }
+    if (C.t > 2.4) cam.shake = Math.max(cam.shake, .25);
+    const k = Math.max(0, C.t - 3.2), fx_ = -58 + k * 19; FL.visible = C.t > 3.2 && fx_ < 70; tw(RACE_FORD, fx_, -.4, FL.position);
+    if (FL.visible) for (let q = 0; q < 8; q++) smoke.spawn(FL.position.x + rand(-2, 2), FL.position.y + rand(0, 7), FL.position.z + rand(-9, 9), rand(-4, 4), rand(1, 4), rand(-2, 2), rand(.8, 1.5), 2, 5, [.95, .98, 1], [.8, .9, 1], .4, .4);
+    for (const h of RACE.horses) { const x = fx_ + h.lag * .9 + 2, hz = h.hz; hz.root.visible = C.t > 3.2 && x < 72; if (!hz.root.visible) continue; tw(RACE_FORD + h.ds, x, .6 + Math.abs(Math.sin(T * 5 + h.bob)) * .7, hz.root.position); hz.root.rotation.set(0, -(trackAng(RACE_FORD) + Math.PI / 2), 0); raceGallop(hz, 14); if (hz.skin) skinPlay(hz, 'walk'); }
+    for (const n of RACE.list) if (n.state === 'ford' && fx_ + 2 > n.x) { n.state = 'swept'; n.wt = 0; S.screech(); sparks(tw(n.s, n.x, 1.5), 20, 8, [1, 1, 1], [.7, .85, 1], .3); }
+    if (C.t > 3.2 + 110 / 19 && !C.done) { C.done = true; RACE.left = 0; banner('THE NINE ARE SWEPT AWAY!', 2.4); }
+    if (C.t > 3.2 + 110 / 19 + 2) { RACE.cut = null; RACE.ended = true; setLetterbox(false); for (const h of RACE.horses) h.hz.root.visible = false; FL.visible = false; roamWin('YOU REACH RIVENDELL!'); return; }
+  }
   for (const [i, n] of RACE.list.entries()) {
     const m = n.m, hz = n.hz; if (!n.on) continue; n.t += dt; n.cd -= dt; n.flash -= dt;
+    if (n.state === 'ford') { n.s = Math.min(n.s + 2.6 * dt, RACE_FORD - 3); n.vs = 7; n.wt += dt; }
     if (n.state === 'wait') { m.root.visible = m.shadow.visible = hz.root.visible = false; if (live && P.s > n.at - (n.at ? 28 : 0)) { n.state = 'ride'; n.s = n.at ? P.s + 6 : P.s - 12 - i * 2; n.x = n.at ? n.side * 18 : n.side * 3; n.vs = RIDE_V; if (n.at) { S.screech(); if (!RACE.met) { RACE.met = true; } } } continue; }
     if (n.state === 'gone') { m.root.visible = m.shadow.visible = hz.root.visible = false; continue; }
     const ds = P.s - n.s, dx = P.x - n.x;
@@ -7596,13 +7662,12 @@ function updateRace(dt) {
       if (live && P.spinT > 0 && Math.hypot(ds, dx) < 3 && n.spinHit !== P.spinId) { n.spinHit = P.spinId; raceHit(n); }
       n.h = Math.atan2(clamp((tx - n.x) * .3, -.6, .6), 1);
     } else if (n.state === 'fall') { n.wt += dt; n.vs = approach(n.vs, 0, 8 * dt); n.s += n.vs * dt; if (Math.random() < .5) puff(tw(n.s, n.x, n.y + 1), 1, .8, CSM); if (n.wt > 1.6) n.state = 'gone'; }
-    else if (n.state === 'swept') { n.wt += dt; n.x += 9 * dt; n.s = lerp(n.s, RACE_FORD, Math.min(1, dt * 2)); if (n.wt > 2) n.state = 'gone'; }
-    n.y = (n.state === 'swept' ? -.4 + Math.sin(n.t * 6) * .3 : terrainAt(n.s, n.x, true));
+    else if (n.state === 'swept') { n.wt += dt; n.x += 17 * dt; n.s = lerp(n.s, RACE_FORD, Math.min(1, dt * 2)); n.h += dt * 3; if (n.wt > 2.2) n.state = 'gone'; }
+    n.y = n.state === 'swept' ? .8 + Math.sin(n.t * 7) * .6 - n.wt * .6 : Math.max(terrainAt(n.s, n.x, true), n.state === 'ford' ? -.55 : -9);
     // drawing: the horse at a gallop under the rider (the built one; Battle for Middle-earth's comes with its own horse)
     const own = !!(m.skin && m.skin.obj); m.root.visible = m.shadow.visible = true; hz.root.visible = !own;
     const rotY = -(trackAng(n.s) + n.h); tw(n.s, n.x, n.y, hz.root.position); hz.root.rotation.set(n.state === 'fall' ? -.3 : 0, rotY, n.state === 'swept' ? .6 : 0);
-    hz.ph += dt * (2 + Math.abs(n.vs) * .62); const gl = clamp(Math.abs(n.vs) / 8, 0, 1); hz.body.position.y = Math.abs(Math.sin(hz.ph)) * .12 * gl; hz.body.rotation.x = Math.sin(hz.ph) * .07 * gl;
-    hz.legs.forEach((l, k) => { const a = Math.sin(hz.ph + [0, .55, Math.PI, Math.PI + .55][k]); l.up.rotation.x = a * .6 * gl; l.lo.rotation.x = Math.max(0, -a) * .9 * gl; });
+    raceGallop(hz, n.state === 'swept' ? 8 : Math.max(Math.abs(n.vs), n.state === 'fall' ? 0 : 7));
     if (own) place(m.root, n.s, n.x, n.y, n.h); else { hz.root.updateMatrixWorld(true); hz.body.localToWorld(m.root.position.set(0, 1.3, -.1)); m.root.rotation.set(0, rotY, 0); }
     if (n.state === 'fall' && !own) { m.root.position.y -= Math.min(1.3, n.wt * 2); m.root.rotation.x = -Math.min(1.4, n.wt * 2); }
     tw(n.s, n.x, n.y + .03, m.shadow.position);
@@ -7757,27 +7822,38 @@ function drRampUpdate(b, dt) {
   drDraw(b, dt, fly, open);
   skinPlay(m, b.state === 'flee' ? 'fly' : !fly ? (open ? 'attack' : 'idle') : 'fly');
 }
-// the bow: an arrow toward the dragon if he's in front of the camera, else straight out where the camera looks
-const BOW = { arrows: [], cd: 0, mesh: null };
+const BOW = { arrows: [], cd: 0, mesh: null, aim: false, cx: 0, cy: .25 };
+// the bow. Press U to take aim: a sight comes up and W A S D move it (Gandalf stands still; push it to the edge of the screen and the view turns
+// after it). K looses: with the sight on him, the arrow flies at him and hits. Press U again to walk. Without the sight, an arrow flies straight
+// at him if he's roughly in front of the camera, but he's quick, and it may miss.
+const bowFoes = () => LV.flyers ? FLY.list.filter(flyLive) : KH.boss && ukLive(KH.boss) && KH.boss.hitFn === drHit ? [KH.boss] : [];
+const bowAt = f => tw(f.s, f.x, f.y + (f.aimY ?? 2.5));
+function bowRay() { return BOW.aim ? new V3(BOW.cx, BOW.cy, .5).unproject(camera).sub(camera.position).normalize() : camera.getWorldDirection(new V3()); }
+function bowPick(cone) { const dir = bowRay(); let best = null, bd = Math.cos(cone); for (const f of bowFoes()) { const d = bowAt(f).sub(camera.position).normalize().dot(dir); if (d > bd) { bd = d; best = f; } } return best; }
 function bowShoot() {
-  if (BOW.cd > 0) return; BOW.cd = .32; S.whoosh();
-  const from = tw(P.s, P.x, P.y + 1.5), b = KH.boss, dir = new V3(); camera.getWorldDirection(dir);
-  let to = from.clone().addScaledVector(dir, 60).add(_a.set(0, 4, 0));
-  if (b && ukLive(b) && b.m.root.visible) { const bp = tw(b.s, b.x, b.y + 2.5), v = bp.clone().sub(camera.position).normalize(); if (v.dot(dir) > Math.cos(.5) || AUTOK) to = bp; }
-  const v = to.sub(from).normalize().multiplyScalar(52); v.y += 1.5;
+  if (BOW.cd > 0) return; BOW.cd = BOW.aim ? .28 : .36; S.whoosh();
+  const from = tw(P.s, P.x, P.y + 1.5), tgt = AUTOK ? bowFoes()[0] : bowPick(BOW.aim ? .1 : .5), dir = bowRay();
+  const to = tgt ? bowAt(tgt) : from.clone().addScaledVector(dir, 70), v = to.sub(from).normalize().multiplyScalar(58);
   const m = new THREE.Group(); part(GEO.cyl, lam(0x8a6a3a), m, 0, 0, 0, .04, 1.2, .04).rotation.x = Math.PI / 2; part(GEO.cone, lam(0xc8c8d0), m, 0, 0, .65, .06, .18, .06).rotation.x = Math.PI / 2; scene.add(m);
-  BOW.arrows.push({ p: from, v, m, life: 2.2 }); P.heading = Math.atan2(-v.x, v.z);   // (Gandalf turns to loose it)
+  BOW.arrows.push({ p: from, v, m, life: 2.2, tgt: BOW.aim || AUTOK ? tgt : null }); P.heading = Math.atan2(-v.x, v.z);   // (Gandalf turns to loose it)
   skinClip(hob, khc(KH_SORA.ground[0], 'attack_a'), .3);
 }
 function updateBow(dt) {
   BOW.cd -= dt; const on = !!(LV && LV.bow && state !== 'map' && state !== 'title');
-  if (!BOW.mesh) { const g = new THREE.Group(), w = lam(0x5a3a1e); const arc = new THREE.Mesh(new THREE.TorusGeometry(.62, .035, 5, 16, Math.PI * .9), w); arc.rotation.z = Math.PI / 2 + Math.PI * .05; g.add(arc); part(GEO.cyl, lam(0xe8e8e8), g, -.02, 0, 0, .008, 1.2, .008); BOW.mesh = g; scene.add(g); }
+  if (!BOW.mesh) { const g = new THREE.Group(), w = lam(0x5a3a1e); const arc = new THREE.Mesh(new THREE.TorusGeometry(.62, .035, 5, 16, Math.PI * .9), w); arc.rotation.z = Math.PI / 2 + Math.PI * .05; g.add(arc); part(GEO.cyl, lam(0xe8e8e8), g, -.02, 0, 0, .008, 1.2, .008); BOW.mesh = g; scene.add(g);
+    const el = document.createElement('div'); el.id = 'bowX'; el.innerHTML = '<i></i><b></b>'; document.getElementById('khpow').parentNode.appendChild(el); BOW.el = el; }
   BOW.mesh.visible = on; if (on) { tw(P.s + Math.cos(P.heading) * .35, P.x + Math.sin(P.heading) * .35 + Math.cos(P.heading) * -.25, P.y + 1.25, BOW.mesh.position); BOW.mesh.rotation.set(0, -(trackAng(P.s) + P.heading) + Math.PI / 2, 0); }
-  const b = KH.boss;
+  const show = on && BOW.aim && state === 'play'; BOW.el.style.display = show ? 'block' : 'none';
+  if (show) { BOW.el.style.left = (BOW.cx + 1) * 50 + '%'; BOW.el.style.top = (1 - BOW.cy) * 50 + '%'; BOW.el.classList.toggle('on', !!bowPick(.1)); }
+  if (on && BOW.hintAt && T > BOW.hintAt && state === 'play') { BOW.hintAt = 0; banner('U: TAKE AIM · W A S D: THE SIGHT · K: LOOSE', 3.4); }
+  if (!on && BOW.arrows.length) { for (const a of BOW.arrows) scene.remove(a.m); BOW.arrows = []; }
   for (let i = BOW.arrows.length - 1; i >= 0; i--) {
-    const a = BOW.arrows[i]; a.life -= dt; a.v.y -= 6 * dt; const p0 = a.p.clone(); a.p.addScaledVector(a.v, dt); a.m.position.copy(a.p); a.m.lookAt(_a.copy(a.p).add(a.v));
+    const a = BOW.arrows[i]; a.life -= dt; const p0 = a.p.clone();
+    if (a.tgt && bowFoes().includes(a.tgt)) a.v.lerp(bowAt(a.tgt).sub(a.p).normalize().multiplyScalar(62), Math.min(1, dt * 9));
+    else { a.tgt = null; a.v.y -= 6 * dt; }
+    a.p.addScaledVector(a.v, dt); a.m.position.copy(a.p); a.m.lookAt(_a.copy(a.p).add(a.v));
     let hit = a.life <= 0;
-    if (!hit && b && ukLive(b) && b.hitFn === drHit) { const c = tw(b.s, b.x, b.y + 2.5); for (let k = 0; k <= 4 && !hit; k++) if (p0.clone().lerp(a.p, k / 4).distanceTo(c) < 3.4) { hit = true; drHit(b, 8, false); } }
+    if (!hit) for (const f of bowFoes()) { const c = bowAt(f), r = f.hitR ?? 3.4; for (let k = 0; k <= 4 && !hit; k++) if (p0.clone().lerp(a.p, k / 4).distanceTo(c) < r) { hit = true; f.hitFn(f, 8, false); } if (hit) break; }
     if (hit) { scene.remove(a.m); BOW.arrows.splice(i, 1); }
   }
 }
@@ -7897,6 +7973,503 @@ THEMES.hoard = natTheme({
   orc: MT_ORC,
   scenery(L) { buildHoard(L, this); },
 });
+// --- enemies that each want fighting differently, as in Kingdom Hearts: the pikeman thrusts a long way along a red line (sidestep, then he's open);
+//     the crossbowman keeps away and shoots (guard at the right moment and the bolt goes back at him); the fanatic leaps onto a red circle (roll off it);
+//     the captain whirls with a red ring round him (keep clear, then he's dizzy). The shield Uruk's shield stops blows from in front (see khHit).
+function ukStyleStart(u, K, d, ds, dx) {
+  const toP = Math.atan2(dx, ds), go = (atk, wT) => { u.state = 'wind'; u.atk = atk; u.t = 0; u.windT = wT; u.lockH = toP; u.h = toP; S.orcGrunt(); };
+  const mark = mm => khFx(mm, f => { warnPulse(f); return ukLive(u) && u.state === 'wind'; });
+  if (K.style === 'pike' && d < 8) { go('thrust', .8); u.from = [u.s, u.x]; u.to = [u.s + Math.cos(toP) * 7, u.x + Math.sin(toP) * 7]; mark(warnMesh(u.s, u.x, .5, 7, toP - .17, toP + .17)); }
+  else if (K.style === 'shoot' && d < 18) { go('shoot', .7); }
+  else if (K.style === 'pounce' && d < 11) { go('pounce', .5); u.from = [u.s, u.x]; u.to = [P.s, P.x]; u.y0 = u.y; mark(warnMesh(P.s, P.x, 0, 2.5)); }
+  else if (K.style === 'whirl' && d < 6) { go('whirl', .75); mark(warnMesh(u.s, u.x, 0, 3.7)); }
+  else u.cd = .4;
+}
+function ukBolt(u, K) {   // a crossbow bolt: it flies where Gandalf stood; guarding as it lands throws it back
+  const m = new THREE.Group(); part(GEO.cyl, lam(0x3a2a1a), m, 0, 0, 0, .04, .9, .04).rotation.x = Math.PI / 2; part(GEO.cone, lam(0xc8c8d0), m, 0, 0, .5, .06, .16, .06).rotation.x = Math.PI / 2;
+  const p = tw(u.s, u.x, u.y + 1.5), v = tw(P.s, P.x, P.y + 1.1).sub(p).normalize().multiplyScalar(19); m.position.copy(p); let back = false; S.whoosh();
+  khFx(m, (f, dt) => {
+    m.position.addScaledVector(v, dt); m.lookAt(_a.copy(m.position).add(v)); if (f.t > 1.6) return false;
+    if (back) { if (ukLive(u) && m.position.distanceTo(tw(u.s, u.x, u.y + 1.2)) < 1.2) { khHit(u, 99, true); return false; } return true; }
+    if (m.position.distanceTo(tw(P.s, P.x, P.y + 1)) < .95) {
+      if (KH.guardT > 0) { back = true; v.copy(tw(u.s, u.x, u.y + 1.2).sub(m.position)).normalize().multiplyScalar(26); S.clash(); sparks(m.position, 16, 6, [1, 1, 1], [.7, .85, 1]); return true; }
+      khHurt(K.dmg, u, { kb: 5 }); return false;
+    }
+    return true;
+  });
+}
+function ukStyleAtk(u, K, dt, d, ds, dx, dy) {
+  const toP = Math.atan2(dx, ds), m = u.m, end = (cdk = 1) => { u.lockH = undefined; u.state = 'recover'; u.t = 0; u.cd = rand(1.2, 2.6) * cdk; m.body.rotation.y = 0; };
+  switch (u.atk) {
+    case 'thrust': { const k = Math.min(1, u.t / .28); const ns = lerp(u.from[0], u.to[0], k) - u.s, nx = lerp(u.from[1], u.to[1], k) - u.x; ukMove(u, ns, nx); if (!u.hits && d < 2.6 && dy < 1.6 && Math.abs(angDiff(toP, u.h)) < .6) { u.hits = 1; khHurt(K.dmg, u, { kb: 10 }); } if (u.t > .9) end(); return { walk: 2, arm: .9 }; }
+    case 'shoot': if (!u.hits) { u.hits = 1; ukBolt(u, K); } if (u.t > .25) end(); return { arm: -1.4 };
+    case 'pounce': { const k = Math.min(1, u.t / .7); u.s = lerp(u.from[0], u.to[0], k); u.x = lerp(u.from[1], u.to[1], k); u.y = lerp(u.y0, khLand(u.s, u.x, u.y0 + .5), k) + Math.sin(k * Math.PI) * 6; m.body.rotation.x = k * TAU; if (k >= 1 && !u.hits) { u.hits = 1; m.body.rotation.x = 0; dustAt(u.s, u.x, u.y, 12); S.stomp(); cam.shake = Math.max(cam.shake, .3); if (Math.hypot(P.s - u.s, P.x - u.x) < 2.5 && P.y - u.y < 1.4) khHurt(K.dmg, u, { unblock: true, kb: 9 }); } if (u.t > 1) end(.7); return { air: k < 1, arm: -2.6 }; }
+    case 'whirl': { m.body.rotation.y += dt * 17; ukMove(u, ds / d * 2.6 * dt, dx / d * 2.6 * dt); u.tick = (u.tick || 0) - dt; if (u.tick <= 0) { u.tick = .32; S.saberSwing(); sparks(tw(u.s, u.x, u.y + 1.3), 6, 5, [1, .9, .6], [.8, .4, .1]); if (d < 3.5 && dy < 1.6) khHurt(K.dmg * .7, u, { kb: 8 }); } if (u.t > 1.6) { end(); u.state = 'dizzy'; u.dizzy = 1.8; u.t = 0; } return { walk: 1, arm: 1.2 }; }
+  }
+  end(); return {};
+}
+// --- Helm's Deep's second level: on the Deeping Wall in the rain, the Uruk-hai massed below. A berserker runs in with a torch: the wall goes up, Gandalf comes
+//     down in the rubble, and then it's wave after wave through the breach, each kind wanting something different.
+const DEEP = { t: 0, T: 6.2, blown: false };
+function deepLayout() {
+  const N = 121, C = 60, hs = new Float32Array(N * N), g = new Array(N * N).fill('g');
+  const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = C - j, x = C - i, d = Math.hypot(s, x); let y = (Math.sin(s * .13) * Math.cos(x * .11) * .35) * ss(14, 22, d) + 30 * ss(30, 58, Math.abs(x)) + 26 * ss(20, 56, s); hs[k] = y; g[k] = d < 16 ? 'a' : 'g'; }
+  const WH = 10, blocks = [[-2.5, 2.5, -62, -11, WH, 'floor', -30], [-2.5, 2.5, 11, 62, WH, 'floor', -30], [-3.2, -2.5, -62, -11, WH + 3, 'wall', -30], [2.5, 3.2, -62, -11, WH + 3, 'wall', -30], [-3.2, -2.5, 11, 62, WH + 3, 'wall', -30], [2.5, 3.2, 11, 62, WH + 3, 'wall', -30]];
+  const W_ = [['o', 'o', 'u', 'u'], ['u', 'u', 's'], ['a', 'a', 'u', 'u'], ['p', 'p', 's', 'o'], ['j', 'j', 'j', 'u'], ['b', 'a', 'a', 'u'], ['c', 'u', 'u'], ['s', 's', 'p', 'j'], ['c', 'a', 'a', 'b'], ['c', 'c', 'p', 'j', 'a']];
+  const names = ['', 'SHIELDS! GET ROUND THEM, OR A FINISHER BREAKS THEM', 'CROSSBOWS! GUARD AS THE BOLT LANDS AND IT GOES BACK', 'PIKES! SIDESTEP THE RED LINE, THEN STRIKE', 'FANATICS! ROLL OFF THE RED CIRCLES', 'BERSERKERS AND BOLTS!', 'A CAPTAIN! KEEP OUT OF HIS WHIRL, THEN STRIKE', 'THEY KEEP COMING!', 'ANOTHER CAPTAIN!', 'THE LAST OF THEM!'];
+  return { field: [-30, 30, -56, 56], start: [0, 0], startY: WH, startH: Math.PI, terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g },
+    layout: { blocks, WH, plazas: [{ s: -3, x: 0, y: 0, r: 15, waves: W_, names, title: 'THE WALL IS BREACHED!', boss: true, last: true, breach: [-16, 0], ladders: [Math.PI - .9, Math.PI - .45, Math.PI, Math.PI + .45, Math.PI + .9], noAdds: true }] } };
+}
+function deepContent(L) { khRings(L.layout); for (const [k, s, x] of [['q', 9, 7], ['b', 9, -7], ['su', 10, 0], ['b', -14, -9], ['q', -14, 9]]) addCrate(k, s, x, terrainAt(s, x, true), 4); }
+function buildDeep(L, TH) {
+  const T_ = L.terrain, first = scene.children.length, sky = TH.env, WH = L.layout.WH;
+  const grd = surf(TX.hdRock, { sky, vc: true, rough: .92, bump: 2.6, wet: .55, env: .35 }), st = surf(TX.hdStone, { sky, rough: .82, bump: 3.2, wet: .75, env: .5, tri: 3.2 });
+  groundMesh(T_, TX.hdRock, (k, sl, y) => k === 'a' ? [.42, .38, .32] : sl > 1.2 ? [.58, .58, .62] : [.42, .4, .3], 7, () => grd);
+  wideFloor(TX.hdMud, 0x2a2820, 120, -2, 600);
+  const boxes = []; for (const [x0, x1] of [[-62, -11], [11, 62]]) { const q = tw(0, (x0 + x1) / 2, WH / 2); boxes.push([q.x, q.y, q.z, x1 - x0, WH, 5, 0]); for (let x = x0 + .7; x < x1; x += 1.5) for (const s of [-2.85, 2.85]) { const m = tw(s, x, WH + .6); boxes.push([m.x, m.y, m.z, .85, 1.2, .5, 0]); } }
+  stoneBox(boxes, st);
+  // torches of the army out in the coomb
+  const tg = new THREE.Group(); for (let k = 0; k < 170; k++) { const s = rand(-30, -150), x = rand(-110, 110), sp = glowSprite(0xff9a40, rand(.7, 1.4), .85); tw(s, x, rand(1.5, 3), sp.position); tg.add(sp); } scene.add(tg); tg.userData.keep = true;
+  bakeScenery(scene.children.slice(first));
+  // the middle of the wall, over its culvert (it goes up), and the rubble left when it has
+  const mid = new THREE.Group(); { const q = tw(0, 0, WH / 2); part(GEO_BOX, st, mid, q.x, q.y, q.z, 22, WH, 5); for (let x = -10.3; x < 11; x += 1.5) for (const s of [-2.85, 2.85]) { const m = tw(s, x, WH + .6); part(GEO_BOX, st, mid, m.x, m.y, m.z, .85, 1.2, .5); } const a = tw(-2.6, 0, 1.6); part(GEO_BOX, bas(0x060606), mid, a.x, a.y, a.z, 5, 3.2, .3); }
+  scene.add(mid); TH.mid = mid;
+  const rub = new THREE.Group(); for (let k = 0; k < 44; k++) { const x = (k % 2 ? 1 : -1) * rand(9.5, 13), s = rand(-5, 5), r = rand(.5, 1.7), q = tw(s, x, r * .3); const m = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 0), st); m.position.copy(q); m.scale.set(r, r * .7, r); m.rotation.set(rand(0, 3), rand(0, 3), 0); rub.add(m); }
+  for (const sx of [-1, 1]) { const q = tw(0, sx * 11.2, WH * .4); const m = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 0), st); m.position.copy(q); m.scale.set(1.6, WH * .55, 3.2); rub.add(m); }
+  rub.visible = false; scene.add(rub); TH.rub = rub;
+}
+function setupDeep() {
+  if (!LV || !LV.deeping) return; const TH = THEMES.deeping; DEEP.t = 0; DEEP.blown = false; TH.mid.visible = true; TH.rub.visible = false;
+  if (!DEEP.floor) DEEP.floor = [solid(-2.5, 2.5, -11, 11, -30, LV.layout.WH, 'floor'), solid(-3.2, -2.5, -11, 11, -30, LV.layout.WH + 3, 'wall'), solid(2.5, 3.2, -11, 11, -30, LV.layout.WH + 3, 'wall')];
+  for (const b of DEEP.floor) { if (!solids.includes(b)) solids.push(b); b.on = true; }
+  if (!DEEP.run) DEEP.run = makeUruk('b'); DEEP.run.root.visible = DEEP.run.shadow.visible = false; setLetterbox(true);
+}
+function updateDeep(dt) {
+  if (!LV || !LV.deeping || DEEP.blown || state !== 'play') return; DEEP.t += dt; const R_ = DEEP.run, TH = THEMES.deeping;
+  if (DEEP.t < .1) banner('THE DEEPING WALL', 2.2);
+  if (inp.jumpP && DEEP.t > 1) DEEP.t = Math.max(DEEP.t, DEEP.T);   // (L skips it)
+  if (DEEP.t > 1.6 && DEEP.t < DEEP.T) { const k = Math.min(1, (DEEP.t - 1.6) / (DEEP.T - 1.8)), s = lerp(-44, -3, k); R_.root.visible = R_.shadow.visible = true; place(R_.root, s, 0, terrainAt(s, 0, true), 0); tw(s, 0, terrainAt(s, 0, true) + .03, R_.shadow.position); R_.body.rotation.x = .25; R_.armL.rotation.x = -2.6; skinPlay(R_, 'walk'); flame(tw(s, 0, terrainAt(s, 0, true) + 2.4), .7, 1); if (Math.random() < dt * 2) S.orcGrunt(); }
+  if (DEEP.t > 3.2 && !DEEP.said) { DEEP.said = true; banner('A TORCH! HE IS RUNNING FOR THE CULVERT!', 2.4); }
+  if (DEEP.t >= DEEP.T) {   // the wall goes up
+    DEEP.blown = true; DEEP.said = false; cam.yaw = Math.PI; P.heading = Math.PI; cam.snap = true; R_.root.visible = R_.shadow.visible = false; TH.mid.visible = false; TH.rub.visible = true; for (const b of DEEP.floor) b.on = false; setLetterbox(false);
+    flashV = 1.3; cam.shake = 1.8; S.boom && S.boom(); S.thunder && S.thunder(); P.vy = 7; P.ground = false; P.vs = rand(-1, 1); KH.invT = 2; Object.assign(gs.cp, { s: 6, x: 0, y: terrainAt(6, 0, true) });
+    const c = tw(-2, 0, 3); bblast(c, 12); sparks(c, 160, 22, [1, .95, .7], [1, .5, .1], .5); for (let k = 0; k < 60; k++) bfire(tw(rand(-3, 3), rand(-10, 10), rand(0, 12)), rand(1.6, 3.4), 3);
+    const st = TH.mid.children[0].material; for (let k = 0; k < 26; k++) { const m = new THREE.Mesh(new THREE.DodecahedronGeometry(rand(.4, 1.2), 0), st), v = new V3(rand(-14, 14), rand(6, 22), rand(-14, 14)); m.position.copy(tw(rand(-2, 2), rand(-9, 9), rand(2, 10))); khFx(m, (f, d) => { v.y -= 26 * d; m.position.addScaledVector(v, d); m.rotation.x += d * 3; m.rotation.y += d * 2; return f.t < 2.6; }); }
+  }
+}
+THEMES.deeping = natTheme({
+  wallTex: TX.hdStone, floorTex: TX.hdFlag, tint: [.8, .82, .86], door: 0x6a6a7a,
+  env: { sky: [0x020308, 0x0a1018, 0x1a2230, 0x3a2a20], fog: [35, 240], fogC: 0x0c1118, amb: [0x4a5870, .75], hemi: [0x8a9ab8, 0x1a1410, .55], sun: [0xa8b8e8, .55], east: [0xff8a40, .3], bolts: true, cloud: 0x3a4250, bloom: 1, sunDir: [40, 90, 60] },
+  orc: MT_ORC,
+  scenery(L) { buildDeep(L, this); },
+});
+// --- Balin's Chamber, Moria's second level: the hall with the tomb in a shaft of daylight, drums in the deep, goblins through the door in waves, and then
+//     the door comes in and a cave troll with it, the Kingdom Hearts way: he smashes his club onto a red circle (and it sticks: strike), sweeps it round
+//     (jump, or guard), charges along a red line until he hits something (and reels: strike), and hurls lumps of the wall. UP HIS BACK finishes him.
+function balinLayout() {
+  const tomb = [[-2, 2, -1.35, 1.35, 1.7, 'wall']], pil = []; for (const sx of [-1, 1]) for (const s of [-15, -7, 1, 9, 17]) { pil.push([s, sx * 13.4]); tomb.push([s - 1, s + 1, sx * 13.4 - 1, sx * 13.4 + 1, 16, 'wall']); }
+  return { field: [-22, 22, -16, 16], start: [12, 0], startH: Math.PI, layout: { blocks: tomb, pil, plazas: [{ s: 0, x: 0, y: 0, r: 12.8, waves: [['o', 'o', 'o'], ['o', 'o', 'o', 'a'], ['o', 'o', 's', 'a'], ['T']], names: ['', 'DRUMS IN THE DEEP! THEY ARE COMING!', 'MORE THROUGH THE DOOR!', 'THE DOOR! A CAVE TROLL!'], title: 'THEY HAVE A CAVE TROLL', boss: true, last: true, breach: [-20, 0], ladders: [Math.PI - .25, Math.PI, Math.PI + .25], noAdds: true }] } };
+}
+function balinContent(L) { khRings(L.layout); for (const [k, s, x] of [['q', 8, 8], ['b', 8, -8], ['su', -8, 8], ['b', -8, -8]]) addCrate(k, s, x, 0, 4); }
+function buildBalin(L, TH) {
+  const Y = L.layout, first = scene.children.length, sky = TH.env, H_ = 15;
+  const ftx = TX.hdFlag.clone(); ftx.needsUpdate = true; ftx.wrapS = ftx.wrapT = THREE.RepeatWrapping; ftx.repeat.set(9, 12);
+  const flag = surf(ftx, { sky, color: 0x6a6670, rough: .55, bump: 3, env: .4 }), st = surf(TX.hdStone, { sky, color: 0x5a5660, rough: .75, bump: 3.2, env: .3, tri: 3 });
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(36, 48), flag); fl.rotation.x = -Math.PI / 2; tw(0, 0, 0, fl.position); fl.receiveShadow = true; scene.add(fl);
+  const roof = new THREE.Mesh(GEO_BOX, st); tw(0, 0, H_ + .5, roof.position); roof.scale.set(38, 1, 50); scene.add(roof);
+  const boxes = []; const add = (s, x, y, w, h, d) => { const q = tw(s, x, y); boxes.push([q.x, q.y, q.z, w, h, d, 0]); };
+  add(23, 0, H_ / 2, 38, H_, 2); add(0, 17, H_ / 2, 2, H_, 48); add(0, -17, H_ / 2, 2, H_, 48);
+  for (const sx of [-1, 1]) add(-23, sx * 11, H_ / 2, 16, H_, 2); add(-23, 0, 11.5, 6, 7, 2);
+  for (const [s, x] of Y.pil) { const q = tw(s, x, 0); part(new THREE.CylinderGeometry(.85, 1, H_, 10), st, scene, q.x, q.y + H_ / 2, q.z); part(new THREE.CylinderGeometry(1.25, 1.25, .6, 10), st, scene, q.x, q.y + .3, q.z); part(new THREE.CylinderGeometry(1.25, .85, 1, 10), st, scene, q.x, q.y + H_ - .5, q.z); }
+  stoneBox(boxes, st);
+  // the tomb in the very middle of the hall, pale stone, and the shaft of daylight falling on it from the opening high in the roof
+  { const q = tw(0, 0, 0), pale = surf(TX.marble, { sky, color: 0xe8e0d0, rough: .55, bump: 1.6, env: .35 }), step = surf(TX.marble, { sky, color: 0xb8b0a4, rough: .7, bump: 1.6, env: .2 });
+    part(GEO_BOX, step, scene, q.x, q.y + .16, q.z, 3.6, .32, 5); part(GEO_BOX, pale, scene, q.x, q.y + .85, q.z, 2.3, 1.1, 3.9); part(GEO_BOX, pale, scene, q.x, q.y + 1.52, q.z, 2.65, .26, 4.25);
+    for (let k = 0; k < 7; k++) part(GEO_BOX, lam(0x5a5650), scene, q.x + 1.16, q.y + .85, q.z - 1.35 + k * .45, .02, .46, .24);   // (his runes)
+    const A = tw(9, -5, 15.2), B_ = tw(0, 0, 1.2), dir = A.clone().sub(B_), len = dir.length(), mid = A.clone().add(B_).multiplyScalar(.5); dir.normalize();
+    for (const [r0, r1, op] of [[1.4, 3.1, .1], [1, 2.2, .13], [.6, 1.4, .16]]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, len, 24, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff0c8, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); c.position.copy(mid); c.quaternion.setFromUnitVectors(UPV, dir); c.userData.keep = true; scene.add(c); }
+    const hole = new THREE.Mesh(new THREE.CircleGeometry(1.7, 20), bas(0xfff8e0)); hole.position.copy(A); hole.rotation.x = Math.PI / 2; scene.add(hole); const hg = glowSprite(0xfff0c8, 8, .8); hg.position.copy(A); scene.add(hg);
+    const pool = new THREE.Mesh(new THREE.CircleGeometry(4.6, 32), new THREE.MeshBasicMaterial({ map: TX.glow, color: 0xfff0c8, transparent: true, opacity: .4, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); pool.rotation.x = -Math.PI / 2; tw(0, 0, .04, pool.position); pool.userData.keep = true; scene.add(pool);
+    const top = new THREE.Mesh(new THREE.PlaneGeometry(2.65, 4.25), new THREE.MeshBasicMaterial({ map: TX.glow, color: 0xfff0c8, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); top.rotation.x = -Math.PI / 2; tw(0, 0, 1.67, top.position); top.userData.keep = true; scene.add(top);
+    L.glows = [{ p: tw(.6, -.3, 5.5), c: 0xfff0d0, i: 5.5, pri: -5 }]; TH.beam = [A, B_]; }
+  // bones of Balin's folk, a well in the corner, torches on the columns
+  const bone = lam(0x8a8474), list = []; for (let k = 0; k < 22; k++) { const q = tw(rand(-20, 20), (k % 2 ? 1 : -1) * rand(5, 15), .03); list.push([q.x, q.y, q.z, .05, .05, rand(.3, .55), rand(0, 3)]); } instanced(GEO_BOX, bone, list);
+  for (let k = 0; k < 4; k++) { const q = tw(rand(-20, 20), (k % 2 ? 1 : -1) * rand(6, 15), .16); part(GEO.sph, bone, scene, q.x, q.y, q.z, .16, .18, .18); }
+  { const q = tw(17, 12.5, 0); part(new THREE.CylinderGeometry(1.3, 1.4, 1, 14, 1, true), st, scene, q.x, q.y + .5, q.z); part(new THREE.CircleGeometry(1.3, 14), bas(0x020202), scene, q.x, q.y + .3, q.z).rotation.x = -Math.PI / 2; L.layout.blocks.push([15.6, 18.4, 11, 14, 1, 'wall']); }
+  for (const [s, x] of Y.pil) addTorch(s, x * .92, 3.4);
+  bakeScenery(scene.children.slice(first));
+  // the door (it comes in with the troll)
+  const dr = new THREE.Group(), wd = lam(0x4a3420); for (const sx of [-1, 1]) { const q = tw(-22.6, sx * 1.5, 4); part(GEO_BOX, wd, dr, q.x, q.y, q.z, 2.9, 8, .4); } scene.add(dr); TH.door = dr;
+}
+function makeTroll() {
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body); const SK = lam(0x6a6a58, { emissive: 0x0c0c08 }), DK = lam(0x3a3a30), WD = lam(0x4a3420);
+  part(GEO.sph, SK, body, 0, 3.1, 0, 1.25, 1.35, 1); part(GEO.sph, SK, body, 0, 4.3, .15, 1, .8, .85); const head = new THREE.Group(); head.position.set(0, 5, .55); body.add(head); part(GEO.sph, SK, head, 0, 0, 0, .46, .4, .52); for (const sx of [-1, 1]) { part(GEO.sph, bas(0xffb030), head, sx * .2, .08, .42, .06, .05, .05); part(GEO.cone, DK, head, sx * .18, -.28, .36, .04, .2, .04); }
+  const legs = [-1, 1].map(sx => { const g = new THREE.Group(); g.position.set(sx * .62, 2, 0); body.add(g); part(GEO.cylT, SK, g, 0, 0, 0, .42, 2, .42); part(GEO_BOX, DK, g, 0, -2, .2, .6, .24, .9); return g; });
+  const arm = sx => { const g = new THREE.Group(); g.position.set(sx * 1.2, 4.3, 0); body.add(g); part(GEO.cylT, SK, g, 0, 0, 0, .32, 2.6, .32); return g; };
+  const armR = arm(1), armL = arm(-1), club = new THREE.Group(); club.position.set(0, -2.6, .1); armR.add(club); part(GEO.cyl, WD, club, 0, 0, 1, .16, 2.4, .16).rotation.x = Math.PI / 2; part(GEO.sph, WD, club, 0, 0, 2.3, .42, .42, .7);
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(1.8, 14), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .45, depthWrite: false })); shadow.rotation.x = -Math.PI / 2; scene.add(shadow); scene.add(root); root.visible = shadow.visible = false;
+  const M = { root, body, head, legs, armR, armL, club, shadow }; addSkin(M, 'troll', body, root); if (M.skin) M.skin.temp = true; return M;
+}
+function spawnTroll(pl, delay = 0) {
+  const b = { m: makeTroll(), boss: true, kind: 'T', name: 'CAVE TROLL', hp: pl.bossHp || 850, max: pl.bossHp || 850, bars: 3, r: 1.5, tall: 5.4, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null, state: 'intro', t: -delay - .5, s: -21, x: 0, y: 0, h: 0, cd: 1.2, n: 0, upd: trUpdate, hitFn: trHit, reactFn: (u, d) => u.state === 'stun' && u.hp <= u.max * .3 && d < 6 ? 'climb' : null, reaction: trReaction };
+  URUKS.push(b); KH.boss = b; Music.mode = 1; return b;
+}
+function trEnd(b) { if (b.a) for (const f of b.a.fx) f.dead = true; b.a = null; b.state = 'idle'; b.t = 0; b.cd = rand(.8, 1.5) / (b.phase > 1 ? 1.3 : 1); }
+function trHit(b, dmg, fin, air, react) {
+  if (!ukLive(b) || b.state === 'intro') return; const p = tw(lerp(b.s, P.s, .4), lerp(b.x, P.x, .4), P.y + 1.3);
+  if (b.state === 'stun' || (b.a && b.a.ph === 'stuck')) dmg *= 1.6; if (KH.form > 0) dmg *= 1.5;
+  b.hp -= dmg; b.flash = .1; if (!react) b.rev += fin ? 18 : 7; KH.target = b; KH.targetT = 6; if (KH.form <= 0) KH.drive = Math.min(100, KH.drive + 2); KH.hitstop = Math.max(KH.hitstop, fin ? .07 : .035); cam.shake = Math.max(cam.shake, fin ? .3 : .12); sparks(p, fin ? 24 : 12, fin ? 8 : 5, [1, .9, .7], [.5, .4, .2]); S.saberHit();
+  if (b.hp <= 0) { b.hp = 0; trEnd(b); b.state = 'fall'; b.t = 0; b.dead = true; KH.react = null; skinPlay(b.m, 'die'); banner('THE TROLL IS SLAIN!', 2.2); S.roar(); cam.shake = .7; KH.hitstop = .3; Music.mode = 0; for (const o of URUKS) if (!o.boss && ukLive(o)) khHit(o, 999, true); return; }
+  if (b.phase === 1 && b.hp <= b.max * .5) { b.phase = 2; trEnd(b); b.state = 'roar'; b.t = 0; banner('HE RAGES!', 1.4); S.roar(); }
+}
+function trReaction() { const b = KH.boss; if (!b) return; S.smash(); KH.hitstop = .4; cam.shake = 1; flashV = Math.max(flashV, .6); banner('UP HIS BACK!', 1.8); skinClip(hob, khc(KH_SORA.ground[4], 'attack_e'), .8); P.y = 4.8; P.ground = false; P.vy = 3; sparks(tw(b.s, b.x, 5), 60, 11, [1, 1, 1], [.7, .85, 1], .3); trHit(b, 9999, true, false, true); }
+function trUpdate(b, dt) {
+  const m = b.m; b.t += dt; b.flash -= dt; b.rev = Math.max(0, b.rev - dt * 10); if (b.t < 0) return;
+  const ds = P.s - b.s, dx = P.x - b.x, d = Math.hypot(ds, dx) || .01, toP = Math.atan2(dx, ds), live = state === 'play', pl = b.plaza, A = b.a, p2 = b.phase > 1;
+  const keep = (s, x) => { const dd = Math.hypot(s, x) || .01, r = clamp(dd, 3.6, pl.r - 1); return dd === r ? [s, x] : [s / dd * r, x / dd * r]; }; let walk = 0, arm = -.25;
+  const fxm = (mm) => { const f = khFx(mm, g => { warnPulse(g); return true; }); b.a.fx.push(f); };
+  switch (b.state) {
+    case 'intro':
+      if (!b.shown) { b.shown = true; m.root.visible = m.shadow.visible = true; S.smash(); S.roar(); cam.shake = 1; flashV = Math.max(flashV, .25); const D = THEMES.balin.door; D.visible = false; const c = tw(-22, 0, 3); sparks(c, 60, 12, [.8, .6, .4], [.4, .3, .2], .35); for (let k = 0; k < 14; k++) { const q = new THREE.Mesh(GEO_BOX, lam(0x4a3420)), v = new V3(rand(-5, 5), rand(3, 8), rand(5, 14)); q.scale.set(rand(.3, 1.2), rand(.3, 1.6), .15); q.position.copy(tw(-22, rand(-3, 3), rand(.5, 7))); khFx(q, (f, dd) => { v.y -= 20 * dd; q.position.addScaledVector(v, dd); q.rotation.x += dd * 5; if (q.position.y < .1) { q.position.y = .1; v.set(0, 0, 0); } return f.t < 3; }); } skinClip(m, 'attack_a', 1); }
+      b.s = lerp(-21, -10.5, Math.min(1, b.t / 1.6)); b.h = toP; walk = 1; if (b.t > 1.9) trEnd(b); break;
+    case 'idle': {
+      b.h += angDiff(b.h, toP) * Math.min(1, dt * 3); if (d > 3.4) { [b.s, b.x] = keep(b.s + ds / d * (p2 ? 3 : 2.4) * dt, b.x + dx / d * (p2 ? 3 : 2.4) * dt); walk = 1; }
+      b.cd -= dt; if (!live || b.cd > 0) break; b.n++;
+      const r = Math.random(); let t = d < 5 ? (r < .5 ? 'smash' : 'sweep') : d < 11 ? (r < .4 ? 'charge' : r < .7 ? 'throw' : 'smash') : r < .6 ? 'charge' : 'throw'; if (b.rev >= 100) { b.rev = 0; t = 'sweep'; } if (b.last === t && Math.random() < .5) t = d < 5 ? 'sweep' : 'throw'; b.last = t;
+      const a = b.a = { type: t, t: 0, ph: 'wind', fx: [], w: { smash: .95, sweep: .8, charge: .9, throw: .8 }[t] * (p2 ? .85 : 1) }; b.state = 'atk'; a.h = toP; b.h = toP; S.orcGrunt();
+      if (t === 'smash') { a.at = keep(b.s + Math.cos(toP) * 3.4, b.x + Math.sin(toP) * 3.4); fxm(warnMesh(a.at[0], a.at[1], 0, 2.9)); skinClip(m, 'attack_a', a.w + .5); }
+      if (t === 'sweep') { fxm(warnMesh(b.s, b.x, 1, 5.8, toP - 1.45, toP + 1.45)); skinClip(m, 'attack_b', a.w + .5); }
+      if (t === 'charge') { fxm(warnMesh(b.s, b.x, 1, 16, toP - .2, toP + .2)); S.roar(); a.v = [Math.cos(toP) * 15, Math.sin(toP) * 15]; }
+      if (t === 'throw') { a.at = [P.s + P.vs * .7, P.x + P.vx * .7]; a.at = keep(a.at[0], a.at[1]); fxm(warnMesh(a.at[0], a.at[1], 0, 2.4)); skinClip(m, 'attack_c', a.w + .5); }
+      break;
+    }
+    case 'atk': {
+      A.t += dt; if (A.ph === 'wind') { arm = -2.6; if (A.t >= A.w) { A.ph = 'go'; A.t = 0; } break; }
+      arm = .7;
+      switch (A.type) {
+        case 'smash': if (!A.hit) { A.hit = true; A.fx.forEach(f => f.dead = true); const p = tw(A.at[0], A.at[1], .2); sparks(p, 40, 9, [.9, .8, .6], [.5, .4, .2], .3); dustAt(A.at[0], A.at[1], 0, 16); S.smash(); cam.shake = .9; if (Math.hypot(P.s - A.at[0], P.x - A.at[1]) < 2.9 && P.y < 1) khHurt(20, b, { kb: 13 }); if (p2) bossWave(b, A.at[0], A.at[1], 9, 8, 10); } A.ph = 'stuck'; if (A.t > 1.5) trEnd(b); break;   // (the club sticks: strike him)
+        case 'sweep': if (!A.hit && A.t > .1) { A.hit = true; A.fx.forEach(f => f.dead = true); S.whoosh(); cam.shake = .4; if (d < 5.8 && Math.abs(angDiff(toP, A.h)) < 1.5 && P.y < 1.1) khHurt(16, b, { kb: 13 }); } b.h = A.h + lerp(1.2, -1.2, Math.min(1, A.t / .35)); if (A.t > .8) { b.h = A.h; trEnd(b); } break;
+        case 'charge': { const ns = b.s + A.v[0] * dt, nx = b.x + A.v[1] * dt, [ks, kx] = keep(ns, nx), hitPil = THEMES.balin && LV.layout.pil.some(q => Math.hypot(q[0] - ns, q[1] - nx) < 2.4); walk = 2; if (ks !== ns || kx !== nx || hitPil || A.t > 1.5) { A.fx.forEach(f => f.dead = true); S.smash(); cam.shake = .9; dustAt(b.s, b.x, 0, 14); b.a = null; b.state = 'stun'; b.t = 0; b.stunT = 2.4; banner('HE REELS!', .9); break; } b.s = ks; b.x = kx; if (!A.hit && d < 2.5) { A.hit = true; khHurt(18, b, { unblock: true, kb: 15 }); } break; }
+        case 'throw': if (!A.thrown) { A.thrown = true; const rock = fallRock(), p0 = tw(b.s, b.x, 5.4), p1 = tw(A.at[0], A.at[1], .4), at = A.at; scene.add(rock); S.whoosh(); khFx(rock, f => { const k = Math.min(1, f.t / .85); rock.position.lerpVectors(p0, p1, k); rock.position.y += Math.sin(k * Math.PI) * 4; rock.rotation.x += .1; if (k < 1) return true; sparks(p1, 24, 7, [.8, .7, .6], [.4, .3, .2], .25); S.stomp(); if (Math.hypot(P.s - at[0], P.x - at[1]) < 2.4 && P.y < 1.2) khHurt(14, { s: at[0], x: at[1] }, { unblock: true, kb: 8 }); A.fx.forEach(q => q.dead = true); return false; }); } if (A.t > 1) { b.a = null; b.state = 'idle'; b.t = 0; b.cd = rand(.5, 1); } break;
+      }
+      break;
+    }
+    case 'stun': arm = .4; if (Math.random() < .3) sparks(tw(b.s, b.x, 5.6), 2, 2, [1, 1, .8], [1, .8, .2]); if (b.t > b.stunT) trEnd(b); break;
+    case 'roar': arm = -2.6; if (!b.called && b.t > .6) { b.called = true; for (let k = 0; k < 3; k++) spawnUruk('o', pl, Math.PI + (k - 1) * .25, k * .3); } if (b.t > 1.5) trEnd(b); break;
+    case 'fall': m.body.rotation.x = damp(m.body.rotation.x, -1.45, 2, dt); if (b.t > 1.4 && !b.thud) { b.thud = true; S.smash(); cam.shake = 1; dustAt(b.s, b.x, 0, 22); } if (b.t > 3) { khRemove(b); return; } break;
+  }
+  if (d < b.r + .5 && b.state !== 'fall' && m.root.visible) { P.s = b.s + ds / d * (b.r + .5); P.x = b.x + dx / d * (b.r + .5); }
+  place(m.root, b.s, b.x, 0, b.h); tw(b.s, b.x, .03, m.shadow.position); const ph = T * 5; m.legs.forEach((l, i) => l.rotation.x = Math.sin(ph + i * Math.PI) * .45 * Math.min(1, walk)); m.armR.rotation.x = damp(m.armR.rotation.x, arm, 12, dt); m.armL.rotation.x = -.3 + Math.sin(ph) * .25 * Math.min(1, walk); if (b.state !== 'fall') m.body.rotation.x = b.state === 'stun' ? .3 : 0;
+  skinPlay(m, b.state === 'fall' ? 'die' : b.state === 'stun' ? 'hit' : b.state === 'roar' ? 'attack' : walk ? 'walk' : 'idle');
+}
+function setupBalin() { if (LV && LV.balin) THEMES.balin.door.visible = true; }
+function updateBalin(dt) {   // the drums in the deep, until the troll is in; dust shaken down from the roof
+  if (!LV || !LV.balin || state === 'map' || state === 'title') return; if (Math.random() < dt * 22) { const [A, B_] = THEMES.balin.beam, k = Math.random(); fx.spawn(lerp(A.x, B_.x, k) + rand(-1.8, 1.8) * (1.4 - k), lerp(A.y, B_.y, k), lerp(A.z, B_.z, k) + rand(-1.8, 1.8) * (1.4 - k), rand(-.1, .1), rand(-.15, .05), rand(-.1, .1), rand(1.5, 3), .07, .05, [1, .95, .8], [1, .9, .6], 0, 0); } if (state !== 'play') return; const b = KH.boss; if (b && b.kind === 'T') return; BALIN_T -= dt;
+  if (BALIN_T < 0) { BALIN_T = 1.05; S.stomp(); cam.shake = Math.max(cam.shake, .1); for (let k = 0; k < 3; k++) smoke.spawn(...tw(rand(-20, 20), rand(-15, 15), rand(11, 14.5)).toArray(), 0, -1.6, 0, 1.4, 1, 2.4, [.5, .48, .45], [.6, .58, .55], .5, .2); }
+}
+let BALIN_T = 3;
+THEMES.balin = natTheme({
+  wallTex: TX.hdStone, floorTex: TX.hdFlag, tint: [.7, .7, .74], door: 0x6a6a7a,
+  env: { sky: [0x020203, 0x040406, 0x08080c, 0x0c0c10], fog: [24, 90], fogC: 0x0c0e12, amb: [0x4a5868, .55], hemi: [0x8a98a8, 0x2a2018, .36], sun: [0xfff0c8, .08], east: [0xffa060, .12], bloom: .9, sunDir: [10, 80, 60] },
+  orc: { sk: 0x8a907a, ska: 0xa0a488, ar: 0x2a2630, le: 0x3a2a1a, met: 0x1e1c22, sc: .85 },
+  scenery(L) { buildBalin(L, this); },
+});
+// --- the Stairs of Cirith Ungol, a level of its own: seen from the side, climbing a cliff in flights that double back, one lane in front and one behind,
+//     landings between them. Steps grind back into the rock in a wave (they flush red first), boulders bound down the flights (jump them), orcs hold the
+//     landings. Each landing is a checkpoint. At the top, the tunnel.
+function ustairLayout() {
+  const { FLIGHTS, STEPS, RISE, X, LAND } = USTAIR, steps = [], blocks = [], lands = [];
+  for (let i = 0; i <= FLIGHTS; i++) { const left = i % 2 === 0, y = i * RISE, x0 = left ? -LAND : X, x1 = left ? -X : LAND; lands.push({ x0, x1, y, mid: (x0 + x1) / 2 }); blocks.push([-3.4, 3.4, x0, x1, y, 'floor', y - 1]); }
+  for (let i = 0; i < FLIGHTS; i++) {
+    const dir = i % 2 === 0 ? 1 : -1, front = i % 2 === 0, s0 = front ? -3.4 : .2, s1 = front ? -.2 : 3.4, w = 2 * X / STEPS, slide = i % 2 === 1 || i === 4, per = i < 3 ? 3.6 : 3;
+    for (let k = 0; k < STEPS; k++) { const xa = dir * (-X + k * w), xb = dir * (-X + (k + 1) * w), y = i * RISE + (k + 1) * RISE / STEPS, g = slide && k > 2 && k < STEPS - 2 && (k % 8 < 3) ? (k / 8 | 0) : -1; steps.push({ i, k, s0, s1, x0: Math.min(xa, xb), x1: Math.max(xa, xb), y, g, per }); }
+  }
+  return { field: [-3.4, 3.4, -LAND, LAND], start: [0, lands[0].mid], noFloor: true, sideview: true, layout: { blocks, steps, lands, plazas: [] } };
+}
+function ustairContent(L) {
+  const Y = L.layout, { RISE } = USTAIR;
+  for (const q of Y.steps) if (q.k % 5 === 2 && q.g < 0) addApple((q.s0 + q.s1) / 2, (q.x0 + q.x1) / 2, q.y + 1);
+  for (let i = 1; i < Y.lands.length - 1; i++) { const l = Y.lands[i], at = (s, x) => addCrate(s, x, l.mid + (l.mid > 0 ? 1.4 : -1.4)); addCrate(i % 2 ? 'q' : 'b', 2.4, l.mid + (l.mid > 0 ? 1.6 : -1.6), l.y, 4); if (i % 2 === 0) addCrate('su', -2.4, l.mid + (l.mid > 0 ? 1.6 : -1.6), l.y, 4); }
+  for (const [i, kind] of [[1, 'grunt'], [2, 'grunt'], [3, 'archer'], [4, 'grunt'], [5, 'archer']]) { const l = Y.lands[i]; addOrc(kind, 0, l.mid, { y: l.y, patrol: kind === 'grunt' ? { ax: 's', amp: 2, sp: 1.6 } : null }); }
+}
+function buildUstair(L, TH) {
+  const Y = L.layout, first = scene.children.length, sky = TH.env;
+  const st = surf(TX.hdStone || TX.rock, { sky, color: 0xf0ead8, rough: .8, bump: 3, tri: 2.4 }), rk = surf(TX.rock, { sky, color: 0x38342e, rough: .9, bump: 3.4, tri: 6 });
+  { const q = tw(6, 0, 28); part(GEO_BOX, rk, scene, q.x, q.y, q.z, 150, 110, 5); }
+  for (let k = 0; k < 40; k++) { const q = tw(rand(3.2, 4), rand(-28, 28), rand(0, 50)), r = rand(1, 3); part(new THREE.DodecahedronGeometry(1, 0), rk, scene, q.x, q.y, q.z, r, r * .8, r * .5).rotation.set(rand(0, 3), rand(0, 3), 0); }
+  wideFloor(TX.rock, 0x1a1c14, 90, -12, 900);
+  const boxes = []; for (const l of Y.lands) { const q = tw(0, (l.x0 + l.x1) / 2, l.y - .4); boxes.push([q.x, q.y, q.z, l.x1 - l.x0, .8, 6.8, 0]); const c = tw(2.4, (l.x0 + l.x1) / 2, l.y - 2); boxes.push([c.x, c.y, c.z, 3.6, 3.2, 2, 0]); }
+  const fixed = Y.steps.filter(q => q.g < 0); for (const q of fixed) { const c = tw((q.s0 + q.s1) / 2, (q.x0 + q.x1) / 2, q.y - .3); boxes.push([c.x, c.y, c.z, q.x1 - q.x0 + .02, .6, q.s1 - q.s0, 0]); }
+  stoneBox(boxes, st);
+  for (const l of Y.lands) addTorch(3.1, l.mid, l.y + 2.6);
+  // the tunnel mouth at the top of the last flight: Shelob's lair and the way into Mordor
+  { const l = Y.lands[Y.lands.length - 1], q = tw(3.2, l.mid, l.y + 2.4); part(GEO_BOX, bas(0x020302), scene, q.x, q.y, q.z, 3.6, 4.8, .2); const gl = glowSprite(0x9aff6a, 7, .35); gl.position.copy(tw(2.6, l.mid, l.y + 2.4)); scene.add(gl); TH.door = { s: 2.2, x: l.mid, y: l.y }; }
+  bakeScenery(scene.children.slice(first));
+  // the steps that move, each its own
+  TH.warnM = surf(TX.hdStone || TX.rock, { sky, color: 0xff5a30, rough: .7, bump: 2, glow: .35 }); TH.stM = st; TH.moving = [];
+  for (const q of Y.steps) if (q.g >= 0) { const m = new THREE.Mesh(GEO_BOX, st), c = tw((q.s0 + q.s1) / 2, (q.x0 + q.x1) / 2, q.y - .3); m.position.copy(c); m.scale.set(q.x1 - q.x0 + .02, .6, q.s1 - q.s0); scene.add(m); q.mesh = m; q.home = c.clone(); TH.moving.push(q); }
+  TH.rocks = [];
+}
+function setupUstair() {
+  if (!LV || !LV.sideview) return; const Y = LV.layout; USTAIR.t = 0; USTAIR.land = 0; USTAIR.bt = 2; for (const r of THEMES.ustair.rocks) scene.remove(r.m); THEMES.ustair.rocks = [];
+  for (const q of Y.steps) q.b = solid(q.s0, q.s1, q.x0, q.x1, q.y - .6, q.y, 'floor');
+}
+function updateUstair(dt) {
+  if (!LV || !LV.sideview || state === 'map' || state === 'title') return; const TH = THEMES.ustair, Y = LV.layout; USTAIR.t += dt; const t = USTAIR.t;
+  for (const q of TH.moving) {   // red for a moment, then back into the rock, and out again
+    const ph = (t + q.g * .75 + q.i) % q.per, warn = ph > q.per - 2.2 && ph <= q.per - 1.3, gone = ph > q.per - 1.3; q.mesh.material = warn ? TH.warnM : TH.stM; q.b.on = !gone;
+    const ty = gone ? q.home.y - 2.2 : q.home.y, sh = warn ? Math.sin(t * 40) * .03 : 0; q.mesh.position.y = damp(q.mesh.position.y, ty, 12, dt) + sh; q.mesh.visible = !gone || q.mesh.position.y > q.home.y - 2;
+  }
+  if (state !== 'play') return;
+  // the landing he last stood on is where he comes back
+  Y.lands.forEach((l, i) => { if (i > USTAIR.land && P.ground && P.x > l.x0 && P.x < l.x1 && Math.abs(P.y - l.y) < .3) { USTAIR.land = i; Object.assign(gs.cp, { s: 0, x: l.mid, y: l.y, t: gs.time }); S.check && S.check(); if (i < Y.lands.length - 1) banner(`LANDING ${i} OF ${Y.lands.length - 1}`, 1); } });
+  // boulders down the flight he's on, on the flights that have them
+  const flight = Math.floor(clamp(P.y, 0, USTAIR.RISE * USTAIR.FLIGHTS - .01) / USTAIR.RISE); USTAIR.bt -= dt;
+  if ((flight === 2 || flight === 3 || flight === 5) && USTAIR.bt <= 0) {
+    USTAIR.bt = flight === 5 ? 2.2 : 2.9; const front = flight % 2 === 0, dir = front ? -1 : 1, m = fallRock(); m.scale.setScalar(1.2); scene.add(m);
+    TH.rocks.push({ m, x: -dir * USTAIR.X, dir, s: front ? -1.8 : 1.8, flight, ph: 0 }); S.stomp();
+  }
+  for (let i = TH.rocks.length - 1; i >= 0; i--) {
+    const r = TH.rocks[i]; r.x += r.dir * 9.5 * dt; r.ph += dt * 6; const u = (r.flight % 2 === 0 ? r.x + USTAIR.X : USTAIR.X - r.x) / (2 * USTAIR.X), gy = r.flight * USTAIR.RISE + u * USTAIR.RISE, y = gy + 1.1 + Math.abs(Math.sin(r.ph)) * .7; tw(r.s, r.x, y, r.m.position); r.m.rotation.z += r.dir * dt * 7;
+    if (Math.abs(P.x - r.x) < 1.3 && Math.abs(P.s - r.s) < 1.7 && Math.abs(P.y + .6 - y) < 1.4 && P.invT <= 0) { hurt('hit'); P.invT = 1; }
+    if (u < -.02 || u > 1.02) { sparks(r.m.position, 14, 6, [.7, .7, .6], [.3, .3, .2], .25); scene.remove(r.m); TH.rocks.splice(i, 1); }
+  }
+  const D = TH.door; if (Math.hypot(P.s - D.s, P.x - D.x) < 2.2 && Math.abs(P.y - D.y) < 2) roamWin('THE TOP OF THE STAIRS!');
+}
+THEMES.ustair = natTheme({
+  wallTex: TX.rock, floorTex: TX.rock, tint: [.8, .84, .74], door: 0x4a5a3a,
+  env: { sky: [0x06060a, 0x141420, 0x2a2438, 0x5a3a48], fog: [34, 180], fogC: 0x1a1824, amb: [0x7a7a80, .95], hemi: [0xc8c8d8, 0x2a2420, .7], sun: [0xe0d8c8, .85], east: [0x90ff70, .18], sunDir: [-30, 60, -70], embers: true },
+  orc: MT_ORC,
+  scenery(L) { buildUstair(L, this); },
+});
+
+// --- Osgiliath: on the top of a round tower in the ruins, with a bow, the Nine wheeling round it on their fell beasts, three at a time. Each circles, then
+//     spits fire onto a red circle or swoops across the tower along a red line. U takes aim; three arrows each.
+const FLY = { list: [], left: 9, wave: 0, t: 0 };
+const flyLive = f => f.on && (f.state === 'in' || f.state === 'circle' || f.state === 'swoop');
+function osgLayout() {
+  const SC = 3, N = 161, C = 80, hs = new Float32Array(N * N), g = new Array(N * N).fill('g'), riv = x => -38 + Math.sin(x * .012) * 16;
+  const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = (C - j) * SC, x = (C - i) * SC, rd = Math.abs(s - riv(x)); hs[k] = lerp(-3, Math.sin(s * .05) * Math.cos(x * .04) * .7, ss(14, 24, rd)) + 10 * ss(170, 240, Math.hypot(s, x)); g[k] = rd < 16 ? 'r' : 'g'; }
+  const blocks = [[-9.5, 9.5, -9.5, 9.5, OSG.TOP, 'floor', -30]]; for (let k = 0; k < 44; k++) { const a = k / 44 * TAU, s = Math.cos(a) * (OSG.R + .9), x = Math.sin(a) * (OSG.R + .9); blocks.push([s - .9, s + .9, x - .9, x + .9, OSG.TOP + 5, 'wall', -30]); }
+  return { field: [-12, 12, -12, 12], start: [-3, 0], startY: OSG.TOP, terrain: { w: N, h: N, hs, cx: C, cy: C, sc: SC, sea: -999, g }, layout: { blocks, riv, plazas: [] } };
+}
+function osgContent(L) { for (const [k, s, x] of [['q', 4, 5], ['b', 4, -5], ['su', -5, 4], ['q', -5, -4]]) addCrate(k, s, x, OSG.TOP, 4); }
+function buildOsg(L, TH) {
+  const T_ = L.terrain, Y = L.layout, first = scene.children.length, sky = TH.env, at = (s, x) => terrainAt(s, x, true), TOP = OSG.TOP;
+  const grd = surf(TX.rock, { sky, vc: true, color: 0xb0a890, rough: .9, bump: 2.4 }), st = surf(TX.hdStone || TX.marble, { sky, color: 0xc8c0b0, rough: .75, bump: 3, tri: 3 });
+  groundMesh(T_, TX.rock, (k, sl, y) => k === 'r' ? [.3, .3, .28] : [.72, .7, .55], 7, () => grd);
+  wideFloor(TX.rock, 0x6a6650, 90, 8, 1200);
+  const wt = TX.sea.clone(); wt.needsUpdate = true; wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(30, 3); TH.waterTex = wt;
+  const wg = new THREE.PlaneGeometry(1, 1, 80, 1), wp = wg.attributes.position; for (let i = 0; i < wp.count; i++) { const u = wp.getX(i), v = wp.getY(i), x = u * 560, s = Y.riv(x) + v * 44, q = tw(s, x, -1); wp.setXYZ(i, q.x, q.y, q.z); } wg.computeVertexNormals();
+  const water = new THREE.Mesh(wg, new THREE.MeshPhongMaterial({ map: wt, color: 0x3a6a80, specular: 0xffe0b0, shininess: 70, transparent: true, opacity: .88, side: THREE.DoubleSide })); water.userData.keep = true; scene.add(water);
+  // the tower: a great drum of stone, its top ringed with broken merlons, a mosaic underfoot, and a stump of the old dome
+  const q0 = tw(0, 0, 0); part(new THREE.CylinderGeometry(OSG.R + .6, OSG.R + 2, TOP + 6, 28), st, scene, q0.x, q0.y + TOP / 2 - 3.05, q0.z);
+  { const m = new THREE.Mesh(new THREE.CircleGeometry(OSG.R + .6, 40), surf(TX.mosaic, { sky, color: 0xc8c0b0, rough: .7, bump: 1.4 })); m.rotation.x = -Math.PI / 2; tw(0, 0, TOP + .02, m.position); scene.add(m); }
+  for (let k = 0; k < 30; k++) { if (k % 7 === 3) continue; const a = k / 30 * TAU, q = tw(Math.cos(a) * (OSG.R + .35), Math.sin(a) * (OSG.R + .35), TOP + .7); const h = k % 2 ? 1.4 : 1 + (k % 3) * .3; part(GEO_BOX, st, scene, q.x, q.y + (h - 1.4) / 2, q.z, 1.1, h, .6).rotation.y = -a + Math.PI / 2; }
+  for (let k = 0; k < 6; k++) addTorch(Math.cos(k / 6 * TAU + .3) * (OSG.R - .3), Math.sin(k / 6 * TAU + .3) * (OSG.R - .3), TOP + 1.8);
+  // the ruined city on both banks, Battle for Middle-earth's where it's here, and broken arches of the bridge
+  const ruins = propsOf(['osbruin01', 'osbruin02', 'osbruin03', 'osbruin04', 'osbruin05', 'osbruin06', 'osbruin07', 'osbruin08', 'osbruin09', 'osbruin10', 'ruintwr']);
+  for (let k = 0; k < 150; k++) { const a = rand(0, TAU), r = rand(20, 210), s = Math.cos(a) * r, x = Math.sin(a) * r; if (Math.abs(s - Y.riv(x)) < 26) continue; const y = at(s, x); if (ruins.length && k % 3) { propOne(ruins[k % ruins.length], s, x, y - .4, rand(0, TAU), rand(10, 22), 'w'); continue; } const h = rand(3, 16), q = tw(s, x, y + h / 2); part(GEO_BOX, st, scene, q.x, q.y, q.z, rand(4, 11), h, rand(4, 11)).rotation.y = rand(0, 2); if (k % 4 === 0) { const c = tw(s + 3, x, y + h + 1); part(GEO_BOX, st, scene, c.x, c.y, c.z, 1.2, 2.5, 1.2); } }
+  for (let k = 0; k < 7; k++) { if (k === 3) continue; const s = Y.riv(0) - 18 + k * 6, q = tw(s, 0, -1); part(GEO_BOX, st, scene, q.x, q.y + 4, q.z, 8, 8, 3); if (k % 2) { const d = tw(s + 3, 0, 8); part(GEO_BOX, st, scene, d.x, d.y, d.z, 8, 1, 6.5); } }
+  bakeScenery(scene.children.slice(first));
+}
+function setupFly() {
+  const on = !!(LV && LV.flyers); for (const f of FLY.list) { f.on = false; f.m.root.visible = false; } if (!on) return;
+  while (FLY.list.length < 9) { const f = { m: makeDragon(), hitFn: flyHit, aimY: 0, hitR: 3.8 }; FLY.list.push(f); }
+  FLY.left = 9; FLY.wave = 0; FLY.t = 0; FLY.list.forEach((f, i) => Object.assign(f, { on: true, state: 'wait', hp: 24, wave: i / 3 | 0, s: 200, x: rand(-200, 200), y: 70, ang: i * 2.1, R: rand(30, 48), alt: rand(42, 56), cd: rand(2, 5), t: 0, ph: rand(0, 6), flash: 0, h: 0 }));
+}
+function flyHit(f, dmg) {
+  if (!flyLive(f)) return; f.hp -= dmg; f.flash = .15; sparks(tw(f.s, f.x, f.y), 20, 7, [1, .9, .7], [.5, .5, .7]); S.screech(); KH.drive = Math.min(100, KH.drive + 3);
+  if (f.hp <= 0) { f.state = 'fall'; f.t = 0; FLY.left--; gs.kills++; if (f.wm) f.wm.dead = true; banner(FLY.left ? `A NAZGÛL FALLS! ${FLY.left} LEFT` : 'THE NINE ARE DRIVEN OFF!', 2); if (!FLY.left) FLY.winT = 3; }
+}
+function updateFly(dt) {
+  if (!LV || !LV.flyers) return; const live = state === 'play', TOP = OSG.TOP, th = THEMES.osg; if (th.waterTex) th.waterTex.offset.x -= dt * .02;
+  if (FLY.winT > 0 && live) { FLY.winT -= dt; if (FLY.winT <= 0) roamWin('THE NINE ARE DRIVEN OFF!'); }
+  if (live && !FLY.list.some(f => f.wave === FLY.wave && flyLive(f)) && FLY.wave < 3) { FLY.t += dt; if (FLY.t > (FLY.wave ? 1.5 : 2.5)) { const w = FLY.wave + (FLY.list.some(f => f.state === 'wait' && f.wave === FLY.wave) ? 0 : 1); FLY.t = 0; FLY.wave = w; if (w < 3) { for (const f of FLY.list) if (f.wave === w && f.state === 'wait') { f.state = 'in'; f.t = 0; } S.screech(); banner(w ? 'MORE OF THE NINE!' : 'THE NINE ARE COMING!', 1.8); } } }
+  for (const f of FLY.list) {
+    if (!f.on || f.state === 'wait' || f.state === 'gone') { f.m.root.visible = false; continue; } f.m.root.visible = true; f.t += dt; f.flash -= dt; const px = f.s, pz = f.x, py = f.y;
+    if (f.state === 'in' || f.state === 'circle') {
+      f.ang += dt * .36 * (1 + f.wave * .15); const ts = Math.cos(f.ang) * f.R, tx = Math.sin(f.ang) * f.R, ty = f.alt + Math.sin(f.t * .8 + f.ph) * 3; f.s = damp(f.s, ts, 1.1, dt); f.x = damp(f.x, tx, 1.1, dt); f.y = damp(f.y, ty, 1.1, dt);
+      if (f.state === 'in' && Math.hypot(f.s - ts, f.x - tx) < 6) f.state = 'circle';
+      f.cd -= dt; if (f.state === 'circle' && live && f.cd <= 0) {
+        if (Math.random() < .6) { f.cd = rand(3.5, 6.5); const s = P.s + P.vs * .5, x = P.x + P.vx * .5, n = Math.min(OSG.R - 1, Math.hypot(s, x)), a = Math.atan2(x, s), ss = Math.cos(a) * n, xx = Math.sin(a) * n; const fb = fallFire(); scene.add(fb); const p0 = tw(f.s, f.x, f.y); khFx(warnMesh(ss, xx, TOP, 2.6), g => { warnPulse(g); const k = Math.min(1, g.t / 1.5); fb.position.lerpVectors(p0, tw(ss, xx, TOP + .3), k); bfire(fb.position, .9, .3); if (k < 1) return true; scene.remove(fb); const q = tw(ss, xx, TOP + .3); sparks(q, 26, 8, [1, .9, .6], [1, .4, .1], .25); bblast(q, 2.4); S.boom && S.boom(); if (Math.hypot(P.s - ss, P.x - xx) < 2.6) khHurt(14, { s: ss, x: xx }, { unblock: true, kb: 8 }); return false; }); }
+        else { f.state = 'swoop'; f.t = 0; const a = Math.atan2(P.x - f.x, P.s - f.s); f.dirA = a; f.from = [f.s, f.x, f.y]; f.line = Math.atan2(P.x, P.s); S.screech(); f.at = [P.s, P.x]; f.wm = khFx(warnMesh(P.s, P.x, TOP, 3.4), g => { warnPulse(g); return f.state === 'swoop' && f.t < 1.6; }); }
+      }
+    } else if (f.state === 'swoop') {   // down across the tower, through the red circle, and out the far side
+      const k = f.t / 2.6, e = f.at, a = f.dirA, d0 = Math.hypot(f.from[0] - e[0], f.from[1] - e[1]); f.s = lerp(f.from[0], e[0] + Math.cos(a) * d0, k); f.x = lerp(f.from[1], e[1] + Math.sin(a) * d0, k); f.y = lerp(f.from[2], TOP + 3.2, 1 - Math.abs(k * 2 - 1)) ;
+      if (!f.hitP && Math.hypot(f.s - e[0], f.x - e[1]) < 2.2 && Math.abs(k - .5) < .1) { f.hitP = true; cam.shake = .6; S.smash(); if (Math.hypot(P.s - e[0], P.x - e[1]) < 3.4) khHurt(18, { s: f.s, x: f.x }, { unblock: true, kb: 12 }); }
+      if (k >= 1) { f.state = 'circle'; f.hitP = false; f.t = 0; f.cd = rand(3, 6); f.ang = Math.atan2(f.x, f.s); }
+    } else if (f.state === 'fall') { f.y -= dt * (4 + f.t * 12); f.ang += dt * 3; f.s += Math.cos(f.ang) * dt * 8; f.x += Math.sin(f.ang) * dt * 8; if (Math.random() < .7) smoke.spawn(...tw(f.s, f.x, f.y).toArray(), 0, 1, 0, 1.4, 1.6, 4, [.08, .08, .08], [.2, .2, .2], 0, .3); if (f.y < terrainAt(f.s, f.x, true) + 1) { sparks(tw(f.s, f.x, f.y + 1), 40, 12, [1, .9, .7], [.5, .4, .3], .35); f.state = 'gone'; continue; } }
+    const pos = tw(f.s, f.x, f.y), prev = tw(px, pz, py); f.m.root.position.copy(pos); _a.subVectors(pos, prev); if (_a.lengthSq() > 1e-6) { _a.y *= .5; f.m.root.lookAt(_b.copy(pos).add(_a)); }
+    if (f.state === 'fall') f.m.root.rotateZ(f.t * 4);
+    f.m.wings.forEach(w => w.update(Math.sin(T * 6 + f.ph * 3), 0)); f.m.tail.forEach((t, i) => t.position.x = Math.sin(T * 3 - i * .5) * .1 * i); const tip = f.m.tail[12].position; f.m.spade.position.set(tip.x, tip.y, tip.z - .45); skinPlay(f.m, f.state === 'swoop' ? 'attack' : 'fly');
+  }
+}
+THEMES.osg = natTheme({
+  wallTex: TX.rock, floorTex: TX.rock, tint: [1, .96, .9], door: 0x5a4a3a,
+  env: { sky: [0x1a1c34, 0x4a4a6a, 0xc08a68, 0xffb070], fog: [120, 520], fogC: 0xa88878, amb: [0x7a7270, .55], hemi: [0xd0c8c0, 0x4a4030, .55], sun: [0xffd0a0, .95], east: [0xff8a50, .3], sunDir: [-80, 30, 40] },
+  orc: MT_ORC,
+  scenery(L) { buildOsg(L, this); },
+});
+// --- the Mines of Moria, a Kingdom Hearts level, in the spirit of Unreal Tournament 2004's Rrajigar mines: raw rock caverns joined by winding tunnels shored up with
+//     timber, blue-white crystals burning in the walls, low warm lamps, ferns hanging down the rock, a waterfall, plank bridges, rails, carts and old mining gear.
+//     (On your own computer the rock, wood, ferns and webs are Rrajigar's textures: textures/rr*.png; online, built ones.)
+TX.rrRock = smoothTex(mkTex(256, 256, g => { g.fillStyle = '#5a5248'; g.fillRect(0, 0, 256, 256); for (let i = 0; i < 1500; i++) { const v = Math.random(); g.fillStyle = v < .35 ? '#4a4238' : v < .7 ? '#6a6052' : v < .9 ? '#7a7058' : '#3a3a2a'; g.beginPath(); g.ellipse(Math.random() * 256, Math.random() * 256, 2 + Math.random() * 12, 1 + Math.random() * 6, Math.random() * 3, 0, 7); g.fill(); } }));
+TX.rrWood = smoothTex(mkTex(128, 128, g => { g.fillStyle = '#5a4028'; g.fillRect(0, 0, 128, 128); for (let i = 0; i < 4; i++) { g.fillStyle = i % 2 ? '#4e3722' : '#62462c'; g.fillRect(i * 32 + 1, 0, 30, 128); } for (let i = 0; i < 90; i++) { g.fillStyle = 'rgba(30,18,8,.45)'; g.fillRect(Math.random() * 128, Math.random() * 128, 1, 8 + Math.random() * 30); } }));
+TX.rrFern = mkTex(128, 128, g => { g.clearRect(0, 0, 128, 128); g.strokeStyle = '#4a7a2a'; g.lineWidth = 3; for (let k = 0; k < 2; k++) { const x0 = 40 + k * 50; g.beginPath(); g.moveTo(x0, 4); g.quadraticCurveTo(x0 + 6, 60, x0, 124); g.stroke(); for (let y = 10; y < 118; y += 7) { const l = 24 * Math.sin((y / 124) * Math.PI) + 3; g.fillStyle = y % 2 ? '#5e8e34' : '#6a9a3a'; for (const sx of [-1, 1]) { g.beginPath(); g.ellipse(x0 + sx * l * .55, y + 4, l * .55, 2.6, sx * .35, 0, 7); g.fill(); } } } });
+TX.rrGrass = mkTex(64, 64, g => { g.clearRect(0, 0, 64, 64); g.strokeStyle = '#6a9a3a'; g.lineWidth = 1.6; for (let k = 0; k < 26; k++) { const x = 18 + Math.random() * 28; g.beginPath(); g.moveTo(x, 64); g.quadraticCurveTo(x + rand(-8, 8), 34, x + rand(-22, 22), 4 + Math.random() * 30); g.stroke(); } });
+TX.rrWeb = mkTex(128, 128, g => { g.clearRect(0, 0, 128, 128); g.strokeStyle = 'rgba(235,235,235,.75)'; for (let k = 0; k < 9; k++) { const a = k / 9 * 1.57; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a) * 128, Math.sin(a) * 128); g.stroke(); } for (let r = 20; r < 128; r += 18) { g.beginPath(); g.arc(0, 0, r, 0, 1.57); g.stroke(); } });
+TX.rrBarrel = smoothTex(mkTex(64, 64, g => { g.fillStyle = '#5a3a20'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#2a2622'; for (const y of [8, 28, 50]) g.fillRect(0, y, 64, 5); }));
+TX.rrCrate = smoothTex(mkTex(64, 64, g => { g.fillStyle = '#4a3a30'; g.fillRect(0, 0, 64, 64); g.strokeStyle = '#6a5a4a'; g.lineWidth = 6; g.strokeRect(3, 3, 58, 58); }));
+TX.rrPlate = smoothTex(mkTex(64, 64, g => { g.fillStyle = '#4a4238'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#5e5446'; for (let j = 0; j < 8; j++) for (let i = 0; i < 8; i++) if ((i + j) % 2) g.fillRect(i * 8 + 2, j * 8 + 2, 4, 4); }));
+function mineLayout() {
+  const N = 201, C = 100, hs = new Float32Array(N * N), g = new Array(N * N).fill('w');
+  const WAY = [[-70, 0, 0, 5.5], [-60, -3, 0, 5.5], [-50, -8, 0, 5], [-38, -7, .5, 4.5], [-27, -1, 1, 4.5], [-23, 0, 1, 4], [-21, 0, 1, 2], [-7, 0, 1, 2], [-5, 0, 1, 4], [2, 6, 1, 5], [10, 12, 1, 5], [22, 25, 2, 4.5], [30, 17, 4, 4.5], [36, 3, 6, 5], [40, -10, 6, 5], [44, -29, 6, 4.5], [56, -36, 7, 4.5], [64, -29, 7, 5], [68, -14, 7, 5]];
+  const P_ = (i, k) => WAY[clamp(i, 0, WAY.length - 1)][k], cr = (a, b, c, d, t) => .5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (3 * b - a - 3 * c + d) * t * t * t), path = [];
+  for (let i = 0; i < WAY.length - 1; i++) { const n = Math.ceil(Math.hypot(WAY[i + 1][0] - WAY[i][0], WAY[i + 1][1] - WAY[i][1]) / .5); for (let k = 0; k < n; k++) { const t = k / n, st = i === 6; path.push([st ? lerp(WAY[i][0], WAY[i + 1][0], t) : cr(P_(i - 1, 0), P_(i, 0), P_(i + 1, 0), P_(i + 2, 0), t), st ? 0 : cr(P_(i - 1, 1), P_(i, 1), P_(i + 1, 1), P_(i + 2, 1), t), lerp(WAY[i][2], WAY[i + 1][2], t), lerp(WAY[i][3], WAY[i + 1][3], t)]); } }
+  path.push(WAY[WAY.length - 1].slice());
+  const plazas = [
+    { s: -50, x: -8, y: 0, r: 10, waves: [['o', 'o', 'o'], ['o', 'o', 'a', 'o']], title: 'GOBLINS IN THE WORKINGS!' },
+    { s: 10, x: 12, y: 1, r: 12, waves: [['o', 'o', 'o', 'o'], ['s', 'o', 'o', 'a'], ['j', 'j', 'o', 'o']], title: 'THE CRYSTAL CAVERN!' },
+    { s: 40, x: -10, y: 6, r: 11, waves: [['o', 'o', 'p', 'o'], ['a', 'a', 'o', 'o', 'o'], ['s', 's', 'j', 'o']], title: 'THE CART SHAFT!' },
+    { s: 68, x: -14, y: 7, r: 13, waves: [['o', 'o', 'o', 'o', 'o'], ['p', 'a', 's', 'o', 'o'], ['c', 'o', 'o', 'o', 'j']], names: ['', 'THEY ARE COMING FROM THE DEEP!', 'THEIR CHIEFTAIN!'], title: 'THE DOORS TO THE BRIDGE', boss: true, last: true, breach: [80, -14] },
+  ];
+  for (const q of path) for (const p of plazas) if (Math.hypot(q[0] - p.s, q[1] - p.x) < p.r) q[2] = p.y;
+  const nz = (s, x) => Math.sin(s * .21 + 1) * Math.cos(x * .17) * 1.6 + Math.sin(s * .53 + x * .41) * .7 + Math.sin(x * .9 - s * .7) * .3;
+  const wall = (s, x) => 26 + nz(s, x) * 2.4 + (s > 26 ? 7 : 0);
+  const wB = new Float32Array(N * N), yR = new Float32Array(N * N), cell = (s, x) => [Math.round(C - s), Math.round(C - x)];
+  const carve = (s, x, y, half, fall, kind) => {
+    const [j0, i0] = cell(s, x), R_ = Math.ceil(half + fall);
+    for (let j = j0 - R_; j <= j0 + R_; j++) for (let i = i0 - R_; i <= i0 + R_; i++) {
+      if (i < 0 || j < 0 || i >= N || j >= N) continue; const d = Math.hypot(C - j - s, C - i - x), e = clamp((d - half) / fall, 0, 1), w = 1 - e * e * (3 - 2 * e), k = j * N + i;
+      if (w > wB[k]) { wB[k] = w; yR[k] = y; } if (kind && d < half - .2) g[k] = kind;
+    }
+  };
+  // the chasm the first plank bridge crosses, first, so nothing fills it in
+  for (let x = -15; x <= 15; x += 2) carve(-14, x, -15, 5.2, 1.1, 'c');
+  for (let i = 0; i < path.length; i += 2) { const [s, x, y, h] = path[i]; if (s > -21 && s < -7) continue; carve(s, x, y, h + .3, 4.5, 'p'); }
+  for (const p of plazas) carve(p.s, p.x, p.y, p.r + 1.2, 5, 's');
+  carve(8, 25.5, 1, 4.6, 3.5, 's');   // (the waterfall's alcove)
+  carve(80, -14, 7, 5, 2.5, 'p');     // (and the doors')
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = C - j, x = C - i, flat = wB[k] > .97, cr_ = (Math.sin(s * 1.7 + x * .6) * Math.cos(x * 1.9 - s * .4) + Math.sin(s * 3.1 - x * 2.3) * .5) * 1.5; hs[k] = lerp(wall(s, x), yR[k], wB[k]) + (flat ? (g[k] !== 'c' ? cr_ * .03 : cr_) : cr_ * (1 - wB[k]) * 1.4); }
+  const blocks = [[-21, -7, -1.9, 1.9, 1, 'floor', -4], [-21, -7, -2.3, -1.9, 2.5, 'wall', -4], [-21, -7, 1.9, 2.3, 2.5, 'wall', -4]];
+  const gear = [['cart', 34, 8, 2.2], ['cart', 44, -24, 1.57], ['cart', 58, -34, .6], ['barrel', -57, 5.5, 0], ['barrel', -56, 7, 0], ['crate', -59, 7, 0], ['crate', 2, 18, 0], ['barrel', 20, 4, 0], ['crate', 47, 3, 0], ['barrel', 48, 4.6, 0], ['crate', 30, -18, 0], ['barrel', 60, -4, 0], ['crate', 62, -2, 0]];
+  for (const [k, s, x] of gear) { const r = k === 'cart' ? 0 : .7; if (r) blocks.push([s - r, s + r, x - r, x + r, 3, 'wall', -5]); }
+  return { field: [-98, 98, -98, 98], start: [-66, -1], terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g }, layout: { blocks, path, plazas, gear, wall } };
+}
+function mineContent(L) {
+  const Y = L.layout; khRings(Y); const at = (s, x) => terrainAt(s, x, true);
+  for (let i = 12; i < Y.path.length - 12; i += 16) { const [s, x, y] = Y.path[i]; if (Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 1)) continue; addApple(s, x, (s > -21 && s < -7 ? 1 : at(s, x)) + .9); }
+  for (const p of Y.plazas) for (const [a, k] of [[.8, 'b'], [2.7, Y.plazas.indexOf(p) % 2 ? 'su' : 'q'], [4.7, 'b']]) { const s = p.s + Math.cos(a) * (p.r - 2), x = p.x + Math.sin(a) * (p.r - 2); addCrate(k, s, x, at(s, x), 4); }
+}
+function rockMat(o = {}) {
+  const S_ = (o.size ?? 7).toFixed(2), m = new THREE.MeshStandardMaterial({ map: TX.rrRock, color: o.color ?? 0xffffff, vertexColors: !!o.vc, roughness: .95, metalness: 0, flatShading: true, side: o.side || THREE.FrontSide });
+  m.onBeforeCompile = sh => {
+    ps1Compile(sh);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vRW;\nvarying vec3 vRN;').replace('#include <project_vertex>', `{ vec4 wp = vec4(transformed, 1.0); vec3 wn = objectNormal;
+        #ifdef USE_INSTANCING
+          wp = instanceMatrix * wp; wn = mat3(instanceMatrix) * wn;
+        #endif
+        wp = modelMatrix * wp; vRW = wp.xyz; vRN = mat3(modelMatrix) * wn; }
+      #include <project_vertex>`);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vRW;\nvarying vec3 vRN;').replace('#include <map_fragment>', `vec3 bl = pow(abs(normalize(vRN)), vec3(4.0)); bl /= bl.x + bl.y + bl.z;
+      vec4 tx = texture2D(map, vRW.zy / ${S_}) * bl.x + texture2D(map, vRW.xz / ${S_}) * bl.y + texture2D(map, vRW.xy / ${S_}) * bl.z; diffuseColor *= mapTexelToLinear(tx);`);
+  };
+  m.customProgramCacheKey = () => 'rockMat' + S_; return m;
+}
+function buildMine(L, TH) {
+  const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
+  const rock = rockMat({ vc: true, size: 8 }), rock2 = rockMat({ color: 0x8a8278, size: 6 });
+  groundMesh(T_, TX.rrRock, (k, sl, y) => k === 'p' || k === 's' ? [.8, .74, .62] : k === 'c' ? [.4, .42, .48] : y > 12 ? [.42, .42, .42] : [.62, .6, .56], 8, () => rock);
+  L.glows = [];
+  // the roof of the caverns: rock over the whole level, lumps and stalactites hanging from it
+  { const rg = new THREE.PlaneGeometry(200, 200, 70, 70), rp = rg.attributes.position; for (let i = 0; i < rp.count; i++) { const x = rp.getX(i), s = rp.getY(i), q = tw(s, x, 17 + (s > 26 ? 7 : 0) + Math.sin(s * .19) * Math.cos(x * .23) * 2 + Math.sin(s * .5 + x * .4) * .8); rp.setXYZ(i, q.x, q.y, q.z); } rg.computeVertexNormals(); const m = new THREE.Mesh(rg, rock2); rock2.side = THREE.DoubleSide; m.userData.keep = true; scene.add(m); }
+  const inPlaza = (s, x, pad = 0) => Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + pad), nearPath = (s, x, pad) => { for (let i = 0; i < Y.path.length; i += 3) if (Math.hypot(s - Y.path[i][0], x - Y.path[i][1]) < Y.path[i][3] + pad) return true; return false; };
+  const stal = [], mites = []; for (let k = 0; k < 420; k++) { const s = rand(-78, 90), x = rand(-52, 42), y = at(s, x); if (y > 14) continue; const open = nearPath(s, x, 2); if (!open && !inPlaza(s, x, 3)) continue; const roof = 17 + (s > 26 ? 7 : 0), q = tw(s, x, roof), l = rand(1.2, 4); stal.push([q.x, q.y - l / 2 + .6, q.z, rand(.25, .7), l, rand(.25, .7)]); }
+  instanced(new THREE.ConeGeometry(1, 1, 6).rotateX(Math.PI), rock2, stal);
+  // the waterfall in its alcove, and the pale stream it feeds, running out over the cavern floor
+  { const ft = TX.falls.clone(); ft.needsUpdate = true; ft.wrapS = ft.wrapT = THREE.RepeatWrapping; ft.magFilter = THREE.LinearFilter; ft.repeat.set(1, 2); THEMES_FALLS.push(ft); const fm = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 18), new THREE.MeshBasicMaterial({ map: ft, color: 0xfff4dc, transparent: true, opacity: .62, side: THREE.DoubleSide, depthWrite: false })); place(fm, 8, 29.5, 10, -Math.PI / 2); fm.userData.keep = true; scene.add(fm);
+    const wt = TX.sea.clone(); wt.needsUpdate = true; wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(2, 5); TH.waterTex = wt; const pts = [[8, 28], [7, 24], [9, 19], [13, 13], [18, 8]], pos = [], uv = [], idx = []; const n = 46; for (let i = 0; i <= n; i++) { const t = i / n * (pts.length - 1), a = Math.min(pts.length - 2, t | 0), f = t - a, s = lerp(pts[a][0], pts[a + 1][0], f), x = lerp(pts[a][1], pts[a + 1][1], f), w = 1.6 + Math.sin(i * .5) * .4, dir = Math.atan2(pts[a + 1][1] - pts[a][1], pts[a + 1][0] - pts[a][0]); for (const sg of [-1, 1]) { const ps = s - Math.sin(dir) * sg * w, px = x + Math.cos(dir) * sg * w, q = tw(ps, px, at(ps, px) + .09); pos.push(q.x, q.y, q.z); uv.push((sg + 1) / 2, i / 6); } if (i) { const b = (i - 1) * 2; idx.push(b, b + 1, b + 2, b + 2, b + 1, b + 3); } }
+    const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); sg.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); sg.setIndex(idx); sg.computeVertexNormals(); const sm = new THREE.Mesh(sg, new THREE.MeshPhongMaterial({ map: wt, color: 0xd8d8a8, emissive: 0x101410, specular: 0xc0c8c0, shininess: 60, transparent: true, opacity: .62, side: THREE.DoubleSide })); sm.userData.keep = true; scene.add(sm); TH.fallAt = [8, 29, 1]; }
+  // the chasm under the plank bridge: blue light far down
+  for (let k = 0; k < 5; k++) { const q = tw(-14 + rand(-3, 3), -12 + k * 6, -13); const gl = glowSprite(0x40c0ff, 9, .55); gl.position.copy(q); scene.add(gl); }
+  L.glows.push({ p: tw(-14, 0, -6), c: 0x50c8ff, i: 2.4 });
+  const wood = surf(TX.rrWood, { sky, rough: .85, bump: 2.6, env: .1 }), iron = lam(0x3a3634), barkD = lam(0x3a2a1a);
+  { const planks = [], beams = []; for (let s = -21; s < -7; s += .62) { const q = tw(s, rand(-.06, .06), .92); planks.push([q.x, q.y, q.z, 3.8, .14, .56, rand(-.03, .03)]); } for (const sx of [-1, 1]) { const a = tw(-14, sx * 1.65, .72); beams.push([a.x, a.y, a.z, .3, .3, 15]); const r = tw(-14, sx * 2.05, 2.25); beams.push([r.x, r.y, r.z, .14, .14, 14]); for (let s = -21; s <= -7; s += 2.8) { const p = tw(s, sx * 2.05, 1.65); beams.push([p.x, p.y, p.z, .18, 1.4, .18]); } } instanced(GEO_BOX, wood, planks); instanced(GEO_BOX, wood, beams);
+    for (const [s0, y0] of [[-21, -8], [-7, -8]]) for (const sx of [-1, 1]) { const q = tw(s0, sx * 2.4, (y0 + 1) / 2); part(GEO_BOX, wood, scene, q.x, q.y, q.z, .4, 1 - y0, .4); } }
+  // the timber shoring down the tunnels; a lamp hung from every other set
+  const posts = [], lintels = [], braces = []; let lastA = -99, nA = 0;
+  for (let i = 8; i < Y.path.length - 6; i++) { const [s, x, , hw] = Y.path[i]; if (inPlaza(s, x, 2) || (s > -24 && s < -4) || Math.hypot(s - lastA, x - (Y._ax || 0)) < 8) continue; lastA = s; Y._ax = x; nA++;
+    const a = Math.atan2(Y.path[i + 1][1] - Y.path[i - 1][1], Y.path[i + 1][0] - Y.path[i - 1][0]), ns = -Math.sin(a), nx = Math.cos(a), y = at(s, x), w = Math.min(hw + .15, 4.6), ry = Math.atan2(-ns, -nx);
+    for (const sg of [-1, 1]) { const q = tw(s + ns * sg * w, x + nx * sg * w, y + 2.6); posts.push([q.x, q.y, q.z, .42, 5.8, .42, ry]); const b = tw(s + ns * sg * (w - .9), x + nx * sg * (w - .9), y + 4.6); braces.push([b.x, b.y, b.z, .22, 1.8, .22, ry]); }
+    const l = tw(s, x, y + 5.4); lintels.push([l.x, l.y, l.z, w * 2 + 1, .44, .46, ry]);
+    if (nA % 2 === 0) { const c = tw(s, x, y + 4.5); part(GEO.cyl, iron, scene, c.x, c.y + .4, c.z, .02, .8, .02); part(new THREE.CylinderGeometry(.14, .22, .34, 8), lam(0x3a2a18), scene, c.x, c.y, c.z); const lg = new THREE.Mesh(new THREE.SphereGeometry(.13, 8, 6), bas(0xffd080)); lg.position.copy(c); lg.position.y -= .12; scene.add(lg); const gl = glowSprite(0xffb060, 3.4, .75); gl.position.copy(lg.position); scene.add(gl); L.glows.push({ p: lg.position.clone(), c: 0xffa858, i: 1.7 }); } }
+  instanced(GEO_BOX, wood, posts); instanced(GEO_BOX, wood, lintels); instanced(GEO_BOX, wood, braces);
+  // rails from the crystal cavern up to the doors, carts standing on them
+  { const sl = [], rl = []; for (let i = 8; i < Y.path.length - 4; i += 2) { const [s, x] = Y.path[i]; if (s < 16) continue; const a = Math.atan2(Y.path[i + 2 < Y.path.length ? i + 2 : i][1] - Y.path[i - 2][1], Y.path[i + 2 < Y.path.length ? i + 2 : i][0] - Y.path[i - 2][0]), ns = -Math.sin(a), nx = Math.cos(a), y = at(s, x), ry = Math.atan2(-ns, -nx); for (const sg of [-1, 1]) { const q = tw(s + ns * sg * .62, x + nx * sg * .62, y + .1); rl.push([q.x, q.y, q.z, .07, .08, 1.08, ry]); } if (i % 4 === 0) { const q = tw(s, x, y + .04); sl.push([q.x, q.y, q.z, 1.8, .06, .24, ry]); } } instanced(GEO_BOX, iron, rl); instanced(GEO_BOX, wood, sl); }
+  const barrelM = surf(TX.rrBarrel, { sky, rough: .7, bump: 2 }), crateM = surf(TX.rrCrate, { sky, rough: .8, bump: 2.2 }), plate = surf(TX.rrPlate, { sky, color: 0x9a8a78, rough: .6, metal: .3, bump: 2 });
+  for (const [k, s, x, h] of Y.gear) { const y = at(s, x), q = tw(s, x, y);
+    if (k === 'barrel') part(new THREE.CylinderGeometry(.55, .55, 1.3, 12), barrelM, scene, q.x, q.y + .65, q.z);
+    else if (k === 'crate') part(GEO_BOX, crateM, scene, q.x, q.y + .7, q.z, 1.4, 1.4, 1.4).rotation.y = rand(0, 1);
+    else { const g = new THREE.Group(); place(g, s, x, y + .1, h); scene.add(g); part(GEO_BOX, plate, g, 0, .85, 0, 1.3, .9, 2.2); part(GEO_BOX, bas(0x14100c), g, 0, 1.28, 0, 1.08, .04, 1.9); for (const a of [-.8, .8]) for (const b of [-.62, .62]) { const w = part(new THREE.CylinderGeometry(.24, .24, .1, 12), iron, g, b, .24, a); w.rotation.z = Math.PI / 2; } for (let n = 0; n < 7; n++) part(GEO.sph, lam(0x5a5a58), g, rand(-.4, .4), 1.36, rand(-.8, .8), .22, .16, .22); } }
+  // crystals: blue-white clusters burning in the walls round the caverns and along the tunnels
+  const cryM = new THREE.MeshPhongMaterial({ color: 0x7ae4ff, emissive: 0x2a98d0, emissiveIntensity: .7, specular: 0xffffff, shininess: 120, transparent: true, opacity: .92 }), cry = new THREE.OctahedronGeometry(1, 0);
+  const crystal = (s, x, y, big, light) => { const q = tw(s, x, y), n = big ? 8 : 4; for (let k = 0; k < n; k++) { const m = new THREE.Mesh(cry, cryM), l = (big ? rand(.8, 1.9) : rand(.4, 1)); m.position.set(q.x + rand(-.8, .8), q.y + rand(-.9, .9), q.z + rand(-.8, .8)); m.scale.set(l * .3, l, l * .3); m.rotation.set(rand(-.6, .6), rand(0, 3), rand(-.6, .6)); scene.add(m); } const gl = glowSprite(0x50c8ff, big ? 5 : 3, .38); gl.position.copy(q); scene.add(gl); if (light) L.glows.push({ p: q.clone(), c: 0x48c0ff, i: big ? 2.2 : 1.4 }); };
+  for (const p of Y.plazas) for (let k = 0; k < 7; k++) { const a = k / 7 * TAU + rand(-.25, .25); let r = p.r + 1; while (r < p.r + 12 && at(p.s + Math.cos(a) * r, p.x + Math.sin(a) * r) < p.y + 6) r += .5; const s = p.s + Math.cos(a) * r, x = p.x + Math.sin(a) * r; if (nearPath(s, x, 1)) continue; crystal(s, x, p.y + rand(4.5, 8), k % 2 === 0, k % 3 === 0); }
+  for (let i = 30; i < Y.path.length; i += 42) { const [s, x, y, hw] = Y.path[i]; if (inPlaza(s, x, 1) || (s > -22 && s < -6)) continue; const a = Math.atan2(Y.path[i + 1 < Y.path.length ? i + 1 : i][1] - Y.path[i - 1][1], Y.path[i + 1 < Y.path.length ? i + 1 : i][0] - Y.path[i - 1][0]), sg = i % 84 ? 1 : -1; crystal(s - Math.sin(a) * sg * (hw + 1.8), x + Math.cos(a) * sg * (hw + 1.8), y + rand(3, 5), false, true); }
+  // ferns hanging down the rock (none on the ground in the way), grass only where the walls meet the floor, webs in the tops of the shoring, stalagmites against the walls
+  const fernM = new THREE.MeshLambertMaterial({ map: TX.rrFern, alphaTest: .4, side: THREE.DoubleSide, color: 0xc8d8b0 }), grassM = new THREE.MeshLambertMaterial({ map: TX.rrGrass, alphaTest: .35, side: THREE.DoubleSide, color: 0xc8d8b0 }), webM = new THREE.MeshBasicMaterial({ map: TX.rrWeb, transparent: true, opacity: .55, side: THREE.DoubleSide, depthWrite: false });
+  for (let k = 0, n = 0; k < 500 && n < 80; k++) { const s = rand(-74, 86), x = rand(-52, 42), y = at(s, x); if (y < 3 || y > 16 || (!nearPath(s, x, 5) && !inPlaza(s, x, 7))) continue; n++; const q = tw(s, x, y + rand(-.5, 1)), sz = rand(2.6, 5); for (let e = 0; e < 2; e++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(sz, sz * 1.3).translate(0, -sz * .5, 0), fernM); m.position.copy(q); m.rotation.set(rand(-.2, .2), e * 1.57 + rand(0, 3), rand(-.15, .15)); scene.add(m); } }
+  for (let k = 0, n = 0; k < 500 && n < 40; k++) { const i = Math.random() * Y.path.length | 0, [s0, x0, , hw] = Y.path[i], a = rand(0, TAU), r = hw + rand(.8, 2), s = s0 + Math.cos(a) * r, x = x0 + Math.sin(a) * r; if (nearPath(s, x, .4) || inPlaza(s, x, .5)) continue; const y = at(s, x); if (y > 6 + Y.path[i][2]) continue; n++; const q = tw(s, x, y); for (let e = 0; e < 2; e++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.3).translate(0, .6, 0), grassM); m.position.copy(q); m.rotation.y = e * 1.57 + rand(0, 3); scene.add(m); } if (n % 3 === 0) mites.push([q.x + rand(-.5, .5), q.y + 1.4, q.z + rand(-.5, .5), rand(.4, .8), rand(2.4, 4.6), rand(.4, .8)]); }
+  instanced(new THREE.ConeGeometry(1, 1, 6), rock2, mites);
+  for (let k = 0; k < 18; k++) { const i = 20 + Math.random() * (Y.path.length - 30) | 0, [s, x, , hw] = Y.path[i]; if (inPlaza(s, x, 1) || (s > -23 && s < -5)) continue; const y = at(s, x), q = tw(s + rand(-1, 1), x + (k % 2 ? 1 : -1) * (hw - .5), y + 4.4), m = new THREE.Mesh(new THREE.PlaneGeometry(3, 3), webM); m.position.copy(q); m.rotation.y = rand(0, 3); m.userData.keep = true; scene.add(m); }
+  // a timber gallery high across the crystal cavern, and pipes along the shaft
+  { const q = tw(9, 12, 9); part(GEO_BOX, wood, scene, q.x, q.y, q.z, 28, .4, 2.4); for (const sx of [-1, 1]) { const r = tw(9 + sx * 1.15, 12, 10); part(GEO_BOX, wood, scene, r.x, r.y, r.z, 28, .14, .14); } for (const x of [-1, 25]) { const p = tw(9, x, 4.5); part(GEO_BOX, wood, scene, p.x, p.y, p.z, .5, 9, .5); } for (let x = 0; x <= 24; x += 3) { const p = tw(9.6, x, 9.7); part(GEO_BOX, wood, scene, p.x, p.y, p.z, .12, 1.1, .12); }
+    const ps = []; for (let i = 0; i < Y.path.length; i += 3) { const [s, x, , hw] = Y.path[i]; if (s < 28 || inPlaza(s, x, .5)) continue; const q2 = tw(s, x + hw + .4, at(s, x) + 3.2); ps.push([q2.x, q2.y, q2.z, .22, .22, 2.2]); } instanced(GEO_BOX, lam(0x6a4a30), ps); }
+  // the doors to the bridge, at the end of the last hall
+  { const y = 7, st = surf(TX.hdStone, { sky, color: 0x8a8680, rough: .7, bump: 3, tri: 2.4 }), q = tw(84, -14, y + 5); part(GEO_BOX, bas(0x05060a), scene, q.x, q.y, q.z, 8, 10, .3); for (const sx of [-1, 1]) { const p = tw(83.4, -14 + sx * 4.6, y + 5.6); part(GEO_BOX, st, scene, p.x, p.y, p.z, 1.3, 11.4, 1.6); } const l = tw(83.4, -14, y + 11); part(GEO_BOX, st, scene, l.x, l.y, l.z, 10.6, 1.4, 1.8); const gl = glowSprite(0xff6a20, 9, .4); gl.position.copy(tw(83.5, -14, y + 2)); scene.add(gl); L.glows.push({ p: tw(82, -14, y + 3), c: 0xff7a30, i: 2 }); }
+  bakeScenery(scene.children.slice(first));
+}
+// each frame in the mines: the water runs, mist where the fall lands, dust in the air, the crystals' glow breathing
+function updateMine(dt) {
+  if (!LV || LV.theme !== 'minekh' || state === 'map' || state === 'title') return; const TH = THEMES.minekh; if (TH.waterTex) TH.waterTex.offset.y -= dt * .22;
+  if (Math.random() < dt * 8) { const [s, x, y] = TH.fallAt; smoke.spawn(...tw(s + rand(-2, 2), x - rand(0, 1), y + .4).toArray(), rand(-.5, .5), rand(.5, 1.4), rand(-.5, .5), rand(1.5, 2.6), 1.4, 3.6, [.7, .85, .85], [.85, .95, .95], 0, .25); }
+  if (Math.random() < dt * 10) fx.spawn(...tw(P.s + rand(-12, 12), P.x + rand(-12, 12), P.y + rand(.5, 7)).toArray(), rand(-.15, .15), rand(-.1, .1), rand(-.15, .15), rand(2, 4), .05, .05, [.9, .85, .7], [.5, .45, .35], 0, 0);
+}
+THEMES.minekh = natTheme({
+  wallTex: TX.hdRock, floorTex: TX.hdRock, tint: [.75, .75, .72], door: 0x6a6a7a,
+  env: { sky: [0x020404, 0x040808, 0x081010, 0x0c1414], fog: [12, 78], fogC: 0x060c0e, amb: [0x5a6870, .5], hemi: [0x8aa0a8, 0x3a2c1e, .38], sun: [0xa0b8c0, .1], east: [0xffa060, .08], bloom: .7, sunDir: [10, 90, 20] },
+  orc: { sk: 0x8a907a, ska: 0xa0a488, ar: 0x2a2630, le: 0x3a2a1a, met: 0x1e1c22, sc: .85 },
+  scenery(L) { buildMine(L, this); },
+});
+// the Balrog in The Fall: his bones posed by hand each frame (no clip of his lies him out): flat on his back, wings spread wide to each side, arms flung out,
+// legs trailing, head up the screen looking at Gandalf; then the whole of him moved so his body's middle lies on the middle of the shaft
+const _fq = new THREE.Quaternion(), _fw = new THREE.Quaternion(), _fp = new THREE.Quaternion(), _f1 = new V3(), _f2 = new V3(), _f3 = new V3();
+function fallBones(b) {
+  const m = b.m, K = m.skin; if (!K || !K.obj || !m.root.visible) return; if (!m.bb) { m.bb = {}; K.obj.traverse(o => { if (o.isBone && !m.bb[o.name]) m.bb[o.name] = o; }); }
+  const B = m.bb; if (!B.BAT_CLAV_L || !B.BAT_CLAV_R) return; m.root.updateMatrixWorld(true);
+  const R0 = _f3.set(-1, 0, 0), U = new V3(0, 0, 1), C_ = new V3(0, 1, 0), wp = (o, v) => o.getWorldPosition(v);
+  const dirOf = (side, a, b_, c) => new V3().addScaledVector(R0, a * side).addScaledVector(U, b_).addScaledVector(C_, c).normalize();
+  const aim = (from, to, d) => { const f = B[from], t = typeof to === 'string' ? B[to] : to; if (!f || !t) return; wp(f, _f1); wp(t, _f2).sub(_f1); if (_f2.lengthSq() < 1e-6) return; _f2.normalize(); _fq.setFromUnitVectors(_f2, d); f.getWorldQuaternion(_fw).premultiply(_fq); f.parent.getWorldQuaternion(_fp); f.quaternion.copy(_fp.invert().multiply(_fw)); f.updateMatrixWorld(true); };
+  const cL = wp(B.BAT_CLAV_L, new V3()), cR = wp(B.BAT_CLAV_R, new V3()), chest = cL.clone().add(cR).multiplyScalar(.5), sL = Math.sign(cL.clone().sub(chest).dot(R0)) || 1;
+  const fl = Math.sin(T * 2.1) * .07;
+  for (const [n, side] of [['L', sL], ['R', -sL]]) {
+    const W = q => 'BAT_W_' + q + '_' + n;
+    aim(W('CLAV'), W('SHLDR'), dirOf(side, 1, .3, -.1)); aim(W('SHLDR'), W('ELBO'), dirOf(side, 1, .62, fl)); aim(W('ELBO'), W('HAND'), dirOf(side, 1, .05, fl));
+    // the fingers of the wing fan out from the hand: the first up and out, the last back down towards his hip
+    const hand = B[W('HAND')]; if (hand) { const fingers = []; hand.traverse(o => { if (o !== hand && o.isBone && o.parent === hand) fingers.push(o); }); const lead = fingers.filter(o => o.children.some(c => c.isBone)).map(o => { wp(o.children.find(c => c.isBone), _f1); wp(o, _f2); return { o, up: _f1.sub(_f2).dot(U), kid: o.children.find(c => c.isBone) }; }).sort((a, b_) => b_.up - a.up); lead.forEach((f, i) => { const ang = lerp(.85, -1.3, lead.length > 1 ? i / (lead.length - 1) : .5), d = dirOf(side, Math.cos(ang), Math.sin(ang), fl * .5); const f0 = f.o; wp(f0, _f1); wp(f.kid, _f2).sub(_f1); if (_f2.lengthSq() > 1e-6) { _f2.normalize(); _fq.setFromUnitVectors(_f2, d); f0.getWorldQuaternion(_fw).premultiply(_fq); f0.parent.getWorldQuaternion(_fp); f0.quaternion.copy(_fp.invert().multiply(_fw)); f0.updateMatrixWorld(true); } const gk = f.kid.children.find(c => c.isBone); if (gk) { wp(f.kid, _f1); wp(gk, _f2).sub(_f1); if (_f2.lengthSq() > 1e-6) { _f2.normalize(); _fq.setFromUnitVectors(_f2, d); f.kid.getWorldQuaternion(_fw).premultiply(_fq); f.kid.parent.getWorldQuaternion(_fp); f.kid.quaternion.copy(_fp.invert().multiply(_fw)); f.kid.updateMatrixWorld(true); } } }); }
+    aim('BAT_CLAV_' + n, 'BAT_SHOULDER_' + n, dirOf(side, 1, .15, 0)); aim('BAT_SHOULDER_' + n, 'BAT_ELBOW_' + n, dirOf(side, 1, .25, .1)); aim('BAT_ELBOW_' + n, 'BAT_HAND_' + n, dirOf(side, .85, .55, .22));
+    aim('BAT_HIP_' + n, 'BAT_KNEE_' + n, dirOf(side, .32, -1, .12)); aim('BAT_KNEE_' + n, 'BAT_ANCLE_' + n, dirOf(side, .18, -1, -.1)); aim('BAT_ANCLE_' + n, 'BAT_FOOT_' + n, dirOf(side, .08, -.7, .7));
+  }
+  aim('BAT_NECK', 'BAT_HEAD', new V3(0, .45, 1).normalize());
+  // his middle on the middle of the shaft
+  const hipL = B.BAT_HIP_L, hipR = B.BAT_HIP_R; if (hipL && hipR) { const hip = wp(hipL, new V3()).add(wp(hipR, new V3())).multiplyScalar(.5), mid = wp(B.BAT_CLAV_L, new V3()).add(wp(B.BAT_CLAV_R, new V3())).multiplyScalar(.5).add(hip).multiplyScalar(.5), want = tw(b.s, b.x, b.y); m.root.position.add(want.sub(mid)); m.root.updateMatrixWorld(true); }
+  // fire along him: at the wings, the shoulders and the hips, not in Gandalf's way
+  const pts = [W_('L', 'ELBO'), W_('R', 'ELBO'), W_('L', 'HAND'), W_('R', 'HAND'), 'BAT_HIP_L', 'BAT_HIP_R', 'BAT_CLAV_L', 'BAT_CLAV_R']; for (let k = 0; k < (b.phase > 1 ? 4 : 3); k++) { const o = B[pts[Math.random() * pts.length | 0]]; if (o) bfire(wp(o, new V3()).add(_f1.set(rand(-1.4, 1.4), rand(-.6, .4), rand(-1.4, 1.4))), rand(1.2, 2.3), 2.4); }
+}
+const W_ = (n, q) => 'BAT_W_' + q + '_' + n;
 function buildHelms(L, TH) {
   const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
   const stone = surf(TX.hdStone, { sky, rough: .82, bump: 3.2, wet: .75, env: .5, tri: 3.2 }), stoneDark = surf(TX.hdStone, { sky, color: 0x8a8a90, rough: .85, bump: 3.2, wet: .6, env: .4, tri: 3.2 });
@@ -8003,7 +8576,7 @@ function buildHelms(L, TH) {
 function nearOf(path, s, x, r) { for (let i = 0; i < path.length; i += 8) if (Math.hypot(s - path[i][0], x - path[i][1]) < r) return true; return false; }
 // each frame at Helm's Deep: the rain, fire flickering in the breach
 function updateHelms(dt) {
-  const H = THEMES.helms, on = !!(LV && LV.theme === 'helms') && state !== 'map' && state !== 'title';
+  const H = THEMES.helms, on = !!(LV && (LV.theme === 'helms' || LV.deeping)) && state !== 'map' && state !== 'title';
   if (FIRE) FIRE.update(dt);
   if (H.rain) H.rain.visible = on; if (!on) return;
   const pos = H.rain.geometry.attributes.position, a = pos.array;
@@ -8382,12 +8955,12 @@ function drawBoss(b, dt, walk) {
   const M_ = balrogMats(), hot = b.phase > 1 ? 1.35 : 1; M_.rock.emissiveIntensity = b.flash > 0 ? 2.4 : (.7 + Math.sin(T * 2.6) * .2) * hot;
   m.fires.forEach(fi => { const k = (.8 + .25 * Math.sin(T * 9 + fi.ph) + .1 * Math.sin(T * 23 + fi.ph * 2)) * hot; fi.sp.scale.set(fi.s * .6 * k, fi.s * (.85 + .3 * Math.sin(T * 7 + fi.ph)) * hot, 1); });
   m.halo.material.opacity = (b.phase > 1 ? .48 : .32) + Math.sin(T * 3) * .05;
-  if (m.root.visible && b.state !== 'fall') { m.root.updateMatrixWorld(true); for (let k = 0; k < (b.phase > 1 ? 4 : 2); k++) bfire(_a.set(rand(-1.4, 1.4), rand(3, 8.5), rand(-1.2, .6)).applyMatrix4(m.root.matrixWorld), 1.5, 1.6); }
-  if (b.state === 'cutfall') { m.root.rotateX(-clamp(b.t * .6, 0, 1.3)); m.root.rotateZ(Math.sin(b.t * 2) * .15); }   // (tipping back as he falls, flailing)
-  if (LV && LV.fall && b.state !== 'die') {   // (the fall: he falls the whole way as he did off the bridge, on his back, wings spread, looking up at Gandalf)
-    m.root.rotateX(-1.42 + Math.sin(T * 1.1) * .06); m.root.rotateY(Math.sin(T * .9) * .1);
-    if (!(b.fallT > T)) { b.fallT = T + 5.8; if (!skinClip(m, 'fly_a', 6)) skinClip(m, 'jump_2', 6); }
+  if (LV && LV.fall && b.state !== 'die') {   // (the fall: flat on his back, head up the screen; fallBones lays out his limbs and centres him)
+    m.root.rotateX(-Math.PI / 2 + Math.sin(T * 1.1) * .03); m.root.rotateY(Math.sin(T * .7) * .05); if (!(m.skin && m.skin.obj)) m.root.translateY(-4);
+    if (!m.fglow) { m.fglow = glowSprite(0xff6a18, 24, .4); scene.add(m.fglow); (m.extra = m.extra || []).push(m.fglow); } tw(b.s, b.x, b.y - 5, m.fglow.position); m.fglow.material.opacity = .34 + Math.sin(T * 7) * .06;
   }
+  if (m.root.visible && b.state !== 'fall' && !(LV && LV.fall)) { m.root.updateMatrixWorld(true); for (let k = 0; k < (b.phase > 1 ? 4 : 2); k++) bfire(_a.set(rand(-1.4, 1.4), rand(3, 8.5), rand(-1.2, .6)).applyMatrix4(m.root.matrixWorld), 1.5, 1.6); }
+  if (b.state === 'cutfall') { m.root.rotateX(-clamp(b.t * .6, 0, 1.3)); m.root.rotateZ(Math.sin(b.t * 2) * .15); }   // (tipping back as he falls, flailing)
   skinPlay(m, b.state === 'cutfall' ? 'jump' : b.state === 'fall' ? 'die' : b.state === 'stun' ? 'hit' : walk ? 'walk' : 'idle');
 }
 
@@ -8804,11 +9377,11 @@ function fallLayout() {
     layout: { blocks: [], plazas: [{ s: 0, x: 0, y: 0, r: 11.5, waves: [['F']], title: 'THE FALL', boss: true, last: true, breach: [0, 0], bossHp: 700, noAdds: true }] } };
 }
 function spawnFallBalrog(pl, delay = 0) {
-  const b = { m: makeKHBalrog(), boss: true, kind: 'B', name: 'BALROG', hp: pl.bossHp, max: pl.bossHp, bars: 4, r: 2.3, tall: 8, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null,
+  const b = { m: makeKHBalrog(), boss: true, kind: 'B', name: 'BALROG', hp: pl.bossHp, max: pl.bossHp, bars: 4, r: 3.6, tall: 8, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null,
     state: 'below', t: -delay, h: 0, kneel: 0, cd: 2.2, s: 0, x: 0, y: -16, ang: 0, upd: fallBossUpdate, hitFn: fallBossHit, reactFn: () => null };
   URUKS.push(b); KH.boss = b; Music.mode = 1; return b;
 }
-const FALL_LOW = -16, FALL_UP = -3.4;
+const FALL_LOW = -6.5, FALL_UP = -2.6, FALL_MID = .8, FALL_CLIP = (new URLSearchParams(location.search).get('fallclip') || 'fly_a,.05').split(',').map((v, i) => i ? +v : v);   // (how far down he falls below Gandalf, level with him, his body's middle above his feet, and the frame of which clip he's held in)
 function fallBossHit(b, dmg, fin) {
   if (!ukLive(b) || b.state === 'die') return;
   const p = tw(b.s, b.x, b.y + (b.state === 'open' || b.state === 'rise' ? 3 : 5));
@@ -8834,10 +9407,10 @@ function fallBossUpdate(b, dt) {
   const p2 = b.phase > 1, A = b.a;
   switch (b.state) {
     case 'below': {   // circling far below, hurling fire and rock up the shaft
-      b.ang += dt * (p2 ? .55 : .4); b.s = damp(b.s, P.s + 2 + Math.cos(b.ang) * 2, 1.5, dt); b.x = damp(b.x, P.x + Math.sin(b.ang) * 2, 1.5, dt); b.y = damp(b.y, FALL_LOW, 2, dt); b.h = Math.atan2(P.x - b.x, P.s - b.s);
+      b.ang += dt * (p2 ? .55 : .4); b.s = damp(b.s, Math.cos(b.ang) * .25, 3, dt); b.x = damp(b.x, Math.sin(b.ang) * .25, 3, dt); b.y = damp(b.y, FALL_LOW, 2, dt); b.h = Math.atan2(P.x - b.x, P.s - b.s);
       b.cd -= dt; if (state !== 'play' || b.cd > 0) break;
       const r = Math.random(); b.n = (b.n || 0) + 1;
-      if (b.n % 3 === 0) { b.state = 'rise'; b.t = 0; b.to = [clamp(P.s, -8, 8) + rand(-2, 2), clamp(P.x, -8, 8) + rand(-2, 2)]; b.ry = b.y; S.roar(); break; }
+      if (b.n % 3 === 0) { b.state = 'rise'; b.t = 0; b.to = [0, 0]; b.ry = b.y; S.roar(); break; }
       if (r < .5) { const k = p2 ? 5 : 3; for (let i = 0; i < k; i++) setTimeout(() => { if (state === 'play' && ukLive(b)) fallStrike(P.s + rand(-.8, .8), P.x + rand(-.8, .8), 1, 1.5, 12, fallFire); }, i * 380); S.whoosh(); }
       else { const k = p2 ? 5 : 4; for (let i = 0; i < k; i++) { const [s, x] = fallSpot(); setTimeout(() => { if (state === 'play' && ukLive(b) && b.state === 'below') fallStrike(s, x, 1.3, 1.6, 14, fallRock); }, i * 330); } }
       b.cd = rand(1.6, 2.4) / (p2 ? 1.3 : 1); break;
@@ -8853,7 +9426,7 @@ function fallBossUpdate(b, dt) {
       break;
     case 'die': b.y -= dt * (4 + b.t * 10); for (let k = 0; k < 4; k++) bfire(tw(b.s + rand(-2.5, 2.5), b.x + rand(-2.5, 2.5), b.y + rand(0, 8)), 2.4, 2.4); if (b.t > 2.5) { khRemove(b); return; } break;
   }
-  if (b.state !== 'die' && b.state !== 'below' && Math.hypot(P.s - b.s, P.x - b.x) < b.r + .5) { const d = Math.hypot(P.s - b.s, P.x - b.x) || 1; P.s = b.s + (P.s - b.s) / d * (b.r + .5); P.x = b.x + (P.x - b.x) / d * (b.r + .5); }
+  if (false) { const d = Math.hypot(P.s - b.s, P.x - b.x) || 1; P.s = b.s + (P.s - b.s) / d * (b.r + .5); P.x = b.x + (P.x - b.x) / d * (b.r + .5); }
   b.h = Math.PI; drawBoss(b, dt, 0); m.shadow.visible = false;   // (always the same way round: on his back, chest up to the camera, head to the top of the screen)
   if (b.state === 'open' && Math.random() < .3) sparks(tw(b.s, b.x, b.y + 6), 2, 2, [1, 1, .8], [1, .7, .2]);   // (the opening: he glitters)
 }
@@ -9404,6 +9977,11 @@ const UK_KINDS = {
   w: { hp: 15, r: .6, name: 'WARG', speed: 6.2, dmg: 9, slot: 'warg' },
   b: { hp: 16, r: .55, name: 'BERSERKER', speed: 3.8, dmg: 18, slot: 'berserker' },
   n: { hp: 26, r: .55, name: 'BLACK RIDER', speed: 3.6, dmg: 11, slot: 'nazgul' },
+  s: { hp: 26, r: .6, name: 'SHIELD URUK', speed: 2.9, dmg: 10, slot: 'uruk', shield: true },
+  p: { hp: 18, r: .55, name: 'PIKEMAN', speed: 3.2, dmg: 14, slot: 'urukp', style: 'pike', want: 5.6 },
+  a: { hp: 11, r: .5, name: 'CROSSBOWMAN', speed: 3.8, dmg: 9, slot: 'urukx', style: 'shoot', want: 10 },
+  j: { hp: 12, r: .5, name: 'FANATIC', speed: 5, dmg: 13, slot: 'fanatic', style: 'pounce', want: 6.5 },
+  c: { hp: 95, r: .85, name: 'URUK CAPTAIN', speed: 2.8, dmg: 15, armor: true, slot: 'overseer', style: 'whirl', want: 3.4 },
 };
 const khOn = () => !!(LV && (LV.kh || LV.khl));   // (the full Kingdom Hearts levels, or the old ones with its fighting)
 function setupKH() {
@@ -9437,8 +10015,8 @@ function khBarrier(p, on) { for (const b of p.walls || []) b.on = on; if (p.vis)
 function khRings(Y) { for (const p of Y.plazas) { p.walls = []; const n = Math.ceil(TAU * p.r / 1.1); for (let k = 0; k < n; k++) { const a = k / n * TAU, s = p.s + Math.cos(a) * (p.r + .5), x = p.x + Math.sin(a) * (p.r + .5), b = solid(s - .6, s + .6, x - .6, x + .6, p.y - 4, p.y + 9, 'wall'); b.on = false; p.walls.push(b); } } }
 // passing flashes: telegraph marks on the ground, shockwaves, meteors; each runs until its upd says it's done
 function khFx(mesh, upd) { if (mesh) scene.add(mesh); const f = { mesh, upd, t: 0 }; KHFX.push(f); return f; }
-function khClearFx() { for (const f of KHFX) if (f.mesh) { scene.remove(f.mesh); if (!f.mesh.isSprite) f.mesh.geometry.dispose(); } KHFX.length = 0; }   // (sprites share one geometry: never dispose it)
-function updateKHFx(dt) { for (let i = KHFX.length - 1; i >= 0; i--) { const f = KHFX[i]; f.t += dt; if (f.upd(f, dt) === false || f.dead) { if (f.mesh) { scene.remove(f.mesh); if (!f.mesh.isSprite) f.mesh.geometry.dispose(); } KHFX.splice(i, 1); } } }
+function khClearFx() { for (const f of KHFX) if (f.mesh) { scene.remove(f.mesh); if (!f.mesh.isSprite && f.mesh.geometry) f.mesh.geometry.dispose(); } KHFX.length = 0; }   // (sprites share one geometry: never dispose it)
+function updateKHFx(dt) { for (let i = KHFX.length - 1; i >= 0; i--) { const f = KHFX[i]; f.t += dt; if (f.upd(f, dt) === false || f.dead) { if (f.mesh) { scene.remove(f.mesh); if (!f.mesh.isSprite && f.mesh.geometry) f.mesh.geometry.dispose(); } KHFX.splice(i, 1); } } }
 // is Gandalf level with it (a tall foe like the Balrog is reached anywhere up its legs and body)
 const khLevel = (u, tol) => u.tall ? P.y > u.y - 1.2 && P.y < u.y + u.tall : Math.abs(u.y - P.y) <= tol;
 // the enemy to swing at: the nearest in reach, those in front first
@@ -9618,6 +10196,10 @@ function khItem(id) {
 const KH_PMENU = { open: false, page: 'magic', col: 0, row: 0 }, KH_GAMES = [['KH', 'KINGDOM HEARTS II'], ['JO', 'JEDI OUTCAST'], ['Fable', 'FABLE']];
 const khPage = () => KH_PMENU.page === 'magic' ? KH_POWERS : KH_TECHS;
 const khCol = c => khPage().filter(p => p.game === KH_GAMES[c][0]);
+const KH_KEYS = [['MOVING', [['W A S D', 'Move'], ['W W', 'Battle Charge (a technique)'], ['L', 'Jump'], ['L L', 'Force Jump, in the air (a technique)'], ['J', 'Dodge roll'], ['Left Shift', 'Turn the camera left'], ['/', 'Turn the camera right']]],
+  ['FIGHTING', [['K', 'Attack, or use what the menu is on'], ['Space', 'Guard'], ['I', 'Reaction command (the green prompt)'], ['F', 'First shortcut power'], ['H', 'Second shortcut power'], ['U', 'Take aim, where you have a bow'], ['K', 'Loose an arrow, where you have a bow']]],
+  ['MENUS', [['Q / E', 'Up and down the command menu'], ['L', 'Back out of a list'], ['Tab', 'This menu'], ['Esc', 'Pause'], ['M', 'Music on or off']]]];
+function khKeysHtml() { return `<div class="cols">${KH_KEYS.map(([g, list]) => `<div><div class="g">${g}</div>${list.map(([k, d]) => `<div class="p kb"><span><kbd>${k}</kbd></span><small>${d}</small></div>`).join('')}</div>`).join('')}</div>`; }
 function khPowersMenu(on) {
   KH_PMENU.open = on; const el = document.getElementById('khpow'); el.style.display = on ? 'block' : 'none';
   if (on) { pausedFrom = state; state = 'paused'; khPowersFix(); khPowersDraw(); } else if (state === 'paused') state = pausedFrom;
@@ -9625,9 +10207,10 @@ function khPowersMenu(on) {
 function khPowersFix() { const M = KH_PMENU; for (let k = 0; k < 3 && !khCol(M.col).length; k++) M.col = (M.col + 1) % 3; M.row = Math.min(M.row, Math.max(0, khCol(M.col).length - 1)); }
 function khPowersDraw() {
   const P_ = KH_POWER_SET, M = KH_PMENU, mag = M.page === 'magic';
+  if (M.page === 'keys') { document.getElementById('khpow').innerHTML = '<div class="tabs"><span>MAGIC</span><span>TECHNIQUES</span><span class="sel">KEYBOARD</span><small>Q / E: page</small></div>' + khKeysHtml(); return; }
   const tag = id => mag ? [P_.f === id ? '<b>F</b>' : '', P_.h === id ? '<b>H</b>' : '', ...P_.slots.map((s, i) => s === id ? `<b>${i + 1}</b>` : '')].join('') : khTechOn(id) ? '<b class="on">ON</b>' : '<b class="off">OFF</b>';
   const cost = p => p.mps ? `${p.mps} MP/s` : `${p.mp} MP`;
-  document.getElementById('khpow').innerHTML = `<div class="tabs"><span class="${mag ? 'sel' : ''}">MAGIC</span><span class="${mag ? '' : 'sel'}">TECHNIQUES</span><small>Q / E: page · W A S D: choose · ${mag ? 'F or H: shortcut · 1–5: MAGIC menu' : 'K: on / off'} · Tab: close</small></div>
+  document.getElementById('khpow').innerHTML = `<div class="tabs"><span class="${mag ? 'sel' : ''}">MAGIC</span><span class="${mag ? '' : 'sel'}">TECHNIQUES</span><span>KEYBOARD</span><small>Q / E: page · W A S D: choose · ${mag ? 'F or H: shortcut · 1–5: MAGIC menu' : 'K: on / off'} · Tab: close</small></div>
     ${mag ? `<div class="slots">F <i>${POWER[P_.f].name}</i> · H <i>${POWER[P_.h].name}</i> · MAGIC ${P_.slots.map((s, i) => `<i>${i + 1} ${POWER[s].name}</i>`).join(' ')}</div>` : `<div class="slots">On: ${P_.tech.map(i => `<i>${TECH[i].name}</i>`).join(' ') || 'none'}</div>`}
     <div class="cols">${KH_GAMES.map(([g, gn], c) => `<div><div class="g">${gn}</div>${khCol(c).map((p, r) => `<div class="p${c === M.col && r === M.row ? ' sel' : ''}" data-c="${c}" data-r="${r}"><span>${p.name}</span><small>${cost(p)}</small><em>${tag(p.id)}</em><div class="d">${p.desc}${p.how ? ' · <u>' + p.how + '</u>' : ''}</div></div>`).join('') || '<div class="d">—</div>'}</div>`).join('')}</div>`;
 }
@@ -9635,7 +10218,8 @@ function khPowersKey(code) {
   const M = KH_PMENU, P_ = KH_POWER_SET, fix = khPowersFix;
   if (code === 'Tab' || code === 'Escape') { khPowersMenu(false); return; }
   const col = khCol(M.col), p = col[M.row];
-  if (code === 'KeyQ' || code === 'KeyE') { M.page = M.page === 'magic' ? 'tech' : 'magic'; fix(); }
+  if (code === 'KeyQ' || code === 'KeyE') { const pg = ['magic', 'tech', 'keys'], n = pg.indexOf(M.page); M.page = pg[(n + (code === 'KeyE' ? 1 : 2)) % 3]; fix(); }
+  else if (M.page === 'keys') return;
   else if (code === 'KeyW' || code === 'ArrowUp') M.row = (M.row + col.length - 1) % col.length;
   else if (code === 'KeyS' || code === 'ArrowDown') M.row = (M.row + 1) % col.length;
   else if (code === 'KeyA' || code === 'ArrowLeft' || code === 'KeyD' || code === 'ArrowRight') { const d = code === 'KeyA' || code === 'ArrowLeft' ? 2 : 1; do M.col = (M.col + d) % 3; while (!khCol(M.col).length); M.row = Math.min(M.row, khCol(M.col).length - 1); }
@@ -9715,7 +10299,7 @@ function khWhite(on) {
   hob.skin = on ? hob.skinW : hob.skinG; hob.skin.cur = ''; hob.skin.holdT = 0; skinPlay(hob, 'idle');
 }
 // the reaction commands: what the green prompt does depends on whose moment it is
-const KH_REACT = { takedown: 'TAKEDOWN', repel: 'REPEL', sword: 'SWORD RUN', stand: 'YOU SHALL NOT PASS!', duel: "WIZARDS' DUEL", staff: 'BREAK HIS STAFF', deflect: 'DEFLECT', anor: 'FLAME OF ANOR', narsil: 'CUT THE RING', black: 'THE BLACK ARROW' };
+const KH_REACT = { takedown: 'TAKEDOWN', repel: 'REPEL', sword: 'SWORD RUN', stand: 'YOU SHALL NOT PASS!', duel: "WIZARDS' DUEL", staff: 'BREAK HIS STAFF', deflect: 'DEFLECT', anor: 'FLAME OF ANOR', narsil: 'CUT THE RING', black: 'THE BLACK ARROW', climb: 'UP HIS BACK' };
 function khReaction() {
   const R_ = KH.react; if (!R_) return;
   const u = R_.u; KH.react = null; KH.atk = null; KH.rx = KH.rx || {}; KH.rx[R_.cmd] = (KH.rx[R_.cmd] || 0) + 1;   // (KH.rx: a tally, for testing)
@@ -9727,7 +10311,7 @@ function khReaction() {
   }
   if (R_.cmd === 'sword') { KH.reacting = { u, t: 0, cmd: 'sword', hits: 0, from: [P.s, P.x, P.y] }; KH.invT = 2.4; P.ground = false; skinClip(hob, 'attack_a', .5); S.whoosh(); return; }
   if (R_.cmd === 'stand') { KH.reacting = { u, t: 0, cmd: 'stand' }; KH.invT = 2.5; bossStand(u); return; }
-  if (R_.cmd === 'duel' || R_.cmd === 'staff' || R_.cmd === 'deflect' || R_.cmd === 'anor' || R_.cmd === 'narsil' || R_.cmd === 'black') { KH.reacting = { u, t: 0, cmd: R_.cmd }; KH.invT = 2.5; u.reaction(R_.cmd); return; }   // (Saruman's)
+  if (R_.cmd === 'duel' || R_.cmd === 'staff' || R_.cmd === 'deflect' || R_.cmd === 'anor' || R_.cmd === 'narsil' || R_.cmd === 'black' || R_.cmd === 'climb') { KH.reacting = { u, t: 0, cmd: R_.cmd }; KH.invT = 2.5; u.reaction(R_.cmd); return; }   // (Saruman's)
   KH.reacting = { u, t: 0, hit: false, cmd: 'takedown' }; KH.invT = 1.6;
   P.vy = 11; P.ground = false; skinClip(hob, 'attack_c', .85); S.saberSwing();
 }
@@ -9755,6 +10339,10 @@ function khHit(u, dmg, fin, air, again) {
   dmg *= (KH.berserkT > 0 ? 1.6 : 1) * (KH.sightT > 0 ? 1.25 : 1);
   if (KH.multiT > 0 && !again) khFx(null, f => { if (f.t < .09) return true; khHit(u, dmg * .6, false, air, true); return false; });   // (Multi-Strike: each blow strikes twice)
   if (u.boss) { (u.hitFn || balHit)(u, dmg, fin, air); return; }
+  if (UK_KINDS[u.kind].shield && !u.noShield) {   // (the shield stops what comes from in front; a finishing blow breaks it)
+    const c_ = ((P.s - u.s) * Math.cos(u.h) + (P.x - u.x) * Math.sin(u.h)) / (Math.hypot(P.s - u.s, P.x - u.x) || 1);
+    if (c_ > .15) { if (fin) { u.noShield = true; if (u.m.shieldM) u.m.shieldM.visible = false; S.smash(); sparks(tw(u.s, u.x, u.y + 1.2), 26, 8, [1, 1, 1], [.7, .7, .8]); } else { S.clash(); sparks(tw(u.s + Math.cos(u.h) * .6, u.x + Math.sin(u.h) * .6, u.y + 1.2), 8, 4, [1, .9, .7], [.7, .5, .2]); KH.hitstop = .03; return; } }
+  }
   if (KH.form > 0) dmg *= 1.5;
   u.hp -= dmg; u.flash = .15; u.stag += fin ? 30 : 12; KH.target = u; KH.targetT = 4; KH.drive = Math.min(100, KH.drive + (KH.form > 0 ? 0 : 3));
   KH.hitstop = fin ? .09 : .045; cam.shake = Math.max(cam.shake, fin ? .35 : .15);
@@ -9794,8 +10382,8 @@ function khHurt(dmg, u, o = {}) {
 //     Berserkers carry a torch and the blasting fire of Orthanc: one roars, then runs at you and blows up, taking
 //     anything near with it (its own side too). Knock one flying and it goes off where it lands.
 function makeUruk(kind) {
-  const lurtz = kind === 'L', orc = kind === 'o', bers = kind === 'b';
-  const root = new THREE.Group(), body = new THREE.Group(); root.add(body); body.scale.setScalar(lurtz ? 1.12 : orc ? .8 : bers ? 1.05 : 1);
+  const lurtz = kind === 'L', orc = kind === 'o', bers = kind === 'b', capt = kind === 'c';
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body); body.scale.setScalar(capt ? 1.3 : lurtz ? 1.12 : orc ? .8 : bers ? 1.05 : 1);
   const SK = lam(lurtz ? 0x3a2c24 : orc ? 0x4a4a2c : 0x2e2826), ARM = lam(0x1c1c20, { emissive: 0x050506 }), LEA = lam(0x2a2018), MET = lam(0x7a7a82, { emissive: 0x101014 }), WH = lam(0xe8e4dc);
   const leg = sx => { const g = new THREE.Group(); g.position.set(sx * .17, .95, 0); body.add(g); part(GEO.cylT, LEA, g, 0, 0, 0, .14, .9, .14); part(GEO_BOX, ARM, g, 0, -.92, .06, .2, .14, .32); return g; };
   const legs = [leg(1), leg(-1)];
@@ -9812,6 +10400,9 @@ function makeUruk(kind) {
   const sword = new THREE.Group(); sword.position.set(0, -.72, .06); armR.add(sword); part(GEO_BOX, MET, sword, 0, 0, .55, .07, .03, orc ? .7 : 1); part(GEO_BOX, ARM, sword, 0, 0, 0, .28, .06, .06);
   const keep = [];
   if (kind === 'u') { part(GEO_BOX, ARM, armL, .08, -.5, .18, .06, .9, .62); part(GEO_BOX, WH, armL, .12, -.5, .18, .02, .18, .14); }
+  else if (kind === 's') { const sh = new THREE.Group(); armL.add(sh); part(GEO_BOX, ARM, sh, .12, -.55, .28, .08, 1.5, .95); part(GEO_BOX, WH, sh, .17, -.55, .28, .02, .3, .22); keep.push(sh); var shieldM = sh; }
+  else if (kind === 'p') { part(GEO.cyl, LEA, armR, 0, -.72, .9, .035, 3.4, .035).rotation.x = Math.PI / 2; part(GEO.cone, MET, armR, 0, -.72, 2.7, .07, .4, .07).rotation.x = Math.PI / 2; sword.visible = false; }
+  else if (kind === 'a') { part(GEO_BOX, LEA, armR, 0, -.72, .35, .07, .07, .8); part(GEO_BOX, MET, armR, 0, -.72, .65, .8, .04, .05); sword.visible = false; }
   else if (lurtz) { const bow = part(new THREE.TorusGeometry(.6, .025, 4, 12, Math.PI), LEA, body, 0, 1.4, -.3); bow.rotation.set(0, Math.PI / 2, Math.PI / 2); }
   else if (bers) {   // the torch, held high in the off hand
     const t = new THREE.Group(); t.position.set(0, -.7, .1); armL.add(t); part(GEO.cyl, lam(0x3a2414), t, 0, .2, 0, .05, .9, .05);
@@ -9822,7 +10413,7 @@ function makeUruk(kind) {
   shadow.rotation.x = -Math.PI / 2; scene.add(shadow); scene.add(root);
   const mats = []; root.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); if (!eyes.includes(o)) mats.push(o); } });
   const dizzy = glowSprite(0xffe060, 1, 0); dizzy.position.y = 2.6; root.add(dizzy);
-  const M = { root, body, legs, armR, armL, head, eyes, shadow, mats, dizzy }; addSkin(M, UK_KINDS[kind].slot, body, root, [dizzy, ...keep]); if (M.skin) M.skin.temp = true; return M;
+  const M = { root, body, legs, armR, armL, head, eyes, shadow, mats, dizzy, shieldM: kind === 's' ? shieldM : null }; addSkin(M, UK_KINDS[kind].slot, body, root, [dizzy, ...keep]); if (M.skin) M.skin.temp = true; return M;
 }
 function spawnUruk(kind, pl, a, delay) {
   if (kind === 'B') return spawnKHBalrog(pl, delay);
@@ -9830,6 +10421,7 @@ function spawnUruk(kind, pl, a, delay) {
   if (kind === 'W') return spawnWitchKing(pl, delay);
   if (kind === 'K') return Object.assign(spawnWitchKing(pl, delay, 'nazgul'), { name: 'KHAMÛL', title: 'KHAMÛL, THE BLACK RIDER!', endTitle: 'KHAMÛL FLEES THE SHIRE!' });
   if (kind === 'X') return spawnSauronKH(pl, delay);
+  if (kind === 'T') return spawnTroll(pl, delay);
   if (kind === 'D') return spawnDragonRamparts(pl, delay);
   if (kind === 'G') return spawnDragonHoard(pl, delay);
   if (kind === 'F') return spawnFallBalrog(pl, delay);
@@ -9878,10 +10470,11 @@ function ukUpdate(u, dt) {
     }
     case 'stalk': {   // keep a few steps off, strafing round, now and then a hop
       u.h += angDiff(u.h, toP) * Math.min(1, dt * 6);
-      const want = u.kind === 'b' ? 5 : 3.2, k = clamp(d - want, -1, 1), side = Math.sin(u.t * 1.1 + u.seed) > 0 ? 1 : -1, sp = K.speed;
+      const want = K.want ?? (u.kind === 'b' ? 5 : 3.2), k = clamp(d - want, -1, 1), side = Math.sin(u.t * 1.1 + u.seed) > 0 ? 1 : -1, sp = K.speed;
       ukMove(u, (ds / d * k * sp - dx / d * side * 1.7) * dt, (dx / d * k * sp + ds / d * side * 1.7) * dt); walk = 1;
       if (live && u.cd <= 0 && dy < 2 && !(u.charmT > 0)) {   // (a turncoat fights for you instead)
         if (u.kind === 'b') { if (d < 14) { u.state = 'wind'; u.atk = 'rush'; u.t = 0; u.windT = .9; S.roar(); } else u.cd = .4; break; }
+        if (K.style) { ukStyleStart(u, K, d, ds, dx); break; }   // (the pikemen, crossbowmen, fanatics and captains, each its own way)
         if (khTokens() >= (u.lite ? 3 : 2)) { u.cd = .3; break; }
         const kind = u.lite ? (d < 2.4 ? 'combo' : d < (u.kind === 'w' ? 9 : 6) ? 'leap' : null) : d < 2.8 ? 'combo' : d < 9 && Math.random() < .55 ? 'leap' : d < 12 ? 'charge' : null;
         if (kind) { u.state = 'wind'; u.atk = kind; u.t = 0; u.windT = (kind === 'combo' ? .42 : .55) * (u.kind === 'L' ? .8 : u.lite ? .7 : 1); S.orcGrunt(); }
@@ -9890,7 +10483,7 @@ function ukUpdate(u, dt) {
       break;
     }
     case 'wind': {   // setting itself: the sword goes up, the eyes flare
-      u.h += angDiff(u.h, toP) * Math.min(1, dt * 8); armX = -2.8;
+      if (u.lockH === undefined) u.h += angDiff(u.h, toP) * Math.min(1, dt * 8); armX = -2.8;
       if (u.t >= u.windT) {
         u.state = 'atk'; u.t = 0; u.hits = 0; S.whoosh();
         if (u.atk === 'leap') { u.from = [u.s, u.x]; u.to = [P.s - ds / d * 1.1, P.x - dx / d * 1.1]; u.y0 = u.y; }
@@ -9899,6 +10492,7 @@ function ukUpdate(u, dt) {
       break;
     }
     case 'atk': {
+      if (K.style) { const r_ = ukStyleAtk(u, K, dt, d, ds, dx, dy); walk = r_.walk || 0; if (r_.arm !== undefined) armX = r_.arm; onGround = !r_.air; break; }
       if (u.atk === 'rush') {   // the berserker's run: it steers after you, and goes off when it reaches you (or runs out of fuse)
         u.h += angDiff(u.h, toP) * Math.min(1, dt * 2.4); ukMove(u, Math.cos(u.h) * 9.5 * dt, Math.sin(u.h) * 9.5 * dt); walk = 2; armX = -2.4;
         if (Math.random() < .5) flame(tw(u.s, u.x, u.y + 2.2), .6, 1);
@@ -10033,7 +10627,7 @@ function updateKH(dt) {
     if (KH.waveT > 0) { KH.waveT -= dt; if (KH.waveT <= 0) { const w = p.waves[p.wave], a0 = rand(0, TAU); w.forEach((k, i) => spawnUruk(k, p, a0 + i / w.length * TAU + rand(-.3, .3), i * .25)); } }
     else if (!URUKS.some(u => u.plaza === p)) {
       p.wave++;
-      if (p.wave < p.waves.length) { KH.waveT = 1.2; banner('MORE ARE COMING!', 1.2); }
+      if (p.wave < p.waves.length) { KH.waveT = 1.2; banner((p.names && p.names[p.wave]) || 'MORE ARE COMING!', p.names ? 2.2 : 1.2); }
       else {
         p.done = true; khBarrier(p, false); KH.plaza = null; S.check(); gs.cp = { s: p.s, x: p.x, y: p.y, t: gs.time, deaths: 0 };
         banner(p.boss ? (LV.winTitle || "HELM'S DEEP HOLDS!") : p.last ? 'MEDUSELD IS FREE! GO TO THE KING' : 'THE WAY IS OPEN!', 2.2); KH.hp = Math.min(KH.max, KH.hp + 30);
@@ -10126,7 +10720,8 @@ showScreen(null); syncPauseBtns();
       const dr = LV.layout.hall && LV.layout.hall.door; return p ? [p.s, p.x] : dr ? [dr.s, dr.x] : [P.s, P.x]; } };
     if (q.get('sim')) { cheats.god = !q.get('mortal'); for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (q.get('cast') === 'all' && LV.kh) { const bad = []; for (const p of KH_POWERS) { try { KH.mp = 100; KH.magicCD = 0; KH.atk = null; if (!khCast(p.id)) bad.push(p.id + ' (not cast)'); for (let i = 0; i < 90; i++) step(1 / 60, true); } catch (e) { bad.push(p.id + ': ' + e.message); } } console.log('castall ' + KH_POWERS.length + ' powers, problems: ' + (bad.join('; ') || 'none') + ', kills ' + gs.kills); }   // (&cast=all: every power in turn, for testing)
     if (q.get('cutnow') && KH.boss) { bossFall(KH.boss); for (let i = 0; i < Number(q.get('cutnow')) * 60; i++) step(1 / 60, true); }   // (&cutnow=2: the bridge's ending, 2 seconds in, for testing)
-    if (q.get('powers') && LV.kh) setTimeout(() => { KH_PMENU.page = q.get('powers') === 'tech' ? 'tech' : 'magic'; khPowersMenu(true); }, 3000);
+    if (q.get('aimt') && LV.bow) BOW.aim = true;   // (testing: &aimt=1 starts with the sight up)
+    if (q.get('powers') && LV.kh) setTimeout(() => { KH_PMENU.page = q.get('powers') === 'tech' || q.get('powers') === 'keys' ? q.get('powers') : 'magic'; khPowersMenu(true); }, 3000);
     if (q.get('techs') && LV.kh) { KH_POWER_SET.tech = KH_TECHS.map(t => t.id); const bad = []; try { for (let i = 0; i < 240; i++) { KH.mp = 100; step(1 / 60, true); } P.ground = true; KH.atk = null; khBattleCharge(); for (let i = 0; i < 40; i++) step(1 / 60, true); P.vy = 9; P.ground = false; khForceJump(); for (let i = 0; i < 30; i++) step(1 / 60, true); KH.mp = 50; for (let i = 0; i < 60; i++) step(1 / 60, true); } catch (e) { bad.push(e.message); } console.log('techs: problems ' + (bad.join('; ') || 'none') + ', MP drained to ' + KH.mp.toFixed(1) + ' in a second, shield ' + (KH.shield || 0).toFixed(1) + ', kills ' + gs.kills); }   // (&techs=1: every technique on, for testing)   // (&powers=1: the powers menu, for testing)
     if (q.get('drive') && LV.kh) { KH.drive = 100; khDrive(); }   // (&drive=1: the White Wizard, for testing)
     if (q.get('menu') && LV.kh) { KH.sub = q.get('menu'); KH.cur = KH_MENU.findIndex(c => c.sub === KH.sub); }   // (&menu=magic: that list open, for testing)
