@@ -83,7 +83,7 @@ body.touch #khcmd{display:none!important}
 #khpow .tabs{display:flex;align-items:baseline;gap:1.2em;font-size:1.6em}#khpow .tabs span{color:#7a8aa8;padding:.05em .5em;border-radius:8px}#khpow .tabs span.sel{color:#ffe060;background:rgba(60,110,220,.45)}#khpow .tabs small{font-size:.45em;color:#bcd}#khpow b.on{color:#6aff7a}#khpow b.off{color:#8a8aa0}#khpow u{text-decoration:none;color:#ffe9a0}#khpow .slots{margin:.6em 0 1em;color:#cde}#khpow .slots i{font-style:normal;color:#ffe9a0;margin-right:.7em}
 #khpow .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4vw}#khpow .g{color:#7fd0ff;font-size:1.15em;margin-bottom:.4em;border-bottom:2px solid #2a4a8a}
 #khpow .p{display:grid;grid-template-columns:1fr auto auto;gap:.5em;padding:.25em .5em;margin:.15em 0;border-radius:6px;background:rgba(30,60,140,.35);cursor:pointer}#khpow .p.sel{background:linear-gradient(90deg,#3a8aff,#1a4ab0);box-shadow:0 0 10px #8ac8ff}
-#khpow .p small{opacity:.8}#khpow .p em{font-style:normal;color:#ffe060}#khpow .p em b{margin-left:.3em}#khpow .p .d{grid-column:1/-1;font-size:.75em;opacity:.75;-webkit-text-stroke:0}
+#bowX{position:absolute;width:6vh;height:6vh;margin:-3vh 0 0 -3vh;display:none;pointer-events:none;border:3px solid #fff;border-radius:50%;box-shadow:0 0 6px #000,inset 0 0 6px #000;z-index:20}#bowX i{position:absolute;left:50%;top:-30%;bottom:-30%;width:2px;margin-left:-1px;background:#fff}#bowX b{position:absolute;top:50%;left:-30%;right:-30%;height:2px;margin-top:-1px;background:#fff}#bowX.on{border-color:#ff4030}#bowX.on i,#bowX.on b{background:#ff4030}#khpow kbd{font:inherit;color:#ffe060;background:rgba(0,0,0,.5);border:1px solid #6a8ac8;border-radius:5px;padding:0 .4em}#khpow .p.kb{cursor:default;grid-template-columns:auto 1fr;font-size:.9em}#khpow .p small{opacity:.8}#khpow .p em{font-style:normal;color:#ffe060}#khpow .p em b{margin-left:.3em}#khpow .p .d{grid-column:1/-1;font-size:.75em;opacity:.75;-webkit-text-stroke:0}
 .menu{margin:3.5vh auto 0;display:flex;flex-direction:column;gap:1.1vh;width:min(560px,90vw)}
 .mi{display:grid;grid-template-columns:2.1em 1fr;align-items:center;column-gap:.6em;text-align:left;padding:.45em .8em;border:3px solid #000;border-radius:12px;background:rgba(14,4,36,.7);box-shadow:4px 4px 0 #000;cursor:pointer;transition:transform .15s,background .15s}
 .mi b{grid-row:span 2;font-weight:normal;font-size:clamp(26px,4.4vh,44px);color:var(--gold);-webkit-text-stroke:2px var(--ink);text-align:center}
@@ -2949,6 +2949,7 @@ function onKey(code) {
   if (KH_PMENU.open) { khPowersKey(code); return; }   // (the powers menu has the keys while it's open)
   if (CHAP && state === 'map') { if (!/^Key[MGZX]$/.test(code)) { chapKey(code); return; } }   // (and a level menu)
   if (code === 'Tab' && state === 'play' && khOn()) { khPowersMenu(true); return; }
+  if (code === 'KeyU' && state === 'play' && LV && LV.bow) { BOW.aim = !BOW.aim; BOW.cx = 0; BOW.cy = .3; S.click(); return; }
   if (code === 'KeyM') { musicOn = !musicOn; syncPauseBtns(); return; }
   if (code === 'KeyG') { setLook(!RETRO); if (state !== 'paused') banner(RETRO ? 'RETRO LOOK' : 'HD LOOK', 1); syncPauseBtns(); return; }
   if (code === 'KeyZ') { cheats.god = !cheats.god; if (state !== 'paused') banner(cheats.god ? 'INVINCIBLE ON' : 'INVINCIBLE OFF', 1); syncPauseBtns(); return; }
@@ -3118,6 +3119,7 @@ function updateTouchUI() {
 let cratesDirty = 0;
 function bounce(v) { P.vy = inp.jump ? v * 1.22 : v; P.ground = false; P.jumpHeld = inp.jump; P.coyote = 0; P.dbl = false; }
 function updatePlayer(dt) {
+  if (LV.bow && BOW.aim) { BOW.cx = clamp(BOW.cx + inp.x * 1.4 * dt, -.97, .97); BOW.cy = clamp(BOW.cy + inp.z * 1.4 * dt, -.7, .94); inp.x = inp.z = 0; }   // (taking aim: W A S D move the sight, and Gandalf stands)
   let ix = inp.x, iz = inp.z;
   if (cam.m > .5) ix = -ix;
   if (LV.arena) {
@@ -3136,9 +3138,10 @@ function updatePlayer(dt) {
   const acc = P.ground ? ACC : AIR;
   if (LV.ride) {
     // Shadowfax gallops on by himself: steer, push on to go faster, pull back to steady him
-    P.vs = approach(P.vs, RIDE_V + inp.z * 3.4, (P.ground ? 16 : 6) * dt);
+    if (LV.race && RACE.cut) { inp.x = inp.z = 0; ix = 0; inp.jumpP = inp.spinP = inp.fireP = false; }   // (the Ford's scene: he reins in)
+    P.vs = approach(P.vs, LV.race && RACE.cut ? 0 : RIDE_V + inp.z * 3.4, (P.ground ? 16 : 6) * dt);
     P.vx = approach(P.vx, ix * 6.8, (P.ground ? 46 : 24) * dt);
-    P.heading = damp(P.heading, Math.atan2(P.vx, Math.max(4, P.vs)) * .8, 10, dt);
+    if (!(LV.race && RACE.cut)) P.heading = damp(P.heading, Math.atan2(P.vx, Math.max(4, P.vs)) * .8, 10, dt);
   } else {
     if (P.launchT > 0 && !P.ground) P.launchT -= dt;   // thrown by a web spring: the throw carries him, whatever the stick says
     else { P.launchT = 0; P.vs = approach(P.vs, iz * RUN, acc * dt); P.vx = approach(P.vx, ix * RUN, acc * dt); }
@@ -5296,14 +5299,19 @@ function updateCamera(dt) {
     camera.lookAt(cam.wl); return;
   }
   if (LV.roam && !LV.duel) {
-    if (LV.bow) {   // (Erebor's ramparts: from the Mountain's side over Gandalf's shoulder, out over the valley; Shift and / turn it, which is how you aim)
-      cam.by = clamp((cam.by || 0) + (inp.camT || 0) * 1.5 * dt, -1.3, 1.3); cam.yaw = Math.PI + cam.by;
-      const fs = Math.cos(cam.yaw), fx_ = Math.sin(cam.yaw); _a.copy(tw(P.s - fs * 6.5, P.x - fx_ * 6.5, P.y + 3.2)); _b.copy(tw(P.s + fs * 30, P.x + fx_ * 30, P.y + 7));
+    if (LV.race && RACE.cut) {   // (the Ford's scene: from the far bank, looking back over the water, the wave coming across)
+      _a.copy(tw(RACE_FORD + 23, 9, 7.5)); _b.copy(tw(RACE_FORD - 2, -2, 1.5)); if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } camera.position.copy(cam.wp);
+      const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
+    }
+    if (LV.bow) {   // (with a bow: from over Gandalf's shoulder, out at the sky; Shift and / turn it, and the sight turns it from the edge of the screen)
+      const eX = BOW.aim && Math.abs(BOW.cx) > .7 ? Math.sign(BOW.cx) * (Math.abs(BOW.cx) - .7) * 4 : 0, eY = BOW.aim ? (BOW.cy > .7 ? (BOW.cy - .7) * 3 : BOW.cy < -.4 ? (BOW.cy + .4) * 3 : 0) : -(cam.bp || 0) * .8;
+      cam.by = (cam.by || 0) + ((inp.camT || 0) * 1.5 - eX) * dt; if (!LV.bow360) cam.by = clamp(cam.by, -1.3, 1.3); cam.bp = clamp((cam.bp || 0) + eY * dt, 0, 1); cam.yaw = (LV.bow360 ? 0 : Math.PI) + cam.by;
+      const fs = Math.cos(cam.yaw), fx_ = Math.sin(cam.yaw); _a.copy(tw(P.s - fs * 6.5, P.x - fx_ * 6.5, P.y + 3.2)); _b.copy(tw(P.s + fs * 30, P.x + fx_ * 30, P.y + 7 + cam.bp * 32));
       if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-8 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp);
       const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
     }
     if (LV.fall) {   // (the fall: from above, looking down the shaft past Gandalf to the Balrog)
-      cam.yaw = 0; _a.copy(tw(P.s - 4.5, P.x, P.y + 15)); _b.copy(tw(P.s + 2.2, P.x, P.y - 8));
+      cam.yaw = 0; _a.copy(tw(P.s - 1.2, P.x, P.y + 17)); _b.copy(tw(P.s + .2, P.x, P.y - 8));
       if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-5 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp);
       const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
     }
@@ -5964,7 +5972,8 @@ const MODEL_SLOTS = {
   sauron: { height: 20, turn: -Math.PI / 2 },   // in his own units: the game builds Sauron at .28 scale (about 5.6 tall)
   spider: { height: 1.6, turn: -Math.PI / 2, src: 'shelob' },
   dragon: { height: 7, turn: -Math.PI / 2, anims: { fly: /^fly_a/i, idle: /^idle_a/i, attack: /^attack_a/i, hit: /^hurt_a/i, die: /^die_k/i } },   // (Erebor: Drogoth, Rise of the Witch-king's dragon)
-  blackrider: { height: 3.1, turn: -Math.PI / 2, anims: { walk: /run|wlk|gallop/i } },   // (the race to the Ford: Rise of the Witch-king's Black Rider, on his horse)   // Mirkwood's spiders: Shelob again (src: whose model it is), smaller
+  floodhorse: { height: 4, turn: -Math.PI / 2, anims: { walk: /^run/i }, glow: .5 },   // (the Ford: the water horses of Battle for Middle-earth's flood)
+  blackrider: { height: 3.1, turn: -Math.PI / 2, anims: { walk: /^run|^walk|wlk/i } },   // (the race to the Ford: Rise of the Witch-king's Black Rider, on his horse)   // Mirkwood's spiders: Shelob again (src: whose model it is), smaller
 };
 // which animation plays for each action: the first clip whose name matches (case doesn't matter)
 const ANIM_NAMES = { idle: /idle|stand|breath|ready/i, fly: /fly|glid|hover/i, walk: /walk|wala|run|move|gallop/i, attack: /attack|atk|smash|swing|slash|strike|hit_?a/i, hit: /hurt|damage|stun|flinch|react/i, die: /die|death|dead|dtha/i, jump: /jump|fall|air/i };
@@ -6812,15 +6821,15 @@ function buildMirkwood(L, TH) {
   const clearOf = (s, x, r) => !Y.trunks.some(t => Math.hypot(s - t.s, x - t.x) < t.r + r) && !Y.springs.some(p => Math.hypot(s - p.s, x - p.x) < r + 2) && Math.hypot(s - L.start[0], x - L.start[1]) > r + 5 && !(Y.lair && Math.hypot(s - Y.lair.s, x - Y.lair.x) < 9);
   const overhead = (s, x, y) => { for (let ds = -3; ds <= 3; ds += 1.5) for (let dx = -3; dx <= 3; dx += 1.5) { const dk = deckAt_(L.deck, s + ds, x + dx); if (dk > NO_DECK && dk - y < 26) return true; } return false; };
   const rimD = (s, x) => { const k = Math.round(T_.cy - s) * T_.w + Math.round(T_.cx - x); return T_.g[k]; };
-  for (let s = S0 + 2; s < S1 - 2; s += 6) for (let x = X0 + 2; x < X1 - 2; x += 6) {
-    const ss = s + rand(-2.5, 2.5), xx = x + rand(-2.5, 2.5), y = at(ss, xx), outside = rimD(ss, xx) === 't';
+  for (let s = S0 + 2; s < S1 - 2; s += 11) for (let x = X0 + 2; x < X1 - 2; x += 11) {
+    const ss = s + rand(-3.5, 3.5), xx = x + rand(-3.5, 3.5), y = at(ss, xx), outside = rimD(ss, xx) === 't';
     if (outside && Math.random() < .55) continue;   // thinner further out, where nobody goes
-    if (!clearOf(ss, xx, 3) || overhead(ss, xx, y)) { if (Math.random() < .5 && clearOf(ss, xx, 1)) { const p = tw(ss, xx, y); shrubs.push([p.x, p.y, p.z, rand(1.2, 2.4), rand(0, TAU)]); } continue; }
+    if (!clearOf(ss, xx, 3) || overhead(ss, xx, y)) { if (Math.random() < .2 && clearOf(ss, xx, 1)) { const p = tw(ss, xx, y); shrubs.push([p.x, p.y, p.z, rand(1.2, 2.4), rand(0, TAU)]); } continue; }
     const p = tw(ss, xx, y), near = Math.hypot(ss - (Y.lair ? Y.lair.s : 0), xx - (Y.lair ? Y.lair.x : 0)) < 40;
     if (!outside) Y.blocks.push([ss - .6, ss + .6, xx - .6, xx + .6, y + 9]);
     if (treeP.length) (near && webbedP.length ? webbed : trees).push([p.x, p.y - .3, p.z, rand(15, 24), rand(0, TAU)]);
     else { const k = rand(1.4, 2.2); trunks.push([p.x, p.y + 3 * k, p.z, .3 * k, 6 * k, .3 * k]); crowns.push([p.x, p.y + 6.5 * k, p.z, 2 * k, 1.8 * k, 2 * k]); }
-    for (let q = 0; q < 2; q++) { const ps = ss + rand(-3, 3), px = xx + rand(-3, 3), py = at(ps, px), pp = tw(ps, px, py); (shrubP.length ? shrubs : bushes).push(shrubP.length ? [pp.x, pp.y, pp.z, rand(1.2, 2.4), rand(0, TAU)] : [pp.x, pp.y + .4, pp.z, rand(.6, 1.1), rand(.5, .8), rand(.6, 1.1)]); }
+    for (let q = 0; q < 1; q++) { const ps = ss + rand(-3, 3), px = xx + rand(-3, 3), py = at(ps, px), pp = tw(ps, px, py); (shrubP.length ? shrubs : bushes).push(shrubP.length ? [pp.x, pp.y, pp.z, rand(1.2, 2.4), rand(0, TAU)] : [pp.x, pp.y + .4, pp.z, rand(.6, 1.1), rand(.5, .8), rand(.6, 1.1)]); }
   }
   treeP.forEach((n, q) => propScatter(n, trees.filter((_, i) => i % treeP.length === q)));
   webbedP.forEach((n, q) => propScatter(n, webbed.filter((_, i) => i % webbedP.length === q)));
@@ -7497,7 +7506,7 @@ THEMES.rivkh = natTheme({
 //     riding him down. They close up alongside and raise their swords (their eyes go red): spin to cut first, or fire at
 //     them; three blows unhorse one. Fallen trees across the road to jump. Over the Ford, the river rises in a flood of
 //     white horses and sweeps away every rider still behind.
-const RACE = { list: [], left: 0, flood: -1, cpN: 0 };
+const RACE = { list: [], left: 0, cut: null, cpN: 0 };
 function raceGround(s, x) {
   const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
   let y = 2 * Math.sin(s * .012) + 1.4 * Math.sin(s * .031 + 1) + 1;
@@ -7525,11 +7534,11 @@ function buildRace(L, TH) {
   groundMesh(T_, TX.meadow, (k, sl, y) => k === 'p' ? [.85, .7, .5] : k === 'r' ? [.45, .42, .35] : [.55, .7, .45], 3, () => grd);
   wideFloor(TX.meadow, 0x3a4a2a, 90, 8, 900);
   const wt = TX.sea.clone(); wt.needsUpdate = true; wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(10, 2); TH.waterTex = wt;
-  const ford = new THREE.Mesh(new THREE.PlaneGeometry(90, 13), new THREE.MeshPhongMaterial({ map: wt, color: 0x5a8aa0, specular: 0xffffff, shininess: 90, transparent: true, opacity: .85 })); ford.rotation.x = -Math.PI / 2; ford.rotation.z = Math.PI / 2; tw(RACE_FORD, 0, -.4, ford.position); scene.add(ford);
+  const ford = new THREE.Mesh(new THREE.PlaneGeometry(90, 13), new THREE.MeshPhongMaterial({ map: wt, color: 0x5a8aa0, specular: 0xffffff, shininess: 90, transparent: true, opacity: .85 })); ford.rotation.x = -Math.PI / 2; tw(RACE_FORD, 0, -.4, ford.position); scene.add(ford);
   // the flood: a wall of white water held back upstream, loosed when Gandalf is over
   const fl = new THREE.Group(); TH.flood = fl; fl.visible = false; scene.add(fl);
   const foam = new THREE.MeshBasicMaterial({ map: TX.falls, color: 0xf4faff, transparent: true, opacity: .9, side: THREE.DoubleSide, depthWrite: false });
-  for (let k = 0; k < 7; k++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(13, 4 + k % 3), foam); m.position.set(0, 2 + (k % 3), (k - 3) * 1.4); m.rotation.y = Math.PI / 2; fl.add(m); }
+  for (let k = 0; k < 8; k++) { const h = k === 3 ? 9 : 4 + k % 3 * 2, m = new THREE.Mesh(new THREE.PlaneGeometry(19, h), foam); m.position.set((3 - k) * 1.8, h / 2 - .5, 0); m.rotation.y = Math.PI / 2; fl.add(m); }
   // trees on the banks, Battle for Middle-earth's or built; fallen ones across the road
   const trees = propsOf(['ptree01', 'ptree02', 'sb_tree01', 'sb_tree03', 'ptelvnwood01']), wood = lam(0x5a3e24), leaf = lam(0x3a5a2a), list = [];
   for (let k = 0; k < 260; k++) { const s = rand(-10, RACE_END + 20), side = k % 2 ? 1 : -1, x = side * rand(9, 38); if (Math.abs(s - RACE_FORD) < 10) continue; list.push([s, x]); }
@@ -7545,13 +7554,18 @@ function makeRaceRider() {
   hz.root.traverse(o => { if (o.isMesh && o.material && o.material.color) { o.material = o.material.clone(); o.material.color.multiplyScalar(.12); if (o.material.emissive) o.material.emissive.setHex(0x020203); } });
   hz.root.visible = false; scene.add(hz.root); return { m, hz };
 }
+function raceGallop(hz, spd) {   // (a horse's legs, body, neck and tail at a gallop)
+  const g = clamp(spd / 8, 0, 1); hz.ph += (1 / 60) * (2 + spd * .62); hz.body.position.y = Math.abs(Math.sin(hz.ph)) * .16 * g; hz.body.rotation.x = Math.sin(hz.ph) * .09 * g; hz.neck.rotation.x = .62 + Math.sin(hz.ph + 1) * .14 * g; hz.tail.rotation.x = -.4 - g * .7 + Math.sin(T * 9) * .1;
+  hz.legs.forEach((l, i) => { const off = [0, .55, Math.PI, Math.PI + .55][i], a = Math.sin(hz.ph + off); l.up.rotation.x = -a * .85 * g; l.lo.rotation.x = (l.front > 0 ? 1 : -1) * Math.max(0, Math.cos(hz.ph + off)) * 1.4 * g; });
+}
 const raceLive = n => n.state === 'ride' || n.state === 'wind' || n.state === 'recover';
 function setupRace() {
+  BOW.aim = false; BOW.hintAt = LV && LV.bow ? T + 4.5 : 0; cam.by = 0; cam.bp = 0;
   const defs = (LV && LV.race && LV.layout.riders) || [];
   for (const n of RACE.list) { n.m.root.visible = n.m.shadow.visible = false; n.hz.root.visible = false; }
   while (RACE.list.length < defs.length) RACE.list.push(makeRaceRider());
   RACE.list.forEach((n, i) => { const d = defs[i]; n.on = !!d; if (d) Object.assign(n, { at: d[0], side: d[1], state: 'wait', hp: 3, s: -14 - i * 2, x: d[1] * 3, y: 0, vs: 0, h: 0, cd: rand(1, 3), off: -4, wt: 0, flash: 0, t: rand(0, 6) }); });
-  RACE.left = defs.length; RACE.flood = -1; RACE.cpN = 0; if (THEMES.ford && THEMES.ford.flood) THEMES.ford.flood.visible = false;
+  RACE.left = defs.length; RACE.cut = null; RACE.cpN = 0; if (THEMES.ford && THEMES.ford.flood) THEMES.ford.flood.visible = false; for (const h of RACE.horses || []) h.hz.root.visible = false;
 }
 function resetRace() {   // after a fall: those already riding come up again from behind
   for (const [i, n] of RACE.list.entries()) if (n.on && (raceLive(n) || n.state === 'fall')) { if (n.state === 'fall') continue; Object.assign(n, { state: 'ride', s: P.s - 14 - i * 1.5, vs: RIDE_V, off: -4, cd: rand(1.5, 3) }); }
@@ -7568,18 +7582,27 @@ function updateRace(dt) {
   if (live && P.ground && P.s > (RACE.cpN + 1) * 110 && P.s < RACE_FORD - 10) { RACE.cpN++; Object.assign(gs.cp, { s: P.s, x: P.x, y: P.y, t: T }); }   // (a checkpoint every 110 m)
   // the fallen trees: jump them or fall
   if (live && P.invT <= 0) for (const [s, x0, x1] of LV.layout.logs) if (Math.abs(P.s - s) < .55 && P.x > x0 - .4 && P.x < x1 + .4 && P.y - terrainAt(P.s, P.x, true) < .85) { hurt('hit'); break; }
-  // the Ford: once Gandalf is over, the flood comes down the river
-  if (RACE.flood < 0 && live && P.s > RACE_FORD + 8) { RACE.flood = 0; banner('THE FLOOD OF BRUINEN!', 2.4); S.thunder && S.thunder(); cam.shake = .8; }
-  const FL = THEMES.ford.flood;
-  if (RACE.flood >= 0) {
-    RACE.flood += dt; const fx_ = lerp(-60, 60, Math.min(1, RACE.flood / 3)); FL.visible = RACE.flood < 3.4; tw(RACE_FORD, fx_, 0, FL.position); FL.rotation.y = 0;
-    for (let k = 0; k < 6; k++) fx.spawn(FL.position.x + rand(-1, 1), FL.position.y + rand(0, 5), FL.position.z + rand(-6.5, 6.5), rand(-2, 2), rand(1, 4), rand(-1, 1), rand(.6, 1.2), .9, .3, [1, 1, 1], [.7, .85, 1], .5, 0);
-    for (const n of RACE.list) if (raceLive(n) && n.s < RACE_FORD + 7 && RACE.flood > 1.2) { n.state = 'swept'; n.wt = 0; RACE.left--; }
-    if (RACE.flood > 1.2 && !RACE.sweptMsg) { RACE.sweptMsg = true; if (RACE.list.some(n => n.state === 'swept')) banner('THE RIVER TAKES THEM!', 2); }
-  } else RACE.sweptMsg = false;
-  if (live && P.s > RACE_END - 6) roamWin('YOU REACH RIVENDELL!');
+  // the Ford: once Gandalf is over he stops and turns on the far bank, the Nine ride into the water after him, and the river rises in a wave of white horses
+  if (!RACE.cut && live && P.s > RACE_FORD + 12) {
+    RACE.cut = { t: 0, hit: false }; setLetterbox(true); cam.snap = true; P.invT = 30; RACE.left = 9; banner('THE NINE AT THE FORD', 2.2);
+    RACE.list.forEach((n, i) => { n.on = true; Object.assign(n, { state: 'ford', s: RACE_FORD - 9 - (i % 3) * 2.4, x: -8.8 + i * 2.2, vs: 6, h: 0, wt: 0, flash: 0 }); n.m.body.rotation.set(0, 0, 0); n.m.root.rotation.set(0, 0, 0); });
+    if (!RACE.horses) RACE.horses = Array.from({ length: 14 }, (_, k) => { const hz = makeHorse(); if (hz.skin) { const i = SKINS.indexOf(hz.skin); if (i >= 0) SKINS.splice(i, 1); hz.skin = null; } hz.root.traverse(o => { if (o.isMesh) { o.material = new THREE.MeshPhongMaterial({ color: 0xd8f0ff, emissive: 0x4a7a9a, specular: 0xffffff, shininess: 90, transparent: true, opacity: .78 }); } }); addSkin(hz, 'floodhorse', hz.body, hz.root); hz.root.visible = false; hz.root.scale.setScalar(1.7); scene.add(hz.root); return { hz, ds: (k % 5 - 2) * 2.9 + rand(-.6, .6), lag: rand(-1, 7), bob: rand(0, 6) }; });
+  }
+  const FL = THEMES.ford.flood, C = RACE.cut;
+  if (C) {
+    C.t += dt; P.invT = 5; P.heading = damp(P.heading, Math.PI, 3, dt);
+    if (C.t > 2.4 && !C.rum) { C.rum = true; S.thunder && S.thunder(); S.roar(); banner('THE RIVER RISES!', 2); }
+    if (C.t > 2.4) cam.shake = Math.max(cam.shake, .25);
+    const k = Math.max(0, C.t - 3.2), fx_ = -58 + k * 19; FL.visible = C.t > 3.2 && fx_ < 70; tw(RACE_FORD, fx_, -.4, FL.position);
+    if (FL.visible) for (let q = 0; q < 8; q++) smoke.spawn(FL.position.x + rand(-2, 2), FL.position.y + rand(0, 7), FL.position.z + rand(-9, 9), rand(-4, 4), rand(1, 4), rand(-2, 2), rand(.8, 1.5), 2, 5, [.95, .98, 1], [.8, .9, 1], .4, .4);
+    for (const h of RACE.horses) { const x = fx_ + h.lag * .9 + 2, hz = h.hz; hz.root.visible = C.t > 3.2 && x < 72; if (!hz.root.visible) continue; tw(RACE_FORD + h.ds, x, .6 + Math.abs(Math.sin(T * 5 + h.bob)) * .7, hz.root.position); hz.root.rotation.set(0, -(trackAng(RACE_FORD) + Math.PI / 2), 0); raceGallop(hz, 14); if (hz.skin) skinPlay(hz, 'walk'); }
+    for (const n of RACE.list) if (n.state === 'ford' && fx_ + 2 > n.x) { n.state = 'swept'; n.wt = 0; S.screech(); sparks(tw(n.s, n.x, 1.5), 20, 8, [1, 1, 1], [.7, .85, 1], .3); }
+    if (C.t > 3.2 + 110 / 19 && !C.done) { C.done = true; RACE.left = 0; banner('THE NINE ARE SWEPT AWAY!', 2.4); }
+    if (C.t > 3.2 + 110 / 19 + 2) { RACE.cut = null; RACE.ended = true; setLetterbox(false); for (const h of RACE.horses) h.hz.root.visible = false; FL.visible = false; roamWin('YOU REACH RIVENDELL!'); return; }
+  }
   for (const [i, n] of RACE.list.entries()) {
     const m = n.m, hz = n.hz; if (!n.on) continue; n.t += dt; n.cd -= dt; n.flash -= dt;
+    if (n.state === 'ford') { n.s = Math.min(n.s + 2.6 * dt, RACE_FORD - 3); n.vs = 7; n.wt += dt; }
     if (n.state === 'wait') { m.root.visible = m.shadow.visible = hz.root.visible = false; if (live && P.s > n.at - (n.at ? 28 : 0)) { n.state = 'ride'; n.s = n.at ? P.s + 6 : P.s - 12 - i * 2; n.x = n.at ? n.side * 18 : n.side * 3; n.vs = RIDE_V; if (n.at) { S.screech(); if (!RACE.met) { RACE.met = true; } } } continue; }
     if (n.state === 'gone') { m.root.visible = m.shadow.visible = hz.root.visible = false; continue; }
     const ds = P.s - n.s, dx = P.x - n.x;
@@ -7596,13 +7619,12 @@ function updateRace(dt) {
       if (live && P.spinT > 0 && Math.hypot(ds, dx) < 3 && n.spinHit !== P.spinId) { n.spinHit = P.spinId; raceHit(n); }
       n.h = Math.atan2(clamp((tx - n.x) * .3, -.6, .6), 1);
     } else if (n.state === 'fall') { n.wt += dt; n.vs = approach(n.vs, 0, 8 * dt); n.s += n.vs * dt; if (Math.random() < .5) puff(tw(n.s, n.x, n.y + 1), 1, .8, CSM); if (n.wt > 1.6) n.state = 'gone'; }
-    else if (n.state === 'swept') { n.wt += dt; n.x += 9 * dt; n.s = lerp(n.s, RACE_FORD, Math.min(1, dt * 2)); if (n.wt > 2) n.state = 'gone'; }
-    n.y = (n.state === 'swept' ? -.4 + Math.sin(n.t * 6) * .3 : terrainAt(n.s, n.x, true));
+    else if (n.state === 'swept') { n.wt += dt; n.x += 17 * dt; n.s = lerp(n.s, RACE_FORD, Math.min(1, dt * 2)); n.h += dt * 3; if (n.wt > 2.2) n.state = 'gone'; }
+    n.y = n.state === 'swept' ? .8 + Math.sin(n.t * 7) * .6 - n.wt * .6 : Math.max(terrainAt(n.s, n.x, true), n.state === 'ford' ? -.55 : -9);
     // drawing: the horse at a gallop under the rider (the built one; Battle for Middle-earth's comes with its own horse)
     const own = !!(m.skin && m.skin.obj); m.root.visible = m.shadow.visible = true; hz.root.visible = !own;
     const rotY = -(trackAng(n.s) + n.h); tw(n.s, n.x, n.y, hz.root.position); hz.root.rotation.set(n.state === 'fall' ? -.3 : 0, rotY, n.state === 'swept' ? .6 : 0);
-    hz.ph += dt * (2 + Math.abs(n.vs) * .62); const gl = clamp(Math.abs(n.vs) / 8, 0, 1); hz.body.position.y = Math.abs(Math.sin(hz.ph)) * .12 * gl; hz.body.rotation.x = Math.sin(hz.ph) * .07 * gl;
-    hz.legs.forEach((l, k) => { const a = Math.sin(hz.ph + [0, .55, Math.PI, Math.PI + .55][k]); l.up.rotation.x = a * .6 * gl; l.lo.rotation.x = Math.max(0, -a) * .9 * gl; });
+    raceGallop(hz, n.state === 'swept' ? 8 : Math.max(Math.abs(n.vs), n.state === 'fall' ? 0 : 7));
     if (own) place(m.root, n.s, n.x, n.y, n.h); else { hz.root.updateMatrixWorld(true); hz.body.localToWorld(m.root.position.set(0, 1.3, -.1)); m.root.rotation.set(0, rotY, 0); }
     if (n.state === 'fall' && !own) { m.root.position.y -= Math.min(1.3, n.wt * 2); m.root.rotation.x = -Math.min(1.4, n.wt * 2); }
     tw(n.s, n.x, n.y + .03, m.shadow.position);
@@ -7757,27 +7779,38 @@ function drRampUpdate(b, dt) {
   drDraw(b, dt, fly, open);
   skinPlay(m, b.state === 'flee' ? 'fly' : !fly ? (open ? 'attack' : 'idle') : 'fly');
 }
-// the bow: an arrow toward the dragon if he's in front of the camera, else straight out where the camera looks
-const BOW = { arrows: [], cd: 0, mesh: null };
+const BOW = { arrows: [], cd: 0, mesh: null, aim: false, cx: 0, cy: .25 };
+// the bow. Press U to take aim: a sight comes up and W A S D move it (Gandalf stands still; push it to the edge of the screen and the view turns
+// after it). K looses: with the sight on him, the arrow flies at him and hits. Press U again to walk. Without the sight, an arrow flies straight
+// at him if he's roughly in front of the camera, but he's quick, and it may miss.
+const bowFoes = () => LV.flyers ? FLY.list.filter(flyLive) : KH.boss && ukLive(KH.boss) && KH.boss.hitFn === drHit ? [KH.boss] : [];
+const bowAt = f => tw(f.s, f.x, f.y + (f.aimY ?? 2.5));
+function bowRay() { return BOW.aim ? new V3(BOW.cx, BOW.cy, .5).unproject(camera).sub(camera.position).normalize() : camera.getWorldDirection(new V3()); }
+function bowPick(cone) { const dir = bowRay(); let best = null, bd = Math.cos(cone); for (const f of bowFoes()) { const d = bowAt(f).sub(camera.position).normalize().dot(dir); if (d > bd) { bd = d; best = f; } } return best; }
 function bowShoot() {
-  if (BOW.cd > 0) return; BOW.cd = .32; S.whoosh();
-  const from = tw(P.s, P.x, P.y + 1.5), b = KH.boss, dir = new V3(); camera.getWorldDirection(dir);
-  let to = from.clone().addScaledVector(dir, 60).add(_a.set(0, 4, 0));
-  if (b && ukLive(b) && b.m.root.visible) { const bp = tw(b.s, b.x, b.y + 2.5), v = bp.clone().sub(camera.position).normalize(); if (v.dot(dir) > Math.cos(.5) || AUTOK) to = bp; }
-  const v = to.sub(from).normalize().multiplyScalar(52); v.y += 1.5;
+  if (BOW.cd > 0) return; BOW.cd = BOW.aim ? .28 : .36; S.whoosh();
+  const from = tw(P.s, P.x, P.y + 1.5), tgt = AUTOK ? bowFoes()[0] : bowPick(BOW.aim ? .1 : .5), dir = bowRay();
+  const to = tgt ? bowAt(tgt) : from.clone().addScaledVector(dir, 70), v = to.sub(from).normalize().multiplyScalar(58);
   const m = new THREE.Group(); part(GEO.cyl, lam(0x8a6a3a), m, 0, 0, 0, .04, 1.2, .04).rotation.x = Math.PI / 2; part(GEO.cone, lam(0xc8c8d0), m, 0, 0, .65, .06, .18, .06).rotation.x = Math.PI / 2; scene.add(m);
-  BOW.arrows.push({ p: from, v, m, life: 2.2 }); P.heading = Math.atan2(-v.x, v.z);   // (Gandalf turns to loose it)
+  BOW.arrows.push({ p: from, v, m, life: 2.2, tgt: BOW.aim || AUTOK ? tgt : null }); P.heading = Math.atan2(-v.x, v.z);   // (Gandalf turns to loose it)
   skinClip(hob, khc(KH_SORA.ground[0], 'attack_a'), .3);
 }
 function updateBow(dt) {
   BOW.cd -= dt; const on = !!(LV && LV.bow && state !== 'map' && state !== 'title');
-  if (!BOW.mesh) { const g = new THREE.Group(), w = lam(0x5a3a1e); const arc = new THREE.Mesh(new THREE.TorusGeometry(.62, .035, 5, 16, Math.PI * .9), w); arc.rotation.z = Math.PI / 2 + Math.PI * .05; g.add(arc); part(GEO.cyl, lam(0xe8e8e8), g, -.02, 0, 0, .008, 1.2, .008); BOW.mesh = g; scene.add(g); }
+  if (!BOW.mesh) { const g = new THREE.Group(), w = lam(0x5a3a1e); const arc = new THREE.Mesh(new THREE.TorusGeometry(.62, .035, 5, 16, Math.PI * .9), w); arc.rotation.z = Math.PI / 2 + Math.PI * .05; g.add(arc); part(GEO.cyl, lam(0xe8e8e8), g, -.02, 0, 0, .008, 1.2, .008); BOW.mesh = g; scene.add(g);
+    const el = document.createElement('div'); el.id = 'bowX'; el.innerHTML = '<i></i><b></b>'; document.getElementById('khpow').parentNode.appendChild(el); BOW.el = el; }
   BOW.mesh.visible = on; if (on) { tw(P.s + Math.cos(P.heading) * .35, P.x + Math.sin(P.heading) * .35 + Math.cos(P.heading) * -.25, P.y + 1.25, BOW.mesh.position); BOW.mesh.rotation.set(0, -(trackAng(P.s) + P.heading) + Math.PI / 2, 0); }
-  const b = KH.boss;
+  const show = on && BOW.aim && state === 'play'; BOW.el.style.display = show ? 'block' : 'none';
+  if (show) { BOW.el.style.left = (BOW.cx + 1) * 50 + '%'; BOW.el.style.top = (1 - BOW.cy) * 50 + '%'; BOW.el.classList.toggle('on', !!bowPick(.1)); }
+  if (on && BOW.hintAt && T > BOW.hintAt && state === 'play') { BOW.hintAt = 0; banner('U: TAKE AIM · W A S D: THE SIGHT · K: LOOSE', 3.4); }
+  if (!on && BOW.arrows.length) { for (const a of BOW.arrows) scene.remove(a.m); BOW.arrows = []; }
   for (let i = BOW.arrows.length - 1; i >= 0; i--) {
-    const a = BOW.arrows[i]; a.life -= dt; a.v.y -= 6 * dt; const p0 = a.p.clone(); a.p.addScaledVector(a.v, dt); a.m.position.copy(a.p); a.m.lookAt(_a.copy(a.p).add(a.v));
+    const a = BOW.arrows[i]; a.life -= dt; const p0 = a.p.clone();
+    if (a.tgt && bowFoes().includes(a.tgt)) a.v.lerp(bowAt(a.tgt).sub(a.p).normalize().multiplyScalar(62), Math.min(1, dt * 9));
+    else { a.tgt = null; a.v.y -= 6 * dt; }
+    a.p.addScaledVector(a.v, dt); a.m.position.copy(a.p); a.m.lookAt(_a.copy(a.p).add(a.v));
     let hit = a.life <= 0;
-    if (!hit && b && ukLive(b) && b.hitFn === drHit) { const c = tw(b.s, b.x, b.y + 2.5); for (let k = 0; k <= 4 && !hit; k++) if (p0.clone().lerp(a.p, k / 4).distanceTo(c) < 3.4) { hit = true; drHit(b, 8, false); } }
+    if (!hit) for (const f of bowFoes()) { const c = bowAt(f), r = f.hitR ?? 3.4; for (let k = 0; k <= 4 && !hit; k++) if (p0.clone().lerp(a.p, k / 4).distanceTo(c) < r) { hit = true; f.hitFn(f, 8, false); } if (hit) break; }
     if (hit) { scene.remove(a.m); BOW.arrows.splice(i, 1); }
   }
 }
@@ -8382,12 +8415,14 @@ function drawBoss(b, dt, walk) {
   const M_ = balrogMats(), hot = b.phase > 1 ? 1.35 : 1; M_.rock.emissiveIntensity = b.flash > 0 ? 2.4 : (.7 + Math.sin(T * 2.6) * .2) * hot;
   m.fires.forEach(fi => { const k = (.8 + .25 * Math.sin(T * 9 + fi.ph) + .1 * Math.sin(T * 23 + fi.ph * 2)) * hot; fi.sp.scale.set(fi.s * .6 * k, fi.s * (.85 + .3 * Math.sin(T * 7 + fi.ph)) * hot, 1); });
   m.halo.material.opacity = (b.phase > 1 ? .48 : .32) + Math.sin(T * 3) * .05;
-  if (m.root.visible && b.state !== 'fall') { m.root.updateMatrixWorld(true); for (let k = 0; k < (b.phase > 1 ? 4 : 2); k++) bfire(_a.set(rand(-1.4, 1.4), rand(3, 8.5), rand(-1.2, .6)).applyMatrix4(m.root.matrixWorld), 1.5, 1.6); }
-  if (b.state === 'cutfall') { m.root.rotateX(-clamp(b.t * .6, 0, 1.3)); m.root.rotateZ(Math.sin(b.t * 2) * .15); }   // (tipping back as he falls, flailing)
-  if (LV && LV.fall && b.state !== 'die') {   // (the fall: he falls the whole way as he did off the bridge, on his back, wings spread, looking up at Gandalf)
-    m.root.rotateX(-1.42 + Math.sin(T * 1.1) * .06); m.root.rotateY(Math.sin(T * .9) * .1);
-    if (!(b.fallT > T)) { b.fallT = T + 5.8; if (!skinClip(m, 'fly_a', 6)) skinClip(m, 'jump_2', 6); }
+  if (LV && LV.fall && b.state !== 'die') {   // (the fall: flat on his back, chest to the camera, turning slowly, wrapped in fire, his body centred on where he is, under Gandalf)
+    m.root.rotateX(-Math.PI / 2 + Math.sin(T * 1.1) * .05); m.root.rotateY(Math.sin(T * .7) * .14); m.root.translateY(-FALL_MID); m.root.updateMatrixWorld(true);
+    if (!(b.fallT > T)) { const c = FALL_CLIP; b.fallT = T + 30; skinClip(m, c[0], 1); const K = m.skin; if (K && K.curAct) { K.curAct.time = c[1] * K.curAct.getClip().duration; K.curAct.timeScale = 0; K.holdT = T + 30; } }
+    if (m.root.visible) for (let k = 0; k < (b.phase > 1 ? 7 : 5); k++) bfire(_a.set(rand(-2.2, 2.2), rand(1.5, 9), rand(-1.2, 1.2)).applyMatrix4(m.root.matrixWorld), rand(1.2, 2.2), 2.2);
+    if (!m.fglow) { m.fglow = glowSprite(0xff6a18, 22, .55); scene.add(m.fglow); (m.extra = m.extra || []).push(m.fglow); } tw(b.s, b.x, b.y - 2, m.fglow.position); m.fglow.material.opacity = .45 + Math.sin(T * 7) * .08;
   }
+  if (m.root.visible && b.state !== 'fall' && !(LV && LV.fall)) { m.root.updateMatrixWorld(true); for (let k = 0; k < (b.phase > 1 ? 4 : 2); k++) bfire(_a.set(rand(-1.4, 1.4), rand(3, 8.5), rand(-1.2, .6)).applyMatrix4(m.root.matrixWorld), 1.5, 1.6); }
+  if (b.state === 'cutfall') { m.root.rotateX(-clamp(b.t * .6, 0, 1.3)); m.root.rotateZ(Math.sin(b.t * 2) * .15); }   // (tipping back as he falls, flailing)
   skinPlay(m, b.state === 'cutfall' ? 'jump' : b.state === 'fall' ? 'die' : b.state === 'stun' ? 'hit' : walk ? 'walk' : 'idle');
 }
 
@@ -8808,7 +8843,7 @@ function spawnFallBalrog(pl, delay = 0) {
     state: 'below', t: -delay, h: 0, kneel: 0, cd: 2.2, s: 0, x: 0, y: -16, ang: 0, upd: fallBossUpdate, hitFn: fallBossHit, reactFn: () => null };
   URUKS.push(b); KH.boss = b; Music.mode = 1; return b;
 }
-const FALL_LOW = -16, FALL_UP = -3.4;
+const FALL_LOW = -6.5, FALL_UP = -3.4, FALL_MID = 5, FALL_CLIP = (new URLSearchParams(location.search).get('fallclip') || 'fly_a,.05').split(',').map((v, i) => i ? +v : v);   // (how far down he falls below Gandalf, level with him, his body's middle above his feet, and the frame of which clip he's held in)
 function fallBossHit(b, dmg, fin) {
   if (!ukLive(b) || b.state === 'die') return;
   const p = tw(b.s, b.x, b.y + (b.state === 'open' || b.state === 'rise' ? 3 : 5));
@@ -8834,10 +8869,10 @@ function fallBossUpdate(b, dt) {
   const p2 = b.phase > 1, A = b.a;
   switch (b.state) {
     case 'below': {   // circling far below, hurling fire and rock up the shaft
-      b.ang += dt * (p2 ? .55 : .4); b.s = damp(b.s, P.s + 2 + Math.cos(b.ang) * 2, 1.5, dt); b.x = damp(b.x, P.x + Math.sin(b.ang) * 2, 1.5, dt); b.y = damp(b.y, FALL_LOW, 2, dt); b.h = Math.atan2(P.x - b.x, P.s - b.s);
+      b.ang += dt * (p2 ? .55 : .4); b.s = damp(b.s, P.s + Math.cos(b.ang) * .8, 3, dt); b.x = damp(b.x, P.x + Math.sin(b.ang) * .8, 3, dt); b.y = damp(b.y, FALL_LOW, 2, dt); b.h = Math.atan2(P.x - b.x, P.s - b.s);
       b.cd -= dt; if (state !== 'play' || b.cd > 0) break;
       const r = Math.random(); b.n = (b.n || 0) + 1;
-      if (b.n % 3 === 0) { b.state = 'rise'; b.t = 0; b.to = [clamp(P.s, -8, 8) + rand(-2, 2), clamp(P.x, -8, 8) + rand(-2, 2)]; b.ry = b.y; S.roar(); break; }
+      if (b.n % 3 === 0) { b.state = 'rise'; b.t = 0; b.to = [clamp(P.s, -8, 8), clamp(P.x, -8, 8)]; b.ry = b.y; S.roar(); break; }
       if (r < .5) { const k = p2 ? 5 : 3; for (let i = 0; i < k; i++) setTimeout(() => { if (state === 'play' && ukLive(b)) fallStrike(P.s + rand(-.8, .8), P.x + rand(-.8, .8), 1, 1.5, 12, fallFire); }, i * 380); S.whoosh(); }
       else { const k = p2 ? 5 : 4; for (let i = 0; i < k; i++) { const [s, x] = fallSpot(); setTimeout(() => { if (state === 'play' && ukLive(b) && b.state === 'below') fallStrike(s, x, 1.3, 1.6, 14, fallRock); }, i * 330); } }
       b.cd = rand(1.6, 2.4) / (p2 ? 1.3 : 1); break;
@@ -8853,8 +8888,8 @@ function fallBossUpdate(b, dt) {
       break;
     case 'die': b.y -= dt * (4 + b.t * 10); for (let k = 0; k < 4; k++) bfire(tw(b.s + rand(-2.5, 2.5), b.x + rand(-2.5, 2.5), b.y + rand(0, 8)), 2.4, 2.4); if (b.t > 2.5) { khRemove(b); return; } break;
   }
-  if (b.state !== 'die' && b.state !== 'below' && Math.hypot(P.s - b.s, P.x - b.x) < b.r + .5) { const d = Math.hypot(P.s - b.s, P.x - b.x) || 1; P.s = b.s + (P.s - b.s) / d * (b.r + .5); P.x = b.x + (P.x - b.x) / d * (b.r + .5); }
-  b.h = Math.PI; drawBoss(b, dt, 0); m.shadow.visible = false;   // (always the same way round: on his back, chest up to the camera, head to the top of the screen)
+  if (false) { const d = Math.hypot(P.s - b.s, P.x - b.x) || 1; P.s = b.s + (P.s - b.s) / d * (b.r + .5); P.x = b.x + (P.x - b.x) / d * (b.r + .5); }
+  b.h = Math.PI + .8 + Math.sin(T * .2) * .3; drawBoss(b, dt, 0); m.shadow.visible = false;   // (always the same way round: on his back, chest up to the camera, head to the top of the screen)
   if (b.state === 'open' && Math.random() < .3) sparks(tw(b.s, b.x, b.y + 6), 2, 2, [1, 1, .8], [1, .7, .2]);   // (the opening: he glitters)
 }
 function buildFall(L, TH) {
@@ -9618,6 +9653,10 @@ function khItem(id) {
 const KH_PMENU = { open: false, page: 'magic', col: 0, row: 0 }, KH_GAMES = [['KH', 'KINGDOM HEARTS II'], ['JO', 'JEDI OUTCAST'], ['Fable', 'FABLE']];
 const khPage = () => KH_PMENU.page === 'magic' ? KH_POWERS : KH_TECHS;
 const khCol = c => khPage().filter(p => p.game === KH_GAMES[c][0]);
+const KH_KEYS = [['MOVING', [['W A S D', 'Move'], ['W W', 'Battle Charge (a technique)'], ['L', 'Jump'], ['L L', 'Force Jump, in the air (a technique)'], ['J', 'Dodge roll'], ['Left Shift', 'Turn the camera left'], ['/', 'Turn the camera right']]],
+  ['FIGHTING', [['K', 'Attack, or use what the menu is on'], ['Space', 'Guard'], ['I', 'Reaction command (the green prompt)'], ['F', 'First shortcut power'], ['H', 'Second shortcut power'], ['U', 'Take aim, where you have a bow'], ['K', 'Loose an arrow, where you have a bow']]],
+  ['MENUS', [['Q / E', 'Up and down the command menu'], ['L', 'Back out of a list'], ['Tab', 'This menu'], ['Esc', 'Pause'], ['M', 'Music on or off']]]];
+function khKeysHtml() { return `<div class="cols">${KH_KEYS.map(([g, list]) => `<div><div class="g">${g}</div>${list.map(([k, d]) => `<div class="p kb"><span><kbd>${k}</kbd></span><small>${d}</small></div>`).join('')}</div>`).join('')}</div>`; }
 function khPowersMenu(on) {
   KH_PMENU.open = on; const el = document.getElementById('khpow'); el.style.display = on ? 'block' : 'none';
   if (on) { pausedFrom = state; state = 'paused'; khPowersFix(); khPowersDraw(); } else if (state === 'paused') state = pausedFrom;
@@ -9625,9 +9664,10 @@ function khPowersMenu(on) {
 function khPowersFix() { const M = KH_PMENU; for (let k = 0; k < 3 && !khCol(M.col).length; k++) M.col = (M.col + 1) % 3; M.row = Math.min(M.row, Math.max(0, khCol(M.col).length - 1)); }
 function khPowersDraw() {
   const P_ = KH_POWER_SET, M = KH_PMENU, mag = M.page === 'magic';
+  if (M.page === 'keys') { document.getElementById('khpow').innerHTML = '<div class="tabs"><span>MAGIC</span><span>TECHNIQUES</span><span class="sel">KEYBOARD</span><small>Q / E: page</small></div>' + khKeysHtml(); return; }
   const tag = id => mag ? [P_.f === id ? '<b>F</b>' : '', P_.h === id ? '<b>H</b>' : '', ...P_.slots.map((s, i) => s === id ? `<b>${i + 1}</b>` : '')].join('') : khTechOn(id) ? '<b class="on">ON</b>' : '<b class="off">OFF</b>';
   const cost = p => p.mps ? `${p.mps} MP/s` : `${p.mp} MP`;
-  document.getElementById('khpow').innerHTML = `<div class="tabs"><span class="${mag ? 'sel' : ''}">MAGIC</span><span class="${mag ? '' : 'sel'}">TECHNIQUES</span><small>Q / E: page · W A S D: choose · ${mag ? 'F or H: shortcut · 1–5: MAGIC menu' : 'K: on / off'} · Tab: close</small></div>
+  document.getElementById('khpow').innerHTML = `<div class="tabs"><span class="${mag ? 'sel' : ''}">MAGIC</span><span class="${mag ? '' : 'sel'}">TECHNIQUES</span><span>KEYBOARD</span><small>Q / E: page · W A S D: choose · ${mag ? 'F or H: shortcut · 1–5: MAGIC menu' : 'K: on / off'} · Tab: close</small></div>
     ${mag ? `<div class="slots">F <i>${POWER[P_.f].name}</i> · H <i>${POWER[P_.h].name}</i> · MAGIC ${P_.slots.map((s, i) => `<i>${i + 1} ${POWER[s].name}</i>`).join(' ')}</div>` : `<div class="slots">On: ${P_.tech.map(i => `<i>${TECH[i].name}</i>`).join(' ') || 'none'}</div>`}
     <div class="cols">${KH_GAMES.map(([g, gn], c) => `<div><div class="g">${gn}</div>${khCol(c).map((p, r) => `<div class="p${c === M.col && r === M.row ? ' sel' : ''}" data-c="${c}" data-r="${r}"><span>${p.name}</span><small>${cost(p)}</small><em>${tag(p.id)}</em><div class="d">${p.desc}${p.how ? ' · <u>' + p.how + '</u>' : ''}</div></div>`).join('') || '<div class="d">—</div>'}</div>`).join('')}</div>`;
 }
@@ -9635,7 +9675,8 @@ function khPowersKey(code) {
   const M = KH_PMENU, P_ = KH_POWER_SET, fix = khPowersFix;
   if (code === 'Tab' || code === 'Escape') { khPowersMenu(false); return; }
   const col = khCol(M.col), p = col[M.row];
-  if (code === 'KeyQ' || code === 'KeyE') { M.page = M.page === 'magic' ? 'tech' : 'magic'; fix(); }
+  if (code === 'KeyQ' || code === 'KeyE') { const pg = ['magic', 'tech', 'keys'], n = pg.indexOf(M.page); M.page = pg[(n + (code === 'KeyE' ? 1 : 2)) % 3]; fix(); }
+  else if (M.page === 'keys') return;
   else if (code === 'KeyW' || code === 'ArrowUp') M.row = (M.row + col.length - 1) % col.length;
   else if (code === 'KeyS' || code === 'ArrowDown') M.row = (M.row + 1) % col.length;
   else if (code === 'KeyA' || code === 'ArrowLeft' || code === 'KeyD' || code === 'ArrowRight') { const d = code === 'KeyA' || code === 'ArrowLeft' ? 2 : 1; do M.col = (M.col + d) % 3; while (!khCol(M.col).length); M.row = Math.min(M.row, khCol(M.col).length - 1); }
@@ -10126,7 +10167,8 @@ showScreen(null); syncPauseBtns();
       const dr = LV.layout.hall && LV.layout.hall.door; return p ? [p.s, p.x] : dr ? [dr.s, dr.x] : [P.s, P.x]; } };
     if (q.get('sim')) { cheats.god = !q.get('mortal'); for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (q.get('cast') === 'all' && LV.kh) { const bad = []; for (const p of KH_POWERS) { try { KH.mp = 100; KH.magicCD = 0; KH.atk = null; if (!khCast(p.id)) bad.push(p.id + ' (not cast)'); for (let i = 0; i < 90; i++) step(1 / 60, true); } catch (e) { bad.push(p.id + ': ' + e.message); } } console.log('castall ' + KH_POWERS.length + ' powers, problems: ' + (bad.join('; ') || 'none') + ', kills ' + gs.kills); }   // (&cast=all: every power in turn, for testing)
     if (q.get('cutnow') && KH.boss) { bossFall(KH.boss); for (let i = 0; i < Number(q.get('cutnow')) * 60; i++) step(1 / 60, true); }   // (&cutnow=2: the bridge's ending, 2 seconds in, for testing)
-    if (q.get('powers') && LV.kh) setTimeout(() => { KH_PMENU.page = q.get('powers') === 'tech' ? 'tech' : 'magic'; khPowersMenu(true); }, 3000);
+    if (q.get('aimt') && LV.bow) BOW.aim = true;   // (testing: &aimt=1 starts with the sight up)
+    if (q.get('powers') && LV.kh) setTimeout(() => { KH_PMENU.page = q.get('powers') === 'tech' || q.get('powers') === 'keys' ? q.get('powers') : 'magic'; khPowersMenu(true); }, 3000);
     if (q.get('techs') && LV.kh) { KH_POWER_SET.tech = KH_TECHS.map(t => t.id); const bad = []; try { for (let i = 0; i < 240; i++) { KH.mp = 100; step(1 / 60, true); } P.ground = true; KH.atk = null; khBattleCharge(); for (let i = 0; i < 40; i++) step(1 / 60, true); P.vy = 9; P.ground = false; khForceJump(); for (let i = 0; i < 30; i++) step(1 / 60, true); KH.mp = 50; for (let i = 0; i < 60; i++) step(1 / 60, true); } catch (e) { bad.push(e.message); } console.log('techs: problems ' + (bad.join('; ') || 'none') + ', MP drained to ' + KH.mp.toFixed(1) + ' in a second, shield ' + (KH.shield || 0).toFixed(1) + ', kills ' + gs.kills); }   // (&techs=1: every technique on, for testing)   // (&powers=1: the powers menu, for testing)
     if (q.get('drive') && LV.kh) { KH.drive = 100; khDrive(); }   // (&drive=1: the White Wizard, for testing)
     if (q.get('menu') && LV.kh) { KH.sub = q.get('menu'); KH.cur = KH_MENU.findIndex(c => c.sub === KH.sub); }   // (&menu=magic: that list open, for testing)
