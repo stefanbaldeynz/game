@@ -2622,7 +2622,7 @@ const LEVELS = [
   // ---- one level for each of the other places on the map; each ring sits far out on its own so they never see each other ----
   {
     // a Kingdom Hearts level like Helm's Deep: up the lane through Hobbiton, over the Water, round the Party Field to Bag End (see HOBBITON)
-    straight: true, roam: true, kh: true, name: 'HOBBITON', sub: 'THE BLACK RIDERS', loc: 'shire', theme: 'shirekh', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 5000, CZ: 0, base: -6, wallH: 0, winTitle: 'KHAMÛL FLEES THE SHIRE!',
+    straight: true, roam: true, kh: true, stepUp: true, name: 'HOBBITON', sub: 'THE BLACK RIDERS', loc: 'shire', theme: 'shirekh', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 5000, CZ: 0, base: -6, wallH: 0, winTitle: 'KHAMÛL FLEES THE SHIRE!',
     ...shireLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { shireContent(this); },
@@ -2630,7 +2630,7 @@ const LEVELS = [
   {
     // the hidden valley, rebuilt like the film's model: over the gorge, up the terraces to the Last Homely House; find the
     // other eight of the Fellowship, who follow Gandalf once found (see RIVENDELL)
-    straight: true, roam: true, name: 'RIVENDELL', sub: 'THE FELLOWSHIP OF THE RING', loc: 'riv', theme: 'rivkh', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 10000, CZ: 0, base: -6, wallH: 0,
+    straight: true, roam: true, stepUp: true, name: 'RIVENDELL', sub: 'THE FELLOWSHIP OF THE RING', loc: 'riv', theme: 'rivkh', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 10000, CZ: 0, base: -6, wallH: 0,
     ...rivLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { rivContent(this); },
@@ -2739,7 +2739,7 @@ const LEVELS = [
   },
   {
     // Cirith Ungol's second level: the stairs, climbed from the side (see the Stairs of Cirith Ungol)
-    straight: true, roam: true, name: 'THE STAIRS OF CIRITH UNGOL', sub: 'THE LONG CLIMB', loc: 'ungol', theme: 'ustair', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 105000, CZ: 0, base: -8, wallH: 0,
+    straight: true, roam: true, stepUp: true, name: 'THE STAIRS OF CIRITH UNGOL', sub: 'THE LONG CLIMB', loc: 'ungol', theme: 'ustair', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 105000, CZ: 0, base: -8, wallH: 0,
     ...ustairLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { ustairContent(this); },
@@ -3226,7 +3226,7 @@ function moveH(ax, d) {
     if (b.kind === 'crate' && b.ref.type === 'n') { crateExplode(b.ref); continue; }
     // Shadowfax charges straight through crates (TNT included, so mind those)
     if (LV.ride && b.kind === 'crate' && b.ref.type !== 'i' && b.ref.type !== 'ib') { if (b.ref.type === 't') crateExplode(b.ref); else breakCrate(b.ref); continue; }
-    if (P.ground && b.y1 - P.y <= .36 && b.kind !== 'crate') { P.y = b.y1; continue; }
+    if ((P.ground || (LV.stepUp && P.vy <= .1)) && b.y1 - P.y <= .36 && b.kind !== 'crate') { P.y = b.y1; continue; }   // (LV.stepUp: bridges and stairs of many small steps, so the moment between two of them isn't a wall)
     if (ax === 's') { P.s = d > 0 ? b.s0 - PR - 1e-4 : b.s1 + PR + 1e-4; P.vs = 0; }
     else { P.x = d > 0 ? b.x0 - PR - 1e-4 : b.x1 + PR + 1e-4; P.vx = 0; }
   }
@@ -6008,11 +6008,11 @@ const MODEL_SLOTS = {
   fellbeast: { height: 7.5, turn: -Math.PI / 2 }, horse: { height: 2.5, turn: -Math.PI / 2, hide: /gandalf/i, anims: { walk: /^run_a/i, jump: /^fly/i } },
   sauron: { height: 20, turn: -Math.PI / 2 },   // in his own units: the game builds Sauron at .28 scale (about 5.6 tall)
   spider: { height: 1.6, turn: -Math.PI / 2, src: 'shelob' },
-  troll: { height: 5.4, turn: -Math.PI / 2 },   // (Balin's Chamber: Rise of the Witch-king's hill troll)
-  urukp: { height: 2.2, turn: -Math.PI / 2 }, urukx: { height: 2.1, turn: -Math.PI / 2 }, fanatic: { height: 2.1, turn: -Math.PI / 2 }, overseer: { height: 2.8, turn: -Math.PI / 2 },   // (the Uruk-hai's pikemen, crossbowmen, fanatics and their overseer)
+  troll: { height: 5.8, turn: -Math.PI / 2, hide: /^BOX|FORGED_BLADE/i },   // (Balin's Chamber: Rise of the Witch-king's hill troll)
+  urukp: { height: 3, turn: -Math.PI / 2, hide: /FORGED_BLADE/i }, urukx: { height: 2.1, turn: -Math.PI / 2, hide: /FIREAROWTIP/i }, fanatic: { height: 2.1, turn: -Math.PI / 2 }, overseer: { height: 2.8, turn: -Math.PI / 2, hide: /^BOX/i },   // (the Uruk-hai's pikemen, crossbowmen, fanatics and their overseer)
   dragon: { height: 7, turn: -Math.PI / 2, anims: { fly: /^fly_a/i, idle: /^idle_a/i, attack: /^attack_a/i, hit: /^hurt_a/i, die: /^die_k/i } },   // (Erebor: Drogoth, Rise of the Witch-king's dragon)
   floodhorse: { height: 4, turn: -Math.PI / 2, anims: { walk: /^run/i }, glow: .5 },   // (the Ford: the water horses of Battle for Middle-earth's flood)
-  blackrider: { height: 3.1, turn: -Math.PI / 2, anims: { walk: /^run|^walk|wlk/i } },   // (the race to the Ford: Rise of the Witch-king's Black Rider, on his horse)   // Mirkwood's spiders: Shelob again (src: whose model it is), smaller
+  blackrider: { height: 3.1, turn: -Math.PI / 2, hide: /CINEMA|_NEW/i, anims: { walk: /^run_a/i } },   // (its cinematic duplicates hidden: it has one horse and one rider)   // (the race to the Ford: Rise of the Witch-king's Black Rider, on his horse)   // Mirkwood's spiders: Shelob again (src: whose model it is), smaller
 };
 // which animation plays for each action: the first clip whose name matches (case doesn't matter)
 const ANIM_NAMES = { idle: /idle|stand|breath|ready/i, fly: /fly|glid|hover/i, walk: /walk|wala|run|move|gallop/i, attack: /attack|atk|smash|swing|slash|strike|hit_?a/i, hit: /hurt|damage|stun|flinch|react/i, die: /die|death|dead|dtha/i, jump: /jump|fall|air/i };
@@ -7274,31 +7274,29 @@ function shireLayout() {
   const N = 161, C = 80, hs = new Float32Array(N * N), g = new Array(N * N).fill('g');
   const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
   const dome = (s, x, cs, cx, r, h) => { const d = Math.hypot(s - cs, x - cx) / r; return d >= 1 ? 0 : h * (1 - d * d) * (1 - d * d); };
-  // the lane, as points [s, x, half its width]
-  const WAY = [[-68, 0, 3], [-52, 0, 3], [-34, 3, 2.6], [-21, 1, 2.4], [-3, 0, 2.4], [6, -6, 2.6], [10, -18, 2.8], [12, -30, 3], [20, -22, 2.8], [26, -10, 2.8], [34, -2, 3], [37, 0, 3]];
-  const path = []; for (let i = 0; i < WAY.length - 1; i++) { const [s0, x0, h0] = WAY[i], [s1, x1, h1] = WAY[i + 1], n = Math.ceil(Math.hypot(s1 - s0, x1 - x0) / .5); for (let k = 0; k < n; k++) { const t = k / n; path.push([lerp(s0, s1, t), lerp(x0, x1, t), 0, lerp(h0, h1, t)]); } }
-  path.push([...WAY[WAY.length - 1].slice(0, 2), 0, 3]);
+  // the lane, winding: points [s, x, half its width]
+  const WAY = [[-68, 0, 2.6], [-56, -2, 2.6], [-44, 3, 2.4], [-30, 2, 2.4], [-21, .6, 2.2], [-3, 0, 2.2], [8, -5, 2.4], [14, -16, 2.4], [14, -28, 2.6], [22, -24, 2.4], [28, -12, 2.4], [33, -3, 2.6], [37, 0, 2.8]];
+  const P_ = (i, k) => WAY[clamp(i, 0, WAY.length - 1)][k], cr = (a, b, c, d, t) => .5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (3 * b - a - 3 * c + d) * t * t * t), path = [];
+  for (let i = 0; i < WAY.length - 1; i++) { const n = Math.ceil(Math.hypot(WAY[i + 1][0] - WAY[i][0], WAY[i + 1][1] - WAY[i][1]) / .5); for (let k = 0; k < n; k++) { const t = k / n; path.push([cr(P_(i - 1, 0), P_(i, 0), P_(i + 1, 0), P_(i + 2, 0), t), cr(P_(i - 1, 1), P_(i, 1), P_(i + 1, 1), P_(i + 2, 1), t), 0, lerp(WAY[i][2], WAY[i + 1][2], t)]); } }
+  path.push([WAY[WAY.length - 1][0], WAY[WAY.length - 1][1], 0, 2.8]);
   const plazas = [
     { s: -54, x: 0, r: 9, waves: [['o', 'o', 'o'], ['n', 'o', 'o', 'o']], title: 'BLACK RIDERS ON THE ROAD!' },
     { s: -28, x: 4, r: 8, waves: [['w', 'o', 'o'], ['n', 'w', 'w', 'o']], title: 'THE BRIDGE OF THE WATER!' },
     { s: 12, x: -32, r: 10, waves: [['o', 'o', 'u', 'o'], ['n', 'n', 'o', 'o'], ['u', 'n', 'n', 'o', 'o']], title: 'THE PARTY FIELD!' },
     { s: 36, x: 0, r: 11, waves: [['K']], title: 'BAG END', boss: true, last: true, breach: [44, 0], bossHp: 620, noAdds: true },
   ];
-  const holes = [[-64, 9], [-64, -9], [-44, 10], [-42, -10], [2, 12], [-34, 20], [-34, -14], [20, 12], [26, 22], [38, -24], [30, -34], [44, 17], [2, -40], [-6, 26], [16, 32], [-58, 22], [-58, -24], [46, -10]];
+  // the hobbit holes' doors; each is dug into its own hill, which rises behind it, and the hills run together into one green hillside
   const nearPath = (s, x) => { let b = 1e9, bi = 0; path.forEach((q, i) => { const d = Math.hypot(s - q[0], x - q[1]); if (d < b) { b = d; bi = i; } }); return [b, path[bi]]; };
   const homes = [];
-  for (const [s, x] of holes) {
-    const [d, q] = nearPath(s, x); if (d < 6 || plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 5)) continue;
-    const f = Math.atan2(q[1] - x, q[0] - s); homes.push([s - Math.cos(f) * 2, x - Math.sin(f) * 2, f]);   // (where its mound stands: the round door looks out 2.6 ahead of the spot, down to the lane)
+  for (const [s, x] of [[-66, 9], [-66, -10], [-41, 10], [-40, -10], [-30, 18], [-26, -12], [0, 11], [1, -13], [12, 10], [22, 14], [30, 18], [-2, -34], [26, -38], [34, -24], [44, -16], [44, 16], [-14, 38], [3, 30]]) {
+    const [d, q] = nearPath(s, x); if (d < 5 || plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 4)) continue; homes.push({ s, x, f: Math.atan2(q[1] - x, q[0] - s), to: [q[0], q[1]] });
   }
-  const bagEnd = [46.6, 0, Math.PI];   // (facing south, down to the court)
+  const riverW = x => 3.4 + 7 * ss(14, 24, x) * ss(44, 34, x);   // (the Water widens into the pond by the Green Dragon)
+  const lie = (s, x) => .8 + Math.sin(s * .06) * Math.cos(x * .05) * .7 + Math.sin(s * .17 + x * .11) * .2 + 20 * Math.max(ss(66, 84, Math.abs(s)), ss(66, 84, Math.abs(x)));   // (the lie of the land, before the hills)
+  const hills = [[60, 0, 26, 11], [-20, -50, 24, 8], [-52, 42, 24, 7], [14, 56, 22, 9], [24, -60, 20, 6]]; for (const h of homes) hills.push([h.s - Math.cos(h.f) * 8, h.x - Math.sin(h.f) * 8, 12, 7.2]);
   const base = (s, x) => {
-    let y = .9 + Math.sin(s * .07) * Math.cos(x * .06) * .7 + Math.sin(s * .19 + x * .13) * .25;
-    y += 20 * Math.max(ss(66, 84, Math.abs(s)), ss(66, 84, Math.abs(x)));   // (green hills all round)
-    y += dome(s, x, 60, 0, 26, 10) + 4 * ss(44, 50, s) * ss(18, 7, Math.abs(x));   // (the Hill, Bag End cut into its face)
-    for (const [hs_, hx] of homes) y += dome(s, x, hs_, hx, 10, 1.8);   // (a gentle knoll under each hobbit hole's mound)
-    const rd = Math.abs(s - shireRiv(x)); y = lerp(-1.6, y, ss(3.2, 6, rd));   // (the Water)
-    return y;
+    let k = 0; for (const [cs, cx, r, h] of hills) { const q = dome(s, x, cs, cx, r, h); k += q * q * q; }   // (they run together smoothly)
+    const y = lie(s, x) + Math.cbrt(k), rd = Math.abs(s - shireRiv(x)), w = riverW(x); return lerp(-1.6, y, ss(w - .2, w + 2.6, rd));
   };
   const wB = new Float32Array(N * N), yR = new Float32Array(N * N), cell = (s, x) => [Math.round(C - s), Math.round(C - x)];
   const carve = (s, x, y, half, fall, kind) => {
@@ -7308,21 +7306,22 @@ function shireLayout() {
       if (w > wB[k]) { wB[k] = w; yR[k] = y; } if (kind && d < half - .3) g[k] = kind;
     }
   };
-  for (const p of plazas) p.y = base(p.s, p.x) * (p.boss ? 1 : 1);
-  plazas[3].y = Math.max(1, base(30, 0));
-  for (const q of path) { const rd = Math.abs(q[0] - shireRiv(q[1])); q[2] = rd < 7 ? 1 : base(q[0], q[1]); for (const p of plazas) if (Math.hypot(q[0] - p.s, q[1] - p.x) < p.r) q[2] = p.y; }
-  for (let i = 0; i < path.length; i += 2) { const [s, x, y, h] = path[i]; if (Math.abs(s - shireRiv(x)) < 6.5) continue; carve(s, x, y, h + .3, 2.2, 'p'); }
-  for (const p of plazas) carve(p.s, p.x, p.y, p.r + .5, p.boss ? 3 : 4, p.boss ? 'a' : 's');
-  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = C - j, x = C - i, b0 = base(s, x); hs[k] = lerp(b0, yR[k], wB[k]); if (Math.abs(s - shireRiv(x)) < 3.6) g[k] = 'r'; }
-  // the stone bridge over the Water: a hump of floor in steps, low walls along both sides
+  for (const p of plazas) p.y = lie(p.s, p.x);
+  plazas[3].y = Math.max(1, lie(30, 0));
+  for (const q of path) { const rd = Math.abs(q[0] - shireRiv(q[1])); q[2] = lerp(1.03, lie(q[0], q[1]), ss(7.5, 14, rd)); for (const p of plazas) if (Math.hypot(q[0] - p.s, q[1] - p.x) < p.r) q[2] = p.y; }
+  for (let i = 0; i < path.length; i += 2) { const [s, x, y, h] = path[i]; if (Math.abs(s - shireRiv(x)) < 6.5) continue; carve(s, x, y, h + .5, 3, 'p'); }
+  for (const p of plazas) carve(p.s, p.x, p.y, p.r + .5, p.boss ? 3 : 5, p.boss ? 'a' : 's');
+  for (const sgn of [-1, 1]) carve(shireRiv(0) + sgn * 7.8, 0, 1.03, 2.8, 3.4);   // (the banks rise to meet the bridge at either end)
+  // the ground before each door, cut level into the foot of its hill
+  for (const h of homes) { h.y = lie(h.s, h.x) + .1; carve(h.s + Math.cos(h.f) * 2, h.x + Math.sin(h.f) * 2, h.y, 2.7, 2.4); }
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = C - j, x = C - i; hs[k] = lerp(base(s, x), yR[k], wB[k]); if (Math.abs(s - shireRiv(x)) < riverW(x)) g[k] = 'r'; }
   const blocks = [], bs = shireRiv(0), BL = 13, BW = 2.2;
   for (let k = 0; k < 26; k++) { const t0 = k / 26, t1 = (k + 1) / 26, s0 = bs - BL / 2 + t0 * BL, s1 = bs - BL / 2 + t1 * BL, y = 1 + Math.sin((t0 + t1) / 2 * Math.PI) * 1.1; blocks.push([s0, s1, -BW, BW, y, 'floor', -6]); }
   for (const sx of [-1, 1]) blocks.push([bs - BL / 2 + 1.5, bs + BL / 2 - 1.5, sx * BW + (sx > 0 ? 0 : -.5), sx * BW + (sx > 0 ? .5 : 0), 3.4, 'wall', -6]);
-  for (const [cs, cx] of homes) blocks.push([cs - 3.1, cs + 3.1, cx - 3.1, cx + 3.1, base(cs, cx) + 3.2, 'wall', -10]);   // (each hobbit hole's mound is solid)
-  blocks.push([47.4, 56, -5.6, 5.6, plazas[3].y + 6.5, 'wall', -10]);   // (and Bag End's)
-  // the Hill and the knolls are walls where they rise steeply (the ground itself carries Gandalf over the gentle parts)
+  for (const h of homes) { const cs = h.s - Math.cos(h.f) * 1.7, cx = h.x - Math.sin(h.f) * 1.7; blocks.push([cs - 2.3, cs + 2.3, cx - 2.3, cx + 2.3, h.y + 3.6, 'wall', -10]); }   // (the front and the hole behind it are solid)
+  blocks.push([47.4, 52, -4, 4, plazas[3].y + 4.6, 'wall', -10]);
   return { field: [-74, 74, -74, 74], start: [-66, 0], terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g },
-    layout: { blocks, path, plazas, homes, bagEnd, bridge: [bs, 0, BL, BW], chimneys: [], mill: [shireRiv(-26) + 6.5, -26], dragon: [-2, 16, -Math.PI / 2], partyTree: [20, -44], pavilion: [2, -46], base } };
+    layout: { blocks, path, plazas, homes, bagEnd: [46.8, 0, Math.PI], bridge: [bs, 0, BL, BW], chimneys: [], mill: [shireRiv(-26) + 6.5, -26], dragon: [shireRiv(26) + 15, 26, Math.PI], partyTree: [20, -44], pavilion: [2, -46], riverW } };
 }
 function shireContent(L) {
   const Y = L.layout; khRings(Y);
@@ -7331,88 +7330,101 @@ function shireContent(L) {
   addCrate('q', 30, -6, Y.plazas[3].y, 4); addCrate('su', 30, 6, Y.plazas[3].y, 4);
 }
 function buildShire(L, TH) {
-  const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
-  const grd = surf(TX.meadow, { sky, vc: true, rough: .95, bump: 1.2, env: .15 });
-  groundMesh(T_, TX.meadow, (k, sl, y) => k === 'p' ? [.86, .7, .5] : k === 'r' ? [.45, .42, .32] : k === 's' || k === 'a' ? [.7, .86, .54] : [.56, .84, .42], 10, () => grd);
-  wideFloor(TX.meadow, 0x7aa850, 90, 14, 900);
-  // the Water: a strip of moving water down the river bed
-  const wt = TX.sea.clone(); wt.needsUpdate = true; wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(30, 3); TH.waterTex = wt;
-  const wg = new THREE.PlaneGeometry(1, 1, 80, 1), wp = wg.attributes.position; for (let i = 0; i < wp.count; i++) { const u = wp.getX(i), v = wp.getY(i), x = u * 150, s = shireRiv(x) + v * 8, q = tw(s, x, -.45); wp.setXYZ(i, q.x, q.y, q.z); }
-  wg.computeVertexNormals(); const water = new THREE.Mesh(wg, new THREE.MeshPhongMaterial({ map: wt, color: 0x5aa0c0, specular: 0xfff0d0, shininess: 80, transparent: true, opacity: .82, side: THREE.DoubleSide })); water.userData.keep = true; scene.add(water);
-  const stone = surf(TX.rock, { sky, color: 0xd0c4a8, rough: .8, bump: 2.2 }), wood = lam(0x6a4a2a), thatch = lam(0xb89a5a), hedgeM = lam(0x2e6a22);
-  // the bridge: Battle for Middle-earth's, or a hump of stone with low walls
-  { const [bs, bx, BL, BW] = Y.bridge; if (!(PROPS.sbbridge && propOne('sbbridge', bs, bx, .2, 0, BL + 1, 'w'))) { for (let k = 0; k < 13; k++) { const t = (k + .5) / 13, s = bs - BL / 2 + t * BL, y = 1 + Math.sin(t * Math.PI) * 1.1; const q = tw(s, bx, y - .4); part(GEO_BOX, stone, scene, q.x, q.y, q.z, BW * 2 + 1, .8, BL / 13 + .05); for (const sx of [-1, 1]) { const w = tw(s, bx + sx * (BW + .25), y + .35); part(GEO_BOX, stone, scene, w.x, w.y, w.z, .5, .7, BL / 13 + .05); } } } }
-  // the hobbit holes: a grassy mound, its front cut back to a stone face with a round painted door and round windows in it,
-  // a doorstep and stepping stones, a little fenced garden full of flowers, a lantern, and a chimney poking up through the turf
-  const moundM = surf(TX.meadow, { sky, color: 0x84b858, rough: .95, bump: 1.4 }), frameM = lam(0x6a4422), winM = lam(0xfff0b0, { emissive: 0xa08040 }), knobM = lam(0xffd040, { emissive: 0x6a4a10 });
-  const doorCols = [0x2a8a3a, 0xf0c020, 0xc03a28, 0x2a5ab0, 0x7a4ab0, 0x2a8a3a], fl = [0xff5a7a, 0xffe040, 0xffffff, 0xb070ff, 0xff9a30, 0xff4040];
-  const posts = [], rails = [], blooms = [];
-  const smial = (s, x, f, r, col, big) => {
-    const y0 = at(s + Math.cos(f) * r * .9, x + Math.sin(f) * r * .9) - .05, g = new THREE.Group(); place(g, s, x, y0, f); scene.add(g); g.updateMatrixWorld(true);
-    const MH = big ? .78 : .86, m = new THREE.Mesh(new THREE.SphereGeometry(r, 26, 12, 0, TAU, 0, Math.PI / 2), moundM); m.scale.y = MH; g.add(m);
-    const sfc = (xx, yy) => Math.sqrt(Math.max(0, r * r * (1 - (yy / (MH * r)) ** 2) - xx * xx));
-    const zf = sfc(0, .1) + .05, zb = zf - 1.4, fw = big ? 5 : 4.1, dr = big ? 1.15 : .92;
-    part(GEO_BOX, stone, g, 0, 1.25, (zf + zb) / 2, fw, 2.5, zf - zb);                                     // the stone face
-    part(GEO_BOX, moundM, g, 0, 2.6, (zf + zb) / 2 + .1, fw + .5, .45, zf - zb + .5);                     // turf over its lip
-    part(new THREE.CircleGeometry(dr + .16, 28), frameM, g, 0, dr + .08, zf + .01);
-    part(new THREE.CircleGeometry(dr, 28), lam(col, { emissive: col, emissiveIntensity: .12 }), g, 0, dr + .08, zf + .02);   // the round door
-    for (let k = -2; k <= 2; k++) { const px = k * dr * .38; part(GEO_BOX, frameM, g, px, dr + .08, zf + .03, .035, Math.sqrt(dr * dr - px * px) * 1.9, .01); }   // (its planks)
-    part(GEO.sph, knobM, g, 0, dr + .08, zf + .1, .11, .11, .11);
-    part(GEO_BOX, stone, g, 0, .07, zf + .55, 2, .14, 1);                                                  // the doorstep
-    for (const sx of [-1, 1]) { part(new THREE.CircleGeometry(.52, 18), frameM, g, sx * (fw / 2 - .85), 1.35, zf + .01); part(new THREE.CircleGeometry(.42, 18), winM, g, sx * (fw / 2 - .85), 1.35, zf + .02);
-      part(GEO_BOX, frameM, g, sx * (fw / 2 - .85), .74, zf + .15, 1, .16, .3); for (let k = 0; k < 5; k++) part(GEO.sph, lam(fl[k % 6]), g, sx * (fw / 2 - .85) - .36 + k * .18, .88, zf + .15, .09, .09, .09); }
-    const ln = glowSprite(0xffc860, 1.1, .7); ln.position.set(dr + .55, 2, zf + .15); g.add(ln); part(GEO_BOX, lam(0x3a2a1a), g, dr + .55, 2, zf + .12, .18, .28, .18);
-    part(GEO.cyl, stone, g, r * .35, r * MH * .78 + .4, -r * .25, .26, 1.6, .26); part(GEO_BOX, stone, g, r * .35, r * MH * .78 + 1.25, -r * .25, .62, .14, .62);
-    Y.chimneys.push(g.localToWorld(new V3(r * .35, r * MH * .78 + 1.4, -r * .25)));
-    for (let k = 0; k < 4; k++) { const p = g.localToWorld(new V3((k % 2 - .5) * .25, 0, zf + 1.3 + k * .6)); part(new THREE.CylinderGeometry(.34, .36, .08, 10), stone, scene, p.x, p.y + .04, p.z); }
-    // the garden fence round the front, a gap for the gate, and flowers in the beds along it
-    const fz = zf + 2.8, fx = fw / 2 + .7, run = (x0, z0, x1, z1) => { const n = Math.max(1, Math.round(Math.hypot(x1 - x0, z1 - z0) / .9)); for (let k = 0; k <= n; k++) { const p = g.localToWorld(new V3(lerp(x0, x1, k / n), .4, lerp(z0, z1, k / n))); posts.push([p.x, p.y, p.z, .09, .8, .09, 0]); }
-      const a = g.localToWorld(new V3(x0, .55, z0)), b = g.localToWorld(new V3(x1, .55, z1)), mid = a.clone().lerp(b, .5); rails.push([mid.x, mid.y, mid.z, a.distanceTo(b), .07, .05, Math.atan2(-(b.z - a.z), b.x - a.x)]); };
-    run(-fx, zf + .3, -fx, fz); run(fx, zf + .3, fx, fz); run(-fx, fz, -.9, fz); run(.9, fz, fx, fz);
-    for (let k = 0; k < (big ? 40 : 26); k++) { const side = k % 2 ? 1 : -1, t = Math.random(), p = g.localToWorld(t < .5 ? new V3(side * (fx - .35), .12, lerp(zf + .5, fz - .3, t * 2)) : new V3(side * lerp(1.3, fx - .3, (t - .5) * 2), .12, fz - .35)); blooms.push([p.x, p.y, p.z, fl[k % 6]]); }
-    for (let k = 0; k < 9; k++) { const a = (k / 8 - .5) * 2.2, p = g.localToWorld(new V3(Math.sin(a) * (r + .2), .15, Math.cos(a) * (r + .2) - .4)); blooms.push([p.x, p.y, p.z, fl[(k + 2) % 6]]); }
+  const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env, rep = (t, a, b) => { const c = t.clone(); c.needsUpdate = true; c.wrapS = c.wrapT = THREE.RepeatWrapping; c.repeat.set(a, b); return c; };
+  // lush grass: deep in the hollows, golden-green on the tops, the river bed and the lane's soil under its cobbles
+  const grd = surf(TX.lush, { sky, vc: true, rough: 1, bump: 1, env: .08 });
+  groundMesh(T_, TX.lush, (k, sl, y) => k === 'r' ? [.42, .4, .3] : k === 'p' ? [.5, .48, .34] : [.5 + clamp(y / 16, 0, 1) * .3 + (sl > .9 ? -.08 : 0), .74 + clamp(y / 16, 0, 1) * .12 + (sl > .9 ? -.1 : 0), .34], 6, () => grd);
+  wideFloor(TX.lush, 0x6a9a48, 90, 14, 900);
+  // the lane: a ribbon of cobbles over the ground
+  { const cob = surf(rep(TX.cobble, 1, 1), { sky, rough: .8, bump: 3, env: .15 }), pos = [], uv = [], idx = []; const P0 = Y.path, n = P0.length; let vv = 0, out = 0;
+    for (let i = 0; i < n; i++) { const a = P0[Math.max(0, i - 1)], b = P0[Math.min(n - 1, i + 1)], h = Math.atan2(b[1] - a[1], b[0] - a[0]), [s, x, , hw] = P0[i], wob = Math.sin(i * .37) * .15; if (i) vv += Math.hypot(P0[i][0] - P0[i - 1][0], P0[i][1] - P0[i - 1][1]) / 4; const on = Math.abs(s - shireRiv(x)) > 7;
+      for (let e = 0; e <= 6; e++) { const t = e / 6 * 2 - 1, ps = s - Math.sin(h) * t * (hw + wob), px = x + Math.cos(h) * t * (hw + wob), q = tw(ps, px, on ? at(ps, px) + .07 : -9); pos.push(q.x, q.y, q.z); uv.push((t + 1) * hw / 1.1, vv * 2.2); }
+      if (i && on && out) for (let e = 0; e < 6; e++) { const a0 = (i - 1) * 7 + e, b0 = a0 + 7; idx.push(a0, a0 + 1, b0, b0, a0 + 1, b0 + 1); } out = on; }
+    const gm = new THREE.BufferGeometry(); gm.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); gm.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); gm.setIndex(idx); gm.computeVertexNormals(); cob.side = THREE.DoubleSide; const m = new THREE.Mesh(gm, cob); m.receiveShadow = true; m.userData.keep = true; scene.add(m); }
+  // the Water and the pond
+  const wt = TX.sea.clone(); wt.needsUpdate = true; wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(30, 5); TH.waterTex = wt;
+  const wg = new THREE.PlaneGeometry(1, 1, 80, 1), wp = wg.attributes.position; for (let i = 0; i < wp.count; i++) { const u = wp.getX(i), v = wp.getY(i), x = u * 150, s = shireRiv(x) + v * 32, q = tw(s, x, -.45); wp.setXYZ(i, q.x, q.y, q.z); }
+  wg.computeVertexNormals(); const water = new THREE.Mesh(wg, new THREE.MeshPhongMaterial({ map: wt, color: 0x4a88a8, specular: 0xffe8c0, shininess: 90, transparent: true, opacity: .86, side: THREE.DoubleSide })); water.userData.keep = true; scene.add(water);
+  const stoneM = surf(TX.hdStone || TX.rock, { sky, color: 0xc8bea8, rough: .85, bump: 2.6, tri: 1.6 }), wood = lam(0x6a4a2a), dark = lam(0x4a3018), thatch = lam(0xb89a5a);
+  // the arched stone bridge
+  { const [bs, bx, BL, BW] = Y.bridge; if (!(PROPS.sbbridge && propOne('sbbridge', bs, bx, .2, 0, BL + 1, 'w'))) for (let k = 0; k < 13; k++) { const t = (k + .5) / 13, s = bs - BL / 2 + t * BL, y = 1 + Math.sin(t * Math.PI) * 1.1, q = tw(s, bx, y - .4); part(GEO_BOX, stoneM, scene, q.x, q.y, q.z, BW * 2 + 1, .8, BL / 13 + .05); for (const sx of [-1, 1]) { const w = tw(s, bx + sx * (BW + .25), y + .35); part(GEO_BOX, stoneM, scene, w.x, w.y, w.z, .5, .7, BL / 13 + .05); } } }
+  // the hobbit holes: dug into the foot of the hill. A cream plaster front under a curved timber beam and a lip of turf, a brick arch round a round painted plank
+  // door with a brass knob in the middle, round brick-edged windows with flower boxes, a curved stone doorstep, lanterns either side, a brick chimney up in the turf
+  const plasterM = surf(rep(TX.plaster, 2, 1), { sky, color: 0xc8b890, rough: .95, bump: 1.4, env: .05 }), brickM = surf(rep(TX.brick, 3, 3), { sky, rough: .85, bump: 2.6 }), winM = lam(0xf0c870, { emissive: 0x806020, emissiveIntensity: .7 }), knobM = lam(0xffd040, { emissive: 0x6a4a10 }), turfM = surf(rep(TX.lush, 2, 1), { sky, color: 0x90b868, rough: 1, bump: 1, env: .05 });
+  const doorCols = [0x1e6a44, 0xc89a18, 0x96301f, 0x204e90, 0x1f7050, 0x6a3a8a, 0x1e6a44], blooms = {}, bushes = [], stones = [], cs = [0x9a5ae0, 0xffd040, 0xff6a9a, 0xffffff, 0x6a5af0, 0xff9a30];
+  const bloom = (x, y, z, c, r = .11) => (blooms[c] = blooms[c] || []).push([x, y, z, r, r, r]);
+  const bed = (g, lx, lz, n, spread) => { for (let k = 0; k < 4; k++) { const p = g.localToWorld(new V3(lx + rand(-spread, spread) * .7, 0, lz + rand(-.5, .5))); p.y = T_at(p); bushes.push([p.x, p.y + .4, p.z, rand(.5, .8), rand(.45, .7), rand(.5, .8)]); } const c0 = cs[(Math.abs(lx * 7 + lz * 3) | 0) % 6], c1 = cs[(Math.abs(lx * 5 + lz) + 2 | 0) % 6]; for (let k = 0; k < n; k++) { const p = g.localToWorld(new V3(lx + rand(-spread, spread), 0, lz + rand(-.7, .7))); p.y = T_at(p); bloom(p.x, p.y + rand(.45, 1), p.z, k % 3 ? c0 : c1); } };
+  const T_at = p => { const q = toTrack(p); return tw(q.s, q.x, at(q.s, q.x)).y; };
+  const hole = (s, x, f, y, col, big) => {
+    const K = big ? 1.3 : 1, W = 5.6 * K, H = 3.3 * K, dr = 1.08 * K, wx = 1.85 * K, g = new THREE.Group(); place(g, s, x, y, f); scene.add(g); g.updateMatrixWorld(true);
+    part(GEO_BOX, plasterM, g, 0, H / 2 - .3, -1.5, W, H + .6, 3);                                           // the plaster front, going back into the hill
+    part(GEO_BOX, stoneM, g, 0, .12, .02, W + .2, .5, .14);                                                  // its stone footing
+    for (const sx of [-1, 1]) part(GEO_BOX, dark, g, sx * (W / 2 - .06), H / 2, .05, .2, H, .16);
+    const beam = new THREE.Mesh(new THREE.TorusGeometry(W * .62, .13, 6, 18, Math.PI * .56), dark); beam.position.set(0, H - W * .62 * .94 + .1, .1); beam.rotation.z = Math.PI * .22; g.add(beam);   // the curved beam under the eaves
+    part(GEO_BOX, turfM, g, 0, H + .2, -.65, W + 1, .55, 1.6);                                               // a lip of turf over it
+    part(new THREE.RingGeometry(dr * 1.0, dr * 1.32, 30), brickM, g, 0, dr + .22, .05);                     // the brick arch
+    const door = part(new THREE.CircleGeometry(dr, 30), lam(col), g, 0, dr + .22, .06);
+    for (let k = -2; k <= 2; k++) { const px = k * dr * .38; part(GEO_BOX, lam(new THREE.Color(col).multiplyScalar(.6).getHex()), g, px, dr + .22, .07, .03, Math.sqrt(dr * dr - px * px) * 1.92, .015); }
+    part(GEO.sph, knobM, g, 0, dr + .22, .14, .11 * K, .11 * K, .08);
+    for (let k = 0; k < 2; k++) part(new THREE.CylinderGeometry((dr * 1.3) - k * .22 * K, (dr * 1.3) - k * .22 * K, .16, 20, 1, false, -Math.PI / 2, Math.PI), stoneM, g, 0, .16 - k * .14 + .02, .1 + k * .34);   // the curved doorstep
+    for (const sx of [-1, 1]) { const wy = 1.45 * K; part(new THREE.RingGeometry(.44 * K, .64 * K, 22), brickM, g, sx * wx, wy, .05); part(new THREE.CircleGeometry(.44 * K, 22), winM, g, sx * wx, wy, .055); part(GEO_BOX, dark, g, sx * wx, wy, .065, .05, .88 * K, .02); part(GEO_BOX, dark, g, sx * wx, wy, .065, .88 * K, .05, .02);
+      part(GEO_BOX, dark, g, sx * wx, wy - .62 * K, .18, 1.1 * K, .14, .3); for (let k = 0; k < 7; k++) { const b = g.localToWorld(new V3(sx * wx - .42 + k * .14, wy - .5 * K, .2)); bloom(b.x, b.y, b.z, cs[(k + (sx > 0 ? 1 : 3)) % 6], .08); } }
+    for (const sx of [-1, 1]) { part(GEO.cyl, dark, g, sx * (W / 2 + .45), 1, .7, .05, 2, .05); part(GEO_BOX, lam(0x2a2a20), g, sx * (W / 2 + .45), 2.05, .7, .22, .3, .22); const gl = glowSprite(0xffc870, .9, .45); gl.position.set(sx * (W / 2 + .45), 2.05, .7); g.add(gl); }
+    // a brick chimney up in the turf
+    { const ch = g.localToWorld(new V3((big ? 3.6 : 1.6) * (col % 2 ? 1 : -1), 0, -5 * K)), q = toTrack(ch), cy = at(q.s, q.x), p = tw(q.s, q.x, cy); part(GEO_BOX, brickM, scene, p.x, p.y + .7, p.z, .95, 2, .95); part(GEO_BOX, stoneM, scene, p.x, p.y + 1.74, p.z, 1.2, .16, 1.2); Y.chimneys.push(new V3(p.x, p.y + 1.9, p.z)); }
+    bed(g, -W / 2 - 1.5, .9, big ? 20 : 12, .9); bed(g, W / 2 + 1.5, .9, big ? 20 : 12, .9);
     return g;
   };
-  Y.homes.forEach(([s, x, f], i) => smial(s, x, f, 4.6, doorCols[i % doorCols.length]));
-  // Bag End: the biggest, green door, cut into the face of the Hill above the court, the great tree on the Hill over it
-  { const [s, x, f] = Y.bagEnd; smial(s + 6.3, x, f, 7, 0x2a8a3a, true); const q = [60, 0]; if (!(PROPS.sb_tree02 && propOne('sb_tree02', q[0], q[1], at(q[0], q[1]) - .3, 0, 15, 'h'))) { const p = tw(q[0], q[1], at(q[0], q[1])); part(GEO.cyl, wood, scene, p.x, p.y + 4, p.z, 1, 8, 1); part(GEO.sph, lam(0x4a9a3a), scene, p.x, p.y + 10, p.z, 7, 5, 7); } }
-  instanced(GEO.cyl, wood, posts); instanced(GEO_BOX, wood, rails);
-  // flowers: little clusters on the ground, a colour each
-  { const byCol = {}; for (const [x, y, z, c] of blooms) (byCol[c] = byCol[c] || []).push([x, y, z, .12, .12, .12]); for (const c in byCol) instanced(new THREE.SphereGeometry(1, 6, 4), lam(+c, { emissive: +c, emissiveIntensity: .15 }), byCol[c]); }
-  // the mill on the Water, the Green Dragon, the Party Tree and the pavilion
-  { const [s, x] = Y.mill; if (!(PROPS.sbmill && propOne('sbmill', s, x, at(s, x) - .2, Math.PI, 11))) { const q = tw(s, x, at(s, x)); part(GEO_BOX, stone, scene, q.x, q.y + 2.5, q.z, 6, 5, 6); } }
-  { const [s, x, f] = Y.dragon; if (!(PROPS.sbgrndrg && propOne('sbgrndrg', s, x, at(s, x) - .2, f, 13))) { const gg = new THREE.Group(); place(gg, s, x, at(s, x), f); scene.add(gg); part(GEO_BOX, lam(0xe8dcc0), gg, 0, 2, 0, 9, 4, 7); const rf = part(new THREE.ConeGeometry(6.4, 3, 4), thatch, gg, 0, 5.5, 0); rf.rotation.y = Math.PI / 4; rf.scale.z = .8; } }
-  { const [s, x] = Y.partyTree, q = tw(s, x, at(s, x)); if (!(PROPS.sb_tree02 && propOne('sb_tree02', s, x, at(s, x) - .2, 0, 16, 'h'))) { part(GEO.cyl, wood, scene, q.x, q.y + 4, q.z, 1.2, 8, 1.2); part(GEO.sph, lam(0x3a7a2a), scene, q.x, q.y + 10, q.z, 7, 5, 7); } }
+  Y.homes.forEach((h, i) => {
+    hole(h.s, h.x, h.f, h.y, doorCols[i % doorCols.length]);
+    const n = Math.max(3, Math.round(Math.hypot(h.to[0] - h.s, h.to[1] - h.x) / .75)); for (let k = 1; k < n - 3; k++) { const t = k / n, wob = Math.sin(t * 7 + i) * .45, ns = -Math.sin(h.f), nx = Math.cos(h.f), s = lerp(h.s, h.to[0], t) + ns * wob, x = lerp(h.x, h.to[1], t) + nx * wob, q = tw(s, x, at(s, x) + .05), r = rand(.26, .4); stones.push([q.x, q.y, q.z, r, .1, r * rand(.8, 1)]); }
+  });
+  // Bag End: the biggest, its green door in the face of the Hill above the court, the Party-sized oak over it
+  { const [s, x, f] = Y.bagEnd; hole(s, x, f, Y.plazas[3].y, 0x1e6a44, true); }
+  instanced(new THREE.CylinderGeometry(1, 1.05, 1, 9), stoneM, stones);
+  // low stone garden walls and lamp posts along the lane; wooden fences along the ridges
+  { const wallBits = [], caps = []; for (let i = 12; i < Y.path.length - 8; i += 3) { const [s, x, , hw] = Y.path[i], a = Math.atan2(Y.path[i + 1][1] - Y.path[i - 1][1], Y.path[i + 1][0] - Y.path[i - 1][0]), run = (i / 24 | 0) % 3; if (run === 2) continue;
+      const side = (i / 24 | 0) % 2 ? 1 : -1, ps = s - Math.sin(a) * side * (hw + 1.1), px = x + Math.cos(a) * side * (hw + 1.1); if (Math.abs(ps - shireRiv(px)) < 8 || Y.plazas.some(p => Math.hypot(ps - p.s, px - p.x) < p.r + 1.5) || Y.homes.some(h => Math.hypot(h.s - ps, h.x - px) < 5.5)) continue; const q = tw(ps, px, at(ps, px) + .32), ry = Math.atan2(-Math.cos(a), -Math.sin(a)); wallBits.push([q.x, q.y, q.z, 1.7, .78, .55, ry]); caps.push([q.x, q.y + .44, q.z, 1.75, .14, .66, ry]); }
+    instanced(GEO_BOX, stoneM, wallBits); instanced(GEO_BOX, stoneM, caps);
+    for (let i = 20; i < Y.path.length - 8; i += 34) { const [s, x, , hw] = Y.path[i], a = Math.atan2(Y.path[i + 1][1] - Y.path[i - 1][1], Y.path[i + 1][0] - Y.path[i - 1][0]), side = i % 68 ? 1 : -1, ps = s - Math.sin(a) * side * (hw + .6), px = x + Math.cos(a) * side * (hw + .6); if (Math.abs(ps - shireRiv(px)) < 7) continue; const q = tw(ps, px, at(ps, px)); part(GEO.cyl, dark, scene, q.x, q.y + 1.2, q.z, .07, 2.4, .07); part(GEO_BOX, lam(0x2a2a20), scene, q.x, q.y + 2.5, q.z, .3, .34, .3); const gl = glowSprite(0xffc870, 1, .45); gl.position.set(q.x, q.y + 2.5, q.z); scene.add(gl); }
+    const posts = [], rails = [], fenceRun = (pts) => { for (let k = 0; k < pts.length - 1; k++) { const [s0, x0] = pts[k], [s1, x1] = pts[k + 1], n = Math.round(Math.hypot(s1 - s0, x1 - x0) / 2.6); for (let j = 0; j < n; j++) { const a = tw(lerp(s0, s1, j / n), lerp(x0, x1, j / n), 0), b = tw(lerp(s0, s1, (j + 1) / n), lerp(x0, x1, (j + 1) / n), 0), ya = at(lerp(s0, s1, j / n), lerp(x0, x1, j / n)), yb = at(lerp(s0, s1, (j + 1) / n), lerp(x0, x1, (j + 1) / n)); posts.push([a.x, ya + .6, a.z, .09, 1.3, .09, 0]); for (const h of [.55, 1]) { const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2, my = (ya + yb) / 2 + h; rails.push([mx, my, mz, Math.hypot(b.x - a.x, b.z - a.z) + .1, .07, .06, Math.atan2(-(b.z - a.z), b.x - a.x)]); } } } };
+    fenceRun([[62, -46], [66, -20], [68, 8], [62, 34], [52, 58]]); fenceRun([[-8, 50], [8, 64], [30, 68]]); fenceRun([[-58, -64], [-40, -60], [-20, -66], [2, -68]]);
+    instanced(new THREE.CylinderGeometry(1, 1, 1, 6), wood, posts); instanced(GEO_BOX, wood, rails); }
+  // the Green Dragon by the pond, the mill on the Water, the pavilion
+  { const [s, x, f] = Y.dragon; if (!(PROPS.sbgrndrg && propOne('sbgrndrg', s, x, at(s, x) - .2, f, 17))) { const gg = new THREE.Group(); place(gg, s, x, at(s, x), f); scene.add(gg); part(GEO_BOX, plasterM, gg, 0, 2, 0, 14, 4, 7); const rf = part(new THREE.ConeGeometry(9.4, 3.4, 4), thatch, gg, 0, 5.6, 0); rf.rotation.y = Math.PI / 4; rf.scale.z = .6; } const gl = glowSprite(0xffc070, 9, .35); gl.position.copy(tw(s - 3, x, at(s, x) + 2.2)); scene.add(gl); }
+  { const [s, x] = Y.mill; if (!(PROPS.sbmill && propOne('sbmill', s, x, at(s, x) - .2, Math.PI, 11))) { const q = tw(s, x, at(s, x)); part(GEO_BOX, stoneM, scene, q.x, q.y + 2.5, q.z, 6, 5, 6); } }
   { const [s, x] = Y.pavilion; if (!(PROPS.sbparty01 && propOne('sbparty01', s, x, at(s, x) - .1, Math.PI / 2, 10))) { const q = tw(s, x, at(s, x)); part(new THREE.ConeGeometry(5, 4, 10), lam(0xf0ece0), scene, q.x, q.y + 4, q.z); } }
-  // trees well back from the lane, round green hedges along it with flowers between
-  const trees = propsOf(['sb_tree01', 'sb_tree03', 'sb_tree04', 'sb_tree02']); let n = 0;
-  for (let k = 0; k < 160 && n < 40; k++) {
-    const s = rand(-68, 66), x = rand(-68, 68); if (Math.abs(s - shireRiv(x)) < 6 || Y.path.some(q => Math.hypot(q[0] - s, q[1] - x) < q[3] + 11) || Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 10) || Y.homes.some(h => Math.hypot(h[0] - s, h[1] - x) < 10) || Math.hypot(s - 52, x) < 12) continue;
-    n++; const y = at(s, x);
-    if (trees.length) { propOne(trees[n % trees.length], s, x, y - .2, rand(0, TAU), rand(8, 13), 'h'); continue; }
-    const q = tw(s, x, y); part(GEO.cyl, wood, scene, q.x, q.y + 2, q.z, .5, 4, .5); part(GEO.sph, lam(0x4a9a3a), scene, q.x, q.y + 5, q.z, 3, 2.6, 3);
-  }
-  const hedges = [], fls = {};
-  for (let i = 6; i < Y.path.length - 6; i += 5) {
-    const [s, x, y, h] = Y.path[i], a = Math.atan2(Y.path[i + 1][1] - Y.path[i - 1][1], Y.path[i + 1][0] - Y.path[i - 1][0]);
-    for (const side of [-1, 1]) {
-      const ps = s - Math.sin(a) * side * (h + 1.3), px = x + Math.cos(a) * side * (h + 1.3); if (Math.abs(ps - shireRiv(px)) < 7 || Y.plazas.some(p => Math.hypot(ps - p.s, px - p.x) < p.r + 1.5) || Y.homes.some(hm => Math.hypot(hm[0] - ps, hm[1] - px) < 6)) continue;
-      const q = tw(ps, px, at(ps, px) + .35);
-      if ((i / 5 | 0) % 4 === 1) hedges.push([q.x, q.y - .1, q.z, 1.1, .55, .55, Math.atan2(-Math.cos(a), -Math.sin(a))]);
-      else for (let k = 0; k < 6; k++) { const c = fl[k % 6], b = tw(ps + rand(-.8, .8), px + rand(-.8, .8), at(ps, px) + .1); (fls[c] = fls[c] || []).push([b.x, b.y, b.z, .11, .11, .11]); }
-    }
-  }
-  instanced(new THREE.SphereGeometry(1, 10, 6), hedgeM, hedges);
-  for (const c in fls) instanced(new THREE.SphereGeometry(1, 6, 4), lam(+c, { emissive: +c, emissiveIntensity: .15 }), fls[c]);
+  // big leafy oaks: a thick trunk, boughs, and clumps of leaves, lighter on top
+  const leafA = [], leafB = [], leafC = [], barkM = surf(TX.rock, { sky, color: 0x6a5238, rough: .95, bump: 3 });
+  const oak = (s, x, sz) => { const y = at(s, x), q = tw(s, x, y), h = 5.4 * sz; part(new THREE.CylinderGeometry(.42 * sz, .78 * sz, h, 9), barkM, scene, q.x, q.y + h / 2 - .1, q.z);
+    for (let k = 0; k < 5; k++) { const a = rand(0, TAU), b = part(new THREE.CylinderGeometry(.14 * sz, .32 * sz, 3.2 * sz, 6), barkM, scene, q.x + Math.cos(a) * 1.1 * sz, q.y + h + .5 * sz, q.z + Math.sin(a) * 1.1 * sz); b.rotation.set(Math.sin(a) * .9, 0, -Math.cos(a) * .9); }
+    for (let k = 0; k < 34; k++) { const a = rand(0, TAU), r = Math.sqrt(Math.random()) * 3.9 * sz, ly = h + rand(.4, 4.4) * sz - r * .24, sc = rand(.8, 1.45) * sz; (ly > h + 3 * sz ? leafA : k % 2 ? leafB : leafC).push([q.x + Math.cos(a) * r, q.y + ly, q.z + Math.sin(a) * r, sc, sc * .8, sc]); } };
+  oak(Y.partyTree[0], Y.partyTree[1], 1.7); oak(60, 0, 1.6);
+  let n = 0; for (let k = 0; k < 220 && n < 36; k++) { const s = rand(-68, 66), x = rand(-68, 68); if (Math.abs(s - shireRiv(x)) < Y.riverW(x) + 3 || Y.path.some(q => Math.hypot(q[0] - s, q[1] - x) < q[3] + 8) || Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 7) || Y.homes.some(h => Math.hypot(h.s + Math.cos(h.f) * 2 - s, h.x + Math.sin(h.f) * 2 - x) < 8) || Math.hypot(s - 46, x) < 9) continue; n++; oak(s, x, rand(.95, 1.5)); }
+  const leaf = new THREE.IcosahedronGeometry(1, 1); const leafTx = surf(rep(TX.leaf, 1, 1), { sky, rough: 1, bump: 3, env: .05 }), lf = c => { const m = leafTx.clone(); m.color.setHex(c); m.onBeforeCompile = leafTx.onBeforeCompile; return m; }; instanced(leaf, lf(0xd0e898), leafA); instanced(leaf, lf(0xa8cc78), leafB); instanced(leaf, lf(0x84ac60), leafC);
+  instanced(new THREE.IcosahedronGeometry(1, 1), lf(0x6a9a4c), bushes);
+  // long grass and wildflowers scattered over everything but the lane
+  { const tufts = []; for (let k = 0; k < 2400; k++) { const s = rand(-70, 68), x = rand(-70, 70); if (Math.abs(s - shireRiv(x)) < Y.riverW(x) + .6) continue; if (Y.path.some((q, i) => i % 6 === 0 && Math.hypot(q[0] - s, q[1] - x) < q[3] + .6)) continue; const q = tw(s, x, at(s, x)); if (k % 4 === 0) bloom(q.x, q.y + .22, q.z, cs[k % 6], .07); else tufts.push([q.x, q.y + .12, q.z, rand(.03, .06), rand(.2, .38), rand(.03, .06), rand(0, 3)]); } instanced(new THREE.ConeGeometry(1, 1, 3), lam(0x5a9030), tufts); }
+  for (const c in blooms) instanced(new THREE.SphereGeometry(1, 6, 4), lam(+c), blooms[c]);
   bakeScenery(scene.children.slice(first));
 }
+TX.lush = smoothTex(mkTex(128, 128, g => { g.fillStyle = '#4e9a2c'; g.fillRect(0, 0, 128, 128); for (let i = 0; i < 2600; i++) { const v = Math.random(); g.fillStyle = v < .35 ? '#438c26' : v < .7 ? '#5aa834' : v < .92 ? '#68b63e' : '#7cc44a'; const x = Math.random() * 128, y = Math.random() * 128; g.fillRect(x, y, 1, 2 + Math.random() * 4); } }));
+TX.lush.wrapS = TX.lush.wrapT = THREE.RepeatWrapping;
+TX.leaf = mkTex(64, 64, g => { g.fillStyle = '#5a8a3a'; g.fillRect(0, 0, 64, 64); for (let i = 0; i < 420; i++) { const v = Math.random(); g.fillStyle = v < .35 ? '#3e6e2a' : v < .7 ? '#6a9a44' : v < .9 ? '#86b254' : '#2e5420'; g.beginPath(); g.ellipse(Math.random() * 64, Math.random() * 64, 1 + Math.random() * 2.4, 1 + Math.random(), Math.random() * 3, 0, 7); g.fill(); } });
+TX.leaf.wrapS = TX.leaf.wrapT = THREE.RepeatWrapping;
+TX.cobble = mkTex(128, 128, g => { g.fillStyle = '#4a4032'; g.fillRect(0, 0, 128, 128); for (let j = 0; j < 7; j++) for (let i = 0; i < 7; i++) { const x = (i + (j % 2) * .5) * 19 + Math.random() * 3, y = j * 19 + Math.random() * 3, v = Math.random(), r = 7.5 + Math.random() * 1.6; g.fillStyle = v < .3 ? '#b8a888' : v < .6 ? '#a89878' : v < .85 ? '#9a8a6c' : '#c8b898'; for (const [ox, oy] of [[0, 0], [128, 0], [-128, 0], [0, 128], [0, -128]]) { g.beginPath(); g.ellipse(x + ox, y + oy, r, r * .85, Math.random(), 0, 7); g.fill(); } } });
+TX.cobble.wrapS = TX.cobble.wrapT = THREE.RepeatWrapping;
+TX.brick = mkTex(64, 64, g => { g.fillStyle = '#7a5a48'; g.fillRect(0, 0, 64, 64); for (let j = 0; j < 8; j++) for (let i = -1; i < 5; i++) { const v = Math.random(); g.fillStyle = v < .4 ? '#a8583a' : v < .75 ? '#b86a44' : '#8e4a30'; g.fillRect(i * 16 + (j % 2) * 8 + 1, j * 8 + 1, 14, 6); } });
+TX.brick.wrapS = TX.brick.wrapT = THREE.RepeatWrapping;
+TX.plaster = mkTex(64, 64, g => { g.fillStyle = '#e8d8a8'; g.fillRect(0, 0, 64, 64); for (let i = 0; i < 500; i++) { g.fillStyle = Math.random() < .5 ? '#ecdeb2' : '#dccb98'; g.fillRect(Math.random() * 64, Math.random() * 64, 2, 2); } });
+TX.plaster.wrapS = TX.plaster.wrapT = THREE.RepeatWrapping;
 // each frame in the Shire: the Water flows (the chimneys, butterflies and fireworks are Hobbiton's own, in updateHobbiton)
 function updateShire(dt) { if (!LV || LV.theme !== 'shirekh') return; const w = THEMES.shirekh.waterTex; if (w) w.offset.x -= dt * .05; }
 THEMES.shirekh = natTheme({
   wallTex: TX.rock, floorTex: TX.meadow, tint: [1, .97, .9], door: 0x3a8a3a,
-  env: { sky: [0x2a7ae8, 0x7ab8f0, 0xe8f4ff, 0xfff0c0], fog: [90, 420], fogC: 0xcfe6f0, amb: [0x9a9a80, .5], hemi: [0xe8f4ff, 0x5a8a3a, .66], sun: [0xfff0d0, 1.1], east: [0xffd8a0, .14], cloud: 0xffffff, bloom: .55, sunDir: [-60, 75, -85] },   // (bright, green, a clear summer's day)
+  env: { sky: [0x2f6ec8, 0x7ab0e8, 0xfff0d8, 0xffd8a0], fog: [100, 460], fogC: 0xe8e4c8, amb: [0x8a8070, .42], hemi: [0xdce8ff, 0x4a6028, .44], sun: [0xffd8a0, 1.02], east: [0xffc890, .12], cloud: 0xffffff, bloom: .18, sunDir: [-70, 42, -60] },   // (the late sun, gold on green)
   orc: MT_ORC,
-  scenery(L) { buildShire(L, this); },
+scenery(L) { buildShire(L, this); },
 });
 // --- Rivendell, rebuilt like the film's model: a high bridge over the gorge of the Bruinen onto a promontory of three
 //     terraces climbing to the Last Homely House, elven halls and towers on each, waterfalls falling from the cliffs
