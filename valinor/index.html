@@ -2617,7 +2617,7 @@ const LEVELS = [
     layout: { blocks: [[-1, 1, -1, 1, 12], ...Array.from({ length: 40 }, (_, k) => { const a = k / 40 * TAU, s = Math.cos(a) * 14.6, x = Math.sin(a) * 14.6; return [s - 1.2, s + 1.2, x - 1.2, x + 1.2, 6]; })],
       plazas: [{ s: 0, x: 0, y: 0, r: 13, waves: [['X']], title: 'THE COURT OF THE FOUNTAIN', boss: true, last: true, breach: [0, 0], bossHp: 1150, noAdds: true }] },
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
-    content() { khRings(this.layout); for (const [k, s, x] of [['q', -11, 5], ['su', -11, -5], ['b', 11, 0]]) addCrate(k, s, x, 0, 4); },
+    content() { for (const [k, s, x] of [['q', -11, 5], ['su', -11, -5], ['b', 11, 0]]) addCrate(k, s, x, 0, 4); },
   },
   // ---- one level for each of the other places on the map; each ring sits far out on its own so they never see each other ----
   {
@@ -2669,11 +2669,11 @@ const LEVELS = [
     straight: true, roam: true, kh: true, name: 'THE FALL', sub: 'INTO THE DEEP', loc: 'moria', theme: 'fall', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 70000, CZ: 0, base: -4, wallH: 0, winTitle: 'THE BALROG IS SLAIN!',
     ...fallLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
-    content() { khRings(this.layout); },
+    content() {},
   },
   {
-    // up the hill through Edoras to Meduseld, fighting Uruk-hai the Kingdom Hearts II way: each square locks behind a
-    // golden barrier until its waves are beaten; Lurtz waits at the top, and then Théoden comes out to you
+    // up the hill through Edoras to Meduseld, fighting Uruk-hai the Kingdom Hearts II way: each square has its waves
+    // to beat; Lurtz waits at the top, and then Théoden comes out to you
     straight: true, roam: true, kh: true, name: 'EDORAS', sub: 'THE GOLDEN HALL', loc: 'rohan', theme: 'edoras', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 20000, CZ: 0, base: -4, wallH: 0,
     ...edorasLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
@@ -2723,7 +2723,7 @@ const LEVELS = [
     straight: true, roam: true, kh: true, name: 'WEATHERTOP', sub: 'THE WITCH-KING OF ANGMAR', loc: 'weather', theme: 'weathertop', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 45000, CZ: 0, base: -26, wallH: 0, winTitle: 'THE WITCH-KING IS DRIVEN OFF!',
     field: [-19, 19, -19, 19], start: [-11, 0], layout: { ...weathertopLayout(), plazas: [{ s: 0, x: 0, y: 0, r: 14.5, waves: [['W']], title: 'AMON SÛL', boss: true, last: true, breach: [0, 0], bossHp: 760, noAdds: true }] },   // (a Kingdom Hearts boss fight now: see the Witch-king)
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
-    content() { khRings(this.layout); for (const [k, s, x] of [['q', -12, 4], ['su', -12, -4], ['b', 12, 0]]) addCrate(k, s, x, 0, 4); },
+    content() { for (const [k, s, x] of [['q', -12, 4], ['su', -12, -4], ['b', 12, 0]]) addCrate(k, s, x, 0, 4); },
   },
   {
     // Cirith Ungol's second level: the stairs, climbed from the side (see the Stairs of Cirith Ungol)
@@ -2768,8 +2768,8 @@ const LEVELS = [
     content() { },
   },
   {
-    // a Kingdom Hearts level: down the ramp from the Hornburg's broken gate in the storm, landing by landing, each locked
-    // behind a golden barrier while wave after wave of orcs, Uruk-hai and berserkers come over the parapet; at the
+    // a Kingdom Hearts level: down the ramp from the Hornburg's broken gate in the storm, landing by landing, each with
+    // wave after wave of orcs, Uruk-hai and berserkers coming over the parapet; at the
     // bottom the Deeping Wall is breached, and a Balrog comes out of the fire (see HELM'S DEEP)
     straight: true, roam: true, kh: true, name: "HELM'S DEEP", sub: 'THE HORNBURG', loc: 'helm', theme: 'helms', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 55000, CZ: 0, base: -4, wallH: 0,
     ...helmsLayout(),
@@ -5349,7 +5349,7 @@ function updateCamera(dt) {
     }
     // open country: a chase camera behind Gandalf that slowly swings round to follow where he's heading
     // (in a Kingdom Hearts boss fight it pulls back and turns to keep the boss in view beyond Gandalf)
-    const bo = LV.kh && KH.boss && KH.boss.m.root.visible && KH.boss.state !== 'fall' ? KH.boss : null; cam.bk = damp(cam.bk || 0, bo ? 1 : 0, 2, dt);
+    const bo = LV.kh && KH.boss && KH.boss.m.root.visible && KH.boss.state !== 'fall' && KH.boss.plaza.near !== false ? KH.boss : null; cam.bk = damp(cam.bk || 0, bo ? 1 : 0, 2, dt);
     // (Left Shift and / turn it by hand in the Kingdom Hearts levels; it leaves you be for a moment after)
     if (state === 'play' && inp.camT) { cam.yaw += inp.camT * 2.4 * dt; cam.man = 1.4; } cam.man = (cam.man || 0) - dt;
     // (inside Orthanc it rides behind Gandalf round the stair, looking forward and up it, as on Kingdom Hearts II's Wayward Stairs)
@@ -6893,7 +6893,7 @@ THEMES.mirkwood = natTheme({
 });
 // =====================================================================
 //  EDORAS: the road from the gate in the palisade winds round the hill and up through the town to Meduseld.
-//  Four squares on the way lock behind a golden barrier while the Uruk-hai come over the walls in waves; Lurtz is in
+//  In four squares on the way the Uruk-hai come over the walls in waves; Lurtz is in
 //  the last, before the hall. Gandalf fights the Kingdom Hearts II way (see KH below). With your own files the town
 //  and hall are Battle for Middle-earth's, and the Uruk-hai, Lurtz and Théoden are its models.
 // =====================================================================
@@ -6949,7 +6949,7 @@ function edorasLayout() {
 }
 function edorasContent(L) {
   const Y = L.layout;
-  khRings(Y);   // each square's barrier, down until its Uruk-hai come
+
   for (let i = 0; i < Y.road.length; i += 12) { const [s, x, y] = Y.road[i]; if (Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 1)) continue; addApple(s, x, y + .8); }
   Y.houses.forEach((o, i) => { if (i % 2) return; const a = o.h + Math.PI, s = o.s + Math.cos(a) * (o.d / 2 + 1.4) + Math.cos(a + Math.PI / 2) * 2.4, x = o.x + Math.sin(a) * (o.d / 2 + 1.4) + Math.sin(a + Math.PI / 2) * 2.4; addCrate(i % 4 ? 'b' : 'q', s, x, 0, o.y + 4); });
 }
@@ -7004,9 +7004,6 @@ function buildEdoras(L, TH) {
   // the well, in the high square
   { const p = Y.plazas[2], a = Math.atan2(p.x, p.s), s = p.s + Math.cos(a) * (p.r + 3), x = p.x + Math.sin(a) * (p.r + 3);
     if (!(PROPS.rbwell && propOne('rbwell', s, x, at(s, x), 0, 3))) { const q = tw(s, x, at(s, x)); part(new THREE.CylinderGeometry(1.2, 1.3, 1, 12), lam(0xa8a090), scene, q.x, q.y + .5, q.z); } }
-  // each square's barrier: a ring of golden light, shown while it's locked
-  const barM = new THREE.MeshBasicMaterial({ color: 0xffd060, transparent: true, opacity: .12, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
-  for (const p of Y.plazas) { const m = new THREE.Mesh(new THREE.CylinderGeometry(p.r + .5, p.r + .5, 6, 40, 1, true), barM); tw(p.s, p.x, p.y + 2.5, m.position); m.visible = false; m.userData.keep = true; scene.add(m); p.vis = m; }
   // trees and golden grass on the plains, a few trees in the town (Battle for Middle-earth's leafy ones: its 'gldfield' trees are the Gladden Fields' bare ones)
   const treeP = propsOf(['ptree01', 'ptree02']), trees = [], trunks = [], crowns = [], tufts = [], shrubs = [];
   const clearOf = (s, x, r) => !Y.houses.some(o => Math.hypot(s - o.s, x - o.x) < 7 + r) && Math.hypot(s - Y.hall.s, x - Y.hall.x) > 16 && !Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 2 + r) && !Y.road.some((q, k) => k % 5 === 0 && Math.hypot(s - q[0], x - q[1]) < 4 + r);
@@ -7175,7 +7172,7 @@ TX.hdScorch = hdTex(256, 256, g => {
 
 // =====================================================================
 //  HELM'S DEEP: a Kingdom Hearts level. Down the great ramp from the Hornburg's broken gate in a storm at night, landing
-//  by landing: each locks behind the golden barrier while wave after wave of orcs, Uruk-hai and berserkers come up the
+//  by landing: on each, wave after wave of orcs, Uruk-hai and berserkers come up the
 //  ladders over the parapet. Below, Saruman's army fills the Deeping Coomb with torches. At the bottom the Deeping Wall
 //  is breached, and out of the fire in the breach comes a Balrog: a boss fight the way Kingdom Hearts II does them.
 // =====================================================================
@@ -7251,14 +7248,14 @@ function helmsLayout() {
 }
 function helmsContent(L) {
   const Y = L.layout;
-  khRings(Y);
+
   for (let i = 30; i < Y.path.length - 20; i += 18) { const [s, x, y] = Y.path[i]; if (Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 1)) continue; addApple(s, x, y + .8); }
   for (const p of Y.plazas) { if (p.boss) continue; for (const [a, k] of [[.7, 'b'], [2.4, Y.plazas.indexOf(p) % 2 ? 'su' : 'q'], [4.4, 'b']]) { const s = p.s + Math.cos(a) * (p.r - 1.6), x = p.x + Math.sin(a) * (p.r - 1.6); if (Y.path.some(q => Math.hypot(q[0] - s, q[1] - x) < q[3] + .6 && Math.abs(q[2] - p.y) > .5)) continue; addCrate(k, s, x, 0, p.y + 4); } }   // (a Summon crate on every other landing)
 }
 // a wall of any length and height as one box, laid with stone by where it stands in the world (so it tiles evenly)
 function stoneBox(list, mat) { const im = instanced(GEO_BOX, mat, list); im.userData.noCast = false; return im; }
 // --- Hobbiton, a Kingdom Hearts level like Helm's Deep: its own rolling ground, the lane from the south road over the
-//     Water by the stone bridge, past the mill and the Green Dragon, round the Party Field and up to Bag End under the Hill.
+//     Water by the stone bridge, past the mill and a spur to the Green Dragon, through the Party Field and up to Bag End in the Hill.
 //     Hobbit holes are dug into knolls along the way (Battle for Middle-earth's, or built ones: a mound, a round door).
 //     Black Riders and orcs come at Gandalf on the road, at the bridge and on the Party Field; Khamûl waits at Bag End.
 function shireRiv(x) { return -12 + Math.sin(x * .05) * 3.5; }   // (the Water's middle, at each x)
@@ -7266,29 +7263,34 @@ function shireLayout() {
   const N = 161, C = 80, hs = new Float32Array(N * N), g = new Array(N * N).fill('g');
   const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
   const dome = (s, x, cs, cx, r, h) => { const d = Math.hypot(s - cs, x - cx) / r; return d >= 1 ? 0 : h * (1 - d * d) * (1 - d * d); };
-  // the lane, winding: points [s, x, half its width]
-  const WAY = [[-68, 0, 2.6], [-56, -2, 2.6], [-44, 3, 2.4], [-30, 2, 2.4], [-21, .6, 2.2], [-3, 0, 2.2], [8, -5, 2.4], [14, -16, 2.4], [14, -28, 2.6], [22, -24, 2.4], [28, -12, 2.4], [33, -3, 2.6], [37, 0, 2.8]];
-  const P_ = (i, k) => WAY[clamp(i, 0, WAY.length - 1)][k], cr = (a, b, c, d, t) => .5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (3 * b - a - 3 * c + d) * t * t * t), path = [];
-  for (let i = 0; i < WAY.length - 1; i++) { const n = Math.ceil(Math.hypot(WAY[i + 1][0] - WAY[i][0], WAY[i + 1][1] - WAY[i][1]) / .5); for (let k = 0; k < n; k++) { const t = k / n; path.push([cr(P_(i - 1, 0), P_(i, 0), P_(i + 1, 0), P_(i + 2, 0), t), cr(P_(i - 1, 1), P_(i, 1), P_(i + 1, 1), P_(i + 2, 1), t), 0, lerp(WAY[i][2], WAY[i + 1][2], t)]); } }
-  path.push([WAY[WAY.length - 1][0], WAY[WAY.length - 1][1], 0, 2.8]);
+  const spline = W => { const P_ = (i, k) => W[clamp(i, 0, W.length - 1)][k], cr = (a, b, c, d, t) => .5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (3 * b - a - 3 * c + d) * t * t * t), out = [];
+    for (let i = 0; i < W.length - 1; i++) { const n = Math.ceil(Math.hypot(W[i + 1][0] - W[i][0], W[i + 1][1] - W[i][1]) / .5); for (let k = 0; k < n; k++) { const t = k / n; out.push([cr(P_(i - 1, 0), P_(i, 0), P_(i + 1, 0), P_(i + 2, 0), t), cr(P_(i - 1, 1), P_(i, 1), P_(i + 1, 1), P_(i + 2, 1), t), 0, lerp(W[i][2], W[i + 1][2], t)]); } }
+    const e = W[W.length - 1]; out.push([e[0], e[1], 0, e[2]]); return out; };
+  // the lane, winding: points [s, x, half its width]. It runs dead straight over the bridge, touches the Party Field and climbs to Bag End; a spur goes off to the Green Dragon
+  const path = spline([[-68, 0, 2.6], [-56, -2, 2.6], [-44, 3, 2.4], [-32, 2, 2.4], [-25, 0, 2.2], [-21, 0, 2.2], [-12, 0, 2.2], [-3, 0, 2.2], [1, 0, 2.2], [7, -5, 2.4], [11, -14, 2.4], [14, -24, 2.6], [20, -28, 2.6], [28, -19, 2.4], [32, -8, 2.4], [34.5, -3, 2.6], [37, 0, 2.8]]);
+  const spur = spline([[-2, 0, 1.8], [1, 5, 1.8], [4, 12, 1.8], [6, 20, 1.8], [8.5, 27, 2]]);
+  const PARTY = [14, -36], INN = [15, 28];
   const plazas = [
     { s: -54, x: 0, r: 9, waves: [['o', 'o', 'o'], ['n', 'o', 'o', 'o']], title: 'BLACK RIDERS ON THE ROAD!' },
-    { s: -28, x: 4, r: 8, waves: [['w', 'o', 'o'], ['n', 'w', 'w', 'o']], title: 'THE BRIDGE OF THE WATER!' },
-    { s: 12, x: -32, r: 10, waves: [['o', 'o', 'u', 'o'], ['n', 'n', 'o', 'o'], ['u', 'n', 'n', 'o', 'o']], title: 'THE PARTY FIELD!' },
+    { s: -29, x: 2, r: 8, waves: [['w', 'o', 'o'], ['n', 'w', 'w', 'o']], title: 'THE BRIDGE OF THE WATER!' },
+    { s: PARTY[0], x: PARTY[1], r: 12, waves: [['o', 'o', 'u', 'o'], ['n', 'n', 'o', 'o'], ['u', 'n', 'n', 'o', 'o']], title: 'THE PARTY FIELD!' },
     { s: 36, x: 0, r: 11, waves: [['K']], title: 'BAG END', boss: true, last: true, breach: [44, 0], bossHp: 620, noAdds: true },
   ];
-  // the hobbit holes' doors; each is dug into its own hill, which rises behind it, and the hills run together into one green hillside
-  const nearPath = (s, x) => { let b = 1e9, bi = 0; path.forEach((q, i) => { const d = Math.hypot(s - q[0], x - q[1]); if (d < b) { b = d; bi = i; } }); return [b, path[bi]]; };
+  // the hobbit holes' doors; each is dug into its own hill, which rises behind it and round its sides, and the hills run together into one green hillside
+  const nearPath = (s, x) => { let b = 1e9, bq = path[0]; for (const q of [...path, ...spur]) { const d = Math.hypot(s - q[0], x - q[1]); if (d < b) { b = d; bq = q; } } return [b, bq]; };
   const homes = [];
-  for (const [s, x] of [[-66, 9], [-66, -10], [-41, 10], [-40, -10], [-30, 18], [-26, -12], [0, 11], [1, -13], [12, 10], [22, 14], [30, 18], [-2, -34], [26, -38], [34, -24], [44, -16], [44, 16], [-14, 38], [3, 30]]) {
-    const [d, q] = nearPath(s, x); if (d < 5 || plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 4)) continue; homes.push({ s, x, f: Math.atan2(q[1] - x, q[0] - s), to: [q[0], q[1]] });
+  for (const [s, x] of [[-66, 9], [-66, -10], [-41, 10], [-40, -10], [-30, 18], [-26, -12], [1, -13], [12, 10], [22, 14], [30, 18], [34, -24], [44, -16], [44, 16], [47, -27], [47, 27]]) {
+    const [d, q] = nearPath(s, x); if (d < 5 || plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 4)) continue; homes.push({ s, x, f: s > 40 ? Math.PI + (x > 0 ? .45 : -.45) : Math.atan2(q[1] - x, q[0] - s), to: s > 40 ? [36 + (s - 36) * .55, x * .7] : [q[0], q[1]] });
   }
   const riverW = x => 3.4 + 7 * ss(14, 24, x) * ss(44, 34, x);   // (the Water widens into the pond by the Green Dragon)
   const lie = (s, x) => .8 + Math.sin(s * .06) * Math.cos(x * .05) * .7 + Math.sin(s * .17 + x * .11) * .2 + 20 * Math.max(ss(66, 84, Math.abs(s)), ss(66, 84, Math.abs(x)));   // (the lie of the land, before the hills)
-  const hills = [[60, 0, 26, 11], [-20, -50, 24, 8], [-52, 42, 24, 7], [14, 56, 22, 9], [24, -60, 20, 6]]; for (const h of homes) hills.push([h.s - Math.cos(h.f) * 8, h.x - Math.sin(h.f) * 8, 12, 7.2]);
+  const hills = [[-20, -50, 24, 8], [-52, 42, 24, 7], [14, 56, 22, 9], [24, -60, 20, 6]];
+  for (const h of homes) { const cf = Math.cos(h.f), sf = Math.sin(h.f); hills.push([h.s - cf * 8, h.x - sf * 8, 12, 7.2]); for (const k of [-1, 1]) hills.push([h.s - cf * 1.2 - sf * k * 5.4, h.x - sf * 1.2 + cf * k * 5.4, 5.6, 5]); }   // (and its cheeks, so the hill closes round the plaster)
+  // the Hill: long and whale-backed, steep along the front. It stands forward either side of Bag End's face, so the face sits back in it under the turf
+  const BW_ = 10.4, hill = (s, x) => { const a = Math.abs(x), ka = ss(BW_ / 2 - 1, BW_ / 2 + 1.6, a), foot = lerp(53.6, 49.4, ka) + (a / 34) * (a / 34) * 8; return 13 * ss(foot - .4, foot + lerp(3.6, 6.4, ka), s) * ss(1, .5, Math.hypot((s - 62) / 24, x / 42)); };
   const base = (s, x) => {
     let k = 0; for (const [cs, cx, r, h] of hills) { const q = dome(s, x, cs, cx, r, h); k += q * q * q; }   // (they run together smoothly)
-    const y = lie(s, x) + Math.cbrt(k), rd = Math.abs(s - shireRiv(x)), w = riverW(x); return lerp(-1.6, y, ss(w - .2, w + 2.6, rd));
+    const y = lie(s, x) + Math.cbrt(k) + hill(s, x), rd = Math.abs(s - shireRiv(x)), w = riverW(x); return lerp(-1.6, y, ss(w - .2, w + 2.6, rd));
   };
   const wB = new Float32Array(N * N), yR = new Float32Array(N * N), cell = (s, x) => [Math.round(C - s), Math.round(C - x)];
   const carve = (s, x, y, half, fall, kind) => {
@@ -7298,28 +7300,57 @@ function shireLayout() {
       if (w > wB[k]) { wB[k] = w; yR[k] = y; } if (kind && d < half - .3) g[k] = kind;
     }
   };
+  // the bridge's measures: the deck rises from the level of the banks in one smooth hump and comes down to it again
+  const bs = shireRiv(0), BL = 15, BW = 2.2, BANK = 1.03, by = s => { const t = clamp((s - (bs - BL / 2)) / BL, 0, 1), q = Math.sin(t * Math.PI); return BANK + 1.5 * q * q; };
   for (const p of plazas) p.y = lie(p.s, p.x);
+  plazas[2].y = Math.max(1, lie(PARTY[0], PARTY[1]));
   plazas[3].y = Math.max(1, lie(30, 0));
-  for (const q of path) { const rd = Math.abs(q[0] - shireRiv(q[1])); q[2] = lerp(1.03, lie(q[0], q[1]), ss(7.5, 14, rd)); for (const p of plazas) if (Math.hypot(q[0] - p.s, q[1] - p.x) < p.r) q[2] = p.y; }
-  for (let i = 0; i < path.length; i += 2) { const [s, x, y, h] = path[i]; if (Math.abs(s - shireRiv(x)) < 6.5) continue; carve(s, x, y, h + .5, 3, 'p'); }
-  for (const p of plazas) carve(p.s, p.x, p.y, p.r + .5, p.boss ? 3 : 5, p.boss ? 'a' : 's');
-  for (const sgn of [-1, 1]) carve(shireRiv(0) + sgn * 7.8, 0, 1.03, 2.8, 3.4);   // (the banks rise to meet the bridge at either end)
+  const y0 = plazas[3].y, yB = y0 + 1.3;
+  for (const q of path) { const rd = Math.abs(q[0] - shireRiv(q[1])); q[2] = lerp(BANK, lie(q[0], q[1]), ss(9, 16, rd)); for (const p of plazas) if (Math.hypot(q[0] - p.s, q[1] - p.x) < p.r) q[2] = p.y; }
+  for (const q of spur) { const rd = Math.abs(q[0] - shireRiv(q[1])); q[2] = lerp(BANK, lie(q[0], q[1]), ss(8, 15, rd)); }
+  // (the Party Field: one wide level meadow in a bowl of low hills)
+  carve(PARTY[0], PARTY[1], plazas[2].y, 20, 5);
+  for (let i = 0; i < path.length; i += 2) { const [s, x, y, h] = path[i]; if (Math.abs(s - shireRiv(x)) < 7.6) continue; carve(s, x, y, h + .5, 3, 'p'); }
+  for (let i = 0; i < spur.length; i += 2) { const [s, x, y, h] = spur[i]; if (Math.abs(s - shireRiv(x)) < 7.6) continue; carve(s, x, y, h + .4, 2.6, 'p'); }
+  for (const p of plazas) if (p !== plazas[2]) carve(p.s, p.x, p.y, p.r + .5, p.boss ? 3 : 5, p.boss ? 'a' : 's');
+  for (const sgn of [-1, 1]) for (const xo of [-2.6, 0, 2.6]) carve(bs + sgn * 8.8, xo, BANK - .03, 2.4, 3);   // (the banks come up level to meet the bridge at either end)
   // the ground before each door, cut level into the foot of its hill
-  for (const h of homes) { h.y = lie(h.s, h.x) + .1; carve(h.s + Math.cos(h.f) * 2, h.x + Math.sin(h.f) * 2, h.y, 2.7, 2.4); }
+  for (const h of homes) { h.y = lie(h.s, h.x) + .1; carve(h.s + Math.cos(h.f) * 2.6, h.x + Math.sin(h.f) * 2.6, h.y, 2.6, 1.8); }
+  // Bag End's front garden: a terrace behind a curved stone wall round the north side of the court, a little above it
+  for (let a = -1.25; a <= 1.26; a += .1) carve(36 + Math.cos(a) * 14.7, Math.sin(a) * 14.7, yB, 2.2, .7);
+  carve(50.6, 0, yB, 3, 1.6);
+  // the Green Dragon's ground and its forecourt by the pond; the mill's
+  const yI = lie(INN[0], INN[1]) + .2; carve(INN[0] + 4, INN[1] + 2, yI, 12, 4); carve(INN[0] - 7, INN[1], yI, 6, 3);
+  for (const q of spur.slice(-14)) q[2] = yI;
+  const mill = [shireRiv(-26) + 7.5, -26]; carve(mill[0], mill[1], lie(mill[0], mill[1]), 5.5, 3);
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = C - j, x = C - i; hs[k] = lerp(base(s, x), yR[k], wB[k]); if (Math.abs(s - shireRiv(x)) < riverW(x)) g[k] = 'r'; }
-  const blocks = [], bs = shireRiv(0), BL = 13, BW = 2.2;
-  for (let k = 0; k < 26; k++) { const t0 = k / 26, t1 = (k + 1) / 26, s0 = bs - BL / 2 + t0 * BL, s1 = bs - BL / 2 + t1 * BL, y = 1 + Math.sin((t0 + t1) / 2 * Math.PI) * 1.1; blocks.push([s0, s1, -BW, BW, y, 'floor', -6]); }
-  for (const sx of [-1, 1]) blocks.push([bs - BL / 2 + 1.5, bs + BL / 2 - 1.5, sx * BW + (sx > 0 ? 0 : -.5), sx * BW + (sx > 0 ? .5 : 0), 3.4, 'wall', -6]);
+  const blocks = [], deck = newDeck(Math.floor(bs - BL / 2), -2, 5, Math.ceil(BL) + 2);
+  // the bridge: you walk on its curve (a walkway, so foes can chase you over it too), between parapets, past the pier in the Water below
+  for (let j = 0; j < deck.h; j++) for (let i = 0; i < deck.w; i++) { const s = deck.s0 + j; if (s >= bs - BL / 2 - .4 && s <= bs + BL / 2 + .4) deckPut(deck, j * deck.w + i, by(s)); }
+  for (let k = 0; k < 16; k++) { const s0 = bs - BL / 2 + k / 16 * BL, s1 = s0 + BL / 16, t = by((s0 + s1) / 2) + .9; blocks.push([s0, s1, BW, BW + .5, t, 'wall', -6], [s0, s1, -BW - .5, -BW, t, 'wall', -6]); }
+  blocks.push([bs - 1.3, bs + 1.3, -BW - .1, BW + .1, 1.4, 'wall', -6]);
+  for (const sg of [-1, 1]) for (const sd of [-1, 1]) for (let k = 0; k < 4; k++) { const t = k / 3, s = bs + sg * (BL / 2 + t * 3), x = sd * (BW + .25 + t * 1.8); blocks.push([s - .45, s + .45, x - .45, x + .45, BANK + .95, 'wall', -6]); }
   for (const h of homes) { const cs = h.s - Math.cos(h.f) * 1.7, cx = h.x - Math.sin(h.f) * 1.7; blocks.push([cs - 2.3, cs + 2.3, cx - 2.3, cx + 2.3, h.y + 3.6, 'wall', -10]); }   // (the front and the hole behind it are solid)
-  blocks.push([47.4, 52, -4, 4, plazas[3].y + 4.6, 'wall', -10]);
-  return { field: [-74, 74, -74, 74], start: [-66, 0], terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g },
-    layout: { blocks, path, plazas, homes, bagEnd: [46.8, 0, Math.PI], bridge: [bs, 0, BL, BW], chimneys: [], mill: [shireRiv(-26) + 6.5, -26], dragon: [shireRiv(26) + 15, 26, Math.PI], partyTree: [20, -44], pavilion: [2, -46], riverW } };
+  // Bag End's face, its garden wall and the steps up through it
+  blocks.push([50.4, 56, -BW_ / 2 - .2, BW_ / 2 + .2, yB + 8, 'wall', -10]);
+  for (const sg of [-1, 1]) for (let a = .17; a < 1.2; a += .08) { const s = 36 + Math.cos(a) * 12, x = sg * Math.sin(a) * 12; blocks.push([s - .45, s + .45, x - .45, x + .45, yB + .35, 'wall', y0 - 2]); }
+  for (let k = 0; k < 4; k++) blocks.push([46.2 + k * .6, 48.9, -1.7, 1.7, y0 + (k + 1) * .325, 'floor', y0 - 2]);
+  // the Green Dragon's walls (facing south, the pond), its porch and brewhouse; the Party Tree, the tables, the bandstand, the tables outside the inn
+  blocks.push([INN[0], INN[0] + 8, INN[1] - 7.5, INN[1] + 7.5, yI + 9, 'wall', -10], [INN[0] - 3, INN[0], INN[1] - 2.8, INN[1] + 2.8, yI + 7, 'wall', -10], [INN[0] + 1, INN[0] + 7, INN[1] + 7.5, INN[1] + 13.5, yI + 7, 'wall', -10]);
+  const YP = plazas[2].y, tables = [[.5, -36], [-3.5, -36], [1, -47], [-3, -47], [25, -45]], stage = [9.2, -50.2], ale = [[8.5, 24], [8.5, 32], [5.8, 28]];
+  blocks.push([PARTY[0] - 1.3, PARTY[0] + 1.3, PARTY[1] - 1.3, PARTY[1] + 1.3, YP + 12, 'wall', -10]);
+  for (const [s, x] of tables) blocks.push([s - .55, s + .55, x - 4.5, x + 4.5, YP + .8, 'floor', YP - 1]);
+  blocks.push([stage[0] - 3, stage[0] + 3, stage[1] - 3, stage[1] + 3, YP + .34, 'floor', YP - 1]);
+  for (const [s, x] of ale) blocks.push([s - .5, s + .5, x - 1.4, x + 1.4, yI + .8, 'floor', yI - 1]);
+  const gi = path.reduce((b, q, i) => Math.hypot(q[0] - 12.2, q[1] + 18.5) < Math.hypot(path[b][0] - 12.2, path[b][1] + 18.5) ? i : b, 0);
+  return { field: [-74, 74, -74, 74], start: [-66, 0], deck, terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g },
+    layout: { blocks, path, spur, plazas, homes, bag: { s: 50.4, x: 0, y: yB, y0, W: BW_ }, bridge: { bs, BL, BW, by, BANK }, chimneys: [], mill, inn: { s: INN[0], x: INN[1], y: yI, ale }, party: { s: PARTY[0], x: PARTY[1], y: YP, tables, stage, gate: gi }, riverW } };
 }
 function shireContent(L) {
-  const Y = L.layout; khRings(Y);
-  for (let i = 10; i < Y.path.length - 10; i += 14) { const [s, x, y] = Y.path[i]; if (Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 1) || Math.abs(s - shireRiv(x)) < 7) continue; addApple(s, x, y + .8); }
-  for (const p of Y.plazas) { if (p.boss) continue; for (const [a, k] of [[.8, 'b'], [2.6, Y.plazas.indexOf(p) % 2 ? 'su' : 'q'], [4.6, 'b']]) addCrate(k, p.s + Math.cos(a) * (p.r - 1.8), p.x + Math.sin(a) * (p.r - 1.8), p.y, 4); }
-  addCrate('q', 30, -6, Y.plazas[3].y, 4); addCrate('su', 30, 6, Y.plazas[3].y, 4);
+  const Y = L.layout;
+  for (let i = 10; i < Y.path.length - 10; i += 14) { const [s, x, y] = Y.path[i]; if (Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 1) || Math.abs(s - shireRiv(x)) < 8.5) continue; addApple(s, x, y + .8); }
+  for (const p of Y.plazas) { if (p.boss) continue; for (const [a, k] of [[.8, 'b'], [2.6, Y.plazas.indexOf(p) % 2 ? 'su' : 'q'], [4.6, 'b']]) addCrate(k, p.s + Math.cos(a) * (p.r - 1.8), p.x + Math.sin(a) * (p.r - 1.8), 0, p.y + 3); }
+  addCrate('q', 30, -6, 0, Y.plazas[3].y + 3); addCrate('su', 30, 6, 0, Y.plazas[3].y + 3);
 }
 function buildShire(L, TH) {
   const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env, rep = (t, a, b) => { const c = t.clone(); c.needsUpdate = true; c.wrapS = c.wrapT = THREE.RepeatWrapping; c.repeat.set(a, b); return c; };
@@ -7327,19 +7358,35 @@ function buildShire(L, TH) {
   const grd = surf(TX.lush, { sky, vc: true, rough: 1, bump: 1, env: .08 });
   groundMesh(T_, TX.lush, (k, sl, y) => k === 'r' ? [.42, .4, .3] : k === 'p' ? [.5, .48, .34] : [.5 + clamp(y / 16, 0, 1) * .3 + (sl > .9 ? -.08 : 0), .74 + clamp(y / 16, 0, 1) * .12 + (sl > .9 ? -.1 : 0), .34], 6, () => grd);
   wideFloor(TX.lush, 0x6a9a48, 90, 14, 900);
-  // the lane: a ribbon of cobbles over the ground
-  { const cob = surf(rep(TX.cobble, 1, 1), { sky, rough: .8, bump: 3, env: .15 }), pos = [], uv = [], idx = []; const P0 = Y.path, n = P0.length; let vv = 0, out = 0;
-    for (let i = 0; i < n; i++) { const a = P0[Math.max(0, i - 1)], b = P0[Math.min(n - 1, i + 1)], h = Math.atan2(b[1] - a[1], b[0] - a[0]), [s, x, , hw] = P0[i], wob = Math.sin(i * .37) * .15; if (i) vv += Math.hypot(P0[i][0] - P0[i - 1][0], P0[i][1] - P0[i - 1][1]) / 4; const on = Math.abs(s - shireRiv(x)) > 7;
-      for (let e = 0; e <= 6; e++) { const t = e / 6 * 2 - 1, ps = s - Math.sin(h) * t * (hw + wob), px = x + Math.cos(h) * t * (hw + wob), q = tw(ps, px, on ? at(ps, px) + .07 : -9); pos.push(q.x, q.y, q.z); uv.push((t + 1) * hw / 1.1, vv * 2.2); }
-      if (i && on && out) for (let e = 0; e < 6; e++) { const a0 = (i - 1) * 7 + e, b0 = a0 + 7; idx.push(a0, a0 + 1, b0, b0, a0 + 1, b0 + 1); } out = on; }
-    const gm = new THREE.BufferGeometry(); gm.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); gm.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); gm.setIndex(idx); gm.computeVertexNormals(); cob.side = THREE.DoubleSide; const m = new THREE.Mesh(gm, cob); m.receiveShadow = true; m.userData.keep = true; scene.add(m); }
+  // the lane: a ribbon of cobbles over the ground, on over the bridge's deck without a break; and the spur to the Green Dragon
+  { const cob = surf(rep(TX.cobble, 1, 1), { sky, rough: .8, bump: 3, env: .15 }), { bs, BL, by } = Y.bridge; cob.side = THREE.DoubleSide;
+    const ribbon = P0 => { const pos = [], uv = [], idx = [], n = P0.length; let vv = 0;
+      for (let i = 0; i < n; i++) { const a = P0[Math.max(0, i - 1)], b = P0[Math.min(n - 1, i + 1)], h = Math.atan2(b[1] - a[1], b[0] - a[0]), [s, x, , hw] = P0[i], wob = Math.abs(s - bs) < BL / 2 + 5 ? 0 : Math.sin(i * .37) * .15; if (i) vv += Math.hypot(P0[i][0] - P0[i - 1][0], P0[i][1] - P0[i - 1][1]) / 4;
+        for (let e = 0; e <= 6; e++) { const t = e / 6 * 2 - 1, ps = s - Math.sin(h) * t * (hw + wob), px = x + Math.cos(h) * t * (hw + wob), onB = Math.abs(ps - bs) <= BL / 2 && Math.abs(px) < 3, q = tw(ps, px, onB ? by(ps) + .05 : Math.max(at(ps, px), Math.abs(ps - bs) < BL / 2 + 1 && Math.abs(px) < 3 ? Y.bridge.BANK : -9) + .07); pos.push(q.x, q.y, q.z); uv.push((t + 1) * hw / 1.1, vv * 2.2); }
+        if (i) for (let e = 0; e < 6; e++) { const a0 = (i - 1) * 7 + e, b0 = a0 + 7; idx.push(a0, a0 + 1, b0, b0, a0 + 1, b0 + 1); } }
+      const gm = new THREE.BufferGeometry(); gm.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); gm.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); gm.setIndex(idx); gm.computeVertexNormals(); const m = new THREE.Mesh(gm, cob); m.receiveShadow = true; m.userData.keep = true; scene.add(m); };
+    ribbon(Y.path); ribbon(Y.spur); }
   // the Water and the pond
   const wt = TX.sea.clone(); wt.needsUpdate = true; wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(30, 5); TH.waterTex = wt;
   const wg = new THREE.PlaneGeometry(1, 1, 80, 1), wp = wg.attributes.position; for (let i = 0; i < wp.count; i++) { const u = wp.getX(i), v = wp.getY(i), x = u * 150, s = shireRiv(x) + v * 32, q = tw(s, x, -.45); wp.setXYZ(i, q.x, q.y, q.z); }
   wg.computeVertexNormals(); const water = new THREE.Mesh(wg, new THREE.MeshPhongMaterial({ map: wt, color: 0x4a88a8, specular: 0xffe8c0, shininess: 90, transparent: true, opacity: .86, side: THREE.DoubleSide })); water.userData.keep = true; scene.add(water);
-  const stoneM = surf(TX.hdStone || TX.rock, { sky, color: 0xc8bea8, rough: .85, bump: 2.6, tri: 1.6 }), wood = lam(0x6a4a2a), dark = lam(0x4a3018), thatch = lam(0xb89a5a);
-  // the arched stone bridge
-  { const [bs, bx, BL, BW] = Y.bridge; if (!(PROPS.sbbridge && propOne('sbbridge', bs, bx, .2, 0, BL + 1, 'w'))) for (let k = 0; k < 13; k++) { const t = (k + .5) / 13, s = bs - BL / 2 + t * BL, y = 1 + Math.sin(t * Math.PI) * 1.1, q = tw(s, bx, y - .4); part(GEO_BOX, stoneM, scene, q.x, q.y, q.z, BW * 2 + 1, .8, BL / 13 + .05); for (const sx of [-1, 1]) { const w = tw(s, bx + sx * (BW + .25), y + .35); part(GEO_BOX, stoneM, scene, w.x, w.y, w.z, .5, .7, BL / 13 + .05); } } }
+  const stoneM = surf(TX.hdStone || TX.rock, { sky, color: 0xc8bea8, rough: .85, bump: 2.6, tri: 1.6 }), wood = lam(0x6a4a2a), dark = lam(0x4a3018);
+  // the arched stone bridge, whole from bank to bank: two arches and a pier, a deck that rises and comes down level with the lane, parapets that follow its curve and flare out
+  // at each end onto the banks to squared pillars with lanterns. The lane's cobbles run on over it without a break
+  { const { bs, BL, BW, by, BANK } = Y.bridge, g = new THREE.Group(); place(g, bs, 0, 0, Math.PI / 2); scene.add(g); g.updateMatrixWorld(true);
+    const curve = (o, n = 30) => { const a = []; for (let k = 0; k <= n; k++) { const u = -BL / 2 + k / n * BL; a.push([u, by(bs + u) + o]); } return a; }, SPR = -.8, AR = 2.2, AC = 3.5;
+    const body = new THREE.Shape(); body.moveTo(-BL / 2 - .3, -2.4); for (const c of [-AC, AC]) { body.lineTo(c - AR, -2.4); body.lineTo(c - AR, SPR); body.absarc(c, SPR, AR, Math.PI, 0, true); body.lineTo(c + AR, -2.4); } body.lineTo(BL / 2 + .3, -2.4); body.lineTo(BL / 2 + .3, BANK - .02); for (const [u, y] of curve(-.02).reverse()) body.lineTo(u, y); body.lineTo(-BL / 2 - .3, BANK - .02); body.closePath();
+    part(new THREE.ExtrudeGeometry(body, { depth: BW * 2 + .5, bevelEnabled: false, curveSegments: 14 }), stoneM, g, 0, 0, -BW - .25);
+    const stone2 = surf(TX.hdStone || TX.rock, { sky, color: 0xa89a84, rough: .85, bump: 2.6, tri: 1.6 });
+    for (const wz of [-BW - .28, BW + .28]) for (const c of [-AC, AC]) for (let k = 0; k <= 12; k++) { const a = k / 12 * Math.PI, big = k === 6, v = part(GEO_BOX, stone2, g, c + Math.cos(a) * (AR + .24), SPR + Math.sin(a) * (AR + .24), wz, .5, big ? .62 : .46, .1); v.rotation.z = a - Math.PI / 2; }   // (the arch stones round each opening)
+    for (const wz of [-BW - .25, BW + .25]) { part(new THREE.CylinderGeometry(.95, 1.2, 3.1, 4), stoneM, g, 0, -1.1, wz); }   // (the cutwater on the pier)
+    for (const sd of [-1, 1]) {
+      for (const [o0, o1, th, m] of [[.0, .88, .46, stoneM], [.86, 1.02, .68, stone2]]) { const sh = new THREE.Shape(), a = curve(o0), b = curve(o1).reverse(); sh.moveTo(a[0][0], a[0][1]); for (const [u, y] of a) sh.lineTo(u, y); for (const [u, y] of b) sh.lineTo(u, y); sh.closePath(); part(new THREE.ExtrudeGeometry(sh, { depth: th, bevelEnabled: false }), m, g, 0, 0, sd * (BW + .22) - th / 2); }
+      // the wing walls, flaring onto the banks, and the pillars at their ends
+      for (const en of [-1, 1]) { const a = [bs + en * BL / 2, sd * (BW + .22)], b = [bs + en * (BL / 2 + 3), sd * (BW + 2.05)], m = tw((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, BANK + .38), ry = Math.atan2(a[0] - b[0], a[1] - b[1]), L_ = Math.hypot(b[0] - a[0], b[1] - a[1]) + .1;
+        const w = part(GEO_BOX, stoneM, scene, m.x, m.y, m.z, L_, 1.3, .46); w.rotation.y = ry; const cp = part(GEO_BOX, stone2, scene, m.x, BANK + 1.08, m.z, L_ + .02, .13, .66); cp.rotation.y = ry;
+        const pl = tw(b[0], b[1], BANK); part(GEO_BOX, stoneM, scene, pl.x, pl.y + .25, pl.z, .95, 2.2, .95); part(GEO_BOX, stone2, scene, pl.x, pl.y + 1.42, pl.z, 1.16, .16, 1.16); part(GEO_BOX, lam(0x2a2a20), scene, pl.x, pl.y + 1.74, pl.z, .32, .48, .32); part(new THREE.ConeGeometry(.3, .24, 4), lam(0x2a2a20), scene, pl.x, pl.y + 2.08, pl.z); const gl = glowSprite(0xffc870, 1.1, .5); gl.position.set(pl.x, pl.y + 1.74, pl.z); scene.add(gl); }
+    } }
   // the hobbit holes: dug into the foot of the hill. A cream plaster front under a curved timber beam and a lip of turf, a brick arch round a round painted plank
   // door with a brass knob in the middle, round brick-edged windows with flower boxes, a curved stone doorstep, lanterns either side, a brick chimney up in the turf
   const plasterM = surf(rep(TX.plaster, 2, 1), { sky, color: 0xc8b890, rough: .95, bump: 1.4, env: .05 }), brickM = surf(rep(TX.brick, 3, 3), { sky, rough: .85, bump: 2.6 }), winM = lam(0xf0c870, { emissive: 0x806020, emissiveIntensity: .7 }), knobM = lam(0xffd040, { emissive: 0x6a4a10 }), turfM = surf(rep(TX.lush, 2, 1), { sky, color: 0x90b868, rough: 1, bump: 1, env: .05 });
@@ -7347,6 +7394,7 @@ function buildShire(L, TH) {
   const bloom = (x, y, z, c, r = .11) => (blooms[c] = blooms[c] || []).push([x, y, z, r, r, r]);
   const bed = (g, lx, lz, n, spread) => { for (let k = 0; k < 4; k++) { const p = g.localToWorld(new V3(lx + rand(-spread, spread) * .7, 0, lz + rand(-.5, .5))); p.y = T_at(p); bushes.push([p.x, p.y + .4, p.z, rand(.5, .8), rand(.45, .7), rand(.5, .8)]); } const c0 = cs[(Math.abs(lx * 7 + lz * 3) | 0) % 6], c1 = cs[(Math.abs(lx * 5 + lz) + 2 | 0) % 6]; for (let k = 0; k < n; k++) { const p = g.localToWorld(new V3(lx + rand(-spread, spread), 0, lz + rand(-.7, .7))); p.y = T_at(p); bloom(p.x, p.y + rand(.45, 1), p.z, k % 3 ? c0 : c1); } };
   const T_at = p => { const q = toTrack(p); return tw(q.s, q.x, at(q.s, q.x)).y; };
+  const brickC = [lam(0xa8583a), lam(0xbd7048), lam(0x8e4a30), lam(0xc4805a)], bricks = (g, cx, cy, z, r, n, len, wid) => { for (let k = 0; k <= n; k++) { const a = k / n * TAU; if (cy + Math.sin(a) * r < -.1) continue; const b = part(GEO_BOX, brickC[(k * 7 + (k >> 2)) % 4], g, cx + Math.cos(a) * r, cy + Math.sin(a) * r, z + (k % 2 ? .03 : 0), len * (k % 2 ? 1 : .86), Math.max(wid, TAU * r / n - .025), .1); b.rotation.z = a; } };
   const hole = (s, x, f, y, col, big) => {
     const K = big ? 1.3 : 1, W = 5.6 * K, H = 3.3 * K, dr = 1.08 * K, wx = 1.85 * K, g = new THREE.Group(); place(g, s, x, y, f); scene.add(g); g.updateMatrixWorld(true);
     part(GEO_BOX, plasterM, g, 0, H / 2 - .3, -1.5, W, H + .6, 3);                                           // the plaster front, going back into the hill
@@ -7361,7 +7409,7 @@ function buildShire(L, TH) {
     for (let k = 0; k < 2; k++) part(new THREE.CylinderGeometry((dr * 1.3) - k * .22 * K, (dr * 1.3) - k * .22 * K, .16, 20, 1, false, -Math.PI / 2, Math.PI), stoneM, g, 0, .16 - k * .14 + .02, .1 + k * .34);   // the curved doorstep
     for (const sx of [-1, 1]) { const wy = 1.45 * K; part(new THREE.RingGeometry(.44 * K, .64 * K, 22), brickM, g, sx * wx, wy, .05); part(new THREE.CircleGeometry(.44 * K, 22), winM, g, sx * wx, wy, .055); part(GEO_BOX, dark, g, sx * wx, wy, .065, .05, .88 * K, .02); part(GEO_BOX, dark, g, sx * wx, wy, .065, .88 * K, .05, .02);
       part(GEO_BOX, dark, g, sx * wx, wy - .62 * K, .18, 1.1 * K, .14, .3); for (let k = 0; k < 7; k++) { const b = g.localToWorld(new V3(sx * wx - .42 + k * .14, wy - .5 * K, .2)); bloom(b.x, b.y, b.z, cs[(k + (sx > 0 ? 1 : 3)) % 6], .08); } }
-    for (const sx of [-1, 1]) { part(GEO.cyl, dark, g, sx * (W / 2 + .45), 1, .7, .05, 2, .05); part(GEO_BOX, lam(0x2a2a20), g, sx * (W / 2 + .45), 2.05, .7, .22, .3, .22); const gl = glowSprite(0xffc870, .9, .45); gl.position.set(sx * (W / 2 + .45), 2.05, .7); g.add(gl); }
+    for (const sx of [-1, 1]) { const lx = sx * (W / 2 - .35), lb = g.localToWorld(new V3(lx, 0, .55)), yb = Math.max(0, T_at(lb) - y); part(GEO.cyl, dark, g, lx, yb + 1, .55, .05, 2, .05); part(GEO_BOX, lam(0x2a2a20), g, lx, yb + 2.05, .55, .22, .3, .22); const gl = glowSprite(0xffc870, .9, .45); gl.position.set(lx, yb + 2.05, .55); g.add(gl); }
     // a brick chimney up in the turf
     { const ch = g.localToWorld(new V3((big ? 3.6 : 1.6) * (col % 2 ? 1 : -1), 0, -5 * K)), q = toTrack(ch), cy = at(q.s, q.x), p = tw(q.s, q.x, cy); part(GEO_BOX, brickM, scene, p.x, p.y + .7, p.z, .95, 2, .95); part(GEO_BOX, stoneM, scene, p.x, p.y + 1.74, p.z, 1.2, .16, 1.2); Y.chimneys.push(new V3(p.x, p.y + 1.9, p.z)); }
     bed(g, -W / 2 - 1.5, .9, big ? 20 : 12, .9); bed(g, W / 2 + 1.5, .9, big ? 20 : 12, .9);
@@ -7371,32 +7419,147 @@ function buildShire(L, TH) {
     hole(h.s, h.x, h.f, h.y, doorCols[i % doorCols.length]);
     const n = Math.max(3, Math.round(Math.hypot(h.to[0] - h.s, h.to[1] - h.x) / .75)); for (let k = 1; k < n - 3; k++) { const t = k / n, wob = Math.sin(t * 7 + i) * .45, ns = -Math.sin(h.f), nx = Math.cos(h.f), s = lerp(h.s, h.to[0], t) + ns * wob, x = lerp(h.x, h.to[1], t) + nx * wob, q = tw(s, x, at(s, x) + .05), r = rand(.26, .4); stones.push([q.x, q.y, q.z, r, .1, r * rand(.8, 1)]); }
   });
-  // Bag End: the biggest, its green door in the face of the Hill above the court, the Party-sized oak over it
-  { const [s, x, f] = Y.bagEnd; hole(s, x, f, Y.plazas[3].y, 0x1e6a44, true); }
-  instanced(new THREE.CylinderGeometry(1, 1.05, 1, 9), stoneM, stones);
   // low stone garden walls and lamp posts along the lane; wooden fences along the ridges
   { const wallBits = [], caps = []; for (let i = 12; i < Y.path.length - 8; i += 3) { const [s, x, , hw] = Y.path[i], a = Math.atan2(Y.path[i + 1][1] - Y.path[i - 1][1], Y.path[i + 1][0] - Y.path[i - 1][0]), run = (i / 24 | 0) % 3; if (run === 2) continue;
-      const side = (i / 24 | 0) % 2 ? 1 : -1, ps = s - Math.sin(a) * side * (hw + 1.1), px = x + Math.cos(a) * side * (hw + 1.1); if (Math.abs(ps - shireRiv(px)) < 8 || Y.plazas.some(p => Math.hypot(ps - p.s, px - p.x) < p.r + 1.5) || Y.homes.some(h => Math.hypot(h.s - ps, h.x - px) < 5.5)) continue; const q = tw(ps, px, at(ps, px) + .32), ry = Math.atan2(-Math.cos(a), -Math.sin(a)); wallBits.push([q.x, q.y, q.z, 1.7, .78, .55, ry]); caps.push([q.x, q.y + .44, q.z, 1.75, .14, .66, ry]); }
+      const side = (i / 24 | 0) % 2 ? 1 : -1, ps = s - Math.sin(a) * side * (hw + 1.1), px = x + Math.cos(a) * side * (hw + 1.1); if (Math.abs(ps - shireRiv(px)) < 11.5 || Y.plazas.some(p => Math.hypot(ps - p.s, px - p.x) < p.r + 1.5) || Y.homes.some(h => Math.hypot(h.s - ps, h.x - px) < 5.5)) continue; const q = tw(ps, px, at(ps, px) + .32), ry = Math.atan2(-Math.cos(a), -Math.sin(a)); wallBits.push([q.x, q.y, q.z, 1.7, .78, .55, ry]); caps.push([q.x, q.y + .44, q.z, 1.75, .14, .66, ry]); }
     instanced(GEO_BOX, stoneM, wallBits); instanced(GEO_BOX, stoneM, caps);
-    for (let i = 20; i < Y.path.length - 8; i += 34) { const [s, x, , hw] = Y.path[i], a = Math.atan2(Y.path[i + 1][1] - Y.path[i - 1][1], Y.path[i + 1][0] - Y.path[i - 1][0]), side = i % 68 ? 1 : -1, ps = s - Math.sin(a) * side * (hw + .6), px = x + Math.cos(a) * side * (hw + .6); if (Math.abs(ps - shireRiv(px)) < 7) continue; const q = tw(ps, px, at(ps, px)); part(GEO.cyl, dark, scene, q.x, q.y + 1.2, q.z, .07, 2.4, .07); part(GEO_BOX, lam(0x2a2a20), scene, q.x, q.y + 2.5, q.z, .3, .34, .3); const gl = glowSprite(0xffc870, 1, .45); gl.position.set(q.x, q.y + 2.5, q.z); scene.add(gl); }
+    for (let i = 20; i < Y.path.length - 8; i += 34) { const [s, x, , hw] = Y.path[i], a = Math.atan2(Y.path[i + 1][1] - Y.path[i - 1][1], Y.path[i + 1][0] - Y.path[i - 1][0]), side = i % 68 ? 1 : -1, ps = s - Math.sin(a) * side * (hw + .6), px = x + Math.cos(a) * side * (hw + .6); if (Math.abs(ps - shireRiv(px)) < 11.5) continue; const q = tw(ps, px, at(ps, px)); part(GEO.cyl, dark, scene, q.x, q.y + 1.2, q.z, .07, 2.4, .07); part(GEO_BOX, lam(0x2a2a20), scene, q.x, q.y + 2.5, q.z, .3, .34, .3); const gl = glowSprite(0xffc870, 1, .45); gl.position.set(q.x, q.y + 2.5, q.z); scene.add(gl); }
     const posts = [], rails = [], fenceRun = (pts) => { for (let k = 0; k < pts.length - 1; k++) { const [s0, x0] = pts[k], [s1, x1] = pts[k + 1], n = Math.round(Math.hypot(s1 - s0, x1 - x0) / 2.6); for (let j = 0; j < n; j++) { const a = tw(lerp(s0, s1, j / n), lerp(x0, x1, j / n), 0), b = tw(lerp(s0, s1, (j + 1) / n), lerp(x0, x1, (j + 1) / n), 0), ya = at(lerp(s0, s1, j / n), lerp(x0, x1, j / n)), yb = at(lerp(s0, s1, (j + 1) / n), lerp(x0, x1, (j + 1) / n)); posts.push([a.x, ya + .6, a.z, .09, 1.3, .09, 0]); for (const h of [.55, 1]) { const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2, my = (ya + yb) / 2 + h; rails.push([mx, my, mz, Math.hypot(b.x - a.x, b.z - a.z) + .1, .07, .06, Math.atan2(-(b.z - a.z), b.x - a.x)]); } } } };
     fenceRun([[62, -46], [66, -20], [68, 8], [62, 34], [52, 58]]); fenceRun([[-8, 50], [8, 64], [30, 68]]); fenceRun([[-58, -64], [-40, -60], [-20, -66], [2, -68]]);
     instanced(new THREE.CylinderGeometry(1, 1, 1, 6), wood, posts); instanced(GEO_BOX, wood, rails); }
-  // the Green Dragon by the pond, the mill on the Water, the pavilion
-  { const [s, x, f] = Y.dragon; if (!(PROPS.sbgrndrg && propOne('sbgrndrg', s, x, at(s, x) - .2, f, 17))) { const gg = new THREE.Group(); place(gg, s, x, at(s, x), f); scene.add(gg); part(GEO_BOX, plasterM, gg, 0, 2, 0, 14, 4, 7); const rf = part(new THREE.ConeGeometry(9.4, 3.4, 4), thatch, gg, 0, 5.6, 0); rf.rotation.y = Math.PI / 4; rf.scale.z = .6; } const gl = glowSprite(0xffc070, 9, .35); gl.position.copy(tw(s - 3, x, at(s, x) + 2.2)); scene.add(gl); }
+  // --- little makers for the inn, the party and Bag End ---
+  const canvasM = (w, h, draw) => { const t = mkTex(w, h, draw, false); t.magFilter = THREE.LinearFilter; return ps1(new THREE.MeshLambertMaterial({ map: t, side: THREE.DoubleSide })); };
+  const thatchM = surf(rep(TX.sThatch, 1, 1), { sky, rough: 1, bump: 3.5, env: .04, side: THREE.DoubleSide }), planks = surf(rep(TX.sPlank, 1, 1), { sky, color: 0xb89a70, rough: .9, bump: 2 }), ironM = lam(0x2a2a20), clothM = lam(0xf4efe0), hoopM = lam(0x3a3a34);
+  const slopes = (w, d, h, u = .3) => { const hw = w / 2, hd = d / 2, g = new THREE.BufferGeometry(), v = [-hw, 0, hd, hw, 0, hd, hw, h, 0, -hw, 0, hd, hw, h, 0, -hw, h, 0, hw, 0, -hd, -hw, 0, -hd, -hw, h, 0, hw, 0, -hd, -hw, h, 0, hw, h, 0], sl = Math.hypot(hd, h) * u, wu = w * u; g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, wu, 0, wu, sl, 0, 0, wu, sl, 0, sl, 0, 0, wu, 0, wu, sl, 0, 0, wu, sl, 0, sl], 2)); g.computeVertexNormals(); return g; };   // (the two slopes of a gable roof, ridge along x)
+  const gable = (w, d, h) => { const hd = d / 2, g = new THREE.BufferGeometry(), hw = w / 2, v = [hw, 0, hd, hw, 0, -hd, hw, h, 0, -hw, 0, -hd, -hw, 0, hd, -hw, h, 0, -hw, 0, hd, hw, 0, hd, hw, h, 0, -hw, 0, hd, hw, h, 0, -hw, h, 0, hw, 0, -hd, -hw, 0, -hd, -hw, h, 0, hw, 0, -hd, -hw, h, 0, hw, h, 0]; g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(v.map((q, i) => q * .4).filter((q, i) => i % 3 !== 1), 2)); g.computeVertexNormals(); return g; };   // (the wall under them, closing the gable ends)
+  const barrel = (g, x, y, z, sc = 1) => { const b = part(new THREE.CylinderGeometry(.34 * sc, .34 * sc, .95 * sc, 12), wood, g, x, y + .48 * sc, z); const mid = part(new THREE.CylinderGeometry(.41 * sc, .41 * sc, .5 * sc, 12), wood, g, x, y + .48 * sc, z); for (const h of [.14, .82]) part(new THREE.CylinderGeometry(.37 * sc, .37 * sc, .05 * sc, 12), hoopM, g, x, y + h * sc, z); return [b, mid]; };
+  const mug = (g, x, y, z) => { part(new THREE.CylinderGeometry(.06, .06, .15, 7), lam(0x8a6a3a), g, x, y + .075, z); part(new THREE.CylinderGeometry(.062, .062, .035, 7), clothM, g, x, y + .16, z); };
+  const benchTable = (g, x, z, len, cloth) => {   // a trestle table with benches along it, and what's on it
+    part(GEO_BOX, wood, g, x, .76, z, len, .08, 1.05); for (const sx of [-1, 1]) for (const sz of [-1, 1]) part(GEO_BOX, dark, g, x + sx * (len / 2 - .4), .37, z + sz * .36, .1, .74, .1);
+    if (cloth) { part(GEO_BOX, clothM, g, x, .79, z, len + .08, .03, 1.2); for (const sz of [-1, 1]) part(GEO_BOX, clothM, g, x, .66, z + sz * .6, len + .08, .28, .03); }
+    for (const sz of [-1, 1]) { part(GEO_BOX, wood, g, x, .44, z + sz * .92, len - .2, .07, .32); for (const sx of [-1, 0, 1]) part(GEO_BOX, dark, g, x + sx * (len / 2 - .6), .21, z + sz * .92, .08, .42, .26); }
+    const n = Math.floor(len / .9); for (let k = 0; k < n; k++) { const px = x - len / 2 + (k + .5) * len / n; mug(g, px, .8, z + (k % 2 ? .3 : -.3)); if (k % 3 === 0) part(new THREE.CylinderGeometry(.2, .22, .08, 12), lam(0xc89040), g, px + .2, .85, z); if (k % 3 === 1) part(new THREE.SphereGeometry(.14, 8, 6), lam(0xa8682a), g, px, .92, z); if (k % 3 === 2) part(new THREE.SphereGeometry(.16, 8, 5), lam(0xe08a20), g, px, .94, z - .05); } };
+  const worldAt = (g, lx, lz) => { const p = g.localToWorld(new V3(lx, 0, lz)); p.y = T_at(p); return p; };
+  const garden = (g, lx, lz, rx, rz, n, cols, tall) => { for (let k = 0; k < n; k++) { const a = rand(0, TAU), r = Math.sqrt(Math.random()), p = worldAt(g, lx + Math.cos(a) * r * rx, lz + Math.sin(a) * r * rz); bloom(p.x, p.y + rand(.3, tall ? 1.1 : .7), p.z, cols[k % cols.length], rand(.07, .12)); if (k % 3 === 0) bushes.push([p.x, p.y + .2, p.z, rand(.3, .55), rand(.28, .5), rand(.3, .55)]); if (k % 5 === 0) spikes.push([p.x, p.y + .45, p.z, .05, rand(.8, 1.5), .05, rand(0, 3)]); } };
+  const spikes = [];
+  const lamp = (g, x, y, z, h = 2.4) => { part(GEO.cyl, dark, g, x, y + h / 2, z, .06, h, .06); part(GEO_BOX, ironM, g, x, y + h + .1, z, .26, .32, .26); const gl = glowSprite(0xffc870, 1, .5); gl.position.set(x, y + h + .1, z); g.add(gl); };
+  // --- the Green Dragon, in the same hand as the hobbit holes: stone below, cream plaster and dark timber above, a deep thatch, a round green door in a brick arch,
+  //     a painted sign on a post, and tables out in front by the pond ---
+  { const I = Y.inn, g = new THREE.Group(); place(g, I.s, I.x, I.y, Math.PI); scene.add(g); g.updateMatrixWorld(true);
+    part(GEO_BOX, stoneM, g, 0, 1.15, -4, 15, 2.3, 8); part(GEO_BOX, plasterM, g, 0, 3.2, -4, 15, 1.9, 8);
+    part(gable(15, 8, 3.5), plasterM, g, 0, 4.15, -4); part(slopes(16.8, 10.2, 4.3), thatchM, g, 0, 3.75, -4);
+    part(GEO_BOX, thatchM, g, 0, 8.08, -4, 17, .35, .9);   // (the ridge roll)
+    for (const zz of [.04, -8.04]) { for (const y of [2.3, 4.12]) part(GEO_BOX, dark, g, 0, y, zz, 15.1, .2, .12); for (let k = -3; k <= 3; k++) part(GEO_BOX, dark, g, k * 2.4, 3.2, zz, .2, 1.9, .12); for (let k = -3; k < 3; k++) { const d = part(GEO_BOX, dark, g, (k + .5) * 2.4, 3.2, zz, .13, 2.5, .08); d.rotation.z = (k % 2 ? 1 : -1) * .78; } }
+    for (const sx of [-1, 1]) { const zt = 7.54 * sx; part(GEO_BOX, dark, g, zt, 3.2, -.05, .14, 1.9, .2); part(GEO_BOX, dark, g, zt, 3.2, -7.95, .14, 1.9, .2); part(GEO_BOX, dark, g, zt, 3.2, -4, .14, 1.9, .2); }
+    // the porch, gabled, its thatch running back into the roof
+    part(GEO_BOX, stoneM, g, 0, 1.55, 1.5, 5.6, 3.1, 3); part(GEO_BOX, plasterM, g, 0, 3.55, 1.5, 5.6, .9, 3);
+    { const inner = part(gable(3, 5.6, 2.4), plasterM, g, 0, 4, 1.5); inner.rotation.y = Math.PI / 2; const r = part(slopes(4.6, 6.8, 2.9), thatchM, g, 0, 3.72, 1.6); r.rotation.y = Math.PI / 2; part(GEO_BOX, dark, g, 0, 4, 3.02, 5.7, .2, .1); }
+    { const dy = 1.15, dr = 1.05, dz = 3.02; part(new THREE.CircleGeometry(dr, 26), lam(0x1e6a44), g, 0, dy, dz); for (let k = -2; k <= 2; k++) { const px = k * dr * .38; part(GEO_BOX, lam(0x14482e), g, px, dy, dz + .01, .03, Math.sqrt(dr * dr - px * px) * 1.92, .015); } part(GEO.sph, knobM, g, 0, dy, dz + .08, .09, .09, .07); bricks(g, 0, dy, dz, dr + .17, 20, .3, .24); for (let k = 0; k < 2; k++) part(new THREE.CylinderGeometry(dr * 1.25 - k * .22, dr * 1.25 - k * .22, .16, 18, 1, false, -Math.PI / 2, Math.PI), stoneM, g, 0, .14 - k * .13, 3.1 + k * .3); }
+    // its name over the door, and the windows, round and warm
+    { const nm = canvasM(320, 64, c => { c.fillStyle = '#16402a'; c.fillRect(0, 0, 320, 64); c.strokeStyle = '#d8b050'; c.lineWidth = 4; c.strokeRect(5, 5, 310, 54); c.fillStyle = '#f0d880'; c.font = "bold 34px Georgia, serif"; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('The Green Dragon', 160, 34); }); part(new THREE.PlaneGeometry(4.2, .8), nm, g, 0, 3.32, 3.07); }
+    for (const x of [-6, -3.7, 3.7, 6]) { part(new THREE.CircleGeometry(.56, 18), winM, g, x, 1.3, .03); part(GEO_BOX, dark, g, x, 1.3, .05, .05, 1.1, .03); part(GEO_BOX, dark, g, x, 1.3, .05, 1.1, .05, .03); bricks(g, x, 1.3, .02, .68, 15, .2, .2); part(GEO_BOX, dark, g, x, .58, .16, 1.2, .13, .3); for (let k = 0; k < 8; k++) { const b = g.localToWorld(new V3(x - .49 + k * .14, .7, .2)); bloom(b.x, b.y, b.z, cs[(k + (x > 0 ? 1 : 3)) % 6], .08); } }
+    for (const x of [-5.4, 5.4]) { const dm = part(gable(1.5, 1.7, .9), plasterM, g, x, 5.3, -.2); dm.rotation.y = Math.PI / 2; const rr = part(slopes(2.5, 2.1, 1.05), thatchM, g, x, 5.22, -.1); rr.rotation.y = Math.PI / 2; part(new THREE.CircleGeometry(.34, 14), winM, g, x, 5.65, .55); }
+    // the great chimney, and the brewhouse on the side with its own roof
+    { const c = g.localToWorld(new V3(-5.5, 0, -6)); part(GEO_BOX, stoneM, scene, c.x, I.y + 5.6, c.z, 1.5, 11, 1.5); part(GEO_BOX, brickM, scene, c.x, I.y + 11.4, c.z, 1.1, .9, 1.1); Y.chimneys.push(new V3(c.x, I.y + 12, c.z)); }
+    part(GEO_BOX, stoneM, g, 10.5, 1.5, -4, 6, 3, 6); part(gable(6, 6, 2), plasterM, g, 10.5, 3, -4); part(slopes(7, 7.4, 2.45), thatchM, g, 10.6, 2.72, -4);
+    for (const [x, z, y] of [[9, -.5, 0], [10, -.5, 0], [11, -.5, 0], [9.5, -.5, .95], [10.5, -.5, .95], [12.2, -.6, 0]]) barrel(g, x, y, z, .95);
+    // the sign on its post, the green dragon on it
+    { part(GEO.cyl, dark, g, -6.6, 2.1, 5.2, .1, 4.2, .1); part(GEO_BOX, dark, g, -5.9, 4, 5.2, 1.5, .1, .1); const sg = canvasM(128, 160, c => { c.fillStyle = '#d8c490'; c.fillRect(0, 0, 128, 160); c.strokeStyle = '#3a2410'; c.lineWidth = 6; c.strokeRect(4, 4, 120, 152); c.fillStyle = '#1f7a3e'; c.beginPath(); c.moveTo(24, 110); c.bezierCurveTo(30, 66, 52, 88, 58, 60); c.bezierCurveTo(60, 40, 76, 28, 96, 34); c.lineTo(108, 42); c.lineTo(92, 48); c.lineTo(100, 56); c.lineTo(84, 54); c.bezierCurveTo(74, 74, 96, 92, 84, 112); c.lineTo(92, 122); c.lineTo(74, 118); c.lineTo(68, 126); c.lineTo(58, 114); c.bezierCurveTo(50, 118, 44, 128, 26, 124); c.lineTo(14, 132); c.closePath(); c.fill(); c.fillStyle = '#2a9a50'; c.beginPath(); c.moveTo(58, 74); c.lineTo(30, 44); c.lineTo(38, 72); c.lineTo(22, 66); c.lineTo(46, 92); c.closePath(); c.fill(); c.fillStyle = '#ffd040'; c.fillRect(88, 38, 4, 4); c.fillStyle = '#3a2410'; c.font = 'bold 15px Georgia, serif'; c.textAlign = 'center'; c.fillText('GREEN DRAGON', 64, 150); }); part(new THREE.PlaneGeometry(1.15, 1.45), sg, g, -5.5, 3.1, 5.2); }
+    // flagstones, the tables, a low wall along the pond
+    const flags = [], walls = [], cap = []; for (let k = 0; k < 170; k++) { const lx = rand(-8.5, 8.5), lz = rand(3.6, 10.5), p = worldAt(g, lx, lz), r = rand(.28, .5); flags.push([p.x, p.y + .05, p.z, r, .06, r * rand(.8, 1)]); } instanced(new THREE.CylinderGeometry(1, 1.04, 1, 8), stoneM, flags);
+    for (const [s, x] of I.ale) { const q = tw(s, x, I.y), t = new THREE.Group(); t.position.copy(q); scene.add(t); benchTable(t, 0, 0, 2.8, false); t.updateMatrixWorld(true); const lm = glowSprite(0xffc070, 1.6, .25); lm.position.set(0, 1.5, 0); t.add(lm); }
+    for (const x of [-9, 8]) lamp(g, x, 0, 5.5);
+    for (let k = -4; k <= 4; k++) { if (k === 0) continue; const p = worldAt(g, k * 2.3, 11.6); walls.push([p.x, p.y + .25, p.z, 2.34, .8, .6]); cap.push([p.x, p.y + .69, p.z, 2.4, .1, .72]); } instanced(GEO_BOX, stoneM, walls); instanced(GEO_BOX, stoneM, cap);
+    for (const [lx, lz] of [[-10, 2], [9, 3]]) garden(g, lx, lz, 1.8, 1.8, 26, [0xffd040, 0xff6a9a, 0xffffff]);
+    { const gl = glowSprite(0xffc070, 8, .22); gl.position.set(0, 2.2, 5); g.add(gl); } }
+  // the mill on the Water
   { const [s, x] = Y.mill; if (!(PROPS.sbmill && propOne('sbmill', s, x, at(s, x) - .2, Math.PI, 11))) { const q = tw(s, x, at(s, x)); part(GEO_BOX, stoneM, scene, q.x, q.y + 2.5, q.z, 6, 5, 6); } }
-  { const [s, x] = Y.pavilion; if (!(PROPS.sbparty01 && propOne('sbparty01', s, x, at(s, x) - .1, Math.PI / 2, 10))) { const q = tw(s, x, at(s, x)); part(new THREE.ConeGeometry(5, 4, 10), lam(0xf0ece0), scene, q.x, q.y + 4, q.z); } }
   // big leafy oaks: a thick trunk, boughs, and clumps of leaves, lighter on top
   const leafA = [], leafB = [], leafC = [], barkM = surf(TX.rock, { sky, color: 0x6a5238, rough: .95, bump: 3 });
-  const oak = (s, x, sz) => { const y = at(s, x), q = tw(s, x, y), h = 5.4 * sz; part(new THREE.CylinderGeometry(.42 * sz, .78 * sz, h, 9), barkM, scene, q.x, q.y + h / 2 - .1, q.z);
-    for (let k = 0; k < 5; k++) { const a = rand(0, TAU), b = part(new THREE.CylinderGeometry(.14 * sz, .32 * sz, 3.2 * sz, 6), barkM, scene, q.x + Math.cos(a) * 1.1 * sz, q.y + h + .5 * sz, q.z + Math.sin(a) * 1.1 * sz); b.rotation.set(Math.sin(a) * .9, 0, -Math.cos(a) * .9); }
-    for (let k = 0; k < 34; k++) { const a = rand(0, TAU), r = Math.sqrt(Math.random()) * 3.9 * sz, ly = h + rand(.4, 4.4) * sz - r * .24, sc = rand(.8, 1.45) * sz; (ly > h + 3 * sz ? leafA : k % 2 ? leafB : leafC).push([q.x + Math.cos(a) * r, q.y + ly, q.z + Math.sin(a) * r, sc, sc * .8, sc]); } };
-  oak(Y.partyTree[0], Y.partyTree[1], 1.7); oak(60, 0, 1.6);
-  let n = 0; for (let k = 0; k < 220 && n < 36; k++) { const s = rand(-68, 66), x = rand(-68, 68); if (Math.abs(s - shireRiv(x)) < Y.riverW(x) + 3 || Y.path.some(q => Math.hypot(q[0] - s, q[1] - x) < q[3] + 8) || Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 7) || Y.homes.some(h => Math.hypot(h.s + Math.cos(h.f) * 2 - s, h.x + Math.sin(h.f) * 2 - x) < 8) || Math.hypot(s - 46, x) < 9) continue; n++; oak(s, x, rand(.95, 1.5)); }
+  const oak = (s, x, sz, clumps = 34) => { const y = at(s, x), q = tw(s, x, y), h = (clumps > 100 ? 3.7 : 5.4) * sz; part(new THREE.CylinderGeometry(.42 * sz, .78 * sz, h, 9), barkM, scene, q.x, q.y + h / 2 - .1, q.z);
+    const nb = Math.max(5, clumps / 12 | 0); for (let k = 0; k < nb; k++) { const a = rand(0, TAU), b = part(new THREE.CylinderGeometry(.14 * sz, .32 * sz, 3.2 * sz, 6), barkM, scene, q.x + Math.cos(a) * 1.1 * sz, q.y + h + .5 * sz, q.z + Math.sin(a) * 1.1 * sz); b.rotation.set(Math.sin(a) * .9, 0, -Math.cos(a) * .9); }
+    const big = clumps > 34; for (let k = 0; k < clumps; k++) { const a = rand(0, TAU), r = Math.sqrt(Math.random()) * 3.9 * sz, ly = h + rand(.4, 4.4) * sz - r * .24, sc = rand(.8, 1.45) * sz * (big ? .62 : 1); (ly > h + 3 * sz ? leafA : k % 2 ? leafB : leafC).push([q.x + Math.cos(a) * r, q.y + ly, q.z + Math.sin(a) * r, sc, sc * .8, sc]); } };
+  // --- Bilbo's Party Field: the Party Tree in the middle with lanterns hung from it, bunting from pole to pole all round, a great striped marquee and a smaller one,
+  //     long tables under cloths with benches and the food out, a bandstand with a dance floor, Gandalf's firework cart, and a banner across the lane at the way in ---
+  { const F = Y.party, g = new THREE.Group(); place(g, F.s, F.x, F.y); scene.add(g); g.updateMatrixWorld(true);
+    const polar = (a, r) => [F.s + Math.cos(a) * r, F.x + Math.sin(a) * r];
+    oak(F.s, F.x, 2, 110);
+    { const c = tw(F.s, F.x, F.y); for (let k = 0; k < 16; k++) { const a = k / 16 * TAU, sb = part(GEO_BOX, wood, scene, c.x + Math.cos(a) * 2.25, c.y + .46, c.z + Math.sin(a) * 2.25, .95, .08, .42); sb.rotation.y = -a; } }   // (a bench all round the trunk)
+    // bunting and lanterns
+    const flagCols = [0xd8362a, 0xf0c020, 0x2a7ad8, 0x30a050, 0xf08a20, 0xf4efe0], tri = new THREE.BufferGeometry(); tri.setAttribute('position', new THREE.Float32BufferAttribute([-.5, 0, 0, .5, 0, 0, 0, -1, 0], 3)); tri.computeVertexNormals();
+    const fl = flagCols.map(() => []), cord = [], globes = [], paper = [0xffc860, 0xff9a50, 0xfff0a0, 0xff7a70];
+    const stringUp = (A, B, sag, lanterns) => { const dx = B.x - A.x, dz = B.z - A.z, L_ = Math.hypot(dx, dz), n = Math.max(4, Math.round(L_ / .62)), ry = Math.atan2(-dz, dx); for (let k = 0; k <= n; k++) { const t = k / n, y = lerp(A.y, B.y, t) - Math.sin(t * Math.PI) * sag, px = A.x + dx * t, pz = A.z + dz * t; if (k < n) { const t2 = (k + 1) / n, y2 = lerp(A.y, B.y, t2) - Math.sin(t2 * Math.PI) * sag; cord.push([px + dx / n / 2, (y + y2) / 2, pz + dz / n / 2, L_ / n + .03, .025, .025, ry]); } if (lanterns) { if (k % 3 === 1) { globes.push([px, y - .2, pz, .16, .19, .16, k]); } } else fl[k % 6].push([px, y, pz, .34, .44, .34, ry]); } };
+    const poles = []; for (let a = 2.05; a < TAU + .6; a += .62) { const [s, x] = polar(a, 12.8); poles.push(tw(s, x, F.y + 4.3)); part(GEO.cyl, dark, scene, ...tw(s, x, F.y + 2.15).toArray(), .08, 4.3, .08); part(GEO.sph, lam(0xd8b050), scene, ...tw(s, x, F.y + 4.4).toArray(), .12, .12, .12); }
+    for (let k = 0; k < poles.length - 1; k++) stringUp(poles[k], poles[k + 1], .8, false);
+    const hub = tw(F.s, F.x, F.y + 6.8); for (let k = 0; k < poles.length; k += 2) stringUp(hub, poles[k], 1.5, true);
+    for (const [a, r, h] of [[0, 3.6, 6.3], [1, 4, 6.6], [2.1, 3.2, 6.2], [3.2, 3.8, 6.5], [4.3, 4.2, 6.6], [5.4, 3.4, 6.3]]) { const [s, x] = polar(a, r), p = tw(s, x, F.y + h); globes.push([p.x, p.y, p.z, .18, .22, .18, 0]); }
+    flagCols.forEach((c, i) => instanced(tri, lam(c, { side: THREE.DoubleSide }), fl[i])); instanced(GEO_BOX, lam(0x4a3a28), cord);
+    paper.forEach((c, i) => { const list = globes.filter((_, k) => k % paper.length === i); if (list.length) instanced(new THREE.SphereGeometry(1, 8, 6), new THREE.MeshBasicMaterial({ color: c }), list); });
+    globes.forEach((p, k) => { if (k % 4 === 0) { const gl = glowSprite(0xffc070, 1.5, .35); gl.position.set(p[0], p[1], p[2]); scene.add(gl); } });
+    // the marquees: striped canvas on poles, open all round so you walk straight in
+    const stripes = (a, b) => { const t = mkTex(256, 64, c => { for (let k = 0; k < 16; k++) { c.fillStyle = k % 2 ? a : b; c.fillRect(k * 16, 0, 16, 64); } }); t.magFilter = THREE.LinearFilter; return t; };
+    const tent = (s, x, Rr, a, b, pen) => { const t = new THREE.Group(); place(t, s, x, F.y); scene.add(t); const m = ps1(new THREE.MeshLambertMaterial({ map: stripes(a, b), side: THREE.DoubleSide })), wall = Rr > 5 ? 3.3 : 2.8, rise = Rr * .55; part(new THREE.ConeGeometry(Rr, rise, 32, 1, true), m, t, 0, wall + rise / 2, 0); part(new THREE.CylinderGeometry(Rr, Rr, .6, 32, 1, true), m, t, 0, wall - .3, 0); for (let k = 0; k < 16; k++) { const q = k / 16 * TAU; part(GEO_BOX, k % 2 ? lam(new THREE.Color(a).getHex()) : lam(new THREE.Color(b).getHex()), t, Math.cos(q) * Rr, wall - .68, Math.sin(q) * Rr, .55, .18, .55); } for (let k = 0; k < 10; k++) { const q = k / 10 * TAU; part(GEO.cyl, lam(0xe8e0c8), t, Math.cos(q) * (Rr - .1), wall / 2, Math.sin(q) * (Rr - .1), .06, wall, .06); } part(GEO.cyl, lam(0xe8e0c8), t, 0, (wall + rise + .9) / 2, 0, .1, wall + rise + .9, .1); const pf = part(new THREE.ConeGeometry(.3, 1.3, 3), lam(new THREE.Color(pen).getHex(), { side: THREE.DoubleSide }), t, .6, wall + rise + .6, 0); pf.rotation.z = -Math.PI / 2; pf.scale.z = .08; const gl = glowSprite(0xffd890, Rr * 1.5, .16); gl.position.y = wall - 1; t.add(gl); return t; };
+    tent(25, -45, 6.6, '#c83a2a', '#f4efe0', '#f0c020'); tent(4, -26, 4.2, '#2a7a50', '#f4efe0', '#d8362a');
+    { const inTent = new THREE.Group(); place(inTent, 25, -45, F.y); scene.add(inTent); for (const [x, z] of [[-3.8, 3.2], [3.8, 3.2], [-3.8, -3.2], [3.8, -3.2]]) barrel(inTent, x, 0, z, 1); }
+    // the long tables
+    F.tables.forEach(([s, x]) => { const t = new THREE.Group(); place(t, s, x, F.y, Math.PI / 2); scene.add(t); t.rotation.y = 0; t.position.copy(tw(s, x, F.y)); benchTable(t, 0, 0, 9, true); });
+    // the bandstand and the dance floor before it
+    { const [s, x] = F.stage, b = new THREE.Group(); place(b, s, x, F.y, Math.atan2(F.x - x, F.s - s)); scene.add(b); part(new THREE.CylinderGeometry(3.2, 3.4, .34, 14), planks, b, 0, .17, 0); for (let k = 0; k < 8; k++) { const a = k / 8 * TAU; part(GEO.cyl, dark, b, Math.cos(a) * 3, 1.9, Math.sin(a) * 3, .08, 3.2, .08); } const r = part(new THREE.ConeGeometry(4, 1.8, 16, 1, true), ps1(new THREE.MeshLambertMaterial({ map: stripes('#2a60b0', '#f0c020'), side: THREE.DoubleSide })), b, 0, 4.2, 0); r.rotation.y = .2; for (const [lx, lz] of [[-1.2, -1.2], [1.2, -1.2], [0, -1.8]]) barrel(b, lx, .34, lz, .7);
+      const dq = tw(s + Math.cos(Math.atan2(F.x - x, F.s - s)) * 6.8, x + Math.sin(Math.atan2(F.x - x, F.s - s)) * 6.8, F.y + .05); part(new THREE.CylinderGeometry(3.7, 3.7, .08, 22), planks, scene, dq.x, dq.y, dq.z); }
+    // Gandalf's firework cart, its rockets standing ready, with kegs and hay about the field
+    { const c = new THREE.Group(); const [s, x] = polar(.15, 15.5); place(c, s, x, F.y, Math.PI + .3); scene.add(c); part(GEO_BOX, wood, c, 0, .95, 0, 2, .6, 3.4); part(GEO_BOX, dark, c, 0, .62, 0, 2.2, .12, 3.6); for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const w = part(new THREE.CylinderGeometry(.5, .5, .1, 14), dark, c, sx * 1.15, .5, sz * 1.1); w.rotation.z = Math.PI / 2; } const sh = part(GEO_BOX, dark, c, 0, .85, 2.7, .12, .1, 2); sh.rotation.x = .25; const rc = [0xd8362a, 0x2a7ad8, 0xf0c020, 0x30a050]; for (let k = 0; k < 14; k++) { const lx = rand(-.75, .75), lz = rand(-1.4, 1.4), h = rand(.8, 1.5); part(GEO.cyl, lam(rc[k % 4]), c, lx, 1.25 + h / 2, lz, .07, h, .07); part(GEO.cone, lam(0xe8e0c8), c, lx, 1.3 + h, lz, .08, .2, .08); }
+      const sg = canvasM(200, 80, q => { q.fillStyle = '#2a2a50'; q.fillRect(0, 0, 200, 80); q.fillStyle = '#ffe080'; q.font = 'bold 26px Georgia, serif'; q.textAlign = 'center'; q.fillText('G', 100, 32); q.font = 'bold 19px Georgia, serif'; q.fillText('FIREWORKS', 100, 62); }); part(new THREE.PlaneGeometry(1.9, .76), sg, c, 0, 1.0, -1.72); }
+    for (const [a, r] of [[2.95, 11.5], [3.25, 11.5], [-1.1, 11.3], [-.25, 11.2]]) { const [s, x] = polar(a, r); const q = new THREE.Group(); place(q, s, x, F.y); scene.add(q); barrel(q, 0, 0, 0, 1); barrel(q, .75, 0, .1, 1); barrel(q, .35, .95, .05, 1); }
+    { const hay = []; for (const [a, r] of [[1.9, 15], [2.35, 19], [-1.55, 18.5], [-2.3, 18]]) { const [s, x] = polar(a, r), p = tw(s, x, F.y + .4); hay.push([p.x, p.y, p.z, 1.3, .8, .8, a], [p.x + .3, p.y + .8, p.z + .1, 1.3, .8, .8, a + .4]); } instanced(GEO_BOX, surf(rep(TX.sThatch, 1, 1), { sky, rough: 1, bump: 3 }), hay); }
+    garden(g, -12, 16, 2.5, 2.5, 26, [0xffffff, 0xff6a9a, 0xffd040]); garden(g, 16, 8, 3, 2, 26, [0x9a5ae0, 0xffd040, 0xffffff]);
+    // the banner across the lane at the way in
+    { const q = Y.path[F.gate], pv = Y.path[Math.max(0, F.gate - 8)], a = Math.atan2(pv[1] - q[1], pv[0] - q[0]), b = new THREE.Group(); place(b, q[0], q[1], at(q[0], q[1]), a); scene.add(b); for (const sx of [-1, 1]) { part(GEO.cyl, dark, b, sx * 3.9, 2.8, 0, .14, 5.6, .14); part(GEO.sph, lam(0xd8b050), b, sx * 3.9, 5.7, 0, .2, .2, .2); }
+      const bn = canvasM(512, 64, c => { c.fillStyle = '#7a1e20'; c.fillRect(0, 0, 512, 64); c.strokeStyle = '#e8c050'; c.lineWidth = 4; c.strokeRect(5, 5, 502, 54); c.fillStyle = '#f8e090'; c.font = 'bold 32px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('Happy Birthday Bilbo  ·  111', 256, 34); }); part(new THREE.PlaneGeometry(7.6, .95), bn, b, 0, 4.9, 0); } }
+  // --- Bag End, at the end of the lane, as it's meant to be: dug into the front of the long Hill under the great tree. A wide cream face under a brow of turf, its big round
+  //     green door standing open on the panelled hall, a brick arch and timber frame round it, round brick-edged windows with boxes of flowers, a lantern over the door and pots
+  //     beside it; stepping stones down through a thick flower garden to the steps in the curved stone wall, with the lamp, the bench and the famous notice on the way ---
+  { const B = Y.bag, g = new THREE.Group(), W = B.W, H = 5.3, dr = 1.6, dy = dr + .2, wx = 3.5, wy = 1.95, wr = .85; place(g, B.s, B.x, B.y, Math.PI); scene.add(g); g.updateMatrixWorld(true);
+    const face = new THREE.Shape(); face.moveTo(-W / 2, -.5); face.lineTo(W / 2, -.5); face.lineTo(W / 2, H * .5); face.bezierCurveTo(W / 2, H + .75, -W / 2, H + .75, -W / 2, H * .5); face.closePath();
+    const hole_ = (cx, cy, r) => { const q = new THREE.Path(); q.absarc(cx, cy, r, 0, TAU, false); face.holes.push(q); }; hole_(0, dy, dr); hole_(-wx, wy, wr); hole_(wx, wy, wr);
+    const faceG = new THREE.ExtrudeGeometry(face, { depth: .4, bevelEnabled: false, curveSegments: 28 }); part(faceG, surf(rep(TX.plaster, .35, .35), { sky, color: 0xfff4dc, rough: .95, bump: .8, env: .05 }), g, 0, 0, -.4);
+    // the turf: a brow over the face and the Hill's flesh behind it
+    const turfBig = surf(rep(TX.lush, 7, 4), { sky, color: 0xb4dc80, rough: 1, bump: 1, env: .05 }); part(new THREE.SphereGeometry(1, 24, 16), turfBig, g, 0, H + .15, -2.5, W * .54, 1.25, 2.72);
+    // the hall inside the open door: round, panelled, lit, a farther round door at its end
+    { const hall = lam(0xa87040, { emissive: 0x4a2a10, side: THREE.BackSide }), t = part(new THREE.CylinderGeometry(dr, dr, 2.8, 28, 1, true), hall, g, 0, dy, -1.6); t.rotation.x = Math.PI / 2; part(new THREE.CircleGeometry(dr, 28), lam(0x5a3518, { emissive: 0x2a1408 }), g, 0, dy, -2.98); part(new THREE.CircleGeometry(dr * .55, 22), lam(0x7a4a22, { emissive: 0x3a2008 }), g, 0, dy - .55, -2.96); part(GEO.sph, knobM, g, 0, dy - .55, -2.92, .07, .07, .05); for (const z of [-.9, -1.7, -2.6]) { const rib = part(new THREE.TorusGeometry(dr - .04, .07, 6, 28), dark, g, 0, dy, z); } part(GEO_BOX, planks, g, 0, dy - dr * .9, -1.6, dr * 1.7, .06, 2.8); const gl = glowSprite(0xffc070, 2.6, .28); gl.position.set(0, dy, -2.2); g.add(gl); }
+    // the door itself, swung out on its hinge: green planks, a brass knob in the very middle, iron straps
+    { const hinge = new THREE.Group(); hinge.position.set(dr - .04, dy, .03); hinge.rotation.y = .92; g.add(hinge); const d = part(new THREE.CylinderGeometry(dr - .05, dr - .05, .11, 30), lam(0x1f7a54), hinge, -dr + .05, 0, 0); d.rotation.x = Math.PI / 2; for (let k = -3; k <= 3; k++) { const px = k * dr * .28; for (const zz of [.065, -.065]) part(GEO_BOX, lam(0x14583a), hinge, -dr + .05 + px, 0, zz, .03, Math.sqrt(Math.max(.02, (dr - .08) * (dr - .08) - px * px)) * 1.96, .012); } part(GEO.sph, knobM, hinge, -dr + .05, 0, .13, .13, .13, .09); for (const y of [-.7, .7]) part(GEO_BOX, ironM, hinge, -.5, y, .07, 1, .08, .02); }
+    bricks(g, 0, dy, .01, dr + .24, 34, .46, .3); part(new THREE.TorusGeometry(dr + .03, .05, 6, 30), lam(0x6a4020), g, 0, dy, .03);
+    for (let k = 0; k < 3; k++) part(new THREE.CylinderGeometry((dr * 1.3) - k * .24, (dr * 1.3) - k * .24, .15, 24, 1, false, -Math.PI / 2, Math.PI), stoneM, g, 0, .1 - k * .13, .12 + k * .36);   // (the curved doorstep)
+    // the timber frame: posts up either side, a great curved beam over the arch and a higher one under the turf, a king-post and braces between them
+    for (const sx of [-1, 1]) { part(GEO_BOX, dark, g, sx * (dr + .72), 2.1, .06, .26, 4.3, .2); const br = part(GEO_BOX, dark, g, sx * (dr + .72 + .55), 3.75, .06, .14, 1.6, .15); br.rotation.z = sx * -.7; part(GEO_BOX, stoneM, g, sx * (dr + .72), .12, .08, .46, .42, .34); }
+    { const b1 = part(new THREE.TorusGeometry(dr + .75, .13, 7, 26, Math.PI), dark, g, 0, dy, .08); const b2 = part(new THREE.TorusGeometry(4.98, .15, 7, 34, 2.007), dark, g, 0, -.08, .1); b2.rotation.z = .567; part(GEO_BOX, dark, g, 0, dy + dr + 1.1, .08, .2, .9, .16); for (const sx of [-1, 1]) { const st = part(GEO_BOX, dark, g, sx * .78, dy + dr + 1.02, .08, .12, 1.1, .12); st.rotation.z = sx * -.75; } }
+    // the lantern over the door, on its iron bracket, and a bell-pull
+    { part(GEO_BOX, ironM, g, 0, dy + dr + .68, .3, .05, .05, .55); part(GEO_BOX, ironM, g, 0, dy + dr + .42, .55, .3, .42, .3); part(new THREE.ConeGeometry(.26, .2, 4), ironM, g, 0, dy + dr + .72, .55); const gl = glowSprite(0xffc870, 1.5, .8); gl.position.set(0, dy + dr + .42, .55); g.add(gl); }
+    // the round windows: a brick ring, a painted frame, glazing bars, the lamp lit within, a box of flowers below, climbing roses round
+    for (const sx of [-1, 1]) { const x = sx * wx; part(new THREE.CircleGeometry(wr, 24), winM, g, x, wy, -.25); bricks(g, x, wy, .01, wr + .14, 22, .28, .22); part(new THREE.TorusGeometry(wr + .01, .07, 6, 24), lam(0x6aa078), g, x, wy, -.02); for (const rz of [0, .785, 1.57, 2.356]) { const bar = part(GEO_BOX, lam(0x6aa078), g, x, wy, -.1, .04, wr * 2, .03); bar.rotation.z = rz; } part(new THREE.TorusGeometry(wr * .42, .025, 5, 16), lam(0x6aa078), g, x, wy, -.1); part(GEO_BOX, dark, g, x, wy - wr - .2, .18, wr * 2.3, .18, .38); for (let k = 0; k < 11; k++) { const b = g.localToWorld(new V3(x - wr + k * wr * .2, wy - wr - .04 + rand(0, .12), .24 + rand(-.08, .08))); bloom(b.x, b.y, b.z, [0xff6a9a, 0xffffff, 0xffd040, 0xc83a4a][k % 4], .085); } for (let k = 0; k < 26; k++) { const a = rand(0, TAU), r = rand(wr + .42, wr + .85), c = g.localToWorld(new V3(x + Math.cos(a) * r, Math.max(.3, wy + Math.sin(a) * r), .08)); bushes.push([c.x, c.y, c.z, .12, .12, .08]); if (k % 2) bloom(c.x, c.y, c.z + rand(-.05, .05), k % 4 === 1 ? 0xff6a9a : 0xffffff, .05); } }
+    for (const sx of [-1, 1]) for (let k = 0; k < 44; k++) { const c = g.localToWorld(new V3(sx * rand(W / 2 - 1, W / 2 + .2), rand(.1, H * .72), rand(.02, .2))); bushes.push([c.x, c.y, c.z, rand(.14, .3), rand(.14, .3), rand(.08, .16)]); if (k % 3 === 0) bloom(c.x, c.y, c.z + .1, cs[k % 6], .05); }   // (ivy and creeper up its sides)
+    // pots of yellow flowers either side of the door
+    for (const sx of [-1, 1]) { const px = sx * (dr + 1.25), pz = .75; part(new THREE.CylinderGeometry(.34, .24, .48, 12), lam(0xb0603a), g, px, .24, pz); part(new THREE.CylinderGeometry(.37, .37, .08, 12), lam(0xc0704a), g, px, .5, pz); const c = g.localToWorld(new V3(px, .68, pz)); bushes.push([c.x, c.y, c.z, .34, .24, .34]); for (let k = 0; k < 16; k++) { const q = g.localToWorld(new V3(px + rand(-.38, .38), .7 + rand(0, .36), pz + rand(-.38, .38))); bloom(q.x, q.y, q.z, k % 5 ? 0xffd030 : 0xff9a20, .085); } }
+    // the stepping stones down to the steps, each one large and uneven, and the garden thick either side
+    { const n = 7, z0 = 1.1, z1 = B.s - 48.9; for (let k = 0; k < n; k++) { const t = k / (n - 1), lx = Math.sin(t * 5) * .22, lz = lerp(z0, z1, t), p = worldAt(g, lx, lz), r = rand(.5, .68); stones.push([p.x - .2, p.y + .07, p.z, r, .16, r * .7], [p.x + .4, p.y + .07, p.z + .06, r * .7, .14, r * .6]); } }
+    const FL = [0xffffff, 0xff9a20, 0xffd030, 0xe84a30, 0xc06ae0, 0xff6a9a, 0xfff0a0]; garden(g, -3, 1.9, 1.6, .9, 56, FL, true); garden(g, 3, 1.9, 1.6, .9, 56, FL, true); garden(g, -4.8, .9, .9, .7, 22, [0xffd030, 0xffffff, 0xff9a20], true); garden(g, 4.8, .9, .9, .7, 22, [0xffd030, 0xffffff, 0xff9a20], true);
+    garden(g, -7.6, 2.4, 2.3, 1.1, 46, [0x7a5ae0, 0xc06ae0, 0xffffff, 0x4a6af0], true); garden(g, 7.6, 2.4, 2.3, 1.1, 46, [0xffd030, 0xe84a30, 0xffffff, 0xff9a20], true);
+    // the lamp and the bench on the way up, and the notice on the gatepost
+    lamp(g, -6.1, worldAt(g, -6.1, 3).y - B.y, 3, 2.9); { const by0 = worldAt(g, -5, 3.1).y - B.y; part(GEO_BOX, wood, g, -4.9, by0 + .46, 3.1, 1.7, .08, .5); part(GEO_BOX, wood, g, -4.9, by0 + .78, 2.88, 1.7, .36, .07); for (const sx of [-.7, .7]) part(GEO_BOX, dark, g, -4.9 + sx, by0 + .23, 3.1, .1, .46, .42); }
+    { const nb = canvasM(256, 128, c => { c.fillStyle = '#c8a878'; c.fillRect(0, 0, 256, 128); c.strokeStyle = '#3a2410'; c.lineWidth = 6; c.strokeRect(5, 5, 246, 118); c.fillStyle = '#2a1808'; c.textAlign = 'center'; c.font = 'bold 24px Georgia, serif'; c.fillText('NO ADMITTANCE', 128, 44); c.font = '20px Georgia, serif'; c.fillText('except on', 128, 72); c.font = 'bold 24px Georgia, serif'; c.fillText('PARTY BUSINESS', 128, 102); }); const yy = worldAt(g, 2.5, B.s - 48.1).y - B.y; part(GEO.cyl, dark, g, 2.5, yy + .5, B.s - 48.1, .07, 1, .07); part(new THREE.PlaneGeometry(1.5, .75), nb, g, 2.5, yy + .9, B.s - 48.02); }
+    // the curved garden wall round the court, broken by the steps, with a low hedge and roses along its top
+    const wl = [], cp = [], hd_ = [], y0 = B.y0, Hw = B.y + .35 - (y0 - .4); for (const sg of [-1, 1]) for (let a = .17; a < 1.2; a += .1) { const s = 36 + Math.cos(a + .05) * 12, x = sg * Math.sin(a + .05) * 12, p = tw(s, x, y0 - .4 + Hw / 2), ry = Math.atan2(sg * Math.sin(a + .05), -Math.cos(a + .05)); wl.push([p.x, p.y, p.z, 1.3, Hw, 1.15, ry]); cp.push([p.x, p.y + Hw / 2 + .07, p.z, 1.36, .14, 1.3, ry]); const hs = 36 + Math.cos(a + .05) * 12.75, hx = sg * Math.sin(a + .05) * 12.75, h = tw(hs, hx, B.y + .4); hd_.push([h.x, h.y, h.z, .85, .55, .6]); for (let k = 0; k < 3; k++) bloom(h.x + rand(-.5, .5), h.y + rand(.2, .5), h.z + rand(-.4, .4), k ? 0xff6a9a : 0xffffff, .07); } stoneBox(wl, stoneM); stoneBox(cp, stoneM); bushes.push(...hd_);
+    for (let k = 0; k < 4; k++) { const sz = 48.9 - (46.2 + k * .6), c = tw(46.2 + k * .6 + sz / 2, 0, y0 + (k + 1) * .325 - .4); part(GEO_BOX, stoneM, scene, c.x, c.y, c.z, 3.6, .8, sz); }
+    for (const sx of [-1, 1]) { const c = tw(46.5, sx * 2, y0 + .6); part(GEO_BOX, stoneM, scene, c.x, c.y, c.z, .5, 1.4, .5); part(new THREE.SphereGeometry(.26, 8, 6), stoneM, scene, c.x, c.y + .9, c.z); }
+    // the chimneys along the ridge, each smoking
+    for (const [s, x] of [[57.5, -21], [58, -8], [58.5, 7], [58, 20]]) { const y = at(s, x), q = tw(s, x, y); part(GEO_BOX, brickM, scene, q.x, q.y + .9, q.z, 1.05, 2.6, 1.05); part(GEO_BOX, stoneM, scene, q.x, q.y + 2.25, q.z, 1.32, .18, 1.32); part(new THREE.CylinderGeometry(.2, .24, .55, 8), lam(0xa8583a), scene, q.x, q.y + 2.6, q.z); Y.chimneys.push(new V3(q.x, q.y + 2.9, q.z)); }
+    oak(65, 0, 3, 170); }
+  let n = 0; for (let k = 0; k < 220 && n < 36; k++) { const s = rand(-68, 66), x = rand(-68, 68); if (Math.abs(s - shireRiv(x)) < Y.riverW(x) + 3 || Y.path.some(q => Math.hypot(q[0] - s, q[1] - x) < q[3] + 8) || Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 7) || Y.homes.some(h => Math.hypot(h.s + Math.cos(h.f) * 2 - s, h.x + Math.sin(h.f) * 2 - x) < 8) || (s > 36 && Math.abs(x) < 34) || Math.hypot(s - Y.party.s, x - Y.party.x) < 26 || Math.hypot(s - Y.inn.s - 3, x - Y.inn.x - 2) < 18 || Y.spur.some(q => Math.hypot(q[0] - s, q[1] - x) < 6)) continue; n++; oak(s, x, rand(.95, 1.5)); }
   const leaf = new THREE.IcosahedronGeometry(1, 1); const leafTx = surf(rep(TX.leaf, 1, 1), { sky, rough: 1, bump: 3, env: .05 }), lf = c => { const m = leafTx.clone(); m.color.setHex(c); m.onBeforeCompile = leafTx.onBeforeCompile; return m; }; instanced(leaf, lf(0xd0e898), leafA); instanced(leaf, lf(0xa8cc78), leafB); instanced(leaf, lf(0x84ac60), leafC);
   instanced(new THREE.IcosahedronGeometry(1, 1), lf(0x6a9a4c), bushes);
   // long grass and wildflowers scattered over everything but the lane
-  { const tufts = []; for (let k = 0; k < 2400; k++) { const s = rand(-70, 68), x = rand(-70, 70); if (Math.abs(s - shireRiv(x)) < Y.riverW(x) + .6) continue; if (Y.path.some((q, i) => i % 6 === 0 && Math.hypot(q[0] - s, q[1] - x) < q[3] + .6)) continue; const q = tw(s, x, at(s, x)); if (k % 4 === 0) bloom(q.x, q.y + .22, q.z, cs[k % 6], .07); else tufts.push([q.x, q.y + .12, q.z, rand(.03, .06), rand(.2, .38), rand(.03, .06), rand(0, 3)]); } instanced(new THREE.ConeGeometry(1, 1, 3), lam(0x5a9030), tufts); }
+  { const tufts = []; for (let k = 0; k < 2400; k++) { const s = rand(-70, 68), x = rand(-70, 70); if (Math.abs(s - shireRiv(x)) < Y.riverW(x) + .6) continue; if (Y.path.some((q, i) => i % 6 === 0 && Math.hypot(q[0] - s, q[1] - x) < q[3] + .6) || Y.spur.some(q => Math.hypot(q[0] - s, q[1] - x) < q[3] + .6) || Math.hypot(s - Y.party.stage[0], x - Y.party.stage[1]) < 3.5 || (s > 8 && s < 25 && x > 18 && x < 44) || (s > 49 && Math.abs(x) < 6)) continue; const q = tw(s, x, at(s, x)); if (k % 4 === 0) bloom(q.x, q.y + .22, q.z, cs[k % 6], .07); else tufts.push([q.x, q.y + .12, q.z, rand(.03, .06), rand(.2, .38), rand(.03, .06), rand(0, 3)]); } instanced(new THREE.ConeGeometry(1, 1, 3), lam(0x5a9030), tufts); }
+  instanced(new THREE.CylinderGeometry(1, 1.05, 1, 9), stoneM, stones); instanced(new THREE.ConeGeometry(1, 1, 4), lam(0x5a9a38), spikes);
   for (const c in blooms) instanced(new THREE.SphereGeometry(1, 6, 4), lam(+c), blooms[c]);
   bakeScenery(scene.children.slice(first));
 }
@@ -7404,6 +7567,8 @@ TX.lush = smoothTex(mkTex(128, 128, g => { g.fillStyle = '#4e9a2c'; g.fillRect(0
 TX.lush.wrapS = TX.lush.wrapT = THREE.RepeatWrapping;
 TX.leaf = mkTex(64, 64, g => { g.fillStyle = '#5a8a3a'; g.fillRect(0, 0, 64, 64); for (let i = 0; i < 420; i++) { const v = Math.random(); g.fillStyle = v < .35 ? '#3e6e2a' : v < .7 ? '#6a9a44' : v < .9 ? '#86b254' : '#2e5420'; g.beginPath(); g.ellipse(Math.random() * 64, Math.random() * 64, 1 + Math.random() * 2.4, 1 + Math.random(), Math.random() * 3, 0, 7); g.fill(); } });
 TX.leaf.wrapS = TX.leaf.wrapT = THREE.RepeatWrapping;
+TX.sThatch = mkTex(128, 128, g => { g.fillStyle = '#9a8048'; g.fillRect(0, 0, 128, 128); for (let i = 0; i < 1500; i++) { const v = Math.random(); g.fillStyle = v < .3 ? '#7a6234' : v < .65 ? '#a88c50' : v < .9 ? '#bea264' : '#5e4a28'; g.fillRect(Math.random() * 128, Math.random() * 128, 1 + Math.random(), 5 + Math.random() * 14); } }); TX.sThatch.magFilter = THREE.LinearFilter;
+TX.sPlank = mkTex(128, 64, g => { g.fillStyle = '#7a5a34'; g.fillRect(0, 0, 128, 64); for (let j = 0; j < 4; j++) { g.fillStyle = ['#8a683c', '#7a5a34', '#94703f', '#6e5230'][j]; g.fillRect(0, j * 16 + 1, 128, 14); for (let i = 0; i < 40; i++) { g.fillStyle = 'rgba(50,30,10,.25)'; g.fillRect(Math.random() * 128, j * 16 + 1 + Math.random() * 13, 6 + Math.random() * 18, 1); } } }); TX.sPlank.magFilter = THREE.LinearFilter;
 TX.cobble = mkTex(128, 128, g => { g.fillStyle = '#4a4032'; g.fillRect(0, 0, 128, 128); for (let j = 0; j < 7; j++) for (let i = 0; i < 7; i++) { const x = (i + (j % 2) * .5) * 19 + Math.random() * 3, y = j * 19 + Math.random() * 3, v = Math.random(), r = 7.5 + Math.random() * 1.6; g.fillStyle = v < .3 ? '#b8a888' : v < .6 ? '#a89878' : v < .85 ? '#9a8a6c' : '#c8b898'; for (const [ox, oy] of [[0, 0], [128, 0], [-128, 0], [0, 128], [0, -128]]) { g.beginPath(); g.ellipse(x + ox, y + oy, r, r * .85, Math.random(), 0, 7); g.fill(); } } });
 TX.cobble.wrapS = TX.cobble.wrapT = THREE.RepeatWrapping;
 TX.brick = mkTex(64, 64, g => { g.fillStyle = '#7a5a48'; g.fillRect(0, 0, 64, 64); for (let j = 0; j < 8; j++) for (let i = -1; i < 5; i++) { const v = Math.random(); g.fillStyle = v < .4 ? '#a8583a' : v < .75 ? '#b86a44' : '#8e4a30'; g.fillRect(i * 16 + (j % 2) * 8 + 1, j * 8 + 1, 14, 6); } });
@@ -7478,7 +7643,7 @@ function rivContent(L) {
   const Y = L.layout;
   for (let i = 8; i < Y.path.length - 6; i += 10) { const [s, x, y] = Y.path[i]; if (Math.abs(s - rivGorge(x)) < 8) continue; addApple(s, x, y + .8); }
   const at = (s, x) => terrainAt(s, x, true);
-  for (const [k, s, x] of [['c', -60, 3], ['b', -44, -4], ['q', -16, -8], ['r', -6, 18], ['b', 6, -10], ['p', 14, 8], ['q', 22, -14], ['l', 30, 12], ['b', 36, -10], ['c', 8, 0]]) addCrate(k, s, x, at(s, x), 4);
+  for (const [k, s, x] of [['c', -60, 3], ['b', -44, -4], ['q', -16, -8], ['r', -6, 18], ['b', 6, -10], ['p', 14, 8], ['q', 22, -14], ['l', 30, 12], ['b', 36, -10], ['c', 8, 0]]) addCrate(k, s, x, 0, at(s, x) + 2);
 }
 function buildRivKH(L, TH) {
   const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
@@ -7567,8 +7732,8 @@ function raceLayout() {
 }
 function raceContent(L) {
   const at = (s, x) => terrainAt(s, x, true);
-  for (const s of [40, 120, 200, 280, 360, 440]) addCrate('r', s, (s / 40 % 2 ? 2 : -2), at(s, 0), 4);
-  for (const s of [70, 240, 410]) addCrate('l', s, 0, at(s, 0), 4);
+  for (const s of [40, 120, 200, 280, 360, 440]) addCrate('r', s, (s / 40 % 2 ? 2 : -2), 0, at(s, 0) + 2);
+  for (const s of [70, 240, 410]) addCrate('l', s, 0, 0, at(s, 0) + 2);
   for (let s = 20; s < RACE_FORD - 10; s += 7) { const x = Math.sin(s * .05) * 3; addApple(s, x, at(s, x) + 1.3); }
 }
 function buildRace(L, TH) {
@@ -7737,8 +7902,8 @@ function ereborLayout() {
     layout: { blocks, plazas: [{ s: 0, x: 0, y: WALK, r: 58, waves: [['D']], title: 'THE RAMPARTS OF EREBOR', boss: true, last: true, breach: [0, 0], bossHp: 480, noAdds: true }] } };
 }
 function ereborContent(L) {
-  khRings(L.layout);
-  for (const [k, x] of [['q', -34], ['b', -14], ['su', 15], ['q', 34], ['b', 40]]) addCrate(k, 0, x, ER.WALK, 4);
+
+  for (const [k, x] of [['q', -34], ['b', -14], ['su', 15], ['q', 34], ['b', 40]]) addCrate(k, 0, x, 0, ER.WALK + 2);
 }
 function buildErebor(L, TH) {
   const T_ = L.terrain, first = scene.children.length, sky = TH.env, W = ER.WALK;
@@ -7875,7 +8040,7 @@ function hoardLayout() {
   return { field: [-40, 40, -40, 40], start: [-17, 0], terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g },
     layout: { blocks, pillars, mounds, plazas: [{ s: 0, x: 0, y: 0, r: 19, waves: [['G']], title: 'THE TREASURE OF THRÓR', boss: true, last: true, breach: [8, 0], bossHp: 900, noAdds: true }] } };
 }
-function hoardContent(L) { khRings(L.layout); for (const [k, s, x] of [['q', -15, 6], ['su', -15, -6], ['b', 14, 10], ['q', 12, -12]]) addCrate(k, s, x, terrainAt(s, x, true), 4); }
+function hoardContent(L) { for (const [k, s, x] of [['q', -15, 6], ['su', -15, -6], ['b', 14, 10], ['q', 12, -12]]) addCrate(k, s, x, 0, terrainAt(s, x, true) + 2); }
 function buildHoard(L, TH) {
   const Y = L.layout, T_ = L.terrain, first = scene.children.length, sky = TH.env, at = (s, x) => terrainAt(s, x, true);
   const goldM = surf(TX.gold, { sky, vc: true, rough: .35, metal: .75, bump: 2.2, env: 1.2, glow: .12 }), rockM = surf(TX.rock, { sky, color: 0x5a5048, rough: .9, bump: 3 });
@@ -8021,7 +8186,7 @@ function deepLayout() {
   return { field: [-30, 30, -56, 56], start: [0, 0], startY: WH, startH: Math.PI, terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g },
     layout: { blocks, WH, plazas: [{ s: -3, x: 0, y: 0, r: 15, waves: W_, names, title: 'THE WALL IS BREACHED!', boss: true, last: true, breach: [-16, 0], ladders: [Math.PI - .9, Math.PI - .45, Math.PI, Math.PI + .45, Math.PI + .9], noAdds: true }] } };
 }
-function deepContent(L) { khRings(L.layout); for (const [k, s, x] of [['q', 9, 7], ['b', 9, -7], ['su', 10, 0], ['b', -14, -9], ['q', -14, 9]]) addCrate(k, s, x, terrainAt(s, x, true), 4); }
+function deepContent(L) { for (const [k, s, x] of [['q', 9, 7], ['b', 9, -7], ['su', 10, 0], ['b', -14, -9], ['q', -14, 9]]) addCrate(k, s, x, 0, terrainAt(s, x, true) + 2); }
 function buildDeep(L, TH) {
   const T_ = L.terrain, first = scene.children.length, sky = TH.env, WH = L.layout.WH;
   const grd = surf(TX.hdRock, { sky, vc: true, rough: .92, bump: 2.6, wet: .55, env: .35 }), st = surf(TX.hdStone, { sky, rough: .82, bump: 3.2, wet: .75, env: .5, tri: 3.2 });
@@ -8071,7 +8236,7 @@ function balinLayout() {
   const tomb = [[-2, 2, -1.35, 1.35, 1.7, 'wall']], pil = []; for (const sx of [-1, 1]) for (const s of [-15, -7, 1, 9, 17]) { pil.push([s, sx * 13.4]); tomb.push([s - 1, s + 1, sx * 13.4 - 1, sx * 13.4 + 1, 16, 'wall']); }
   return { field: [-22, 22, -16, 16], start: [12, 0], startH: Math.PI, layout: { blocks: tomb, pil, plazas: [{ s: 0, x: 0, y: 0, r: 12.8, waves: [['o', 'o', 'o'], ['o', 'o', 'o', 'a'], ['o', 'o', 's', 'a'], ['T']], names: ['', 'DRUMS IN THE DEEP! THEY ARE COMING!', 'MORE THROUGH THE DOOR!', 'THE DOOR! A CAVE TROLL!'], title: 'THEY HAVE A CAVE TROLL', boss: true, last: true, breach: [-20, 0], ladders: [Math.PI - .25, Math.PI, Math.PI + .25], noAdds: true }] } };
 }
-function balinContent(L) { khRings(L.layout); for (const [k, s, x] of [['q', 8, 8], ['b', 8, -8], ['su', -8, 8], ['b', -8, -8]]) addCrate(k, s, x, 0, 4); }
+function balinContent(L) { for (const [k, s, x] of [['q', 8, 8], ['b', 8, -8], ['su', -8, 8], ['b', -8, -8]]) addCrate(k, s, x, 0, 4); }
 function buildBalin(L, TH) {
   const Y = L.layout, first = scene.children.length, sky = TH.env, H_ = 15;
   const ftx = TX.hdFlag.clone(); ftx.needsUpdate = true; ftx.wrapS = ftx.wrapT = THREE.RepeatWrapping; ftx.repeat.set(9, 12);
@@ -8190,7 +8355,7 @@ function ustairLayout() {
 function ustairContent(L) {
   const Y = L.layout, { RISE } = USTAIR;
   for (const q of Y.steps) if (q.k % 5 === 2 && q.g < 0) addApple((q.s0 + q.s1) / 2, (q.x0 + q.x1) / 2, q.y + 1);
-  for (let i = 1; i < Y.lands.length - 1; i++) { const l = Y.lands[i], at = (s, x) => addCrate(s, x, l.mid + (l.mid > 0 ? 1.4 : -1.4)); addCrate(i % 2 ? 'q' : 'b', 2.4, l.mid + (l.mid > 0 ? 1.6 : -1.6), l.y, 4); if (i % 2 === 0) addCrate('su', -2.4, l.mid + (l.mid > 0 ? 1.6 : -1.6), l.y, 4); }
+  for (let i = 1; i < Y.lands.length - 1; i++) { const l = Y.lands[i], at = (s, x) => addCrate(s, x, l.mid + (l.mid > 0 ? 1.4 : -1.4)); addCrate(i % 2 ? 'q' : 'b', 2.4, l.mid + (l.mid > 0 ? 1.6 : -1.6), 0, l.y + 2); if (i % 2 === 0) addCrate('su', -2.4, l.mid + (l.mid > 0 ? 1.6 : -1.6), 0, l.y + 2); }
   for (const [i, kind] of [[1, 'grunt'], [2, 'grunt'], [3, 'archer'], [4, 'grunt'], [5, 'archer']]) { const l = Y.lands[i]; addOrc(kind, 0, l.mid, { y: l.y, patrol: kind === 'grunt' ? { ax: 's', amp: 2, sp: 1.6 } : null }); }
 }
 function buildUstair(L, TH) {
@@ -8255,7 +8420,7 @@ function osgLayout() {
   const blocks = [[-9.5, 9.5, -9.5, 9.5, OSG.TOP, 'floor', -30]]; for (let k = 0; k < 44; k++) { const a = k / 44 * TAU, s = Math.cos(a) * (OSG.R + .9), x = Math.sin(a) * (OSG.R + .9); blocks.push([s - .9, s + .9, x - .9, x + .9, OSG.TOP + 5, 'wall', -30]); }
   return { field: [-12, 12, -12, 12], start: [-3, 0], startY: OSG.TOP, terrain: { w: N, h: N, hs, cx: C, cy: C, sc: SC, sea: -999, g }, layout: { blocks, riv, plazas: [] } };
 }
-function osgContent(L) { for (const [k, s, x] of [['q', 4, 5], ['b', 4, -5], ['su', -5, 4], ['q', -5, -4]]) addCrate(k, s, x, OSG.TOP, 4); }
+function osgContent(L) { for (const [k, s, x] of [['q', 4, 5], ['b', 4, -5], ['su', -5, 4], ['q', -5, -4]]) addCrate(k, s, x, 0, OSG.TOP + 2); }
 function buildOsg(L, TH) {
   const T_ = L.terrain, Y = L.layout, first = scene.children.length, sky = TH.env, at = (s, x) => terrainAt(s, x, true), TOP = OSG.TOP;
   const grd = surf(TX.rock, { sky, vc: true, color: 0xb0a890, rough: .9, bump: 2.4 }), st = surf(TX.hdStone || TX.marble, { sky, color: 0xc8c0b0, rough: .75, bump: 3, tri: 3 });
@@ -8360,9 +8525,9 @@ function mineLayout() {
   return { field: [-98, 98, -98, 98], start: [-66, -1], terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g }, layout: { blocks, path, plazas, gear, wall } };
 }
 function mineContent(L) {
-  const Y = L.layout; khRings(Y); const at = (s, x) => terrainAt(s, x, true);
+  const Y = L.layout; const at = (s, x) => terrainAt(s, x, true);
   for (let i = 12; i < Y.path.length - 12; i += 16) { const [s, x, y] = Y.path[i]; if (Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 1)) continue; addApple(s, x, (s > -21 && s < -7 ? 1 : at(s, x)) + .9); }
-  for (const p of Y.plazas) for (const [a, k] of [[.8, 'b'], [2.7, Y.plazas.indexOf(p) % 2 ? 'su' : 'q'], [4.7, 'b']]) { const s = p.s + Math.cos(a) * (p.r - 2), x = p.x + Math.sin(a) * (p.r - 2); addCrate(k, s, x, at(s, x), 4); }
+  for (const p of Y.plazas) for (const [a, k] of [[.8, 'b'], [2.7, Y.plazas.indexOf(p) % 2 ? 'su' : 'q'], [4.7, 'b']]) { const s = p.s + Math.cos(a) * (p.r - 2), x = p.x + Math.sin(a) * (p.r - 2); addCrate(k, s, x, 0, at(s, x) + 2); }
 }
 function rockMat(o = {}) {
   const S_ = (o.size ?? 7).toFixed(2), m = new THREE.MeshStandardMaterial({ map: TX.rrRock, color: o.color ?? 0xffffff, vertexColors: !!o.vc, roughness: .95, metalness: 0, flatShading: true, side: o.side || THREE.FrontSide });
@@ -9146,7 +9311,7 @@ function isenLayout() {
 }
 function isenContent(L) {
   const Y = L.layout, I = ISEN;
-  khRings(Y);
+
   for (let i = 30; i < Y.path.length - 20; i += 22) { const [s, x, y] = Y.path[i]; if (Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 1 && Math.abs(y - p.y) < 3)) continue; addApple(s, x, y + .8); }
   Y.plazas.forEach((p, n) => { if (p.boss) return;
     const spots = [.9, 2.6, 4.3].map(a => [a, p.s + Math.cos(a + (p.ang || 0)) * (p.r - 1.6), p.x + Math.sin(a + (p.ang || 0)) * (p.r - 1.6)]);
@@ -9238,12 +9403,6 @@ function buildIsen(L, TH) {
   // the doors' landing's rim and the rim round the top
   { const rail = []; for (const [s, x, y, ns, nx, hh] of Y.walls) { const p = tw(s, x, y + hh / 2); rail.push([p.x, p.y, p.z, .45, hh, .72, rotOf(ns, nx)]); } stoneBox(rail, stone); }
   { const fl = new THREE.Mesh(new THREE.CylinderGeometry(6.4, 6.4, .9, 40), flagM); tw(-19.5, 0, I.Y0 - .41, fl.position); scene.add(fl); const th = tw(-11.3, 0, I.Y0 - .41), tb = new THREE.Mesh(GEO_BOX, stepM); tb.position.copy(th); tb.scale.set(4.4, .9, 4.6); scene.add(tb); }
-  // the barrier round each place outside (and across the stair at each end of a landing inside), while it's locked
-  const barM = new THREE.MeshBasicMaterial({ color: 0xffd060, transparent: true, opacity: .14, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
-  for (const p of Y.plazas) {
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(p.r + .5, p.r + .5, 6, 40, 1, true), barM); tw(p.s, p.x, p.y + 2.5, m.position);
-    m.visible = false; m.userData.keep = true; scene.add(m); p.vis = m;
-  }
   // the plain: Battle for Middle-earth's own pits, forges, diggings, furnaces and watchtowers when they're there; fire in the pits
   const PIECES = ['ibwargpit', 'iburukpit_a', 'ibfbforgb', 'ibfexcav', 'mbfurnace_a', 'ibfwtower', 'ibfitower'].filter(n => PROPS[n]);
   const spots = [[-36, -28], [30, -30], [52, 2], [32, 46], [-12, 58], [-44, 44], [-66, 8], [-70, -40], [12, -62], [60, -36], [64, 34], [-24, -62]];
@@ -9282,7 +9441,7 @@ function updateIsen(dt) {
   for (const [s, x, y] of H.plumes || []) { if (Math.random() < dt * 2.5) smoke.spawn(...tw(s + rand(-1.5, 1.5), x + rand(-1.5, 1.5), y).toArray(), rand(-.4, .4), rand(3, 5), rand(-.4, .4), rand(7, 10), 3, 12, [.08, .07, .07], [.22, .2, .2], -.15, .2); if (Math.random() < dt * 5) bfire(tw(s + rand(-1, 1), x + rand(-1, 1), y - 2), 1.6, 2); }   // (the forges and furnaces smoking)
   if (state === 'play' && KH.plaza && KH.plaza.boss && P.y < ISEN.TOP - 6) { P.s = -5; P.x = 0; P.y = ISEN.TOP + .5; P.vs = P.vx = P.vy = 0; KH.hp = Math.max(1, KH.hp - 10); KH.invT = 1.5; cam.snap = true; flashV = .6; }   // (thrown off the top: back up onto it)
   const Y = LV.layout, e = Y.ptAt(Y.TT, Y.RM);
-  if (state === 'play' && !KH.plaza && Math.hypot(P.s - e[0], P.x - e[1]) < 2.6 && Math.abs(P.y - e[2]) < 2.5) {   // through the archway: out onto the top of Orthanc
+  if (state === 'play' && !(KH.plaza && KH.plaza.boss) && Math.hypot(P.s - e[0], P.x - e[1]) < 2.6 && Math.abs(P.y - e[2]) < 2.5) {   // through the archway: out onto the top of Orthanc
     P.s = -7.4; P.x = 0; P.y = ISEN.TOP + .3; P.vs = P.vx = P.vy = 0; P.heading = 0; cam.yaw = 0; cam.snap = true; flashV = 1; S.whoosh(); banner('THE TOP OF ORTHANC', 1.6);
   }
 }
@@ -9309,7 +9468,7 @@ function khazadLayout() {
   return { field: [-26, 82, -11, 11], start: [-22, 0], noFloor: true, layout: { blocks: [], plazas } };
 }
 function khazadContent(L) {
-  const Y = L.layout; khRings(Y);
+  const Y = L.layout;
   Y.segSol = []; for (let s = -2; s < 58; s++) Y.segSol.push({ s, b: solid(s, s + 1, -1.6, 1.6, -6, 0, 'floor') });   // (the bridge, a metre at a time: it breaks)
   solid(-26, -2, -11, 11, -8, 0, 'floor'); solid(58, 82, -11, 11, -8, 0, 'floor');
   solid(-2, 58, 1.6, 2.4, -6, 2.6, 'wall'); solid(-2, 58, -2.4, -1.6, -6, 2.6, 'wall');   // (no rails on the bridge, but you can't step off it)
@@ -9964,6 +10123,7 @@ function sarUpdate(b, dt) {
 // =====================================================================
 const KH = { hp: 100, max: 100, mp: 100, maxMp: 100, combo: 0, airN: 0, comboT: 0, atk: null, buf: false, hover: 0, guardT: 0, guardCD: 0, rollT: 0, rollV: [0, 0], invT: 0, hitstop: 0,
   target: null, targetT: 0, react: null, reacting: null, magicCD: 0, bolts: [], sword: null, plaza: null, waveT: 0, theoden: null, ring: null, drive: 0, form: 0, boss: null, winT: 0, cmdT: {} };
+const KH_CHASE = 14;   // (how far beyond its square a foe will chase you before it gives up)
 const URUKS = [], ORBS = [], KHFX = [];
 const ukLive = u => !u.dead && !u.gone;
 // the ground under an enemy: the walkway it's on (Isengard's stair winds round over itself), or the land
@@ -9996,7 +10156,7 @@ function setupKH() {
   hob.staff.visible = false;
   document.getElementById('tSpin').firstChild.textContent = 'ATTACK'; document.getElementById('tFire').firstChild.textContent = 'MAGIC'; document.getElementById('tRk').style.display = 'none';
   if (!KH.theoden) KH.theoden = { m: makeHero('theoden') };
-  for (const p of (LV.layout && LV.layout.plazas) || []) { p.done = false; p.wave = -1; }
+  for (const p of (LV.layout && LV.layout.plazas) || []) { p.done = false; p.wave = -1; p.waveT = 0; p.near = false; }
   if (!SORA.list || KH_SORA_IDS.some(i => !SORA.clips[i])) loadSora(KH_SORA_IDS).then(ok => { if (ok) { soraActs(); if (hob.skin) hob.skin.cur = ''; } });   // (Sora's moves for Gandalf, when they're here)
   KH.plaza = null; KH.drive = 0; KH.items = { potion: 4, ether: 2 }; KH.cur = 0; KH.sub = null; KH.spell = 'thunder'; resetKH(true);
 }
@@ -10005,14 +10165,12 @@ function resetKH(fresh) {
   KH.cut = null;
   Object.assign(KH, { slowT: 0, sightT: 0, multiT: 0, berserkT: 0, shield: 0, reflectT: 0 });
   Object.assign(KH, { hp: KH.max, mp: KH.maxMp, combo: 0, airN: 0, atk: null, buf: false, hover: 0, guardT: 0, rollT: 0, invT: 1, react: null, reacting: null, bolts: [], target: null, form: 0, winT: 0 });
-  if (KH.plaza) { const p = KH.plaza; for (const u of URUKS.slice()) khRemove(u); khBarrier(p, false); p.wave = -1; KH.plaza = null; }   // a square you fell in starts again
+  for (const u of URUKS.slice()) khRemove(u); KH.plaza = null;
+  for (const p of (LV && LV.layout && LV.layout.plazas) || []) if (!p.done) { p.wave = -1; p.waveT = 0; p.near = false; }   // any square you hadn't finished starts again
   for (const o of ORBS) scene.remove(o.sp); ORBS.length = 0; khClearFx();
   if (hadBoss) Music.mode = 0;
   khWhite(false);
 }
-function khBarrier(p, on) { for (const b of p.walls || []) b.on = on; if (p.vis) p.vis.visible = on; }
-// each square's barrier: a ring of walls, down until its enemies come
-function khRings(Y) { for (const p of Y.plazas) { p.walls = []; const n = Math.ceil(TAU * p.r / 1.1); for (let k = 0; k < n; k++) { const a = k / n * TAU, s = p.s + Math.cos(a) * (p.r + .5), x = p.x + Math.sin(a) * (p.r + .5), b = solid(s - .6, s + .6, x - .6, x + .6, p.y - 4, p.y + 9, 'wall'); b.on = false; p.walls.push(b); } } }
 // passing flashes: telegraph marks on the ground, shockwaves, meteors; each runs until its upd says it's done
 function khFx(mesh, upd) { if (mesh) scene.add(mesh); const f = { mesh, upd, t: 0 }; KHFX.push(f); return f; }
 function khClearFx() { for (const f of KHFX) if (f.mesh) { scene.remove(f.mesh); if (!f.mesh.isSprite && f.mesh.geometry) f.mesh.geometry.dispose(); } KHFX.length = 0; }   // (sprites share one geometry: never dispose it)
@@ -10458,17 +10616,24 @@ function khBoom(u) {
   Object.assign(u, { hp: 0, dead: true, state: 'die', t: .6, armed: false }); u.m.root.visible = false;
 }
 function ukUpdate(u, dt) {
-  if (u.boss) { (u.upd || bossUpdate)(u, dt); return; }   // (each boss its own way: the Balrog's, Saruman's)
+  if (u.boss) {   // (each boss its own way: the Balrog's, Saruman's)
+    const up = u.upd || bossUpdate, away = u.plaza.near === false && !u.dead;
+    if (!u.home && u.state !== 'intro' && u.state !== 'below') u.home = [u.s, u.x];
+    if (away) u.cd = Math.max(u.cd || 0, .5);   // you've got away: he starts nothing new, finishes what he's at...
+    if (away && u.home && u.state === 'idle') { const ps = P.s, px = P.x; P.s = u.home[0]; P.x = u.home[1]; up(u, dt); P.s = ps; P.x = px; return; }   // ...and walks back to his place as he'd walk at you
+    up(u, dt); return;
+  }
   const m = u.m, K = UK_KINDS[u.kind]; u.t += dt; u.cd -= dt; u.flash -= dt;
   const ds = P.s - u.s, dx = P.x - u.x, d = Math.hypot(ds, dx) || .01, toP = Math.atan2(dx, ds), live = state === 'play', facing = (ds * Math.cos(u.h) + dx * Math.sin(u.h)) / d > .3, dy = Math.abs(P.y - u.y);
   let walk = 0, onGround = true, armX = -.4;
   switch (u.state) {
-    case 'spawn': {   // leaping in over the barrier (or up a ladder and over the parapet)
+    case 'spawn': {   // leaping in (or up a ladder and over the parapet)
       if (u.t < 0) return; m.root.visible = m.shadow.visible = true;
       const k = clamp(u.t / .8, 0, 1); u.s = lerp(u.from[0], u.to[0], k); u.x = lerp(u.from[1], u.to[1], k); u.y = lerp(u.y0, khLand(u.s, u.x, pl_y(u)), k) + Math.sin(k * Math.PI) * 5; onGround = false;
-      if (k >= 1) { u.state = 'stalk'; u.t = 0; dustAt(u.s, u.x, u.y, 6); S.stomp(); } break;
+      if (k >= 1) { u.state = 'stalk'; u.t = 0; u.home = [u.s, u.x, u.y]; dustAt(u.s, u.x, u.y, 6); S.stomp(); } break;
     }
     case 'stalk': {   // keep a few steps off, strafing round, now and then a hop
+      if (u.plaza.near === false && u.home) { u.state = 'home'; u.t = 0; break; }   // (you've got away: back to where it landed)
       u.h += angDiff(u.h, toP) * Math.min(1, dt * 6);
       const want = K.want ?? (u.kind === 'b' ? 5 : 3.2), k = clamp(d - want, -1, 1), side = Math.sin(u.t * 1.1 + u.seed) > 0 ? 1 : -1, sp = K.speed;
       ukMove(u, (ds / d * k * sp - dx / d * side * 1.7) * dt, (dx / d * k * sp + ds / d * side * 1.7) * dt); walk = 1;
@@ -10514,6 +10679,16 @@ function ukUpdate(u, dt) {
       }
       break;
     }
+    case 'home': {   // walking back to where it landed, unless you come back first
+      if (u.plaza.near) { u.state = 'stalk'; u.t = 0; u.cd = Math.min(u.cd, .4); break; }
+      const hs = u.home[0] - u.s, hx = u.home[1] - u.x, hd = Math.hypot(hs, hx);
+      if (hd < .5) { u.state = 'guard'; u.t = 0; break; }
+      if (u.t > 8) { puff(tw(u.s, u.x, u.y + 1), 6, 1, CSM); u.s = u.home[0]; u.x = u.home[1]; u.y = u.home[2]; u.state = 'guard'; u.t = 0; break; }   // (something in its way: it slips off round the back)
+      u.h += angDiff(u.h, Math.atan2(hx, hs)) * Math.min(1, dt * 6); ukMove(u, hs / hd * K.speed * dt, hx / hd * K.speed * dt); walk = 1; break;
+    }
+    case 'guard':   // waiting at its post for you to come back
+      if (u.plaza.near) { u.state = 'stalk'; u.t = 0; u.cd = Math.min(u.cd, .4); break; }
+      u.h += angDiff(u.h, toP) * Math.min(1, dt * 2); break;
     case 'recover': if (u.t > .55) { u.state = 'stalk'; u.t = 0; u.cd = rand(1.2, 2.6) * (u.kind === 'L' ? .6 : u.lite ? .5 : 1); } break;
     case 'recoil': case 'flinch': {
       ukMove(u, u.vs * dt, u.vx * dt); u.vs *= Math.exp(-7 * dt); u.vx *= Math.exp(-7 * dt);
@@ -10618,23 +10793,30 @@ function updateKH(dt) {
     }
   }
   KH.targetT -= dt; if (KH.target && (!ukLive(KH.target) || KH.targetT <= 0)) KH.target = null;
-  if (KH.boss && ukLive(KH.boss) && KH.boss.state !== 'intro') { KH.target = KH.boss; KH.targetT = 1; }   // a boss's gauge stays up
-  // the squares: walk into one and it locks, the enemies come in waves; when the last is beaten it opens again
+  if (KH.boss && ukLive(KH.boss) && KH.boss.state !== 'intro' && KH.boss.plaza.near !== false) { KH.target = KH.boss; KH.targetT = 1; }   // a boss's gauge stays up
+  // the squares: walk into one and its enemies come, in waves. Nothing locks: run, and they chase you as far as KH_CHASE beyond the square, then give up and
+  // go back to where they landed, and there they wait for you to come back. A further wave only comes while you're there to fight it
   const Y = LV.layout && LV.layout.plazas ? LV.layout : { plazas: [] };
-  if (!KH.plaza) { if (play) for (const p of Y.plazas) if (!p.done && Math.hypot(P.s - p.s, P.x - p.x) < p.r - 1.5 && Math.abs(P.y - p.y) < 4) { KH.plaza = p; p.wave = 0; khBarrier(p, true); KH.waveT = p.boss ? .2 : .7; banner(p.title, 1.6); S.orcGrunt(); break; } }
-  else {
-    const p = KH.plaza;
-    if (KH.waveT > 0) { KH.waveT -= dt; if (KH.waveT <= 0) { const w = p.waves[p.wave], a0 = rand(0, TAU); w.forEach((k, i) => spawnUruk(k, p, a0 + i / w.length * TAU + rand(-.3, .3), i * .25)); } }
+  for (const p of Y.plazas) {
+    if (p.done) continue;
+    const pd = Math.hypot(P.s - p.s, P.x - p.x), py = Math.abs(P.y - p.y);
+    if (p.wave < 0) { if (play && pd < p.r - 1.5 && py < 4) { p.wave = 0; p.near = true; p.waveT = p.boss ? .2 : .7; banner(p.title, 1.6); S.orcGrunt(); } continue; }
+    const was = p.near; p.near = p.near ? pd <= p.r + KH_CHASE && py <= 9 : pd < p.r + 5 && py < 4;
+    if (was !== p.near && URUKS.some(u => u.plaza === p && ukLive(u))) {
+      if (play) { banner(p.near ? 'THEY HAVE SEEN YOU!' : 'YOU HAVE GIVEN THEM THE SLIP', 1.4); if (p.near) S.orcGrunt(); }
+      if (KH.boss && KH.boss.plaza === p) Music.mode = p.near ? 1 : 0;
+    }
+    if (p.waveT > 0) { if (p.near) { p.waveT -= dt; if (p.waveT <= 0) { const w = p.waves[p.wave], a0 = rand(0, TAU); w.forEach((k, i) => spawnUruk(k, p, a0 + i / w.length * TAU + rand(-.3, .3), i * .25)); } } }
     else if (!URUKS.some(u => u.plaza === p)) {
-      p.wave++;
-      if (p.wave < p.waves.length) { KH.waveT = 1.2; banner((p.names && p.names[p.wave]) || 'MORE ARE COMING!', p.names ? 2.2 : 1.2); }
+      if (p.wave + 1 < p.waves.length) { if (p.near) { p.wave++; p.waveT = 1.2; banner((p.names && p.names[p.wave]) || 'MORE ARE COMING!', p.names ? 2.2 : 1.2); } }
       else {
-        p.done = true; khBarrier(p, false); KH.plaza = null; S.check(); gs.cp = { s: p.s, x: p.x, y: p.y, t: gs.time, deaths: 0 };
-        banner(p.boss ? (LV.winTitle || "HELM'S DEEP HOLDS!") : p.last ? 'MEDUSELD IS FREE! GO TO THE KING' : 'THE WAY IS OPEN!', 2.2); KH.hp = Math.min(KH.max, KH.hp + 30);
+        p.done = true; p.near = false; S.check(); gs.cp = { s: p.s, x: p.x, y: p.y, t: gs.time, deaths: 0 };
+        banner(p.boss ? (LV.winTitle || "HELM'S DEEP HOLDS!") : p.last ? 'MEDUSELD IS FREE! GO TO THE KING' : 'THEY ARE BEATEN!', 2.2); KH.hp = Math.min(KH.max, KH.hp + 30);
         if (p.boss) KH.winT = 2.4;
       }
     }
   }
+  KH.plaza = Y.plazas.find(p => !p.done && p.wave >= 0 && p.near) || null;   // (the fight you're in, if any)
   if (KH.winT > 0 && play) { KH.winT -= dt; if (KH.winT <= 0) roamWin(LV.winTitle || "HELM'S DEEP HOLDS!"); }
   // Théoden, out on the steps of Meduseld once the last square is won: go to him to finish
   const th = KH.theoden, won = !!Y.hall && !!Y.plazas.length && Y.plazas[Y.plazas.length - 1].done;
@@ -10715,10 +10897,11 @@ showScreen(null); syncPauseBtns();
     if (q.get('pos')) { const [s, x, y] = q.get('pos').split(',').map(Number); Object.assign(gs.cp, { s, x, y: y || 0 }); respawn(true); }   // &pos=s,x,y starts there (open levels)
     if (q.get('spring') && LV.springs && LV.springs[+q.get('spring')]) { const sp = LV.springs[+q.get('spring')]; Object.assign(gs.cp, { s: sp.s, x: sp.x, y: sp.y }); respawn(true); console.log('spring', JSON.stringify(sp)); }   // &spring=0 starts on that web spring
     if (q.get('walkto')) WALKTO = q.get('walkto').split(',').map(Number);
+    const ROUTE = (q.get('route') || '').split(';').filter(Boolean).map(r => r.split(',').map(Number));   // &route=t,s,x;t,s,x: at t seconds into &sim, walk to s,x (testing)
     if (q.get('autofight')) AUTOFIGHT = { next: () => { const p = LV.layout.plazas.find(p => !p.done), W_ = LV.layout.path;
       if (W_ && p && p.pi !== undefined && (Math.hypot(P.s - p.s, P.x - p.x) > p.r - 2 || Math.abs(P.y - p.y) > 3)) { let bi = 0, bd = 1e9; for (let i = 0; i < W_.length; i += 2) { const d = Math.hypot(W_[i][0] - P.s, W_[i][1] - P.x) + Math.abs(W_[i][2] - P.y) * 3; if (d < bd) { bd = d; bi = i; } } const ti = Math.min(p.pi, bi + 8); if (ti < p.pi - 1) return [W_[ti][0], W_[ti][1]]; }   // (along the way, at Helm's Deep)
       const dr = LV.layout.hall && LV.layout.hall.door; return p ? [p.s, p.x] : dr ? [dr.s, dr.x] : [P.s, P.x]; } };
-    if (q.get('sim')) { cheats.god = !q.get('mortal'); for (let i = 0; i < Number(q.get('sim')) * 60; i++) step(1 / 60, true); if (q.get('cast') === 'all' && LV.kh) { const bad = []; for (const p of KH_POWERS) { try { KH.mp = 100; KH.magicCD = 0; KH.atk = null; if (!khCast(p.id)) bad.push(p.id + ' (not cast)'); for (let i = 0; i < 90; i++) step(1 / 60, true); } catch (e) { bad.push(p.id + ': ' + e.message); } } console.log('castall ' + KH_POWERS.length + ' powers, problems: ' + (bad.join('; ') || 'none') + ', kills ' + gs.kills); }   // (&cast=all: every power in turn, for testing)
+    if (q.get('sim')) { cheats.god = !q.get('mortal'); for (let i = 0; i < Number(q.get('sim')) * 60; i++) { for (const r of ROUTE) if (Math.round(r[0] * 60) === i) { WALKTO = [r[1], r[2]]; console.log('route t=' + r[0] + ' at ' + P.s.toFixed(0) + ',' + P.x.toFixed(0) + ' foes ' + URUKS.map(u => u.state + '@' + u.s.toFixed(0) + ',' + u.x.toFixed(0)).join(' ')); } step(1 / 60, true); } if (q.get('cast') === 'all' && LV.kh) { const bad = []; for (const p of KH_POWERS) { try { KH.mp = 100; KH.magicCD = 0; KH.atk = null; if (!khCast(p.id)) bad.push(p.id + ' (not cast)'); for (let i = 0; i < 90; i++) step(1 / 60, true); } catch (e) { bad.push(p.id + ': ' + e.message); } } console.log('castall ' + KH_POWERS.length + ' powers, problems: ' + (bad.join('; ') || 'none') + ', kills ' + gs.kills); }   // (&cast=all: every power in turn, for testing)
     if (q.get('cutnow') && KH.boss) { bossFall(KH.boss); for (let i = 0; i < Number(q.get('cutnow')) * 60; i++) step(1 / 60, true); }   // (&cutnow=2: the bridge's ending, 2 seconds in, for testing)
     if (q.get('aimt') && LV.bow) BOW.aim = true;   // (testing: &aimt=1 starts with the sight up)
     if (q.get('powers') && LV.kh) setTimeout(() => { KH_PMENU.page = q.get('powers') === 'tech' || q.get('powers') === 'keys' ? q.get('powers') : 'magic'; khPowersMenu(true); }, 3000);
