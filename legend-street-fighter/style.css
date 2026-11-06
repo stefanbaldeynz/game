@@ -1,0 +1,55 @@
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; background: #000; overflow: hidden; }
+body { display: flex; align-items: center; justify-content: center; font-family: system-ui, sans-serif; }
+
+#screen {
+  position: relative;
+  width: min(100vw, calc(100vh * 416 / 234));
+  width: min(100dvw, calc(100dvh * 416 / 234));
+  aspect-ratio: 416 / 234;
+}
+#game {
+  display: block; width: 100%; height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  touch-action: none;
+}
+#scanlines {
+  position: absolute; inset: 0; pointer-events: none; display: none;
+  background: repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0, rgba(0,0,0,0) 2px, rgba(0,0,0,.2) 2px, rgba(0,0,0,.2) 4px);
+}
+body.scan #scanlines { display: block; }
+
+.back-link {
+  position: fixed; top: 6px; left: 8px; z-index: 5; padding: 3px 8px; border-radius: 6px;
+  background: rgba(0,0,0,.55); color: #d8d8e8; font-size: 12px; text-decoration: none;
+}
+body.fighting .back-link { display: none; }
+
+#turn { display: none; }
+html.touch-device .back-link { display: none; } /* the main menu has GAME SELECT, and thumbs need the corner */
+
+/* the row of special-move buttons sits just under the health bars on a phone */
+html.touch-device #tc .tc-top {
+  top: 17vh; left: 50%; right: auto; transform: translateX(-50%); gap: 5px;
+}
+html.touch-device #tc .tc-top .tc-btn {
+  min-width: 42px; height: 36px; padding: 0 6px; font-size: 11px; border-radius: 9px; opacity: .85;
+}
+
+/* held upright: the picture at the top, the controls in the free space below it */
+@media (orientation: portrait) {
+  html.touch-device body {
+    flex-direction: column; justify-content: flex-start; padding-top: env(safe-area-inset-top);
+  }
+  html.touch-device #tc .tc-top {
+    top: calc(56.25vw + 10px + env(safe-area-inset-top));
+    width: 98vw; flex-wrap: wrap; justify-content: center;
+  }
+  html.touch-device #tc .tc-top .tc-btn { height: 44px; }
+  html.touch-device #turn {
+    display: block; margin: 28px 24px; color: #ffc21a; text-align: center; font-size: 17px;
+  }
+  html.touch-device body.fighting #turn { display: none; }
+}

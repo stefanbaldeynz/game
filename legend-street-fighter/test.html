@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Legend Street Fighter: tests</title>
+<style>
+  body { background: #101018; color: #e8e8f0; font: 13px/1.35 Consolas, monospace; margin: 12px; overflow: auto; }
+  canvas { position: fixed; left: 0; top: 0; width: 416px; height: 234px; opacity: 0; }
+  .ok { color: #7cf07c; } .bad { color: #ff6a5a; font-weight: bold; } h2 { margin: 6px 0; font-size: 15px; }
+  #stats { color: #ffd030; white-space: pre; }
+</style>
+</head>
+<body>
+<h2 id="sum">running...</h2>
+<div id="out"></div>
+<div id="stats"></div>
+<canvas id="game" width="416" height="234"></canvas>
+<script>window.LSF_NO_BOOT = true;</script>
+<script src="../shared/touch-controls.js"></script>
+<script src="js/art.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/stages.js"></script>
+<script src="js/fight.js"></script>
+<script src="js/game.js"></script>
+<script>
+// Open this page to run the game's rules without playing: damage, moves, Willy Rage, and AI-vs-AI soak fights.
+Sound.say = () => {};
+let pass = 0, fail = 0;
+function check(name, ok, info) {
+  const d = document.createElement('div');
+  d.className = ok ? 'ok' : 'bad';
+  d.textContent = (ok ? 'PASS ' : 'FAIL ') + name + (info !== undefined ? '  [' + info + ']' : '');
+  document.getElementById('out').appendChild(d);
+  if (ok) pass++; else fail++;
+}
+const near = (a, b, tol = 0.01) => Math.abs(a - b) <= tol;
+
+function arena(p1, p2, dist = 60) {
+  const a = makeFighter(p1, 0, false), b = makeFighter(p2, 1, false, p1 === p2);
+  const w = newWorld(a, b, getStage('london'));
+  w.locked = false;
+  resetFighter(a, 300, 1); resetFighter(b, 300 + dist, -1);
+  a.meter = 100; b.meter = 100;
+  return { w, a, b };
+}
+function run(w, n) { for (let i = 0; i < n; i++) stepWorld(w); }
+function command(w, f, dirs, btn) {
+  for (const d of dirs) { pressDir(f, d); stepWorld(w); }
+  f.inp[btn] = true;
+}
+
+// --- the moves that target one person ---
+function damageFrom(id, target) {
+  const { w, a, b } = arena('sf', target, 160);
+  a.inp.cmd = id;
+  run(w, 400);
+  return 100 - b.hp;
+}
+const posterSF = damageFrom('poster', 'sf'), posterB = damageFrom('poster', 'baldric');
+check('IO Poster hits Baldric 2.5 times as hard', near(posterB / posterSF, 2.5, 0.05), posterSF.toFixed(1) + ' vs ' + posterB.toFixed(1));
+
+const lawSF = damageFrom('law', 'sf'), lawK = damageFrom('law', 'kiwi');
+check('Czech Law hurts Kiwi far more than anyone else', lawK > lawSF * 2.3, lawSF.toFixed(1) + ' vs ' + lawK.toFixed(1));
+{
+  const { w, a, b } = arena('sf', 'kiwi', 100);
+  a.inp.cmd = 'law';
+  let dazed = false;
+  for (let i = 0; i < 60; i++) { stepWorld(w); if (b.state === 'dazed') dazed = true; }
+  check('Czech Law ties Kiwi up in paperwork', dazed);
+}
+
+const lenkaSF = damageFrom('lenka', 'sf'), lenkaK = damageFrom('lenka', 'kiwi');
+check('Lenka messes Kiwi up', lenkaK >= 30 && lenkaK > lenkaSF * 2.5, lenkaSF.toFixed(1) + ' vs ' + lenkaK.toFixed(1));
+{
+  const { w, a, b } = arena('sf', 'kiwi', 200);
+  b.inp.block = true;
+  a.inp.cmd = 'lenka';
+  for (let i = 0; i < 400; i++) { b.inp.block = true; stepWorld(w); }
+  check('Kiwi cannot block Lenka', 100 - b.hp >= 30, (100 - b.hp).toFixed(1));
+  const t = arena('sf', 'baldric', 200);
+  t.a.inp.cmd = 'lenka';
+  for (let i = 0; i < 400; i++) { t.b.inp.block = true; stepWorld(t.w); }
+  check('Anyone else can block Lenka down to chip damage', 100 - t.b.hp < 6, (100 - t.b.hp).toFixed(1));
+  const u = arena('sf', 'bill', 200);
+  u.a.inp.cmd = 'lenka';
+  let saw = false;
+  for (let i = 0; i < 400; i++) { stepWorld(u.w); if (u.w.ents.some((e) => e.type === 'lenka')) saw = true; }
+  check('Lenka appears and is gone after self-destructing', saw && !u.w.ents.some((e) => e.type === 'lenka'));
+}
+
+// --- Willy Rage ---
+{
+  const { w, a, b } = arena('sf', 'bill', 30);
+  b.hp = 31;
+  const before = dmgMult(b), takenBefore = takenMult(b);
+  a.inp.p = true;
+  run(w, 30);
+  check('Willy Rage starts when Bill drops to 30%', b.raged);
+  check('Willy Rage heals him', b.hp > 40 || w.cine > 0, b.hp.toFixed(1));
+  run(w, 130);
+  check('Rage healed Bill to around 60', b.hp > 50, b.hp.toFixed(1));
+  check('Rage raises damage', near(dmgMult(b) / before, RAGE.dmg), dmgMult(b).toFixed(2));
+  check('Rage cuts damage taken', takenMult(b) < takenBefore, takenMult(b).toFixed(2));
+  check('Rage ends in a playable state', b.state === 'idle', b.state);
+  const k = arena('sf', 'kiwi', 30);
+  k.b.hp = 31; k.a.inp.p = true; run(k.w, 30);
+  check('Only Bill rages', !k.b.raged);
+  const o = arena('sf', 'bill', 30);
+  o.b.hp = 2; o.a.inp.p = true; run(o.w, 30);
+  check('A hit that would kill Bill triggers rage instead', o.b.raged && o.b.hp > 0 && !o.w.koBy);
+}
+
+// --- power-ups ---
+for (const id of ROSTER) {
+  const { w, a, b } = arena(id, 'sf', 200);
+  a.hp = 50;
+  a.inp.cmd = 'power';
+  run(w, 70);
+  const pu = POWER_UPS[a.def.power];
+  check(a.def.name + ' takes ' + pu.name, !!a.buff && a.buff.id === a.def.power && near(a.hp, 50 + pu.heal, 0.1));
+  a.buff = null;
+  a.inp.cmd = 'power';
+  run(w, 5);
+  check(a.def.name + ' only gets one a round', !a.buff && a.state !== 'cast');
+}
+check('Cocaine is for Bill, whiskey for Kiwi, steak and beer for Baldric',
+  FIGHTERS.bill.power === 'cocaine' && FIGHTERS.kiwi.power === 'whiskey' && FIGHTERS.baldric.power === 'steak');
+
+// --- stage dive into guitar ---
+{
+  const { w, a, b } = arena('sf', 'baldric', 120);
+  a.inp.cmd = 'dive';
+  let encore = false, n = 0;
+  for (; n < 140 && !encore; n++) { stepWorld(w); if (a.encore > 0) encore = true; }
+  check('Stage dive lands on the target and opens the encore', encore, 'frames ' + n + ', hp ' + b.hp.toFixed(0));
+  run(w, 50);
+  a.meter = 0;
+  a.inp.cmd = 'guitar';
+  run(w, 2);
+  check('Encore guitar is free', a.state === 'cast' && a.meter < 25 && a.cast.encore, a.state);
+  run(w, 45);
+  check('Encore blast is the heavy one', w.ents.some((e) => e.type === 'blast' && e.heavy) || b.hp < 75, b.hp.toFixed(0));
+  const n2 = arena('sf', 'baldric', 150);
+  n2.a.meter = 10; n2.a.inp.cmd = 'guitar'; run(n2.w, 3);
+  check('Guitar needs metal without the encore', n2.a.state !== 'cast');
+}
+{
+  const { w, a, b } = arena('sf', 'baldric', 120);
+  a.inp.cmd = 'guitar';
+  for (let i = 0; i < 60; i++) { stepWorld(w); }
+  check('Guitar blast hits on the ground', b.hp < 85, b.hp.toFixed(0));
+  const j = arena('sf', 'baldric', 200);
+  j.a.inp.cmd = 'guitar';
+  let hurt = false;
+  for (let i = 0; i < 100; i++) {
+    const bl = j.w.ents.find((e) => e.type === 'blast');
+    if (bl && Math.abs(bl.x - j.b.x) < 60 && j.b.y >= 0) j.b.inp.up = true; else j.b.inp.up = false;
+    stepWorld(j.w);
+    if (j.b.hp < 100) hurt = true;
+  }
+  check('Guitar blast can be jumped', !hurt);
+}
+
+// --- commands from the controller ---
+for (const id of Object.keys(SPECIALS)) {
+  const sp = SPECIALS[id];
+  const { w, a } = arena('sf', 'baldric', 150);
+  a.facing = 1;
+  const dirs = sp.seq.map((d) => ({ D: 'down', U: 'up', F: 'right', B: 'left' }[d]));
+  for (const d of dirs) pressDir(a, d);
+  check('Input ' + sp.input + ' = ' + sp.name, matchCommand(a, sp.btn) === id, matchCommand(a, sp.btn));
+}
+{
+  const { w, a, b } = arena('sf', 'baldric', 150);
+  a.x = 460; b.x = 300; stepWorld(w);
+  pressDir(a, 'left'); pressDir(a, 'left');
+  check('Forward means towards the enemy on either side', matchCommand(a, 'k') === 'dive');
+  const q = arena('sf', 'baldric', 150);
+  pressDir(q.a, 'down'); pressDir(q.a, 'right');
+  for (let i = 0; i < 50; i++) stepWorld(q.w);
+  check('Commands expire if you dawdle', matchCommand(q.a, 'p') === null);
+}
+
+// --- normals, chains, blocking ---
+{
+  const { w, a, b } = arena('sf', 'sf', 34);
+  const ids = [];
+  a.inp.p = true;
+  for (let i = 0; i < 70; i++) {
+    b.x = a.x + 34;
+    if (a.atk && !ids.includes(a.atk.id)) ids.push(a.atk.id);
+    if (a.atk && a.atk.landed && a.atk.t >= a.atk.s + a.atk.a) {
+      if (a.atk.next === 'cross') a.inp.p = true;
+      if (a.atk.next === 'round') a.inp.k = true;
+    }
+    stepWorld(w);
+  }
+  check('Punch, punch, kick chains', ids.join() === 'jab,cross,round', ids.join());
+  check('Combo counter climbs', a.combo >= 3 || b.hp < 85, a.combo);
+}
+{
+  const { w, a, b } = arena('sf', 'sf', 36);
+  a.inp.p = true;
+  for (let i = 0; i < 20; i++) { b.inp.block = true; b.x = a.x + 36; stepWorld(w); }
+  check('Blocking stops a punch', b.hp === 100, b.hp);
+  const s = arena('sf', 'sf', 36);
+  s.a.inp.k = true; s.a.inp.down = true;
+  for (let i = 0; i < 24; i++) { s.b.inp.block = true; s.b.x = s.a.x + 36; if (i < 2) s.a.inp.down = true; stepWorld(s.w); }
+  check('A standing block misses a sweep', s.b.hp < 100, s.b.hp.toFixed(1));
+  const c = arena('sf', 'sf', 36);
+  c.a.inp.k = true; c.a.inp.down = true;
+  for (let i = 0; i < 24; i++) { c.b.inp.block = true; c.b.inp.down = true; c.b.x = c.a.x + 36; if (i < 2) c.a.inp.down = true; stepWorld(c.w); }
+  check('A crouching block stops a sweep', c.b.hp === 100, c.b.hp.toFixed(1));
+  const t = arena('sf', 'sf', 34);
+  t.a.inp.block = true; t.a.inp.p = true;
+  for (let i = 0; i < 26; i++) { t.b.inp.block = true; stepWorld(t.w); }
+  check('Suplex goes through a block', t.b.hp < 100, t.b.hp.toFixed(1));
+  const d = arena('sf', 'sf', 150);
+  d.a.inp.cmd = 'poster';
+  for (let i = 0; i < 80; i++) { d.b.inp.down = true; stepWorld(d.w); }
+  check('Ducking dodges a poster', d.b.hp === 100, d.b.hp.toFixed(1));
+}
+
+// --- knockouts in a fight ---
+{
+  const { w, a, b } = arena('sf', 'baldric', 30);
+  b.hp = 2;
+  a.inp.p = true;
+  run(w, 300);
+  check('Running out of health is a KO', w.koBy === a && b.state === 'ko', b.state);
+}
+
+// --- all the screens draw ---
+function drawScreens() {
+  const c = document.getElementById('game').getContext('2d');
+  const scenes = {
+    title: TitleScene(), menu: MenuScene(), select1: SelectScene('p1'), select2: SelectScene('p2'), stage: StageScene(),
+    vs: VsScene(), moves: MovesScene(() => {}), settings: SettingsScene(), result: ResultScene(true), lose: ResultScene(false), ending: EndingScene(),
+  };
+  for (const name in scenes) {
+    try {
+      const s = scenes[name];
+      for (let i = 0; i < 3; i++) { s.update(); s.draw(c); if (s.key && name === 'moves') s.key('right'); }
+      check('Screen draws: ' + name, true);
+    } catch (e) {
+      check('Screen draws: ' + name, false, e.message);
+    }
+  }
+}
+drawScreens();
+
+// --- playing it for real: key presses from the title screen to the ending ---
+function playThrough() {
+  const key = (k) => { window.dispatchEvent(new KeyboardEvent('keydown', { key: k })); window.dispatchEvent(new KeyboardEvent('keyup', { key: k })); };
+  const down = (k) => window.dispatchEvent(new KeyboardEvent('keydown', { key: k }));
+  const up = (k) => window.dispatchEvent(new KeyboardEvent('keyup', { key: k }));
+  const tick = (n) => { for (let i = 0; i < n; i++) G.scene.update(); };
+  const c = document.getElementById('game').getContext('2d');
+  applySettings();
+  G.settings.rounds = 3;
+  G.settings.time = 99;
+  DIRT.difficulty = 'NORMAL';
+
+  setScene(TitleScene());
+  key('Enter'); key('ArrowDown'); key('Enter');
+  check('Menu: Fight All Three starts as the Street Fighter', G.mode === 'gauntlet');
+  key('Enter');
+  check('First opponent is Baldric in London', G.p1 === 'sf' && G.p2 === 'baldric' && G.stage === 'london', G.p2 + ' in ' + G.stage);
+  tick(25); key('Enter');
+  check('VS screen leads to the fight', !!G.scene.isFight);
+
+  tick(100);
+  const w = G.world, me = w.f[0], foe = w.f[1];
+  check('Round intro finishes and the fight begins', G.scene.phase === 'fight' && !w.locked, G.scene.phase);
+  w.aiOff = true;
+  foe.x = me.x + 150;
+  tick(5);
+  const x0 = me.x;
+  down('ArrowRight'); tick(10); up('ArrowRight'); tick(2);
+  check('Holding right walks forward', me.x > x0 + 5, (me.x - x0).toFixed(1));
+  tick(40);
+  foe.x = me.x + 150;
+  key('ArrowDown'); tick(1); key('ArrowRight'); tick(1); key('j'); tick(2);
+  check('Keyboard ↓ → J throws an IO Poster', me.state === 'cast' && me.cast.id === 'poster', me.state);
+  tick(70);
+  check('The poster reaches Baldric', foe.hp < 100, foe.hp.toFixed(1));
+  me.meter = 100;
+  key('6'); tick(2);
+  check('Number key shortcut plays the guitar', me.cast && me.cast.id === 'guitar');
+  tick(70);
+
+  key('Escape');
+  check('Esc pauses', G.paused);
+  const hpBefore = foe.hp;
+  tick(30);
+  G.scene.draw(c);
+  check('Nothing moves while paused', foe.hp === hpBefore);
+  key('Escape');
+  check('Esc resumes', !G.paused && G.scene.isFight);
+
+  // win all three fights, two rounds each
+  const stages = [], opponents = [];
+  let safety = 0;
+  const winFight = () => {
+    const fight = G.scene;
+    const W0 = G.world;
+    opponents.push(W0.f[1].id); stages.push(W0.stage.id);
+    for (let round = 0; round < 2 && G.scene === fight; round++) {
+      while (fight.phase !== 'fight' && safety++ < 5000) fight.update();
+      W0.aiOff = true;
+      hitFighter(W0, W0.f[0], W0.f[1], 500, { knock: true });
+      if (!W0.koBy) { W0.cine = 0; W0.f[1].state = 'idle'; hitFighter(W0, W0.f[0], W0.f[1], 500, { knock: true }); }
+      fight.draw(c);
+      while (G.scene === fight && (round === 1 || fight.round === round + 1) && safety++ < 5000) fight.update();
+    }
+  };
+  winFight();
+  check('Winning shows the result screen', !G.scene.isFight);
+  G.scene.draw(c);
+  tick(50); key('Enter');
+  tick(25); key('Enter');
+  winFight();
+  G.scene.draw(c);
+  tick(50); key('Enter');
+  tick(25); key('Enter');
+  winFight();
+  check('Fight All Three: Baldric, Kiwi, then Bill', opponents.join() === 'baldric,kiwi,bill', opponents.join());
+  check('Fight All Three: London, Berlin, then Ostrava', stages.join() === 'london,berlin,ostrava', stages.join());
+  G.scene.draw(c);
+  tick(5);
+  G.scene.draw(c);
+  key('Enter');
+  check('The ending returns to the menu', !G.scene.isFight && G.mode === 'gauntlet');
+
+  // the clock running out, in a plain fight
+  G.mode = 'versus'; G.p1 = 'kiwi'; G.p2 = 'bill'; G.stage = 'ostrava';
+  setScene(FightScene());
+  const fs = G.scene, tw = G.world;
+  while (fs.phase !== 'fight' && safety++ < 5000) fs.update();
+  tw.aiOff = true;
+  tw.f[1].hp = 60;
+  fs.clock = 1; fs.clockT = 0;
+  for (let i = 0; i < 80 && fs.phase === 'fight'; i++) fs.update();
+  check('Time up gives the round to whoever has more health', fs.winner === tw.f[0] && fs.phase === 'ko', fs.phase);
+  for (let i = 0; i < 300 && G.scene === fs && fs.round === 1; i++) fs.update();
+  check('Then the next round starts', fs.round === 2 && tw.f[0].wins === 1, 'round ' + fs.round);
+
+  // practice mode never ends
+  G.mode = 'practice'; G.p1 = 'baldric'; G.p2 = 'sf';
+  setScene(FightScene());
+  const ps = G.scene, pw = G.world;
+  while (ps.phase !== 'fight' && safety++ < 5000) ps.update();
+  hitFighter(pw, pw.f[0], pw.f[1], 500, { knock: true });
+  check('Practice: the punchbag cannot be knocked out', !pw.koBy && pw.f[1].hp > 0);
+  ps.update();
+  check('Practice: endless metal', pw.f[0].meter === 100);
+  G.mode = 'versus';
+  setScene(MenuScene());
+  check('The playthrough never got stuck', safety < 5000, safety);
+}
+try { playThrough(); } catch (e) { check('Playthrough ran to the end', false, e.message + ' ' + (e.stack || '').split('\n')[1]); }
+
+// --- phone controls: real touch events on the on-screen controls (needs a touch browser) ---
+function phoneControls() {
+  G.mode = 'versus'; G.p1 = 'sf'; G.p2 = 'baldric'; G.stage = 'london';
+  setScene(FightScene());
+  const fs = G.scene, w = G.world, me = w.f[0], foe = w.f[1];
+  while (fs.phase !== 'fight') fs.update();
+  w.aiOff = true;
+  const tick = (n) => { for (let i = 0; i < n; i++) fs.update(); };
+
+  // a special pressed mid-move waits instead of being lost (works the same from the keyboard)
+  foe.x = me.x + 150;
+  me.state = 'jump'; me.y = -30; me.vy = 0;
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: '1' }));
+  window.dispatchEvent(new KeyboardEvent('keyup', { key: '1' }));
+  let cast = false;
+  for (let i = 0; i < 16 && !cast; i++) { fs.update(); cast = me.state === 'cast'; }
+  check('A special pressed while landing still comes out', cast, me.state);
+  tick(60);
+
+  const result = ResultScene(true);
+  const before = G.scene;
+  G.mode = 'versus';
+  result.update();
+  result.key('ok');
+  check('Mashing at the end of a fight does not pick a menu item', G.scene === before);
+  G.scene = before;
+
+  // the fading buttons
+  me.meter = 0;
+  check('Lenka button fades without metal', !specialReady('lenka'));
+  me.meter = 60;
+  check('Lenka button lights up with metal', specialReady('lenka'));
+
+  if (!TouchControls.isTouch) { check('Touch tests skipped: not a touch browser', true); return; }
+  const root = document.getElementById('tc');
+  const touch = (type, el, x, y, id) => {
+    const t = new Touch({ identifier: id, target: el, clientX: x, clientY: y });
+    el.dispatchEvent(new TouchEvent(type, {
+      bubbles: true, cancelable: true,
+      touches: type === 'touchend' ? [] : [t], targetTouches: type === 'touchend' ? [] : [t], changedTouches: [t],
+    }));
+  };
+  const btn = (name) => [...root.querySelectorAll('.tc-btn')].find((b) => b.textContent === name);
+
+  // the stick: a sideways push walks, a loose diagonal doesn't jump, a firm push up does
+  const cx = 100, cy = innerHeight - 100;
+  touch('touchstart', root, cx, cy, 1);
+  touch('touchmove', root, cx + 40, cy - 12, 1);
+  check('Stick: push sideways walks', !!held.right && !held.up, 'right ' + held.right + ' up ' + held.up);
+  touch('touchmove', root, cx + 40, cy - 30, 1);
+  check('Stick: a loose diagonal does not jump', !held.up);
+  touch('touchmove', root, cx + 10, cy - 70, 1);
+  check('Stick: a firm push up jumps', !!held.up);
+  touch('touchend', root, cx + 10, cy - 70, 1);
+  check('Stick: letting go stops', !held.up && !held.right);
+
+  // the buttons
+  tick(70);
+  me.x = foe.x - 30;
+  touch('touchstart', btn('PUNCH'), 700, 300, 2);
+  tick(1);
+  check('PUNCH button punches', me.state === 'attack' && me.atk.id === 'jab', me.state);
+  touch('touchend', btn('PUNCH'), 700, 300, 2);
+  tick(40);
+  touch('touchstart', btn('BLOCK'), 700, 200, 3);
+  tick(2);
+  check('BLOCK button holds a block', me.state === 'block', me.state);
+  touch('touchend', btn('BLOCK'), 700, 200, 3);
+  tick(5);
+  check('Letting go of BLOCK stops blocking', me.state !== 'block', me.state);
+  me.x = foe.x - 30;
+  touch('touchstart', btn('THROW'), 640, 200, 4);
+  tick(1);
+  check('THROW button starts a suplex', me.atk && me.atk.id === 'grab', me.atk && me.atk.id);
+  touch('touchend', btn('THROW'), 640, 200, 4);
+  tick(60);
+  foe.x = me.x + 150;
+  me.meter = 100;
+  touch('touchstart', btn('GUITAR'), 500, 60, 5);
+  tick(1);
+  check('GUITAR button plays the guitar', me.cast && me.cast.id === 'guitar');
+  touch('touchend', btn('GUITAR'), 500, 60, 5);
+  TouchControls.releaseAll();
+  tick(70);
+  touch('touchstart', btn('II'), 600, 60, 6);
+  check('II button pauses', G.paused);
+  touch('touchend', btn('II'), 600, 60, 6);
+  TouchControls.releaseAll();
+  togglePause();
+
+  // tapping the menus: every screen has tap zones, including the way back
+  setScene(MenuScene());
+  const c = document.getElementById('game').getContext('2d');
+  const tapCanvas = (gx, gy) => {
+    const r = canvas.getBoundingClientRect();
+    G.scene.draw(c);
+    canvas.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', clientX: r.left + gx * r.width / W, clientY: r.top + gy * r.height / H }));
+  };
+  clickZones = [];
+  const menuScene = G.scene;
+  tapCanvas(W / 2, 60);
+  const selectScene = G.scene;
+  check('Tapping FIGHT in the menu leaves the menu', selectScene !== menuScene && !selectScene.isFight);
+  clickZones = [];
+  tapCanvas(10, H - 10);
+  check('Tapping BACK leaves fighter select', G.scene !== selectScene);
+  clickZones = [];
+  setScene(MenuScene());
+}
+try { phoneControls(); } catch (e) { check('Phone controls ran to the end', false, e.message + ' ' + (e.stack || '').split('\n')[1]); }
+
+// --- AI-vs-AI soak: every pairing on every stage ---
+function soak() {
+  const wins = {}, games = {};
+  let errors = [], ticks = 0, timeouts = 0;
+  const c = document.getElementById('game').getContext('2d');
+  for (const diff of ['EASY', 'NORMAL', 'BRUTAL']) {
+    DIRT.difficulty = diff;
+    for (const p of ROSTER) for (const o of ROSTER) {
+      const stage = STAGE_LIST[(ROSTER.indexOf(p) + ROSTER.indexOf(o)) % 3].id;
+      const a = makeFighter(p, 0, true), b = makeFighter(o, 1, true, p === o);
+      const w = newWorld(a, b, getStage(stage));
+      resetFighter(a, 250, 1); resetFighter(b, 390, -1);
+      w.locked = false;
+      try {
+        let n = 0;
+        for (; n < 99 * 60 && !w.koBy; n++) {
+          stepWorld(w);
+          ticks++;
+          for (const f of w.f) {
+            if (!isFinite(f.x) || !isFinite(f.y) || !isFinite(f.hp)) throw new Error('bad number on ' + f.id + ' in state ' + f.state);
+            if (f.x < 0 || f.x > WORLD_W) throw new Error('off the stage: ' + f.id);
+          }
+          if (n % 200 === 0) { c.save(); drawStage(c, w.stage, w.cam, w.frame); drawWorld(c, w); c.restore(); }
+        }
+        if (w.koBy) {
+          const win = w.koBy.id; wins[win] = (wins[win] || 0) + 1;
+        } else timeouts++;
+        games[p] = (games[p] || 0) + 1; games[o] = (games[o] || 0) + 1;
+      } catch (e) {
+        errors.push(p + ' v ' + o + ' (' + diff + '): ' + e.message);
+      }
+    }
+  }
+  DIRT.difficulty = 'NORMAL';
+  check('48 AI fights run without a crash', errors.length === 0, errors.slice(0, 3).join(' | '));
+  check('AI fights end in KOs rather than stalling', timeouts < 12, timeouts + ' timed out');
+  document.getElementById('stats').textContent = 'AI v AI KOs: ' + JSON.stringify(wins) + '  timeouts: ' + timeouts + '  ticks: ' + ticks;
+}
+soak();
+
+document.getElementById('sum').textContent = fail ? fail + ' FAILED, ' + pass + ' passed' : 'ALL ' + pass + ' PASSED';
+document.getElementById('sum').className = fail ? 'bad' : 'ok';
+</script>
+</body>
+</html>
