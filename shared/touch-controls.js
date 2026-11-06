@@ -6,6 +6,7 @@
 //
 //   TouchControls.setup({
 //     stick: { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', sprint: 'Shift' },
+//                                             // upAt/downAt: how far (0..1) to push for up/down, default 0.38
 //     buttons: [{ label: 'Jump', key: ' ' }, { label: 'Punch', key: 'z' }],   // right thumb, first is biggest
 //     top: [{ label: 'II', key: 'p' }],                                       // small buttons along the top
 //     menu: () => state.mode !== 'playing',   // while true the controls hide and a tap presses menuKey
@@ -268,8 +269,8 @@
     const T = 0.38;
     if (x < -T && s.left) want.add(s.left);
     if (x > T && s.right) want.add(s.right);
-    if (y > T && s.up) want.add(s.up);
-    if (y < -T && s.down) want.add(s.down);
+    if (y > (s.upAt || T) && s.up) want.add(s.up);
+    if (y < -(s.downAt || T) && s.down) want.add(s.down);
     if (s.sprint && Math.hypot(x, y) > 0.92) want.add(s.sprint);
     for (const k of stick.keys) if (!want.has(k)) release(k);
     for (const k of want) if (!stick.keys.has(k)) press(k);

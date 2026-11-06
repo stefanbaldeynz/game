@@ -23,6 +23,7 @@ The server is `serve.ps1`, which uses the PowerShell built into Windows. It only
 | Astro Blaster | [`astro-blaster/`](astro-blaster/) | 2D arcade space shooter. Fly The Chow Hauler and blast asteroids. |
 | Hellkeep | [`hellkeep/`](hellkeep/) | Shooter in hell, in five rounds: two in 3D first-person, two side-on platform rounds and a tower-defence siege. |
 | Wacky Wings | [`wacky-wings/`](wacky-wings/) | Retro kart racer with NZ birds. Throw possums at the other racers and win a Speight's. |
+| The Legend Street Fighter | [`legend-street-fighter/`](legend-street-fighter/) | One-player 16-bit beat-em-up with four fighters and three stages: London, Berlin and the wasteland of Ostrava. Special moves, power-ups and Willy Rage. |
 
 Every game works on phones and tablets too: touch controls appear by themselves when you play on a touch screen (an on-screen stick under your left thumb, buttons under your right). Most games share the touch controls in [`shared/touch-controls.js`](shared/touch-controls.js); Valinor and Iyla's Game have their own built in.
 
