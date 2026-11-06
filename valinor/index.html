@@ -372,7 +372,7 @@ function resize() {
   post.uniforms.uRes.value.set(RW, RH);
   // Upright, widen the view upwards and downwards so the sides don't get too narrow.
   const tallFov = (fov) => a >= 1 ? fov : 2 * Math.atan(Math.tan(fov * Math.PI / 360) / Math.sqrt(a)) * 180 / Math.PI;
-  camera.fov = tallFov(64); mapCam.fov = tallFov(50);
+  camera.fov = window.BASE_FOV = tallFov(64); mapCam.fov = tallFov(50);
   camera.aspect = RW / RH; camera.updateProjectionMatrix();
   mapCam.aspect = RW / RH; mapCam.updateProjectionMatrix();
   PSCALE.value = RH / (2 * Math.tan(camera.fov * Math.PI / 360));
@@ -2534,7 +2534,7 @@ function rivendellLayout() {
 const USTAIR = { FLIGHTS: 6, STEPS: 30, RISE: 7, X: 18, LAND: 23 }, OSG = { TOP: 30, R: 8.6 };   // (the Stairs of Cirith Ungol's size; Osgiliath's tower)
 const RACE_FORD = 520, RACE_END = 572;
 const ER = { WALK: 12, X0: -46, X1: 46, TOWERS: [-46, -23, 0, 23, 46], TOP: 20 };   // (Erebor's ramparts: the walk's height and ends, its towers, their tops)   // (the race to the Ford: where the river crosses the road, and where the road ends)
-const DOOM_R = 46;
+const DOOM_R = 46, EAG_S1 = 760, EAG_END = 1560, EAG_V = 25;
 const LEVELS = [
   {
     name: 'THE FIRST CIRCLE', sub: 'RIDE OF SHADOWFAX', loc: 'mt', next: 'CLIMB TO THE SECOND CIRCLE', R: 50, Y0: 0, base: -26, wallH: 12, fog: 0x2c1a48, ride: true,
@@ -2654,6 +2654,13 @@ const LEVELS = [
     content() { raceContent(this); },
   },
   {
+    // the Watcher in the Water before the Doors of Durin: cut down its tentacles, then strike the thing itself (see the Watcher)
+    straight: true, roam: true, kh: true, name: 'THE WATCHER IN THE WATER', sub: 'BEFORE THE DOORS OF DURIN', loc: 'moria', theme: 'watcher', next: 'ENTER THE MINES', R: 40, Y0: 0, CX: 115000, CZ: 0, base: -6, wallH: 0, winTitle: 'THE DOORS OF DURIN OPEN!',
+    ...watcherLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { watcherContent(); },
+  },
+  {
     // Moria's first level, a Kingdom Hearts level: caverns and tunnels in the spirit of Unreal Tournament 2004's Rrajigar mines (see the Mines of Moria)
     straight: true, roam: true, kh: true, stepUp: true, camWalls: true, name: 'THE MINES OF MORIA', sub: "DURIN'S BANE AWAKES", loc: 'moria', theme: 'minekh', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 15000, CZ: 0, base: -30, wallH: 0, winTitle: 'THE WAY TO THE BRIDGE IS OPEN!',
     ...mineLayout(),
@@ -2731,7 +2738,7 @@ const LEVELS = [
   },
   {
     // a climb up the side of the mountain on spires of rock, with the lava rising underneath
-    straight: true, name: 'MOUNT DOOM', sub: 'THE WAY UP THROUGH THE FIRE', loc: 'doom', theme: 'doom', next: 'RETURN TO THE MAP', R: DOOM_R, Y0: 0, CX: 35000, CZ: 0, base: -14, wallH: 8, wallTop: 90, open: [[-1.6, TAU * DOOM_R - 16.5]],
+    straight: true, name: 'MOUNT DOOM', sub: 'THE WAY UP THROUGH THE FIRE', loc: 'doom', theme: 'doom', next: 'FLY OUT ON THORONDOR', R: DOOM_R, Y0: 0, CX: 35000, CZ: 0, base: -14, wallH: 8, wallTop: 90, open: [[-1.6, TAU * DOOM_R - 16.5]],
     floors: [[-16.6, 6.5, -3.5]],
     pillars: doomC().pillars,
     bars: [], dz: [], balrogs: [],
@@ -2743,6 +2750,20 @@ const LEVELS = [
       for (const [t, s, x, y] of C.orcs) addOrc(t, s, x, t === 'grunt' ? { y, patrol: { ax: 'x', amp: 1, sp: 1.5 } } : { y });
       for (const [a0, a1, x, y, n] of C.apples) aLine(a0, a1, x, y, n);
     },
+  },
+  {
+    // the Ring in the fire: out of the burning Mountain on the back of Thorondor (see The Escape)
+    straight: true, roam: true, kh: true, name: 'THE ESCAPE FROM MOUNT DOOM', sub: 'ON THE WINGS OF THORONDOR', loc: 'doom', theme: 'eaglelv', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 120000, CZ: 0, base: -30, wallH: 0, winTitle: 'OUT OF THE FIRE!',
+    ...eagleLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { eagleContent(); },
+  },
+  {
+    // Bree in the rain: through the lanes to The Prancing Pony, keeping out of sight of the Nazgûl (see Bree)
+    straight: true, roam: true, kh: true, name: 'BREE', sub: 'THE NINE IN THE LANES', loc: 'bree', theme: 'bree', camGrid: true, next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 125000, CZ: 0, base: -4, wallH: 0, winTitle: 'SAFE AT THE PRANCING PONY!',
+    ...breeLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { breeContent(this); },
   },
   {
     // the dark forest to roam, floor and walkways high in the giant trees: slay the spiders hunting there.
@@ -2778,7 +2799,7 @@ const LEVELS = [
   },
   {
     // Erebor, the first level: on the ramparts before the Gate with a bow, the dragon wheeling over the valley (see EREBOR)
-    straight: true, roam: true, kh: true, bow: true, startH: Math.PI, startY: 12, name: 'EREBOR', sub: 'THE RAMPARTS · SMAUG!', loc: 'erebor', theme: 'erebor', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 85000, CZ: 0, base: -20, wallH: 0, winTitle: 'THE DRAGON FLEES INTO THE MOUNTAIN!',
+    straight: true, roam: true, kh: true, bow: true, bowU: true, startH: Math.PI, startY: 12, name: 'EREBOR', sub: 'THE RAMPARTS · SMAUG!', loc: 'erebor', theme: 'erebor', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 85000, CZ: 0, base: -20, wallH: 0, winTitle: 'THE DRAGON FLEES INTO THE MOUNTAIN!',
     ...ereborLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { ereborContent(this); },
@@ -3043,7 +3064,7 @@ function readInput() {
     if (hit.KeyW) { if (T - (KH.lastW ?? -9) < .3) inp.chargeP = true; KH.lastW = T; }
     if (hit.KeyL && !KH.sub) { if (!P.ground && T - (KH.lastL ?? -9) < .45) inp.fjumpP = true; KH.lastL = T; }
   } else { inp.camT = 0; inp.chargeP = inp.fjumpP = false; }
-  if (AUTORUN && LV && state === 'play') {   // testing: &autorun=1 runs and jumps up a run-forward level, steering for a landing place in the air
+  if (AUTORUN && LV && !LV.kh && state === 'play') {   // testing: &autorun=1 runs and jumps up a run-forward level, steering for a landing place in the air
     const here = P.standOn, nx = solids.filter(b => b.on && (b.kind === 'floor' || b.kind === 'plat') && b.s0 > P.s + .05 && b.y1 < P.y + 2).sort((u, v) => u.s0 - v.s0)[0], cx = b => (b.x0 + b.x1) / 2;
     if (P.ground) { AUTOT = null; WALKTO = [P.s + 4, nx && nx.s0 - P.s < 6 ? clamp(cx(nx), (here && here.x0 || -3) + .5, (here && here.x1 || 3) - .5) : here && here.x0 !== undefined ? cx(here) : P.x]; const stepUp = nx && nx.y1 - P.y <= .36 && nx.s0 - (here && here.s1 !== undefined ? here.s1 : P.s) < .05; inp.jump = false; const e1 = here && here.s1 !== undefined ? here.s1 : P.s + 9, gap = nx && nx.s0 - e1 > .05; if (nx && !stepUp && (gap ? P.s > e1 - .75 : nx.s0 - P.s < .9)) { inp.jump = true; inp.jumpP = true; AUTOT = nx; AUTOJ = T; } else if (Math.abs(P.vs) < 1 && T > 1) { hit.KeyK = true; if ((AUTOS += 1 / 60) > 1.5) { AUTOS = 0; inp.jump = true; inp.jumpP = true; AUTOJ = T; } } else AUTOS = 0; }
     else { if (AUTOT) WALKTO = [AUTOT.s0 + Math.min(1.6, (AUTOT.s1 - AUTOT.s0) / 2), cx(AUTOT)]; inp.jump = P.vy > 0; }
@@ -3126,8 +3147,9 @@ function updateTouchUI() {
 let cratesDirty = 0;
 function bounce(v) { P.vy = inp.jump ? v * 1.22 : v; P.ground = false; P.jumpHeld = inp.jump; P.coyote = 0; P.dbl = false; }
 function updatePlayer(dt) {
+  if (LV.flight) { eagleMove(dt); return; }   // (The Escape: on Thorondor's back)
   if (LV.deeping && !DEEP.blown) { inp.x = inp.z = 0; inp.spinP = false; }   // (the Deeping Wall's scene: hands off until it goes up)
-  if (LV.bow && BOW.aim) { BOW.cx = clamp(BOW.cx + inp.x * 1.4 * dt, -.97, .97); BOW.cy = clamp(BOW.cy + inp.z * 1.4 * dt, -.7, .94); inp.x = inp.z = 0; }   // (taking aim: W A S D move the sight, and Gandalf stands)
+  if (LV.bow && BOW.aim) { const sp_ = LV.bowU ? .95 : 1.4; BOW.cx = clamp(BOW.cx + inp.x * sp_ * dt, -.97, .97); BOW.cy = clamp(BOW.cy + inp.z * sp_ * dt, -.7, .94); inp.x = inp.z = 0; }   // (taking aim: W A S D move the sight, and Gandalf stands)
   let ix = inp.x, iz = inp.z;
   if (cam.m > .5) ix = -ix;
   if (LV.arena) {
@@ -5308,6 +5330,10 @@ function updateCamera(dt) {
     camera.lookAt(cam.wl); return;
   }
   if (LV.roam && !LV.duel) {
+    if (LV.flight) {   // (on Thorondor: behind and above him, leaning into his turns)
+      const c = eagleC(P.s + 8); cam.yaw = 0; _a.copy(tw(P.s - 11, lerp(P.x, c[0], .25), P.y + 3)); _b.copy(tw(P.s + 16, lerp(P.x, c[0], .35), P.y + .4)); if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-9 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp);
+      const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
+    }
     if (LV.sideview) {   // (the Stairs of Cirith Ungol: from the side)
       cam.yaw = 0; _a.copy(tw(-13, P.x * .92, P.y + 3.6)); _b.copy(tw(1, P.x, P.y + 1.8)); if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-6 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp); const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
     }
@@ -5318,10 +5344,10 @@ function updateCamera(dt) {
       _a.copy(tw(RACE_FORD + 23, 9, 7.5)); _b.copy(tw(RACE_FORD - 2, -2, 1.5)); if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } camera.position.copy(cam.wp);
       const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
     }
-    if (LV.bow) {   // (with a bow: from over Gandalf's shoulder, out at the sky; Shift and / turn it, and the sight turns it from the edge of the screen)
+    if (LV.bow && (!LV.bowU || BOW.aim)) {   // (with a bow: from over Gandalf's shoulder, out at the sky; Shift and / turn it, and the sight turns it from the edge of the screen)
       const eX = BOW.aim && Math.abs(BOW.cx) > .7 ? Math.sign(BOW.cx) * (Math.abs(BOW.cx) - .7) * 4 : 0, eY = BOW.aim ? (BOW.cy > .7 ? (BOW.cy - .7) * 3 : BOW.cy < -.4 ? (BOW.cy + .4) * 3 : 0) : -(cam.bp || 0) * .8;
       cam.by = (cam.by || 0) + ((inp.camT || 0) * 1.5 - eX) * dt; if (!LV.bow360) cam.by = clamp(cam.by, -1.3, 1.3); cam.bp = clamp((cam.bp || 0) + eY * dt, 0, 1); cam.yaw = (LV.bow360 ? 0 : Math.PI) + cam.by;
-      const fs = Math.cos(cam.yaw), fx_ = Math.sin(cam.yaw); _a.copy(tw(P.s - fs * 6.5, P.x - fx_ * 6.5, P.y + 3.2)); _b.copy(tw(P.s + fs * 30, P.x + fx_ * 30, P.y + 7 + cam.bp * 32));
+      const fs = Math.cos(cam.yaw), fx_ = Math.sin(cam.yaw), bk_ = LV.bowU ? 4 : 6.5; _a.copy(tw(P.s - fs * bk_, P.x - fx_ * bk_, P.y + 3.2)); _b.copy(tw(P.s + fs * 30, P.x + fx_ * 30, P.y + 7 + cam.bp * 32));
       if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-8 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp);
       const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
     }
@@ -5338,7 +5364,7 @@ function updateCamera(dt) {
     }
     // open country: a chase camera behind Gandalf that slowly swings round to follow where he's heading
     // (in a Kingdom Hearts boss fight it pulls back and turns to keep the boss in view beyond Gandalf)
-    const bo = LV.kh && KH.boss && KH.boss.m.root.visible && KH.boss.state !== 'fall' && KH.boss.plaza.near !== false ? KH.boss : null; cam.bk = damp(cam.bk || 0, bo ? 1 : 0, 2, dt);
+    const bo = LV.kh && !LV.bowU && KH.boss && KH.boss.m.root.visible && KH.boss.state !== 'fall' && KH.boss.plaza.near !== false ? KH.boss : null; cam.bk = damp(cam.bk || 0, bo ? 1 : 0, 2, dt);
     // (Left Shift and / turn it by hand in the Kingdom Hearts levels; it leaves you be for a moment after)
     if (state === 'play' && inp.camT) { cam.yaw += inp.camT * 2.4 * dt; cam.man = 1.4; } cam.man = (cam.man || 0) - dt;
     // (inside Orthanc it rides behind Gandalf round the stair, looking forward and up it, as on Kingdom Hearts II's Wayward Stairs)
@@ -5357,6 +5383,8 @@ function updateCamera(dt) {
     const hi = LV.theme === 'isen' || LV.fall ? 1 : 0;   // (on Orthanc's top it looks down over the horns instead of from among them)
     let D = 7.4 + cam.bk * (hi ? 3 : 4.4); const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw);
     if (onDisk) { D = 5.5; for (let k = 0; k < 12 && Math.hypot(P.s - c * D, P.x - sn * D) > ISEN.IN1 - .2; k++) D *= .85; }   // (on a round platform inside: kept within the tower's wall)
+    if (LV.bowU) for (let k = 0; k < 14 && P.s - c * D > 5.2; k++) D *= .88;   // (at Erebor it stays in front of the carved kings)
+    if (LV.camGrid) { let dd = .8; while (dd < D) { if (!LV.layout.free(P.s - c * dd, P.x - sn * dd)) { D = Math.max(1.8, dd - .5); break; } dd += .3; } }   // (in the lanes of Bree it comes in rather than go into the houses)
     if (LV.camRing && Math.hypot(P.s, P.x) < LV.camRing) for (let k = 0; k < 14 && Math.hypot(P.s - c * D, P.x - sn * D) > LV.camRing; k++) D *= .88;   // (on Weathertop it stays inside the ring, not behind the walls)
     if (LV.camWalls && TERR) { const cy = cam.gy + 3.9 + cam.bk * 2.2 - .9; let dd = 1.5; while (dd < D) { const y_ = terrainAt(P.s - c * dd, P.x - sn * dd, true); if (y_ > cy) { D = Math.max(2.4, dd - 1); break; } dd += .5; } }   // (between hills and tunnel walls it comes in closer rather than into the rock)
     _a.copy(tw(P.s - c * D, P.x - sn * D, cam.gy + (onDisk ? 4.6 : 3.9) + cam.bk * (hi ? 5.5 : 2.2))); _b.copy(tw(P.s + c * 3, P.x + sn * 3, cam.gy + 1.1 + cam.bk * 2.6));
@@ -5649,18 +5677,19 @@ for (let i = 0; i < 12; i++) {
 const NODES = [
   { name: 'THE SHIRE', x: -50, z: -2.5, open: true, loc: 'shire', sub: 'OPEN COUNTRY · DEFEAT THE NINE NAZGÛL' },
   { name: 'RIVENDELL', x: -20, z: -23.5, open: true, loc: 'riv', sub: 'OPEN VALLEY · FIND THE FELLOWSHIP' },
-  { name: 'MORIA', x: -14.5, z: -3.5, open: true, loc: 'moria', sub: "THE MINES · BALIN'S CHAMBER · THE BRIDGE · THE FALL" },
+  { name: 'MORIA', x: -14.5, z: -3.5, open: true, loc: 'moria', sub: "THE WATCHER · THE MINES · BALIN'S CHAMBER · THE BRIDGE · THE FALL" },
   { name: 'EDORAS', x: 10, z: 16.8, open: true, loc: 'rohan', sub: 'TO THE GOLDEN HALL · URUK-HAI' },
   { name: 'MINAS TIRITH', x: 42.2, z: 21, open: true, loc: 'mt', sub: 'THE SIEGE OF GONDOR · 3 LEVELS' },
   { name: 'CIRITH UNGOL', x: 50.5, z: 10, open: true, loc: 'ungol', sub: "THE PASS · THE STAIRS · 2 LEVELS" },
   { name: 'MORDOR', x: 57, z: -3, open: true, loc: 'mordor', sub: 'ACROSS GORGOROTH · AVOID THE EYE' },
-  { name: 'MOUNT DOOM', x: 62.5, z: 11.5, open: true, loc: 'doom', sub: 'THE WAY UP THROUGH THE FIRE' },
+  { name: 'MOUNT DOOM', x: 62.5, z: 11.5, open: true, loc: 'doom', sub: 'THE WAY UP · THE ESCAPE · 2 LEVELS' },
   { name: 'WEATHERTOP', x: -34, z: -14, open: true, loc: 'weather', sub: 'DUEL THE WITCH-KING' },   // added last: the road and Minas Tirith go by position in this list
   { name: 'MIRKWOOD', x: 8, z: -24, open: true, loc: 'mirk', sub: 'THE DARK FOREST · SLAY THE SPIDERS' },
   { name: 'ISENGARD', x: -18, z: 9, open: true, loc: 'isen', sub: 'UP THE TOWER OF ORTHANC · SARUMAN BOSS' },
   { name: "HELM'S DEEP", x: -14.6, z: 15.8, open: true, loc: 'helm', sub: 'DOWN THE RAMP · BALROG BOSS' },
   { name: 'EREBOR', x: 24, z: -34, open: true, loc: 'erebor', sub: 'THE LONELY MOUNTAIN · SMAUG · 2 LEVELS' },
   { name: 'OSGILIATH', x: 47.5, z: 19.5, open: true, loc: 'osgil', sub: 'THE RUINED CITY · SHOOT DOWN THE NINE' },
+  { name: 'BREE', x: -40, z: -6.5, open: true, loc: 'bree', sub: 'A WALLED TOWN IN THE RAIN · AVOID THE NINE' },
 ];
 const ROAD = (() => {
   const way = [NODES[0], [-40, -6], [-30, -17], NODES[1], [-18.5, -13], NODES[2], [-5, 3], [1, 11], NODES[3], [21, 17], [31, 14.5], [40, 15.5], NODES[4], [46, 14.5], NODES[5], [54, 3], NODES[6], [62, 0], [65, 6], NODES[7]];
@@ -5711,7 +5740,7 @@ const NEAR_R = 2.4;
 function nodeNear() { let best = -1, bd = NEAR_R; NODES.forEach((n, i) => { const d = Math.hypot(tok.p.x - n.x, tok.p.z - n.z); if (d < bd) { bd = d; best = i; } }); return best; }
 const onLand = (x, z) => BOARD ? boardLand(x, z) : coastAt(x, z) > .8;
 // a place with several levels opens its own menu to choose from (Moria; Minas Tirith flies down into the city instead)
-const CHAP_DESC = { ungol: ['The pass: run from Shelob', 'The stairs: the long climb up the cliff'], helm: ['Down through the Hornburg to the Balrog', 'The Deeping Wall blows: hold the breach'], erebor: ['The ramparts before the Gate: shoot down the dragon', 'The treasure hall: the dragon in his hoard'], riv: ['Find the Fellowship in the hidden valley', 'Race the Nine to the Ford of Bruinen'], moria: ['The dwarf-halls, to the doors of the bridge', 'Goblins and a cave troll at the tomb of Balin', 'Face the Balrog on the bridge', 'Fall with the Balrog into the deep'] };
+const CHAP_DESC = { ungol: ['The pass: run from Shelob', 'The stairs: the long climb up the cliff'], helm: ['Down through the Hornburg to the Balrog', 'The Deeping Wall blows: hold the breach'], erebor: ['The ramparts: sword for the orcs, bow and sight (U) for Smaug on the wing', 'The treasure hall: Smaug in his hoard'], doom: ['The way up through the fire to the Crack', 'Fly out of the burning Mountain on Thorondor'], riv: ['Find the Fellowship in the hidden valley', 'Race the Nine to the Ford of Bruinen'], moria: ['Before the Doors of Durin: the Watcher in the Water', 'The dwarf-halls, to the doors of the bridge', 'Goblins and a cave troll at the tomb of Balin', 'Face the Balrog on the bridge', 'Fall with the Balrog into the deep'] };
 let CHAP = null;
 function openChap(loc) {
   const ls = LEVELS.map((L, i) => [L, i]).filter(([L]) => L.loc === loc); CHAP = { loc, ls: ls.map(([, i]) => i), sel: 0 }; tok.dest = null;
@@ -5822,7 +5851,7 @@ function updateMap(dt) {
 
 // --- your own War of the Ring board (models/livingmap.glb and livingmap.json, from Battle for Middle-earth II: see
 //     models/README.md): it replaces the little diorama, each stop moves onto its region, and Gandalf walks over its hills ---
-const STOP_REGION = { shire: 'The_Shire', riv: 'Rhudaur', moria: 'Redhorn_Pass', weather: 'Amon_Sul', rohan: 'Rohan', mt: 'Minas_Tirith', ungol: 'Minas_Morgul', mordor: 'Mordor', doom: 'Mount_Doom', mirk: 'Mirkwood', helm: 'Helms_Deep', isen: 'Isengard', erebor: 'Erebor', osgil: 'Osgiliath' };
+const STOP_REGION = { bree: 'Amon_Sul', shire: 'The_Shire', riv: 'Rhudaur', moria: 'Redhorn_Pass', weather: 'Amon_Sul', rohan: 'Rohan', mt: 'Minas_Tirith', ungol: 'Minas_Morgul', mordor: 'Mordor', doom: 'Mount_Doom', mirk: 'Mirkwood', helm: 'Helms_Deep', isen: 'Isengard', erebor: 'Erebor', osgil: 'Osgiliath' };
 // what's hidden (clouds, smoke and BFME's own markers), what's water, and what's the ground itself (its 20 painted tiles)
 const BOARD_HIDE = /^(.*(cloud|pick|smok|sunray|flash|marker|brdr|rallyflag|hero)|impassable|lm_coast)/i, BOARD_WATER = /ocean|water|sea\b|wtr/i, BOARD_GROUND = /^LM_\d\d(_\d+)?$/;   // (three.js adds _1 when a part shares its name with the node holding it)
 // the tiles' pictures, small, so the map can tell the painted sea (blue) from land where Gandalf may walk
@@ -5931,7 +5960,7 @@ function step(dt, noRender) {
   else if (state === 'win') updateWin(dt);
   if (state !== 'paused') {
     if (state !== 'title' && state !== 'map' && state !== 'gameover' && state !== 'complete') {
-      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateRace(dt); updateFly(dt); updateFellowship(dt); updateHobbiton(dt); updateMordorKH(dt); updateDoom(dt); updateDuel(dt); updateSprings(dt); updateKH(gdt);
+      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateRace(dt); updateFly(dt); updateFellowship(dt); updateHobbiton(dt); updateMordorKH(dt); updateDoom(dt); updateEagleLv(dt); updateBree(dt); updateWatcher(dt); updateDuel(dt); updateSprings(dt); updateKH(gdt);
     }
     updateDragons(dt); updateApples(); updatePhial(dt); updateLightning(dt); updateAmbient(dt); updateTree(dt);
     fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt); poseDuelGandalf(dt);
@@ -5982,7 +6011,9 @@ const LOCAL_ASSETS = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname
 // hide: parts of the model to leave out, by name (the Balrog's sword fire fills the screen at his size; Shadowfax comes with a Gandalf on him).
 // anims: which clip to use for an action, where the usual names below would pick the wrong one.
 // saberBone: the bone the lightsaber goes on in the Weathertop duel (its sword hand), and saberRot to turn the blade along it.
+const TROLL_ANIMS = { idle: /^idle_a/i, walk: /^(walk_a|run_a)/i, attack: /^attack_a/i, hit: /^hurt_a/i, die: /^die_/i };   // (their files also hold dismounting clips whose names would pass for attacks)
 const MODEL_SLOTS = {
+  eagle: { height: 3.2, turn: -Math.PI / 2, anims: { fly: /^fly_a/i, idle: /^hvra/i, attack: /^attack_b/i, hit: /^hit/i } }, tentacle: { height: 11, turn: -Math.PI / 2, hide: /BOX/i, anims: { idle: /^idle_a/i, attack: /^attack_a/i, hit: /^spna/i, die: /^dwna/i } },   // (The Escape: Battle for Middle-earth's great eagle; the Watcher: its tentacle)
   gandalf: { height: 1.75, turn: -Math.PI / 2, saberBone: 'B_SWORDBONE' }, balrog: { height: 11, turn: -Math.PI / 2, glow: .35, sink: .45, fx: 0xff7a30, hide: /swordfire/i }, witchking: { height: 2.9, turn: -Math.PI / 2, saberBone: 'B_SWORD', hide: /^mace/i },
   shelob: { height: 3.2, turn: -Math.PI / 2 }, nazgul: { height: 2.3, turn: -Math.PI / 2 }, orc: { height: 1.45, turn: -Math.PI / 2, hide: /^orc[a-f](?![a-z])/i },   // (its six corpses, all on at once, and their picture never came)
   frodo: { height: 1.15, turn: -Math.PI / 2 }, sam: { height: 1.15, turn: -Math.PI / 2 }, merry: { height: 1.2, turn: -Math.PI / 2 }, pippin: { height: 1.2, turn: -Math.PI / 2 },
@@ -5991,8 +6022,8 @@ const MODEL_SLOTS = {
   sauron: { height: 20, turn: -Math.PI / 2 },   // in his own units: the game builds Sauron at .28 scale (about 5.6 tall)
   spider: { height: 1.6, turn: -Math.PI / 2, src: 'shelob' },
   troll: { height: 5.8, turn: -Math.PI / 2, hide: /^BOX|FORGED_BLADE/i },   // (Balin's Chamber: Rise of the Witch-king's hill troll)
-  cavetroll: { height: 5.8, turn: -Math.PI / 2, hide: /BOX|ROCK|FORGED_BLADE/i, fb: 'troll' }, armtroll: { height: 6.4, turn: -Math.PI / 2, hide: /BOX|FORGED_BLADE/i, fb: 'troll' },   // (Balin's Chamber: the unarmoured cave troll; the Deeping Wall and Mordor: the armoured attack troll)
-  orcarch: { height: 1.6, turn: -Math.PI / 2, hide: /ARROWFIRE|FIREAROWTIP/i, fb: 'urukx' }, orcpike: { height: 2.6, turn: -Math.PI / 2, hide: /Banner|FORGED_BLADE/i, fb: 'urukp' }, orcbrute: { height: 2.3, turn: -Math.PI / 2, hide: /FORGED_BLADE/i, fb: 'overseer' }, easterling: { height: 2.05, turn: -Math.PI / 2, hide: /FORGED_BLADE/i, fb: 'uruk' }, haradrim: { height: 2.05, turn: -Math.PI / 2, hide: /FORGED_BLADE/i, fb: 'urukp' },   // (Mordor's own: orc archers, orc pikes, brutes, Easterlings, Haradrim)
+  cavetroll: { height: 5.8, turn: -Math.PI / 2, hide: /^(BOX|ROCK|SKELETON|SK_RIBS|TRUNK01\d|TROLL_MESH01)|FORGED_BLADE/i, fb: 'troll', anims: TROLL_ANIMS }, armtroll: { height: 6.4, turn: -Math.PI / 2, hide: /^(BOX|ROCK|SKELETON|MNTTROLL|TRUNK01\d|ATTACK_TROLL_ME\d|TROLL|ARMOR|BRESTPLT|OBJECT0)|FORGED_BLADE/i, fb: 'troll', anims: TROLL_ANIMS },   // (Balin's Chamber: the unarmoured cave troll; the Deeping Wall and Mordor: the armoured attack troll)
+  orcarch: { height: 1.6, turn: -Math.PI / 2, hide: /ARROWFIRE|FIREAROWTIP/i, fb: 'urukx' }, orcpike: { height: 2.6, turn: -Math.PI / 2, hide: /Banner|FORGED_BLADE/i, fb: 'urukp' }, orcbrute: { height: 2.3, turn: -Math.PI / 2, hide: /^ORC[A-F]$|FORGED_BLADE/i, fb: 'overseer' }, easterling: { height: 2.05, turn: -Math.PI / 2, hide: /FORGED_BLADE/i, fb: 'uruk' }, haradrim: { height: 2.05, turn: -Math.PI / 2, hide: /FORGED_BLADE/i, fb: 'urukp' },   // (Mordor's own: orc archers, orc pikes, brutes, Easterlings, Haradrim)
   urukp: { height: 3, turn: -Math.PI / 2, hide: /FORGED_BLADE/i }, urukx: { height: 2.1, turn: -Math.PI / 2, hide: /FIREAROWTIP/i }, fanatic: { height: 2.1, turn: -Math.PI / 2 }, overseer: { height: 2.8, turn: -Math.PI / 2, hide: /^BOX/i },   // (the Uruk-hai's pikemen, crossbowmen, fanatics and their overseer)
   dragon: { height: 7, turn: -Math.PI / 2, anims: { fly: /^fly_a/i, idle: /^idle_a/i, attack: /^attack_a/i, hit: /^hurt_a/i, die: /^die_k/i } },   // (Erebor: Smaug, in the shape of Rise of the Witch-king's dragon)
   floodhorse: { height: 4, turn: -Math.PI / 2, anims: { walk: /^run/i }, glow: .5 },   // (the Ford: the water horses of Battle for Middle-earth's flood)
@@ -7775,6 +7806,311 @@ function buildDoom(L, TH) {
   TH.braz = []; for (const [s0, s1, x0, x1, top] of doomC().pillars) { if (s1 - s0 < 5 || x1 - x0 < 5) continue; for (const x of [x0 + .45, x1 - .45]) { const q = tw(s0 + .6, x, top); part(GEO.cyl, lam(0x1a1210), scene, q.x, q.y + .55, q.z, .12, 1.1, .12); part(new THREE.CylinderGeometry(.34, .18, .28, 8), lam(0x2a1a14), scene, q.x, q.y + 1.18, q.z); TH.braz.push([s0 + .6, x, top + 1.3]); const gl = glowSprite(0xff8a30, 2.4, .6); gl.position.set(q.x, q.y + 1.4, q.z); scene.add(gl); } }
   bakeScenery(scene.children.slice(first));
 }
+// --- The Escape: the Ring has gone into the fire and the Mountain is coming down. On Thorondor's back Gandalf flies out through the burning passages, always forward: steer round falling
+//     rock, pillars and spouts of lava, through the holes in the walls that have come down, then out into the open over the ruin of Mordor, between spires, past fell beasts and burning
+//     rocks, to the clean air. W A S D fly him, Space rolls clear of a blow, K strikes with his talons (rocks and fell beasts, not the Mountain). Gandalf keeps his HP; each gate is a checkpoint.
+
+function eagSS(a, b, v) { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
+function eagleC(s) { const hall = 1 - eagSS(50, 130, s), out = eagSS(EAG_S1 - 20, EAG_S1 + 40, s); return [Math.sin(s * .012) * 14 + Math.sin(s * .031) * 5, 30 + Math.sin(s * .018) * 7 + s * .035, lerp(12 + 14 * hall, 30, out), lerp(8 + 9 * hall, 15, out)]; }
+function eagleCourse() {
+  if (eagleCourse.c) return eagleCourse.c;
+  const C = eagleCourse.c = { rocks: [], cols: [], jets: [], gates: [], spires: [], rings: [], beasts: [] }; let n = 0;
+  for (let s = 120; s < EAG_S1 - 34; s += rand(19, 27), n++) { const [, , rx, ry] = eagleC(s), ox = rand(-.72, .72) * rx, oy = rand(-.6, .6) * ry;
+    if (n % 7 === 6) { C.gates.push({ s, hx: rand(-.45, .45) * rx, hy: rand(-.3, .3) * ry, hr: 5.4 }); s += 14; }
+    else if (n % 3 === 0) C.rocks.push({ s, ox, oy, r: rand(1.9, 2.8), fall: 1 });
+    else if (n % 3 === 1) C.cols.push({ s, ox, r: rand(1.2, 1.9) });
+    else C.jets.push({ s, ox, per: rand(2.4, 3.2), ph: rand(0, 3) });
+    if (n % 2 === 0) C.rings.push([s + 10, rand(-.5, .5) * rx, rand(-.4, .4) * ry]);
+  }
+  for (let s = EAG_S1 + 60; s < EAG_END - 70; s += rand(18, 28), n++) { const [, , rx] = eagleC(s); if (n % 4 === 0) C.rocks.push({ s, ox: rand(-.75, .75) * rx, oy: rand(-.6, .6) * 15, r: rand(2.2, 3.4), fall: .5 }); else C.spires.push({ s, ox: rand(-.85, .85) * rx, r: rand(2.2, 3.6), top: rand(-3, 11) }); if (n % 3 === 0) C.rings.push([s + 9, rand(-.5, .5) * rx, rand(-.4, .4) * 15]); }
+  for (const s of [EAG_S1 + 190, EAG_S1 + 400, EAG_S1 + 560, EAG_S1 + 690]) C.beasts.push({ s, ox: rand(-10, 10), oy: rand(-5, 5), r: 3.4 });
+  return C;
+}
+function eagleLayout() { const c = eagleC(-16); return { field: [-40, EAG_END + 200, -90, 90], start: [-16, c[0]], startY: c[1], noFloor: true, flight: true, layout: { blocks: [], plazas: [] } }; }
+function eagleContent() { for (const [s, ox, oy] of eagleCourse().rings) { const c = eagleC(s); for (let k = 0; k < 5; k++) { const a = k / 5 * TAU; addApple(s, c[0] + ox + Math.cos(a) * 1.5, c[1] + oy + Math.sin(a) * 1.5); } } }
+function makeEagle() {
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body); const BR = lam(0x6a4422), GD = lam(0xb88a3a), DK = lam(0x3a2412), BK = lam(0xe0b040);
+  part(GEO.sph, BR, body, 0, 0, 0, .95, .8, 2.4); part(GEO.sph, GD, body, 0, .42, 1.9, .62, .58, .85); const bk = part(new THREE.ConeGeometry(.2, .75, 6), BK, body, 0, .3, 2.95); bk.rotation.x = Math.PI / 2 + .35; for (const sx of [-1, 1]) part(GEO.sph, bas(0xfff0a0), body, sx * .34, .58, 2.42, .07, .07, .07);
+  for (let k = 0; k < 5; k++) { const f = part(GEO_BOX, k % 2 ? BR : DK, body, (k - 2) * .34, -.05, -2.9 - Math.abs(k - 2) * -.12, .34, .08, 1.9); f.rotation.y = (k - 2) * .12; }
+  const wing = sx => { const g = new THREE.Group(); g.position.set(sx * .75, .3, .3); body.add(g); for (let k = 0; k < 7; k++) { const L_ = 4.6 - k * .22, w = part(GEO_BOX, k % 2 ? BR : DK, g, sx * (k + .6) * .92, 0, -.55 - k * .14, 1.05, .08, L_ * .55); w.rotation.y = -sx * k * .05; } const t = new THREE.Group(); t.position.set(sx * 6.6, 0, 0); g.add(t); for (let k = 0; k < 4; k++) part(GEO_BOX, GD, t, sx * k * .5, 0, -1 - k * .15, .5, .06, 1.4); return g; };
+  const wings = [wing(1), wing(-1)], shadow = new THREE.Group(); const M = { root, body, wings, shadow }; addSkin(M, 'eagle', body, root); scene.add(root); root.visible = false; return M;
+}
+function buildEagleLv(L, TH) {
+  const first = scene.children.length, sky = TH.env, Co = eagleCourse(), rockM = surf(TX.doomRock, { sky, color: 0xa89080, rough: .9, bump: 4, glow: .6, side: THREE.DoubleSide });
+  const flow = TX.lavaFlow.clone(); flow.needsUpdate = true; flow.wrapS = flow.wrapT = THREE.RepeatWrapping; TH.flow = flow;
+  // the passages: one long rough tube of burning rock, a river of fire along its floor
+  { const NS = 110, NA = 22, pos = [], uv = [], idx = []; for (let j = 0; j <= NS; j++) { const s = -50 + j / NS * (EAG_S1 + 40), [cx, cy, rx, ry] = eagleC(s); for (let i = 0; i <= NA; i++) { const a = i / NA * TAU, n = 1.12 + Math.sin(a * 5 + s * .11) * .07 + Math.sin(a * 3 - s * .07) * .09 + Math.sin(a * 11 + s * .3) * .03, q = tw(s, cx + Math.cos(a) * rx * n, cy + Math.sin(a) * ry * n); pos.push(q.x, q.y, q.z); uv.push(i / NA * 6, s / 16); if (j < NS && i < NA) { const k = j * (NA + 1) + i; idx.push(k, k + 1, k + NA + 1, k + 1, k + NA + 2, k + NA + 1); } } }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); const m = new THREE.Mesh(g, rockM); m.userData.keep = true; m.frustumCulled = false; scene.add(m);
+    const lp = [], lu = [], li = []; for (let j = 0; j <= NS; j++) { const s = -50 + j / NS * (EAG_S1 + 40), [cx, cy, rx, ry] = eagleC(s); for (let i = 0; i <= 4; i++) { const u = i / 4 * 2 - 1, q = tw(s, cx + u * rx * 1.05, cy - ry * .86); lp.push(q.x, q.y, q.z); lu.push(u * 2.6, s / 11); if (j < NS && i < 4) { const k = j * 5 + i; li.push(k, k + 1, k + 5, k + 1, k + 6, k + 5); } } }
+    const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(lp, 3)); g2.setAttribute('uv', new THREE.Float32BufferAttribute(lu, 2)); g2.setIndex(li); const r = new THREE.Mesh(g2, new THREE.MeshBasicMaterial({ map: flow, color: 0xe0d0c0, side: THREE.DoubleSide, fog: false })); r.userData.keep = true; r.frustumCulled = false; scene.add(r); }
+  // the walls that have come down: a slab of rock across the way with a hole in it, burning round the rim
+  for (const G of Co.gates) { const [cx, cy, rx, ry] = eagleC(G.s), big = Math.max(rx, ry) * 1.6, sh = new THREE.Shape(); sh.absarc(0, 0, big, 0, TAU, false); const h = new THREE.Path(); h.absarc(-G.hx, G.hy, G.hr, 0, TAU, true); sh.holes.push(h); const gm = part(new THREE.ExtrudeGeometry(sh, { depth: 2.4, bevelEnabled: false, curveSegments: 24 }), rockM, scene, 0, 0, 0); gm.position.copy(tw(G.s, cx, cy)); const rim = new THREE.Mesh(new THREE.TorusGeometry(G.hr, .35, 8, 28), new THREE.MeshBasicMaterial({ color: 0xffa030 })); rim.position.copy(tw(G.s + 1.2, cx + G.hx, cy + G.hy)); rim.userData.keep = true; scene.add(rim); const gl = glowSprite(0xff7a20, G.hr * 3.2, .5); gl.position.copy(rim.position); gl.material.fog = false; scene.add(gl); }
+  // pillars of rock floor to roof, spires standing up from the plain, the rocks that fall
+  for (const c of Co.cols) { const [cx, cy, , ry] = eagleC(c.s), q = tw(c.s, cx + c.ox, cy); part(new THREE.CylinderGeometry(c.r * .85, c.r * 1.2, ry * 2.4, 8), rockM, scene, q.x, q.y, q.z); }
+  const GROUND = -26; for (const c of Co.spires) { const [cx, cy] = eagleC(c.s), top = cy + c.top, q = tw(c.s, cx + c.ox, (top + GROUND) / 2); c.y1 = top; part(new THREE.ConeGeometry(c.r, top - GROUND, 7), rockM, scene, q.x, q.y, q.z); }
+  for (const j of Co.jets) { const [cx, cy, , ry] = eagleC(j.s); j.y0 = cy - ry * .86; j.x = cx + j.ox; const gl = glowSprite(0xff7a20, 5, .5); gl.position.copy(tw(j.s, j.x, j.y0 + .5)); gl.material.fog = false; scene.add(gl); j.gl = gl; }
+  TH.rockMeshes = Co.rocks.map(r => { const m = new THREE.Mesh(new THREE.IcosahedronGeometry(r.r, 1), rockM); m.userData.keep = true; const gl = glowSprite(0xff8a30, r.r * 3.4, .55); m.add(gl); scene.add(m); r.m = m; return m; });
+  // the ruin of Mordor below once you're out, the tower coming down, dawn ahead
+  const land = new THREE.Mesh(new THREE.PlaneGeometry(1800, 2600), new THREE.MeshBasicMaterial({ map: (() => { const t = TX.lavaFlow.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(26, 36); TH.landT = t; return t; })(), color: 0xc8a890, fog: false })); land.rotation.x = -Math.PI / 2; land.position.copy(tw(EAG_S1 + 900, 0, GROUND)); land.userData.keep = true; scene.add(land);
+  { const cr = []; for (let k = 0; k < 220; k++) { const s = rand(EAG_S1 - 20, EAG_END + 200), x = rand(-200, 200), r = rand(5, 22), q = tw(s, x, GROUND); cr.push([q.x, q.y + r * .3, q.z, r, r * rand(.6, 1.6), r, rand(0, 3)]); } instanced(new THREE.IcosahedronGeometry(1, 1), rockM, cr); }
+  { const bd = tw(EAG_S1 + 520, -170, GROUND), T_ = new THREE.Group(); T_.position.copy(bd); T_.userData.keep = true; scene.add(T_); let y = 0; const m = lam(0x120c0c); for (const [rt, rb, h] of [[16, 26, 60], [11, 16, 70], [7, 11, 52], [3, 7, 26]]) { part(new THREE.CylinderGeometry(rt, rb, h, 8), m, T_, 0, y + h / 2, 0); y += h; } TH.tower = T_; }
+  { const sun = glowSprite(0xffe0a0, 520, .95); sun.material.fog = false; sun.position.copy(tw(EAG_END + 260, 0, 120)); sun.userData.keep = true; scene.add(sun); TH.sun = sun; const d = new THREE.Mesh(new THREE.CircleGeometry(38, 28), new THREE.MeshBasicMaterial({ color: 0xfff4d8, fog: false })); d.position.copy(tw(EAG_END + 280, 0, 120)); d.rotation.y = Math.PI; d.userData.keep = true; scene.add(d); }
+  bakeScenery(scene.children.slice(first));
+  TH.eagle = makeEagle();
+  TH.beastM = Co.beasts.map(b => { const D = makeDragon(); b.m = D; D.root.visible = false; return D; });
+}
+const EAG = { vx: 0, vy: 0, rollT: 0, rollCD: 0, slow: 0, swipe: 0, t: 0, dir: 0 };
+function resetEagle() { Object.assign(EAG, { vx: 0, vy: 0, rollT: 0, rollCD: 0, slow: 0, swipe: 0, t: 0, dir: 0 }); for (const r of eagleCourse().rocks) r.gone = false; for (const b of eagleCourse().beasts) b.gone = false; }
+function eagleHit(s, x, dmg = 18) { if (EAG.rollT > 0 || KH.invT > 0) return; const hurtIt = !cheats.god; if (hurtIt) khHurt(dmg, { s: s + 1, x }, { unblock: true, kb: 0 }); else KH.invT = 1; P.vy = 0; P.ground = true; EAG.slow = .9; cam.shake = Math.max(cam.shake, .7); flashV = Math.max(flashV, .3); sparks(tw(P.s + 1, P.x, P.y), 24, 8, [1, .8, .5], [1, .3, .1]); }
+function eagleMove(dt) {   // (instead of walking: always forward, steering in the plane across the way)
+  const Co = eagleCourse(), v = EAG_V * (EAG.slow > 0 ? .62 : 1) * eagSS(-20, -14, P.s) + (P.s < -14 ? 12 : 0); EAG.slow -= dt; EAG.rollT -= dt; EAG.rollCD -= dt; EAG.swipe -= dt; KH.invT = Math.max(0, KH.invT - dt); P.s += v * dt; EAG.t += dt;
+  if ((hit.Space || inp.jumpP) && EAG.rollCD <= 0) { EAG.rollT = .55; EAG.rollCD = 1.2; EAG.dir = inp.x < 0 ? -1 : 1; S.whoosh(); }
+  if ((hit.KeyK || hit.Mouse0 || inp.spinP) && EAG.swipe < -.25) { EAG.swipe = .32; S.saberSwing(); const m = THEMES.eaglelv.eagle; if (m.skin && m.skin.obj) skinClip(m, 'attack_b', .5); for (const r of Co.rocks) if (!r.gone && r.s > P.s - 1 && r.s < P.s + 13) { const c = eagleC(r.s), y = c[1] + r.oy + Math.max(0, r.s - P.s) * .55 * r.fall; if (Math.hypot(c[0] + r.ox - P.x, y - P.y) < 7) { r.gone = true; r.m.visible = false; sparks(tw(r.s, c[0] + r.ox, y), 26, 8, [1, .8, .5], [1, .3, .1]); S.smash(); } } for (const b of Co.beasts) if (!b.gone && b.live && Math.hypot(b.ps - P.s, b.px - P.x, b.py - P.y) < 9) { b.gone = true; b.m.root.visible = false; S.screech(); sparks(tw(b.ps, b.px, b.py), 40, 10, [.8, .8, .9], [.2, .2, .3]); banner('A FELL BEAST DOWN!', 1.2); gs.kills++; } }
+  const ax = inp.x + (EAG.rollT > 0 ? EAG.dir * 2.6 : 0), ay = inp.z; EAG.vx = damp(EAG.vx, ax * 17, 7, dt); EAG.vy = damp(EAG.vy, ay * 13, 7, dt); P.x += EAG.vx * dt; P.y += EAG.vy * dt;
+  const [cx, cy, rx, ry] = eagleC(P.s); let ox = P.x - cx, oy = P.y - cy; const e = Math.hypot(ox / (rx * .94), oy / (ry * .84)); if (e > 1) { ox /= e; oy /= e; P.x = cx + ox; P.y = cy + oy; }
+  P.vs = P.vx = 0; P.vy = 0; P.ground = true; P.heading = 0; P.standOn = null;
+  // what can hit him
+  const me = [P.s, P.x, P.y];
+  for (const r of Co.rocks) { if (r.gone || Math.abs(r.s - P.s) > 2.5 + r.r) continue; const c = eagleC(r.s), y = c[1] + r.oy + (r.s - P.s) * .55 * r.fall; if (Math.hypot(r.s - me[0], c[0] + r.ox - me[1], y - me[2]) < r.r + 1.3) { eagleHit(r.s, c[0] + r.ox); r.gone = true; r.m.visible = false; S.smash(); } }
+  for (const c of Co.cols) if (Math.abs(c.s - P.s) < c.r + .9) { const q = eagleC(c.s); if (Math.abs(q[0] + c.ox - P.x) < c.r + 1) { eagleHit(c.s, P.x); S.smash(); } }
+  for (const c of Co.spires) if (Math.abs(c.s - P.s) < c.r + .7 && P.y < c.y1 + .5) { const q = eagleC(c.s), rr = c.r * clamp((c.y1 - P.y) / (c.y1 + 26), .08, 1); if (Math.abs(q[0] + c.ox - P.x) < rr + 1) { eagleHit(c.s, P.x); S.smash(); } }
+  for (const j of Co.jets) { const on = (gs.time + j.ph) % j.per < 1.1; if (on && Math.abs(j.s - P.s) < 1.6 && Math.abs(j.x - P.x) < 2.2) { eagleHit(j.s, j.x, 14); } }
+  for (const G of Co.gates) if (Math.abs(G.s + 1.2 - P.s) < 1.5) { const q = eagleC(G.s), d = Math.hypot(q[0] + G.hx - P.x, q[1] + G.hy - P.y); if (d > G.hr - 1) { eagleHit(G.s, P.x, 22); S.smash(); const k = (G.hr - 1.4) / (d || 1); P.x = q[0] + G.hx + (P.x - q[0] - G.hx) * k; P.y = q[1] + G.hy + (P.y - q[1] - G.hy) * k; } } else if (P.s > G.s + 4 && P.s < G.s + 6 && gs.cp.s < G.s) { const q = eagleC(G.s + 4); gs.cp = { s: G.s + 4, x: q[0], y: q[1], t: gs.time, deaths: 0 }; S.check(); }
+  for (const b of Co.beasts) if (!b.gone && b.live && Math.hypot(b.ps - P.s, b.px - P.x, b.py - P.y) < b.r + 1) { eagleHit(b.ps, b.px); }
+  for (const a of apples) if (a.alive && Math.abs(a.s - P.s) < 2 && Math.hypot(a.x - P.x, a.y - P.y - 1) < 2.2) { a.alive = false; collectApple(tw(a.s, a.x, a.y)); KH.hp = Math.min(KH.max, KH.hp + 2); }
+  if (P.s > EAG_END && state === 'play') { banner('THE AIR IS CLEAN', 2); roamWin('OUT OF THE FIRE!'); }
+}
+function updateEagleLv(dt) {
+  const TH = THEMES.eaglelv, on = !!LV && LV.flight && state !== 'map' && state !== 'title'; if (TH.eagle) TH.eagle.root.visible = on; if (!on) return;
+  const Co = eagleCourse(), M = TH.eagle, b = M.body; place(M.root, P.s, P.x, P.y - 1.15); const bank = EAG.rollT > 0 ? (1 - EAG.rollT / .55) * TAU * EAG.dir : -EAG.vx * .035; M.root.rotation.z = bank; b.rotation.x = -EAG.vy * .025; const fl = T * (EAG.vy > 2 ? 9 : 5); M.wings.forEach((w, i) => w.rotation.z = (i ? -1 : 1) * Math.sin(fl) * .32); skinPlay(M, 'fly');
+  hob.root.rotation.z = bank * .9;
+  if (TH.flow) TH.flow.offset.y -= dt * .16; if (TH.landT) TH.landT.offset.y -= dt * .02;
+  if (state === 'play') { if (EAG.t < dt * 2 && P.s < 0) { banner('THE RING GOES INTO THE FIRE!', 3); cam.shake = 1; S.roar(); setTimeout(() => { if (LV && LV.flight && state === 'play') banner('W A S D: FLY · SPACE: ROLL · K: TALONS', 3.4); }, 3200); }
+    if (P.s > EAG_S1 - 6 && !EAG.out) { EAG.out = true; flashV = Math.max(flashV, .6); banner('OUT! THE MOUNTAIN BURSTS BEHIND YOU!', 2.2); S.roar(); }
+    if (P.s < EAG_S1) cam.shake = Math.max(cam.shake, .1); }
+  // fire on every side, embers streaming past
+  const [cx, cy, rx, ry] = eagleC(P.s + 16); for (let k = 0; k < 6; k++) if (Math.random() < dt * 22 && P.s < EAG_S1) { const a = rand(0, TAU), n = rand(.7, 1); bfire(tw(P.s + rand(8, 44), cx + Math.cos(a) * rx * n, cy + Math.sin(a) * ry * n), rand(1.2, 2.6), rand(1.5, 3)); }
+  for (let k = 0; k < 8; k++) if (Math.random() < dt * 30) fx.spawn(...tw(P.s + rand(4, 40), P.x + rand(-14, 14), P.y + rand(-8, 8)).toArray(), rand(-1, 1), rand(0, 2), -rand(20, 34), rand(.3, .7), .1, .02, [1, .85, .4], [1, .25, .05], 0, 1);
+  // the falling rocks, placed so they come down across your way as you reach them; the spouts; the fell beasts swooping across
+  for (const r of Co.rocks) { if (!r.m || r.gone) continue; const d = r.s - P.s; r.m.visible = d > -10 && d < 150; if (!r.m.visible) continue; const c = eagleC(r.s); r.m.position.copy(tw(r.s, c[0] + r.ox, c[1] + r.oy + d * .55 * r.fall)); r.m.rotation.x += dt * 1.4; r.m.rotation.z += dt; if (Math.random() < dt * 6) bfire(r.m.position, 1.2, 1); }
+  for (const j of Co.jets) { const on_ = (gs.time + j.ph) % j.per < 1.1, near = Math.abs(j.s - P.s) < 80; j.gl.material.opacity = on_ ? 1 : .35; if (on_ && near) for (let k = 0; k < 5; k++) bfire(tw(j.s + rand(-.5, .5), j.x + rand(-.5, .5), j.y0 + rand(0, 19)), rand(1.3, 2.2), 6); }
+  for (const b of Co.beasts) { const d = b.s - P.s; b.live = !b.gone && d < 130 && d > -30; b.m.root.visible = b.live; if (!b.live) continue; const k = clamp(d / 110, 0, 1), c = eagleC(P.s); b.ps = P.s + Math.max(-12, d * .6); b.px = c[0] + b.ox + Math.sin(T * 1.1 + b.s) * 14 * k; b.py = c[1] + b.oy + 7 * k; place(b.m.root, b.ps, b.px, b.py - 1, Math.PI); skinPlay(b.m, 'fly'); }
+  if (P.s > EAG_S1 && state === 'play') { TH.bombT = (TH.bombT ?? 1) - dt; if (TH.bombT <= 0) { TH.bombT = rand(.8, 1.4); const s = P.s + 38, x = P.x + rand(-7, 7), y = P.y + rand(-4, 4), fb = glowSprite(0xffa040, 4, 1); scene.add(fb); const p0 = tw(s, x + rand(-14, 14), y + 34), p1 = tw(s, x, y); khFx(fb, f => { const q = f.t / 1.5; fb.position.lerpVectors(p0, p1, q); fb.position.y -= (q > 1 ? (q - 1) * 30 : 0); bfire(fb.position, 1.6, .5); if (Math.abs(q - 1) < .05 && Math.hypot(P.x - x, P.y - y) < 3 && Math.abs(P.s - s) < 4) eagleHit(s, x); return q < 1.5; }); } }
+  if (TH.tower && P.s > EAG_S1 + 300) { const k = clamp((P.s - EAG_S1 - 300) / 420, 0, 1); TH.tower.rotation.z = k * k * .7; TH.tower.position.y = -26 - k * k * 40; }
+}
+THEMES.eaglelv = natTheme({
+  wallTex: TX.rock, floorTex: TX.dark, tint: [.8, .7, .68], door: 0x8a5a4a,
+  env: { sky: [0x180603, 0x4a1206, 0xa82a0a, 0xffa040], fog: [60, 520], fogC: 0x7a2a0e, amb: [0xa86a50, .9], hemi: [0xffb080, 0x4a1206, .7], sun: [0xffa868, .8], east: [0xff6a30, .4], cloud: 0x4a1c0c, bloom: .45, embers: true },
+  orc: MT_ORC,
+  scenery(L) { buildEagleLv(L, this); },
+});
+// --- The Watcher in the Water: before the Doors of Durin, by moonlight, on the shore of the black lake. It's fought like a many-headed beast: its tentacles come up out of the water
+//     one after another and each must be cut down: they slam along a red line (and lie there a moment: strike), sweep round a red fan, or burst up under you on a red circle. When all are
+//     down the Watcher itself rears up to the shore: strike it while you can. Then it sinks, and more tentacles come. Beat it and the Doors open.
+function watcherLayout() {
+  const bases = [[5.8, -13], [5.8, -3], [5.8, 8], [5.8, -8], [5.8, 3], [5.8, 13]];
+  return { field: [-18, 5.2, -21, 21], start: [-15, 0], layout: { blocks: [[-6, -4.4, -18.5, -16.5, 1.3, 'wall', -1], [-14, -12, 17, 19.5, 1.7, 'wall', -1]], bases, door: [-3, -20.6], plazas: [{ s: -6, x: 0, y: 0, r: 13, waves: [['V']], title: 'THE WATCHER IN THE WATER!', boss: true, last: true, breach: [8, 0], bossHp: 1000, noAdds: true }] } };
+}
+function watcherContent() { for (const [k, s, x] of [['q', -13, 7], ['su', -13, -7], ['b', -9, 14], ['q', -9, -14]]) addCrate(k, s, x, 0, 4); }
+function makeTentacle() {
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body); const SK = lam(0x2a3a30, { emissive: 0x040a06 }), SK2 = lam(0x4a5a48), N = 11, segs = [];
+  for (let k = 0; k < N; k++) { const r = lerp(.72, .16, k / (N - 1)), m = part(new THREE.CylinderGeometry(r * .9, r, 1, 8), SK, scene, 0, 0, 0); m.visible = false; m.userData.keep = true; const su = part(GEO.sph, SK2, m, 0, 0, r * .9, .3, .12, .3); su.scale.set(r * .55, .12, r * .55); segs.push(m); }
+  const shadow = new THREE.Group(); scene.add(root); root.visible = false; const M = { root, body, segs, shadow }; addSkin(M, 'tentacle', body, root); if (M.skin) M.skin.temp = true; return M;
+}
+// the tentacle's arm, drawn as a chain from its root in the water through a bend to its tip
+function tnDraw(u) {
+  const M = u.m, own = !!(M.skin && M.skin.obj), b = u.base, tip = u.tip, c = [lerp(b[0], tip[0], .55) + (u.bendS || 0), lerp(b[1], tip[1], .55) + (u.bendX || 0), Math.max(tip[2], 0) * .6 + u.arch]; const N = M.segs.length; let prev = null; const yw = u.rootY;
+  M.root.visible = own && !u.sunk; if (own) { place(M.root, b[0], b[1], yw - .5, Math.atan2(u.tgtX - b[1], u.tgtS - b[0])); }
+  for (let k = 0; k <= N; k++) { const t = k / N, a = 1 - t, s = a * a * b[0] + 2 * a * t * c[0] + t * t * tip[0], x = a * a * b[1] + 2 * a * t * c[1] + t * t * tip[1], y = a * a * yw + 2 * a * t * c[2] + t * t * tip[2], q = tw(s, x, y); if (prev && !own) { const m = M.segs[k - 1], d = q.clone().sub(prev), L_ = d.length(); m.visible = !u.sunk; m.position.copy(prev).addScaledVector(d, .5); m.scale.set(1, L_ * 1.1, 1); m.quaternion.setFromUnitVectors(UPV, d.normalize()); } else if (prev) M.segs[k - 1].visible = false; prev = q.clone ? q.clone() : q; }
+}
+function spawnTentacle(body, base, hp, delay) {
+  const pl = body.plaza, u = { m: makeTentacle(), boss: true, kind: 'V', name: 'TENTACLE', parent: body, base, hp, max: hp, r: 1.1, tall: 8, plaza: pl, flash: 0, rev: 0, phase: 1, a: null, state: 'rise', t: -delay, s: base[0] - .6, x: base[1], y: 0, h: Math.PI, cd: rand(.8, 2.2), rootY: -3, tip: [base[0], base[1], -3], arch: 2, tgtS: 0, tgtX: 0, sway: rand(0, 6), upd: tnUpdate, hitFn: tnHit, reactFn: () => null };
+  URUKS.push(u); body.arms.push(u); return u;
+}
+function tnHit(u, dmg, fin) {
+  if (!ukLive(u) || u.state === 'rise' || u.state === 'cut') return; if (u.state === 'stuck') dmg *= 1.6; if (KH.form > 0) dmg *= 1.4;
+  u.hp -= dmg; u.flash = .1; KH.drive = Math.min(100, KH.drive + 2); KH.hitstop = Math.max(KH.hitstop, fin ? .07 : .035); cam.shake = Math.max(cam.shake, fin ? .25 : .1); sparks(tw(u.s, u.x, 1.4), fin ? 18 : 9, 5, [.8, 1, .8], [.2, .5, .3]); S.saberHit();
+  const B = u.parent; if (B.hp > B.max * .5) B.hp = Math.max(B.max * .5, B.hp - dmg * .92);
+  if (u.hp <= 0) { u.hp = 0; u.dead = true; if (u.a) u.a.fx.forEach(f => f.dead = true); u.state = 'cut'; u.t = 0; S.roar(); cam.shake = .5; const left = B.arms.filter(q => ukLive(q)).length; banner(left ? `CUT DOWN! ${left} LEFT` : 'ALL CUT DOWN!', 1.2); gs.kills++; }
+}
+function tnUpdate(u, dt) {
+  u.t += dt; if (u.t < 0) return; const B = u.parent, [bs, bx] = u.base, ds = P.s - bs, dx = P.x - bx, d = Math.hypot(ds, dx) || .01, toP = Math.atan2(dx, ds), live = state === 'play', A = u.a; u.tgtS = P.s; u.tgtX = P.x;
+  const rest = () => [bs - 1 + Math.cos(T * .9 + u.sway) * 1.3, bx + Math.sin(T * .7 + u.sway) * 1.6, 7.2 + Math.sin(T * 1.2 + u.sway) * .9]; let want = null, k = 8, walk = 'idle';
+  switch (u.state) {
+    case 'rise': want = rest(); k = 2.4; u.rootY = -.6; if (u.t < .05) { S.orcGrunt(); for (let q = 0; q < 16; q++) puff(tw(bs + rand(-1.4, 1.4), bx + rand(-1.4, 1.4), .1), 1, .6, [.5, .6, .7]); } if (u.t > 1.2) { u.state = 'idle'; u.t = 0; } break;
+    case 'idle': { want = rest(); u.s = damp(u.s, bs - .8, 4, dt); u.x = damp(u.x, bx, 4, dt); u.cd -= dt; const busy = B.arms.filter(q => ukLive(q) && q.a).length; if (!live || u.cd > 0 || busy >= (B.phase > 1 ? 3 : 2) || d > 19) break;
+      const r = Math.random(), type = d < 7 ? (r < .5 ? 'sweep' : 'slam') : d < 13 ? (r < .6 ? 'slam' : 'grab') : 'grab'; u.a = { type, t: 0, fx: [], at: toP, gs: P.s, gx: P.x, ph: 0 }; u.state = 'atk'; u.t = 0; S.orcGrunt();
+      const mk = mm => u.a.fx.push(khFx(mm, f => { warnPulse(f); return true; }));
+      if (type === 'slam') mk(warnMesh(bs, bx, 1, 14, toP - .1, toP + .1)); if (type === 'sweep') mk(warnMesh(bs, bx, 1, 9, toP - 1, toP + 1)); if (type === 'grab') mk(warnMesh(P.s, P.x, 0, 2.3)); break; }
+    case 'atk': { A.t += dt; const dur = A.type === 'grab' ? .95 : A.type === 'sweep' ? .85 : .8;
+      if (A.ph === 0) { want = A.type === 'grab' ? [bs - .4, bx, -3] : [bs + Math.cos(A.at) * 2.5, bx + Math.sin(A.at) * 2.5, 10.5]; k = 5; if (A.t > dur) { A.ph = 1; A.t = 0; A.fx.forEach(f => f.dead = true); }
+      } else if (A.type === 'slam') { const ts = bs + Math.cos(A.at) * 14, tx = bx + Math.sin(A.at) * 14; want = [ts, tx, .35]; k = 26; u.arch = .9; if (!A.hit && A.t > .12) { A.hit = true; S.smash(); cam.shake = .6; for (let q = 0; q < 8; q++) dustAt(lerp(bs, ts, q / 8), lerp(bx, tx, q / 8), 0, 3); const qx = (P.s - bs) * -Math.sin(A.at) + (P.x - bx) * Math.cos(A.at), al = (P.s - bs) * Math.cos(A.at) + (P.x - bx) * Math.sin(A.at); if (Math.abs(qx) < 1.5 && al > 0 && al < 14.5 && P.y < 1.2) khHurt(16, { s: bs, x: bx }, { kb: 8 }); u.state = 'stuck'; u.t = 0; u.a = null; A.fx.forEach(f => f.dead = true); u.slam = [ts, tx]; u.s = lerp(bs, ts, .55); u.x = lerp(bx, tx, .55); u.tipFix = [ts, tx, .35]; }
+      } else if (A.type === 'sweep') { const a = A.at + lerp(1, -1, Math.min(1, A.t / .35)); want = [bs + Math.cos(a) * 9, bx + Math.sin(a) * 9, 1.1]; k = 30; if (!A.hit && A.t > .1) { A.hit = true; S.whoosh(); cam.shake = .3; if (d < 9.3 && Math.abs(angDiff(toP, A.at)) < 1.05 && P.y < 1.6) khHurt(13, { s: bs, x: bx }, { kb: 10 }); } if (A.t > .55) { u.state = 'idle'; u.t = 0; u.cd = rand(1, 2.2); u.a = null; }
+      } else { want = [A.gs, A.gx, 4]; k = 20; u.bendS = (A.gs - bs) * .1; if (!A.hit && A.t > .1) { A.hit = true; S.smash(); for (let q = 0; q < 10; q++) dustAt(A.gs + rand(-1, 1), A.gx + rand(-1, 1), 0, 2); u.s = lerp(bs, A.gs, .85); u.x = lerp(bx, A.gx, .85); if (Math.hypot(P.s - A.gs, P.x - A.gx) < 2.4 && P.y < 2) khHurt(14, { s: A.gs, x: A.gx }, { unblock: true, kb: 5 }); } if (A.t > .8) { u.state = 'idle'; u.t = 0; u.cd = rand(1, 2.2); u.a = null; } }
+      break; }
+    case 'stuck': want = u.tipFix; k = 30; u.arch = .9; if (u.t > 2.3) { u.state = 'idle'; u.t = 0; u.cd = rand(.8, 1.8); u.arch = 2; } break;
+    case 'cut': want = [u.tip[0], u.tip[1], -4]; k = 1.6; u.rootY = -.6 - u.t * 2; if (u.t > 1.6) { u.sunk = true; tnDraw(u); for (const m of u.m.segs) { scene.remove(m); } khRemove(u); return; } break;
+  }
+  u.arch = damp(u.arch, u.state === 'stuck' ? .9 : 3, 3, dt); if (want) for (let q = 0; q < 3; q++) u.tip[q] = damp(u.tip[q], want[q], k, dt);
+  for (const m of u.m.segs) if (m.material.emissive) m.material.emissive.setHex(0x040a06); tnDraw(u); skinPlay(u.m, u.state === 'cut' ? 'die' : u.state === 'stuck' || u.state === 'atk' ? 'attack' : 'idle');
+}
+function spawnWatcher(pl, delay = 0) {
+  const root = new THREE.Group(), SK = lam(0x24322a, { emissive: 0x040806 }), head = new THREE.Group(); root.add(head); part(new THREE.SphereGeometry(1, 20, 14), SK, head, 0, 2.4, 0, 3.6, 3.2, 3); const eyes = []; for (const [x, y, z, r] of [[-1.5, 3.4, -2.3, .42], [1.5, 3.4, -2.3, .42], [-.6, 4, -2.3, .26], [.6, 4, -2.3, .26], [-2.3, 2.7, -1.9, .22], [2.3, 2.7, -1.9, .22]]) eyes.push(part(GEO.sph, bas(0xd8ff60), head, x, y, z, r, r, r)); const maw = part(new THREE.SphereGeometry(1, 16, 10), bas(0x1a0505), head, 0, 1.7, -2.5, 1.9, 1, .7); for (let k = 0; k < 11; k++) { const a = (k / 10 - .5) * 2.4, t = part(GEO.cone, lam(0xd8d0b0), head, Math.sin(a) * 1.7, 2.45 - Math.abs(Math.sin(a)) * .35, -2.9 + Math.abs(a) * .2, .1, .46, .1); t.rotation.x = Math.PI; }
+  const shadow = new THREE.Group(); scene.add(root); root.visible = false;
+  const b = { m: { root, head, shadow, extra: [] }, boss: true, kind: 'V', name: 'THE WATCHER', hp: pl.bossHp, max: pl.bossHp, bars: 4, r: 3.4, tall: 6, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null, state: 'below', t: -delay, s: 9, x: 0, y: -7, h: 0, cd: 1, arms: [], wave: 0, eyes, upd: wtUpdate, hitFn: wtHit, reactFn: () => null };
+  URUKS.push(b); KH.boss = b; Music.mode = 1; return b;
+}
+function wtHit(b, dmg, fin) {
+  if (!ukLive(b)) return; if (b.state !== 'open') { if (b.state === 'dive' || b.state === 'rise') return; return; } if (KH.form > 0) dmg *= 1.4;
+  b.hp -= dmg * 1.1; b.flash = .1; KH.target = b; KH.targetT = 6; KH.drive = Math.min(100, KH.drive + 2); KH.hitstop = Math.max(KH.hitstop, fin ? .08 : .04); cam.shake = Math.max(cam.shake, fin ? .3 : .12); sparks(tw(b.s - 2.6, b.x, 2.4), fin ? 26 : 12, 7, [.8, 1, .7], [.3, .6, .3]); S.saberHit();
+  if (b.hp <= 0) { b.hp = 0; b.dead = true; b.state = 'fall'; b.t = 0; KH.react = null; banner('THE WATCHER SINKS!', 2.6); S.roar(); cam.shake = 1; flashV = Math.max(flashV, .4); Music.mode = 0; for (const u of URUKS) if (u.parent === b && ukLive(u)) { u.dead = true; u.state = 'cut'; u.t = 0; } }
+}
+function wtUpdate(b, dt) {
+  b.t += dt; if (b.t < 0) return; const m = b.m, live = state === 'play', B = LV.layout.bases, armsUp = b.arms.filter(u => ukLive(u)).length;
+  switch (b.state) {
+    case 'below':
+      if (b.wave === 0) { if (b.t > .4) { b.wave = 1; banner(b.round ? 'MORE OF THEM!' : 'CUT DOWN EVERY TENTACLE!', 2); const list = b.round ? [B[(b.round * 2) % 6], B[(b.round * 2 + 2) % 6], B[(b.round * 2 + 4) % 6]] : B.slice(0, 3); list.forEach((q, i) => spawnTentacle(b, q, b.round ? 34 : 60, i * .5)); } break; }
+      if (b.wave === 1 && !b.round && armsUp <= 1) { b.wave = 2; b.phase = 2; banner('THERE ARE MORE!', 1.6); S.roar(); B.slice(3).forEach((q, i) => spawnTentacle(b, q, 60, i * .6)); }
+      if (b.wave >= 1 && armsUp === 0 && (b.round || b.wave === 2)) { b.state = 'rise'; b.t = 0; m.root.visible = true; banner('THE WATCHER RISES! STRIKE IT!', 2.2); S.roar(); cam.shake = 1; } break;
+    case 'rise': { const k = Math.min(1, b.t / 1.5); b.s = lerp(12, 8.4, k); b.y = lerp(-7, -.8, k); for (let q = 0; q < 4; q++) puff(tw(b.s + rand(-3, 3), b.x + rand(-3.5, 3.5), .1), 1, .7, [.5, .6, .7]); if (k >= 1) { b.state = 'open'; b.t = 0; b.cd = .9; } break; }
+    case 'open': b.y = -.8 + Math.sin(T * 2) * .12; b.h = -clamp(Math.atan2(P.x - b.x, b.s - P.s), -.5, .5); b.cd -= dt;
+      if (live && b.cd <= 0) { b.cd = 1.7; const s = P.s + P.vs * .5, x = P.x + P.vx * .5, RR = 2.1, blob = glowSprite(0xa0ff70, 2.4, .9), p0 = tw(b.s - 2.5, b.x, 2.6), p1 = tw(s, x, .3); scene.add(blob); S.whoosh(); khFx(warnMesh(s, x, 0, RR, 0, TAU, 0x60ff40), f => { warnPulse(f); const k = Math.min(1, f.t / 1); blob.position.lerpVectors(p0, p1, k); blob.position.y += Math.sin(k * Math.PI) * 4; if (k < 1) return true; scene.remove(blob); puff(p1, 14, 1.4, [.4, .7, .4]); S.smash(); if (Math.hypot(P.s - s, P.x - x) < RR && P.y < 2) khHurt(12, { s, x }, { unblock: true, kb: 6 }); return false; }); }
+      if (b.t > 9) { b.state = 'dive'; b.t = 0; banner('IT SINKS AGAIN!', 1.4); } break;
+    case 'dive': { const k = Math.min(1, b.t / 1.2); b.y = lerp(-.8, -8, k); b.s = lerp(8.4, 12, k); if (k >= 1) { b.state = 'below'; b.t = 0; b.wave = 0; b.round = (b.round || 0) + 1; m.root.visible = false; } break; }
+    case 'fall': b.y -= dt * 2.6; for (let q = 0; q < 3; q++) puff(tw(b.s + rand(-3, 3), b.x + rand(-3, 3), .1), 1, .8, [.5, .6, .7]); if (b.t > 3) { scene.remove(m.root); khRemove(b); return; } break;
+  }
+  place(m.root, b.s, b.x, b.y, b.h); for (const e of b.eyes) e.scale.setScalar(e.scale.x); m.head.scale.setScalar(1 + (b.flash > 0 ? .02 : 0)); b.flash -= dt;
+}
+function buildWatcher(L, TH) {
+  const first = scene.children.length, sky = TH.env, Y = L.layout, rock = surf(TX.hdStone || TX.rock, { sky, color: 0x8a8e98, rough: .95, bump: 3, tri: 5 }), rough = surf(TX.rock, { sky, color: 0x5a5e68, rough: .95, bump: 4, tri: 7 });
+  // the shore of old paving, broken; the black water; the cliffs of the Misty Mountains shutting it in
+  { const t = TX.floor.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(9, 7); const sh = new THREE.Mesh(new THREE.PlaneGeometry(50, 34), ps1(new THREE.MeshLambertMaterial({ map: t, color: 0x8a8e94 }))); sh.rotation.x = -Math.PI / 2; sh.position.copy(tw(-12, 0, -.01)); scene.add(sh); }
+  const wt = TX.sea.clone(); wt.needsUpdate = true; wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(14, 10); TH.waterTex = wt; const water = new THREE.Mesh(new THREE.PlaneGeometry(200, 130), new THREE.MeshPhongMaterial({ map: wt, color: 0x1a2a34, specular: 0x8ab0d0, shininess: 70 })); water.rotation.x = -Math.PI / 2; water.position.copy(tw(70, 0, -.28)); water.userData.keep = true; scene.add(water);
+  { const rub = []; for (let k = 0; k < 90; k++) { const s = rand(-17, 5), x = rand(-20, 20), z = rand(.1, .4), q = tw(s, x, z * .4); rub.push([q.x, q.y, q.z, rand(.25, .8), z, rand(.25, .8), rand(0, 3)]); } instanced(GEO_BOX, rock, rub); const edge = []; for (let x = -24; x < 24; x += 2.1) { const q = tw(5.1 + rand(-.2, .2), x, -.1); edge.push([q.x, q.y, q.z, 2.1, .55, rand(.7, 1.1), rand(-.08, .08)]); } instanced(GEO_BOX, rock, edge); }
+  const crag = new THREE.IcosahedronGeometry(1, 1), cl = []; for (let k = 0; k < 90; k++) { const a = k / 90 * Math.PI * 1.45 - Math.PI * 1.22, r = rand(40, 64), s = 6 + Math.cos(a) * r * .9, x = Math.sin(a) * r, h = rand(14, 40), q = tw(s, x, h * .4); cl.push([q.x, q.y, q.z, rand(7, 13), h, rand(7, 13), rand(0, 3)]); } for (let k = 0; k < 34; k++) { const sd = k % 2 ? 1 : -1, s = rand(-34, 40), x = sd * rand(36, 46), h = rand(16, 34), q = tw(s, x, h * .4); cl.push([q.x, q.y, q.z, rand(5, 9), h, rand(5, 9), rand(0, 3)]); } for (let k = 0; k < 12; k++) { const x = rand(-40, 40), h = rand(10, 20), q = tw(-38, x, h * .4); cl.push([q.x, q.y, q.z, rand(5, 9), h, rand(4, 7), rand(0, 3)]); } instanced(crag, rough, cl);
+  // the Doors of Durin, drawn in moon-silver on the sheer rock to the west, two great holly trees standing beside them
+  { const [ds, dx] = Y.door, g = new THREE.Group(); place(g, ds, dx, 0, Math.PI / 2); scene.add(g); part(GEO_BOX, rock, g, 0, 5.4, -1.4, 13, 12, 2.6); const tx = mkTex(256, 320, c => { c.fillStyle = '#10141c'; c.fillRect(0, 0, 256, 320); c.strokeStyle = '#cfe4ff'; c.fillStyle = '#e8f4ff'; c.shadowColor = '#9ad0ff'; c.shadowBlur = 8; c.lineWidth = 3; c.beginPath(); c.moveTo(34, 320); c.lineTo(34, 120); c.arc(128, 120, 94, Math.PI, 0); c.lineTo(222, 320); c.stroke(); c.lineWidth = 2; c.beginPath(); c.moveTo(128, 26); c.lineTo(128, 320); c.stroke(); for (const sx of [-1, 1]) { const tx0 = 128 + sx * 62; c.beginPath(); c.moveTo(tx0, 320); c.lineTo(tx0, 150); c.stroke(); for (let k = 0; k < 5; k++) { c.beginPath(); c.moveTo(tx0, 190 + k * 24); c.quadraticCurveTo(tx0 + sx * 18, 170 + k * 24, tx0 + sx * 28, 158 + k * 24); c.moveTo(tx0, 190 + k * 24); c.quadraticCurveTo(tx0 - sx * 18, 170 + k * 24, tx0 - sx * 26, 158 + k * 24); c.stroke(); } } c.beginPath(); for (let k = 0; k < 16; k++) { const a = k / 16 * TAU, r = k % 2 ? 7 : 26; c[k ? 'lineTo' : 'moveTo'](128 + Math.cos(a) * r, 112 + Math.sin(a) * r); } c.closePath(); c.fill(); c.beginPath(); c.arc(128, 60, 6, 0, TAU); c.fill(); c.lineWidth = 2; c.beginPath(); c.arc(128, 120, 78, Math.PI, 0); c.stroke(); }, false); tx.magFilter = THREE.LinearFilter; const m = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 8), new THREE.MeshBasicMaterial({ map: tx, fog: false })); m.position.set(0, 4, .02); m.userData.keep = true; g.add(m); TH.doorM = m; const gl = glowSprite(0x9ad0ff, 11, .4); gl.material.fog = false; gl.position.set(0, 4, .6); gl.userData.keep = true; g.add(gl); TH.doorGl = gl;
+    const bark = lam(0x2a2620), leaf = lam(0x1e3626); for (const sx of [-1, 1]) { part(new THREE.CylinderGeometry(.34, .6, 7, 8), bark, g, sx * 5.2, 3.5, 1); for (let k = 0; k < 16; k++) { const a = rand(0, TAU), r = rand(0, 2.2); part(GEO.ico, leaf, g, sx * 5.2 + Math.cos(a) * r, rand(6, 9.4), 1 + Math.sin(a) * r, rand(.7, 1.3), rand(.6, 1), rand(.7, 1.3)); } } }
+  { const moon = glowSprite(0xdde4ff, 60, .85); moon.material.fog = false; moon.position.copy(tw(120, 40, 80)); scene.add(moon); const d = new THREE.Mesh(new THREE.CircleGeometry(7, 22), new THREE.MeshBasicMaterial({ color: 0xf2f4ff, fog: false })); d.position.copy(tw(121, 40, 80)); d.rotation.y = Math.PI; scene.add(d); }
+  bakeScenery(scene.children.slice(first));
+}
+function updateWatcher(dt) {
+  if (!LV || LV.theme !== 'watcher' || state === 'map' || state === 'title') return; const TH = THEMES.watcher; if (TH.waterTex) { TH.waterTex.offset.x += dt * .006; TH.waterTex.offset.y += dt * .01; }
+  if (Math.random() < dt * 6) { smoke.spawn(...tw(rand(4, 34), rand(-26, 26), rand(.1, .6)).toArray(), rand(-.3, .3), .05, rand(-.3, .3), rand(6, 9), 3, 8, [.2, .24, .3], [.32, .36, .42], 0, .14); }
+  const won = LV.layout.plazas[0].done; if (TH.doorGl) { TH.doorGl.material.opacity = won ? .95 : .34 + Math.sin(T * 1.3) * .08; TH.doorGl.scale.setScalar(won ? 18 : 11); }
+}
+THEMES.watcher = natTheme({
+  wallTex: TX.rock, floorTex: TX.floor, tint: [.75, .76, .82], door: 0x6a6a7a,
+  env: { sky: [0x04060e, 0x0e1626, 0x202c44, 0x3a4660], fog: [26, 170], fogC: 0x141c2a, bloom: .9, amb: [0x6a7a96, .9], hemi: [0xa0b4dc, 0x1a1e24, .7], sun: [0xc0d0ff, .75], east: [0x6a7aa0, .22], stars: true },
+  orc: MT_ORC,
+  scenery(L) { buildWatcher(L, this); },
+});
+// --- Bree: a walled town at night in the rain, cobbled and streaming, its streets a labyrinth. Gandalf can't fight what's hunting here: the Nazgûl walk the lanes, each with a pale cone of
+//     dread on the cobbles ahead of it. Keep out of it, keep walls between you, slip into the hay when one comes by. Seen, and they come after you: break away, round corners, until they
+//     lose you. Reach the door of The Prancing Pony at the north wall. The town's open squares are checkpoints.
+function breeLayout() {
+  const G = 23, C = 5.5, H = (G - 1) / 2, open = Array.from({ length: G }, () => new Array(G).fill(false)); let seed = 417;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const stack = [[1, 11]]; open[1][11] = true;
+  while (stack.length) { const [r, c] = stack[stack.length - 1], nx = [[2, 0], [-2, 0], [0, 2], [0, -2]].filter(([a, b]) => r + a > 0 && r + a < G - 1 && c + b > 0 && c + b < G - 1 && !open[r + a][c + b]); if (!nx.length) { stack.pop(); continue; } const [a, b] = nx[rnd() * nx.length | 0]; open[r + a / 2][c + b / 2] = true; open[r + a][c + b] = true; stack.push([r + a, c + b]); }
+  for (let r = 2; r < G - 2; r++) for (let c = 2; c < G - 2; c++) if (!open[r][c] && ((open[r - 1][c] && open[r + 1][c] && !open[r][c - 1] && !open[r][c + 1]) || (open[r][c - 1] && open[r][c + 1] && !open[r - 1][c] && !open[r + 1][c])) && rnd() < .26) open[r][c] = true;   // (some walls knocked through, so there's more than one way)
+  const squares = [[7, 7], [11, 15], [16, 7]]; for (const [r, c] of squares) for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) open[r + a][c + b] = true;
+  const cellS = r => (r - H) * C, cellX = c => (c - H) * C, blocks = [], houses = [];
+  const deadEnds = []; for (let r = 1; r < G - 1; r++) for (let c = 1; c < G - 1; c++) if (open[r][c]) { const n = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([a, b]) => open[r + a][c + b]).length; if (n === 1 && !(r === 1 && c === 11) && !(r === G - 2 && c === 11)) deadEnds.push([r, c]); }
+  open[G - 2][11] = true; open[G - 3][11] = true;
+  for (let r = 0; r < G; r++) for (let c = 0; c < G; c++) if (!open[r][c]) { const edge = r === 0 || c === 0 || r === G - 1 || c === G - 1, h = edge ? 8 : 5 + rnd() * 2.6; houses.push({ r, c, s: cellS(r), x: cellX(c), h, edge, rise: 1.8 + rnd() * 1.2, turn: rnd() < .5, tone: rnd() }); blocks.push([cellS(r) - C / 2, cellS(r) + C / 2, cellX(c) - C / 2, cellX(c) + C / 2, h + 3, 'wall', -2]); }
+  const hay = []; for (let k = 0; k < deadEnds.length && hay.length < 14; k += 2) hay.push([cellS(deadEnds[k][0]), cellX(deadEnds[k][1])]);
+  const free = (s, x) => { const r = Math.round(s / C + H), c = Math.round(x / C + H); return r >= 0 && c >= 0 && r < G && c < G && open[r][c]; };
+  const lane = (s0, x0, s1, x1) => { const d = Math.hypot(s1 - s0, x1 - x0), n = Math.ceil(d / .7); for (let k = 1; k < n; k++) if (!free(lerp(s0, s1, k / n), lerp(x0, x1, k / n))) return false; return true; };
+  const path = (r0, c0, r1, c1) => { const prev = new Int32Array(G * G).fill(-1), q = [r0 * G + c0]; prev[q[0]] = q[0]; for (let i = 0; i < q.length; i++) { const k = q[i], r = k / G | 0, c = k % G; if (r === r1 && c === c1) break; for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nr = r + a, nc = c + b; if (nr < 0 || nc < 0 || nr >= G || nc >= G || !open[nr][nc]) continue; const nk = nr * G + nc; if (prev[nk] < 0) { prev[nk] = k; q.push(nk); } } } const out = []; let k = r1 * G + c1; if (prev[k] < 0) return out; while (k !== r0 * G + c0) { out.push([cellS(k / G | 0), cellX(k % G)]); k = prev[k]; } return out.reverse(); };
+  const cellOf = (s, x) => [clamp(Math.round(s / C + H), 0, G - 1), clamp(Math.round(x / C + H), 0, G - 1)];
+  return { field: [-(H + .4) * C, (H + .4) * C, -(H + .4) * C, (H + .4) * C], start: [cellS(1), 0], layout: { blocks, plazas: [], G, C, H, open, houses, squares: squares.map(([r, c]) => [cellS(r), cellX(c)]), hay, free, lane, path, cellOf, cellS, cellX, goal: [cellS(G - 2) + 1.2, 0] } };
+}
+function breeContent(L) { const Y = L.layout; let n = 0; for (const [s, x] of Y.squares) { addCrate(n++ % 2 ? 'su' : 'q', s + 3, x + 3, 0, 3); addCrate('b', s - 3, x - 3, 0, 3); } for (let r = 3; r < Y.G - 3; r += 4) for (let c = 1; c < Y.G - 1; c += 4) if (Y.open[r][c]) addApple(Y.cellS(r), Y.cellX(c), .9); }
+function buildBree(L, TH) {
+  const Y = L.layout, first = scene.children.length, sky = TH.env, C = Y.C, cobT = TX.cobble.clone(); cobT.needsUpdate = true; cobT.wrapS = cobT.wrapT = THREE.RepeatWrapping; cobT.repeat.set(58, 58);
+  { const m = new THREE.MeshStandardMaterial({ map: cobT, color: 0x8a8a8e, roughness: .32, metalness: .1 }), e = skyEnv && !RETRO ? skyEnv(sky) : null; if (e) { m.envMap = e; m.envMapIntensity = 1.1; } const g = new THREE.Mesh(new THREE.PlaneGeometry(C * Y.G + 2, C * Y.G + 2), m); g.rotation.x = -Math.PI / 2; g.position.copy(tw(0, 0, .01)); g.receiveShadow = true; g.userData.keep = true; scene.add(g); }
+  wideFloor(TX.grass, 0x1e2a1e, 90, -.5, 700);
+  // puddles shining in the low places
+  { const pd = []; for (let k = 0; k < 140; k++) { const r = 1 + (Math.random() * (Y.G - 2) | 0), c = 1 + (Math.random() * (Y.G - 2) | 0); if (!Y.open[r][c]) continue; const q = tw(Y.cellS(r) + rand(-2, 2), Y.cellX(c) + rand(-2, 2), .025), w = rand(.5, 1.6); pd.push([q.x, q.y, q.z, w, .005, w * rand(.5, 1)]); } instanced(new THREE.CylinderGeometry(1, 1, 1, 12), new THREE.MeshStandardMaterial({ color: 0x20262e, roughness: .04, metalness: .6 }), pd); }
+  // the town: stone below, cream plaster and dark timber above, steep thatch and shingle; the wall of the town all round, higher, with battlements
+  const stone = surf(TX.hdStone || TX.rock, { sky, color: 0x9a9a9e, rough: .85, bump: 3, wet: .6, tri: 2.4 }), plasterA = surf(TX.plaster, { sky, color: 0xb0a488, rough: .9, bump: 1, tri: 2 }), plasterB = surf(TX.plaster, { sky, color: 0x8e8a7a, rough: .9, bump: 1, tri: 2 }), roofA = lam(0x3a2c22, { side: THREE.DoubleSide }), roofB = lam(0x4a3a2a, { side: THREE.DoubleSide }), beam = lam(0x241810), wall = surf(TX.hdStone || TX.rock, { sky, color: 0x7e7e86, rough: .9, bump: 3, wet: .5, tri: 2.6 });
+  const roofG = new THREE.BufferGeometry(); { const v = [-.5, 0, .5, .5, 0, .5, .5, 1, 0, -.5, 0, .5, .5, 1, 0, -.5, 1, 0, .5, 0, -.5, -.5, 0, -.5, -.5, 1, 0, .5, 0, -.5, -.5, 1, 0, .5, 1, 0, .5, 0, .5, .5, 0, -.5, .5, 1, 0, -.5, 0, -.5, -.5, 0, .5, -.5, 1, 0]; roofG.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); roofG.computeVertexNormals(); }
+  const L_ = { st: [], pa: [], pb: [], ra: [], rb: [], bm: [], wn: [], dr: [], wl: [], cn: [], ch: [] }, glows = [], box = (a, s, x, y, ws, h, wx) => { const q = tw(s, x, y); a.push([q.x, q.y, q.z, wx, h, ws]); };
+  for (const o of Y.houses) { const { s, x, h, r, c } = o, W = C + .04;
+    if (o.edge) { box(L_.wl, s, x, h / 2, W, h, W); for (const [ds, dx] of [[-1.8, -1.8], [-1.8, 1.8], [1.8, -1.8], [1.8, 1.8]]) box(L_.cn, s + ds, x + dx, h + .5, 1.2, 1, 1.2); continue; }
+    box(L_.st, s, x, 1, W, 2, W); box(o.tone < .5 ? L_.pa : L_.pb, s, x, 2 + (h - 2) / 2, W + .12, h - 2, W + .12);
+    { const q = tw(s, x, h), a = o.tone < .5 ? L_.ra : L_.rb; a.push([q.x, q.y - .02, q.z, W + .9, o.rise, W + .9, o.turn ? Math.PI / 2 : 0]); }
+    for (const [ds, dx] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) box(L_.bm, s + ds * W / 2, x + dx * W / 2, 2 + (h - 2) / 2, .24, h - 2, .24);
+    for (const y of [2.05, h - .1]) { box(L_.bm, s, x + W / 2 + .06, y, W, .18, .1); box(L_.bm, s, x - W / 2 - .06, y, W, .18, .1); box(L_.bm, s + W / 2 + .06, x, y, .1, .18, W); box(L_.bm, s - W / 2 - .06, x, y, .1, .18, W); }
+    for (const [a, b, fs, fx_] of [[1, 0, 1, 0], [-1, 0, -1, 0], [0, 1, 0, 1], [0, -1, 0, -1]]) { const nr = r + a, nc = c + b; if (nr < 0 || nc < 0 || nr >= Y.G || nc >= Y.G || !Y.open[nr][nc]) continue; const ps = s + fs * (W / 2 + .1), px = x + fx_ * (W / 2 + .1), along = fs ? 'x' : 's', lit = Math.random() < .45, off = rand(.9, 1.5), y = h - 1.2;
+      if (lit) { for (const k of [-1, 1]) { fs ? box(L_.wn, ps, px + k * off, y, .08, .9, .7) : box(L_.wn, ps + k * off, px, y, .7, .9, .08); } if (glows.length < 54) glows.push(tw(ps + fs * .4, px + fx_ * .4, y)); }
+      if ((r * 3 + c * 5) % 4 === 0) fs ? box(L_.dr, ps, px, .95, .1, 1.9, 1.05) : box(L_.dr, ps, px, .95, 1.05, 1.9, .1); }
+    if ((r * 7 + c) % 5 === 0) { const q = tw(s + 1.2, x - 1.2, h + o.rise * .5); L_.ch.push([q.x, q.y + 1, q.z, .7, 2.6, .7]); } }
+  instanced(GEO_BOX, stone, L_.st); instanced(GEO_BOX, plasterA, L_.pa); instanced(GEO_BOX, plasterB, L_.pb); instanced(GEO_BOX, wall, L_.wl); instanced(GEO_BOX, wall, L_.cn); instanced(GEO_BOX, stone, L_.ch); instanced(roofG, roofA, L_.ra); instanced(roofG, roofB, L_.rb); instanced(GEO_BOX, beam, L_.bm); instanced(GEO_BOX, new THREE.MeshBasicMaterial({ color: 0xffc060, fog: true }), L_.wn); instanced(GEO_BOX, lam(0x2a1a10), L_.dr);
+  for (const p of glows) { const g = glowSprite(0xffb050, 3, .4); g.position.copy(p); scene.add(g); }
+  // lamps on posts here and there, the only light in the lanes
+  { let n = 0; for (let r = 2; r < Y.G - 2 && n < 34; r += 2) for (let c = 2; c < Y.G - 2 && n < 34; c += 3) if (Y.open[r][c] && !Y.open[r][c - 1]) { n++; const q = tw(Y.cellS(r), Y.cellX(c) - C / 2 + .35, 0); part(GEO.cyl, beam, scene, q.x, 1.5, q.z, .07, 3, .07); part(GEO_BOX, lam(0x1a1a14), scene, q.x, 3.05, q.z, .3, .38, .3); const g = glowSprite(0xffc070, 3.6, .75); g.position.set(q.x, 3.05, q.z); scene.add(g); } }
+  // the south gate shut behind you, the hay to hide in, the wells in the squares, carts and barrels
+  { const gt = tw(Y.cellS(0) + C / 2 + .1, 0, 2.3); part(GEO_BOX, lam(0x2a1a10), scene, gt.x, gt.y, gt.z, 4, 4.6, .3); }
+  { const hayM = surf(TX.sThatch, { sky, rough: 1, bump: 3 }); for (const [s, x] of Y.hay) { const q = tw(s, x, .8); part(new THREE.SphereGeometry(1, 10, 7), hayM, scene, q.x, q.y - .2, q.z, 1.5, 1.25, 1.5); } }
+  for (const [s, x] of Y.squares) { const q = tw(s, x, 0); part(new THREE.CylinderGeometry(1.1, 1.2, .9, 12), stone, scene, q.x, .45, q.z); part(new THREE.CylinderGeometry(.85, .85, .92, 12), lam(0x0a0e12), scene, q.x, .47, q.z); for (const a of [-1, 1]) part(GEO.cyl, beam, scene, q.x + a * .95, 1.5, q.z, .07, 2.2, .07); part(new THREE.ConeGeometry(1.6, .8, 4), roofA, scene, q.x, 2.9, q.z); }
+  // The Prancing Pony: three great storeys against the north wall, every window lit, its sign out over the door
+  { const s0 = Y.cellS(Y.G - 1), Wd = C * 5, g = new THREE.Group(); place(g, s0, 0, 0, Math.PI); scene.add(g); part(GEO_BOX, stone, g, 0, 1.5, 0, Wd, 3, C); part(GEO_BOX, plasterA, g, 0, 6, 0, Wd + .3, 6, C + .3); const rf = part(roofG, roofB, g, 0, 9, 0, Wd + 1.2, 5, C + 2); for (let k = -3; k <= 3; k++) { part(GEO_BOX, beam, g, k * Wd / 7, 6, C / 2 + .2, .24, 6, .1); for (const y of [4.6, 7.4]) part(GEO_BOX, new THREE.MeshBasicMaterial({ color: 0xffc860 }), g, k * Wd / 7 + 1, y, C / 2 + .22, 1, 1.1, .05); } for (const y of [3, 6, 9]) part(GEO_BOX, beam, g, 0, y, C / 2 + .22, Wd + .3, .2, .1);
+    part(GEO_BOX, lam(0x2e1c0c), g, 0, 1.3, C / 2 + .08, 2, 2.6, .06); const lit = glowSprite(0xffc060, 9, .8); lit.position.set(0, 1.6, C / 2 + 1); g.add(lit); TH.door = lit;
+    const sg = (() => { const t = mkTex(160, 128, c => { c.fillStyle = '#2a1a0c'; c.fillRect(0, 0, 160, 128); c.strokeStyle = '#c8a050'; c.lineWidth = 4; c.strokeRect(4, 4, 152, 120); c.fillStyle = '#f0e8d8'; c.beginPath(); c.ellipse(72, 58, 26, 14, -.1, 0, 7); c.fill(); c.fillRect(50, 66, 6, 18); c.fillRect(88, 66, 6, 18); c.save(); c.translate(98, 40); c.rotate(-.5); c.fillRect(-7, -16, 14, 28); c.restore(); c.beginPath(); c.ellipse(112, 28, 11, 7, -.3, 0, 7); c.fill(); c.fillStyle = '#e8c870'; c.font = 'bold 15px Georgia, serif'; c.textAlign = 'center'; c.fillText('The Prancing Pony', 80, 112); }, false); t.magFilter = THREE.LinearFilter; return ps1(new THREE.MeshLambertMaterial({ map: t, side: THREE.DoubleSide })); })(); part(new THREE.PlaneGeometry(2.6, 2.1), sg, g, 3, 3.2, C / 2 + 1.7); part(GEO_BOX, beam, g, 3, 4.4, C / 2 + 1, .12, .12, 1.8); const gl2 = glowSprite(0xffc070, 3.6, .7); gl2.position.set(3, 3.2, C / 2 + 2.2); g.add(gl2); }
+  bakeScenery(scene.children.slice(first));
+  // rain: long thin streaks kept round the camera
+  const NR = 1400, pos = new Float32Array(NR * 6); TH.rain = { NR, vel: new Float32Array(NR) }; for (let i = 0; i < NR; i++) { const x = rand(-34, 34), y = rand(0, 26), z = rand(-34, 34); pos.set([x, y, z, x + .03, y + .9, z + .05], i * 6); TH.rain.vel[i] = rand(30, 44); }
+  const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.BufferAttribute(pos, 3)); const rm = new THREE.LineSegments(rg, new THREE.LineBasicMaterial({ color: 0x9ab4d8, transparent: true, opacity: .34, depthWrite: false, fog: false })); rm.frustumCulled = false; rm.visible = false; rm.userData.keep = true; scene.add(rm); TH.rainM = rm;
+  // the Nazgûl and their cones of dread
+  TH.riders = []; for (let k = 0; k < 8; k++) { const M = makeNazgul(), fan = new THREE.BufferGeometry(); fan.setAttribute('position', new THREE.BufferAttribute(new Float32Array(16 * 3), 3)); const idx = []; for (let i = 1; i < 15; i++) idx.push(0, i, i + 1); fan.setIndex(idx); const cone = new THREE.Mesh(fan, new THREE.MeshBasicMaterial({ color: 0x9ab8ff, transparent: true, opacity: .2, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false })); cone.frustumCulled = false; cone.userData.keep = true; cone.visible = false; scene.add(cone); M.root.visible = false; if (M.shadow) M.shadow.visible = false; TH.riders.push({ M, cone }); }
+}
+const BREE = { det: 0, said: false, hidden: false, seenT: 0 };
+function resetBree() {
+  const TH = THEMES.bree, Y = LV.layout; BREE.det = 0; BREE.said = false; BREE.hidden = false; Music.mode = 0; TH.riders.forEach((n, k) => { let r, c; for (let t = 0; t < 400; t++) { r = 5 + (Math.random() * (Y.G - 6) | 0); c = 1 + (Math.random() * (Y.G - 2) | 0); if (Y.open[r][c] && Math.hypot(Y.cellS(r) - P.s, Y.cellX(c) - P.x) > 22) break; } Object.assign(n, { s: Y.cellS(r), x: Y.cellX(c), h: rand(0, TAU), way: [], state: 'walk', pause: rand(0, 2), lost: 0, repath: 0, last: null }); });
+}
+function updateBree(dt) {
+  const TH = THEMES.bree, on = !!LV && LV.theme === 'bree' && state !== 'map' && state !== 'title'; if (TH.rainM) TH.rainM.visible = on; if (TH.riders) for (const n of TH.riders) { n.M.root.visible = on; n.cone.visible = on; if (n.M.shadow) n.M.shadow.visible = on; } if (!on) return;
+  const Y = LV.layout, play = state === 'play', Cp = camera.position, pa = TH.rainM.geometry.attributes.position, A = pa.array; TH.rainM.position.set(Cp.x, 0, Cp.z);
+  for (let i = 0; i < TH.rain.NR; i++) { const k = i * 6; let y = A[k + 1] - TH.rain.vel[i] * dt; if (y < 0) y += 26; A[k + 1] = y; A[k + 4] = y + .9; } pa.needsUpdate = true;
+  for (let k = 0; k < 4; k++) if (Math.random() < dt * 40) fx.spawn(...tw(P.s + rand(-10, 10), P.x + rand(-10, 10), .06).toArray(), rand(-.4, .4), rand(.6, 1.3), rand(-.4, .4), .18, .1, .02, [.7, .8, 1], [.5, .6, .8], 3, .7);
+  if (AUTORUN && play) { const [r0, c0] = Y.cellOf(P.s, P.x), w = Y.path(r0, c0, Y.G - 2, 11); WALKTO = w.length > 1 ? w[1] : Y.goal; }   // testing
+  // hiding in the hay
+  const inHay = Y.hay.some(([s, x]) => Math.hypot(s - P.s, x - P.x) < 1.5); if (inHay !== BREE.hidden) { BREE.hidden = inHay; if (inHay && play) banner('HIDDEN IN THE HAY', 1); }
+  let chasing = false;
+  for (const n of TH.riders) {
+    const ds = P.s - n.s, dx = P.x - n.x, d = Math.hypot(ds, dx) || .01, toP = Math.atan2(dx, ds), los = d < 26 && Y.lane(n.s, n.x, P.s, P.x);
+    n.pause -= dt; n.repath -= dt;
+    if (n.state === 'chase') { chasing = true; if (los && !BREE.hidden) { n.lost = 0; n.last = [P.s, P.x]; } else n.lost += dt;
+      if (n.repath <= 0 && n.last) { n.repath = .4; const a = Y.cellOf(n.s, n.x), b = Y.cellOf(n.last[0], n.last[1]); n.way = Y.path(a[0], a[1], b[0], b[1]); }
+      if (n.lost > 3.6) { n.state = 'walk'; n.way = []; if (!TH.riders.some(o => o.state === 'chase')) { if (play) banner('THEY HAVE LOST YOU', 1.4); Music.mode = 0; } }
+    } else {
+      if (!n.way.length && n.pause <= 0) { let r, c; for (let t = 0; t < 40; t++) { r = 1 + (Math.random() * (Y.G - 2) | 0); c = 1 + (Math.random() * (Y.G - 2) | 0); if (Y.open[r][c] && Math.hypot(Y.cellS(r) - n.s, Y.cellX(c) - n.x) > 12) break; } const a = Y.cellOf(n.s, n.x); n.way = Y.open[r][c] ? Y.path(a[0], a[1], r, c) : []; }
+      if (play && !BREE.hidden && KH.invT <= 0) { const inCone = d < 13 && Math.abs(angDiff(n.h, toP)) < .62 && los, close = d < 2.6 && los; if (inCone || close) BREE.det += dt * (close ? 4 : 1.1 + (13 - d) * .14); }
+    }
+    const sp = n.state === 'chase' ? 6.2 : 2.5; let walk = 0; if (n.way.length && n.pause <= 0) { const [ws, wx] = n.way[0], es = ws - n.s, ex = wx - n.x, e = Math.hypot(es, ex); if (e < .35) n.way.shift(); else { n.s += es / e * sp * dt; n.x += ex / e * sp * dt; n.h += angDiff(n.h, Math.atan2(ex, es)) * Math.min(1, dt * 6); walk = 1; } }
+    else if (n.state === 'chase' && los) n.h += angDiff(n.h, toP) * Math.min(1, dt * 6);
+    if (play && d < 1.25 && !BREE.hidden && KH.invT <= 0 && n.pause <= 0) { n.pause = 1.3; S.screech(); flashV = Math.max(flashV, .5); cam.shake = .6; if (!cheats.god) khHurt(34, n, { unblock: true, kb: 9 }); else KH.invT = 1.2; banner('THE COLD OF THE BLACK BREATH!', 1.6); }
+    place(n.M.root, n.s, n.x, 0, n.h); if (n.M.shadow) tw(n.s, n.x, .04, n.M.shadow.position); skinPlay(n.M, walk ? 'walk' : 'idle');
+    // the cone on the cobbles, stopped by the walls
+    const pp = n.cone.geometry.attributes.position, base = tw(n.s, n.x, .07); pp.setXYZ(0, base.x, base.y, base.z); for (let i = 0; i < 15; i++) { const a = n.h + (i / 14 - .5) * 1.24; let L_ = 13; for (let q = 1; q <= 13; q += .7) { if (!Y.free(n.s + Math.cos(a) * q, n.x + Math.sin(a) * q)) { L_ = q - .2; break; } } const e = tw(n.s + Math.cos(a) * L_, n.x + Math.sin(a) * L_, .07); pp.setXYZ(i + 1, e.x, e.y, e.z); } pp.needsUpdate = true; n.cone.material.color.setHex(n.state === 'chase' ? 0xff3a20 : 0x9ab8ff); n.cone.material.opacity = n.state === 'chase' ? .26 : .2;
+  }
+  BREE.det = clamp(BREE.det - dt * .45, 0, 1.2);
+  if (play && BREE.det > .35 && !BREE.said) { BREE.said = true; banner('SOMETHING SENSES YOU...', 1.2); S.screech(); }
+  if (BREE.det <= 0) BREE.said = false;
+  if (play && BREE.det >= 1) { BREE.det = 0; BREE.said = false; banner('THE NINE HAVE SEEN YOU! RUN!', 2); S.screech(); S.roar(); cam.shake = .5; Music.mode = 1; for (const n of TH.riders) if (Math.hypot(n.s - P.s, n.x - P.x) < 32 && n.state !== 'chase') { n.state = 'chase'; n.last = [P.s, P.x]; n.lost = 0; n.repath = 0; n.pause = 0; n.way = []; } }
+  // the squares are checkpoints; The Prancing Pony's door is the way out
+  if (play) { for (const [s, x] of Y.squares) if (Math.hypot(s - P.s, x - P.x) < 6 && (gs.cp.s !== s + 0 || gs.cp.x !== x) && gs.cp.s < s) { gs.cp = { s, x, y: 0, t: gs.time, deaths: 0 }; S.check(); banner('A QUIET CORNER: CHECKPOINT', 1.2); }
+    if (Math.hypot(P.s - Y.goal[0], P.x - Y.goal[1]) < 2.8) { banner('INTO THE PRANCING PONY!', 2.2); roamWin('SAFE AT THE PRANCING PONY!'); } }
+  if (TH.door) TH.door.material.opacity = .65 + Math.sin(T * 3) * .15;
+}
+THEMES.bree = natTheme({
+  wallTex: TX.rock, floorTex: TX.floor, tint: [.75, .76, .82], door: 0x6a6a7a,
+  env: { sky: [0x03050a, 0x0a1018, 0x141c28, 0x1e2632], fog: [16, 80], fogC: 0x0e141c, bloom: 1, amb: [0x5a6a86, .9], hemi: [0x8aa0c8, 0x14181c, .7], sun: [0xa0b4e0, .5], east: [0x5a6a90, .18], bolts: true, stars: false },
+  orc: MT_ORC,
+  scenery(L) { buildBree(L, this); },
+});
 THEMES.doom.floorTex = TX.doomRock; THEMES.doom.wallTex = TX.doomRock;
 const DOOM_JETS_ON = 1.15;   // (how long each vent blows)
 function updateDoom(dt) {
@@ -8112,8 +8448,9 @@ function ereborLayout() {
   blocks.push([-2.5, 2.5, ER.X0, ER.X1, WALK, 'floor', -30]);
   blocks.push([-3.3, -2.5, ER.X0, ER.X1, WALK + 3.5, 'wall', -30], [2.5, 3.3, ER.X0, ER.X1, WALK + 3.5, 'wall', -30]);
   blocks.push([-3.3, 3.3, ER.X0 - 1, ER.X0, WALK + 8, 'wall', -30], [-3.3, 3.3, ER.X1, ER.X1 + 1, WALK + 8, 'wall', -30]);
-  return { field: [-60, 30, -58, 58], start: [0, 10], terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g },
-    layout: { blocks, plazas: [{ s: 0, x: 0, y: WALK, r: 58, waves: [['D']], title: 'THE RAMPARTS OF EREBOR', boss: true, last: true, breach: [0, 0], bossHp: 480, noAdds: true }] } };
+  const deck = newDeck(-3, ER.X0, Math.ceil(ER.X1 - ER.X0) + 1, 7); for (let j = 0; j < 7; j++) for (let i = 0; i < deck.w; i++) deckPut(deck, j * deck.w + i, WALK);   // (so the orcs can stand on the wall too)
+  return { field: [-60, 30, -58, 58], start: [0, 10], deck, terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g },
+    layout: { blocks, plazas: [{ s: 0, x: 0, y: WALK, r: 58, waves: [['D']], title: 'THE RAMPARTS OF EREBOR', boss: true, last: true, breach: [0, 0], bossHp: 900, noAdds: true }] } };
 }
 function ereborContent(L) {
 
@@ -8150,10 +8487,10 @@ function spawnDragonRamparts(pl, delay = 0) {
 }
 function drHit(b, dmg, fin) {
   if (!ukLive(b) || b.state === 'intro' || b.state === 'flee') return;
-  if (b.state === 'perch' || b.state === 'stun') dmg *= 2; if (KH.form > 0) dmg *= 1.4;
+  if (b.state === 'stun') dmg *= 2; if (KH.form > 0) dmg *= 1.4;
   b.hp -= dmg; b.flash = .12; KH.target = b; KH.targetT = 6; sparks(tw(b.s, b.x, b.y + 2.5), 16, 6, [1, .8, .5], [.8, .3, .1]); S.screech && Math.random() < .3 && S.screech();
   if (b.phase === 1 && b.hp <= b.max * .5) { b.phase = 2; banner('SMAUG IS ENRAGED!', 1.6); S.roar(); }
-  if (b.hp <= 0) { b.hp = 0; b.dead = true; KH.react = null; b.state = b.kind === 'D' ? 'flee' : 'die'; b.t = 0; banner(b.kind === 'D' ? 'SMAUG FLEES INTO THE MOUNTAIN!' : 'SMAUG IS SLAIN!', 2.6); S.roar(); Music.mode = 0; flashV = Math.max(flashV, .4); }
+  if (b.hp <= 0) { b.hp = 0; b.dead = true; KH.react = null; b.state = b.kind === 'D' ? 'flee' : 'die'; b.t = 0; for (const o of URUKS) if (!o.boss && ukLive(o)) khHit(o, 999, true); banner(b.kind === 'D' ? 'SMAUG FLEES INTO THE MOUNTAIN!' : 'SMAUG IS SLAIN!', 2.6); S.roar(); Music.mode = 0; flashV = Math.max(flashV, .4); }
 }
 // a fireball from his mouth onto a red circle (where Gandalf stands)
 function drFireball(b, s, x, y, warn = 1.3, r = 2.2, dmg = 12) {
@@ -8161,37 +8498,40 @@ function drFireball(b, s, x, y, warn = 1.3, r = 2.2, dmg = 12) {
   khFx(warnMesh(s, x, y, r), f => { warnPulse(f); const k = Math.min(1, f.t / warn); fb.position.lerpVectors(p0, p1, k); fb.position.y += Math.sin(k * Math.PI) * 3; bfire(fb.position, .9, .3);
     if (k < 1) return true; scene.remove(fb); sparks(p1, 26, 8, [1, .9, .6], [1, .4, .1], .25); bblast(p1, 2.4); if (Math.hypot(P.s - s, P.x - x) < r && Math.abs(P.y - y) < 2) khHurt(dmg, { s, x }, { unblock: true, kb: 8 }); return false; });
 }
+function rampOrcs(b) {   // a few up the ladders from the valley, for the sword: they come up near Gandalf, while Smaug flies
+  const pl = b.plaza, list = b.phase > 1 ? ['o', 'u', 'o', 'a'] : ['o', 'o', 'u']; banner('ORCS UP THE LADDERS!', 1.3); S.orcGrunt();
+  list.forEach((k, i) => { const x = clamp(P.x + rand(-14, 14), ER.X0 + 2, ER.X1 - 2), u = spawnUruk(k, pl, 0, i * .35); u.from = [-3.6, x]; u.to = [rand(-1.6, 1.6), x]; u.s = -3.6; u.x = x; u.y0 = ER.WALK - 5; u.y = u.y0; });
+}
 function drRampUpdate(b, dt) {
   b.t += dt; b.flash -= dt; if (b.t < 0) return; const m = b.m; m.root.visible = true; m.shadow.visible = true; b.ground = 0;
   const p2 = b.phase > 1, live = state === 'play', W = ER.WALK; let fly = true, open = false;
+  if (live && b.state !== 'intro' && b.state !== 'flee' && (b.orcT = (b.orcT ?? 11) - dt) <= 0) { b.orcT = rand(15, 21); if (URUKS.filter(u => !u.boss && ukLive(u)).length < 5) rampOrcs(b); }
   const toward = (s, x, y, sp) => { const ds = s - b.s, dx = x - b.x, dy = y - b.y, d = Math.hypot(ds, dx, dy) || .01, k = Math.min(1, sp * dt / d); b.s += ds * k; b.x += dx * k; b.y += dy * k; if (Math.hypot(ds, dx) > .3) { const h = Math.atan2(dx, ds); b.bank = clamp(angDiff(b.h, h) * 1.5, -.6, .6); b.h += angDiff(b.h, h) * Math.min(1, dt * 3); } return d; };
   switch (b.state) {
     case 'intro':   // down off the Mountain, over the wall with a roar
       if (!b.said) { b.said = true; S.roar(); } toward(-30, -10, 26, 26); if (b.t > 1 && !b.named) { b.named = true; banner('SMAUG THE GOLDEN!', 2.4); cam.shake = .6; }
       if (b.t > 3.2) { b.state = 'circle'; b.t = 0; b.ang = Math.atan2(b.x, b.s + 30); } break;
-    case 'circle': {   // wheeling over the valley, hurling fire at the wall
-      b.ang += dt * (p2 ? .42 : .32); const ts = -30 + Math.cos(b.ang) * 26, tx = Math.sin(b.ang) * 40; toward(ts, tx, 24 + Math.sin(b.t * .7) * 4, 22); b.pitch = 0;
-      b.cd -= dt; if (!live || b.cd > 0) break; b.n++;
-      if (b.n % 3 === 0) { b.state = 'strafe'; b.t = 0; b.dir = P.x > 0 ? -1 : 1; b.cx = clamp(P.x, ER.X0 + 10, ER.X1 - 10); const half = 11; b.seg = [b.cx - half, b.cx + half];
-        b.marks = []; for (let x = b.seg[0]; x <= b.seg[1]; x += 2.4) b.marks.push(khFx(warnMesh(0, x, W + .05, 2.4), f => { warnPulse(f); return b.state === 'strafe'; })); S.roar(); banner('FIRE ON THE WALL! GET CLEAR, OR INTO A TOWER!', 1.4); }
-      else if (b.n % 3 === 1) { b.state = 'perch'; b.t = 0; const opts = ER.TOWERS.filter(tx => Math.abs(tx - P.x) > 8 && Math.abs(tx - P.x) < 30); b.tower = opts.length ? opts[Math.random() * opts.length | 0] : ER.TOWERS[0]; b.landed = false; }
-      else { const k = p2 ? 5 : 3; for (let i = 0; i < k; i++) setTimeout(() => { if (state === 'play' && ukLive(b)) drFireball(b, clamp(P.s + rand(-1, 1), -2, 2), P.x + rand(-1.5, 1.5) + P.vx * .6, W); }, i * 420); open = true; b.openT = 1.4; }
-      b.cd = rand(2.4, 3.6) / (p2 ? 1.3 : 1); break;
+    case 'circle': {   // far out over the valley on the wing, in waves: a volley of fireballs at the wall, a low pass along it, a pass right over it. The time to shoot him
+      b.ang += dt * (p2 ? .4 : .3); const ts = -46 + Math.cos(b.ang) * 26, tx = Math.sin(b.ang) * 52; toward(ts, tx, 30 + Math.sin(b.t * .7) * 7, 24); b.pitch = 0;
+      b.cd -= dt; if (!live || b.cd > 0) break; b.n++; const nx = b.n % 3;
+      if (nx === 0) { b.state = 'strafe'; b.t = 0; b.dir = P.x > 0 ? -1 : 1; b.cx = clamp(P.x, ER.X0 + 10, ER.X1 - 10); const half = 11; b.seg = [b.cx - half, b.cx + half];
+        b.marks = []; for (let x = b.seg[0]; x <= b.seg[1]; x += 2.4) b.marks.push(khFx(warnMesh(0, x, W + .05, 2.4), f => { warnPulse(f); return b.state === 'strafe'; })); S.roar(); banner('A FLYING PASS! GET CLEAR, OR INTO A TOWER!', 1.4); }
+      else if (nx === 2) { b.state = 'over'; b.t = 0; b.run = false; b.ox = clamp(P.x + rand(-6, 6), ER.X0 + 6, ER.X1 - 6); b.bombed = 0; S.roar(); }
+      else { const k = (p2 ? 7 : 5) + (b.wave = (b.wave || 0) + 1) % 2; banner('FIRE ON THE RAMPARTS!', 1); for (let i = 0; i < k; i++) setTimeout(() => { if (state === 'play' && ukLive(b)) drFireball(b, clamp(P.s + rand(-1, 1), -2, 2), clamp(P.x + rand(-4, 4) + P.vx * .7, ER.X0 + 1, ER.X1 - 1), W); }, i * 380); open = true; b.openT = k * .38; }
+      b.cd = rand(3.2, 4.6) / (p2 ? 1.25 : 1); break;
+    }
+    case 'over': {   // up from the valley, right over the wall and on to the Mountain, dropping fire as he crosses, and round again
+      if (!b.run) { if (toward(-42, b.ox, W + 13, 28) < 3) { b.run = true; b.rt = 0; } break; }
+      b.rt += dt; const k = Math.min(1, b.rt / 3); b.s = lerp(-42, 32, k); b.x = b.ox; b.y = W + 13 + Math.sin(k * Math.PI) * 3; b.h = 0; b.bank = 0;
+      if (b.bombed === 0 && b.s > -22) { b.bombed = 1; for (const q of [-5, 0, 5]) drFireball(b, 0, clamp(b.ox + q, ER.X0 + 1, ER.X1 - 1), W, 1.05, 2.5, 13); open = true; b.openT = 1; }
+      if (k >= 1) { b.state = 'circle'; b.t = 0; b.cd = 1.2; b.ang = Math.atan2(b.x, b.s + 46); } break;
     }
     case 'strafe': {   // round to the end of the marked stretch, then low along the front of the wall breathing fire on it
       const sx0 = b.dir > 0 ? b.seg[0] - 14 : b.seg[1] + 14, sx1 = b.dir > 0 ? b.seg[1] + 14 : b.seg[0] - 14;
       if (!b.run) { if (toward(-9, sx0, W + 6, 26) < 2) { b.run = true; b.rt = 0; } break; }
       b.rt += dt; const x = lerp(sx0, sx1, Math.min(1, b.rt / 2.2)); b.s = -7; b.x = x; b.y = W + 5; b.h = b.dir > 0 ? Math.PI / 2 : -Math.PI / 2; b.bank = 0;
       if (x > b.seg[0] && x < b.seg[1]) { open = true; drBreathFx(b, tw(0, x + b.dir * 2, W + .3)); if (live && Math.abs(P.x - x) < 3 && Math.abs(P.s) < 3 && P.y > W - 1 && !ER.TOWERS.some(tx => Math.abs(P.x - tx) < 2.2)) khHurt(p2 ? 20 : 15, { s: -6, x }, { unblock: true, kb: 4 }); }
-      if (b.rt > 2.4) { b.state = 'circle'; b.t = 0; b.run = false; b.cd = 1.5; b.ang = Math.atan2(b.x, b.s + 30); } break;
-    }
-    case 'perch': {   // onto a tower: there he breathes down the wall at Gandalf; and there he's easiest to hit
-      const tgt = [0, b.tower, ER.TOP + .2];
-      if (!b.landed) { if (toward(tgt[0], tgt[1], tgt[2] + 1, 20) < 1.2) { b.landed = true; b.lt = 0; S.roar(); cam.shake = .5; banner('HE LANDS ON THE TOWER: NOW!', 1.2); } break; }
-      fly = false; b.lt += dt; b.y = ER.TOP + .2; b.ground = ER.TOP; b.bank = 0; const toP = Math.atan2(P.x - b.x, P.s - b.s); b.h += angDiff(b.h, toP) * Math.min(1, dt * 3); b.pitch = -.25;
-      const cyc = b.lt % 2.6; if (live && cyc < dt && b.lt < 6) { b.aim = clamp(P.x, b.x - 14, b.x + 14); b.bmark = khFx(warnMesh(0, b.aim, W + .05, 3), f => { warnPulse(f); return f.t < 1; }); }
-      if (cyc > 1 && cyc < 1.8 && b.aim !== undefined) { open = true; drBreathFx(b, tw(0, b.aim, W + .3)); if (live && Math.abs(P.x - b.aim) < 3 && Math.abs(P.s) < 3 && P.y > W - 1) khHurt(16, { s: 0, x: b.aim }, { unblock: true, kb: 6 }); }
-      if (b.lt > 7) { b.state = 'circle'; b.t = 0; b.cd = 1.2; b.ang = Math.atan2(b.x, b.s + 30); } break;
+      if (b.rt > 2.4) { b.state = 'circle'; b.t = 0; b.run = false; b.cd = 1.5; b.ang = Math.atan2(b.x, b.s + 46); } break;
     }
     case 'flee':   // away up the Mountain to the Gate, smoking
       toward(40, 0, 50, 18); if (Math.random() < .6) smoke.spawn(...tw(b.s, b.x, b.y + 2).toArray(), 0, 1, 0, 1.6, 1.4, 3, [.1, .08, .06], [.2, .18, .16], 0, .3);
@@ -8221,10 +8561,11 @@ function updateBow(dt) {
   BOW.cd -= dt; const on = !!(LV && LV.bow && state !== 'map' && state !== 'title');
   if (!BOW.mesh) { const g = new THREE.Group(), w = lam(0x5a3a1e); const arc = new THREE.Mesh(new THREE.TorusGeometry(.62, .035, 5, 16, Math.PI * .9), w); arc.rotation.z = Math.PI / 2 + Math.PI * .05; g.add(arc); part(GEO.cyl, lam(0xe8e8e8), g, -.02, 0, 0, .008, 1.2, .008); BOW.mesh = g; scene.add(g);
     const el = document.createElement('div'); el.id = 'bowX'; el.innerHTML = '<i></i><b></b>'; document.getElementById('khpow').parentNode.appendChild(el); BOW.el = el; }
-  BOW.mesh.visible = on; if (on) { tw(P.s + Math.cos(P.heading) * .35, P.x + Math.sin(P.heading) * .35 + Math.cos(P.heading) * -.25, P.y + 1.25, BOW.mesh.position); BOW.mesh.rotation.set(0, -(trackAng(P.s) + P.heading) + Math.PI / 2, 0); }
+  if (LV && LV.bowU) { if (KH.sword && state !== 'map') KH.sword.g.visible = !BOW.aim; const base = window.BASE_FOV, want = BOW.aim && state === 'play' ? base * .5 : base; if (Math.abs(camera.fov - want) > .05) { camera.fov = damp(camera.fov, want, 9, dt); camera.updateProjectionMatrix(); } } else if (Math.abs(camera.fov - window.BASE_FOV) > .05) { camera.fov = window.BASE_FOV; camera.updateProjectionMatrix(); }   // (the sight zooms, like a sniper's)
+  BOW.mesh.visible = on && (!LV.bowU || BOW.aim); if (on) { tw(P.s + Math.cos(P.heading) * .35, P.x + Math.sin(P.heading) * .35 + Math.cos(P.heading) * -.25, P.y + 1.25, BOW.mesh.position); BOW.mesh.rotation.set(0, -(trackAng(P.s) + P.heading) + Math.PI / 2, 0); }
   const show = on && BOW.aim && state === 'play'; BOW.el.style.display = show ? 'block' : 'none';
   if (show) { BOW.el.style.left = (BOW.cx + 1) * 50 + '%'; BOW.el.style.top = (1 - BOW.cy) * 50 + '%'; BOW.el.classList.toggle('on', !!bowPick(.1)); }
-  if (on && BOW.hintAt && T > BOW.hintAt && state === 'play') { BOW.hintAt = 0; banner('U: TAKE AIM · W A S D: THE SIGHT · K: LOOSE', 3.4); }
+  if (on && BOW.hintAt && T > BOW.hintAt && state === 'play') { BOW.hintAt = 0; banner(LV.bowU ? 'K: THE SWORD · U: THE BOW AND ITS SIGHT · SHOOT SMAUG ON THE WING' : 'U: TAKE AIM · W A S D: THE SIGHT · K: LOOSE', 3.8); }
   if (!on && BOW.arrows.length) { for (const a of BOW.arrows) scene.remove(a.m); BOW.arrows = []; }
   for (let i = BOW.arrows.length - 1; i >= 0; i--) {
     const a = BOW.arrows[i]; a.life -= dt; const p0 = a.p.clone();
@@ -10388,6 +10729,8 @@ function resetKH(fresh) {
   for (const u of URUKS.slice()) khRemove(u); KH.plaza = null;
   if (LV && LV.layout && LV.layout.plazas) { const pl = LV.layout.plazas; for (let i = pl.length - 1; i >= 0; i--) if (pl[i].eye) pl.splice(i, 1); }   // (the hunters the Eye sent are gone too)
   if (LV && LV.theme === 'mordorkh') resetEye();
+  if (LV && LV.flight) resetEagle();
+  if (LV && LV.theme === 'bree') resetBree();
   for (const p of (LV && LV.layout && LV.layout.plazas) || []) if (!p.done) { p.wave = -1; p.waveT = 0; p.near = false; }   // any square you hadn't finished starts again
   for (const o of ORBS) scene.remove(o.sp); ORBS.length = 0; khClearFx();
   if (hadBoss) Music.mode = 0;
@@ -10422,7 +10765,7 @@ function khInput() {
 const khFlash = c => KH.cmdT[c] = .25;   // the command menu lights the command just used
 const KH_CLIPS = ['attack_a', 'attack_b', 'attack_c', 'attack_a', 'attack_e'];
 function khAttack() {
-  if (LV && LV.bow) { bowShoot(); return; }   // (Erebor's ramparts: the bow instead of the blade)
+  if (LV && LV.bow && (!LV.bowU || BOW.aim)) { bowShoot(); return; }   // (the bow instead of the blade: at Erebor only with the sight up)
   if (KH.rollT > 0) return;
   if (KH.atk) { if (KH.atk.t > KH.atk.dur * .35) KH.buf = true; return; }   // pressed during a cut: the next comes when this one's done
   const form = KH.form > 0, air = !P.ground, last = (form ? 4 : 3) + (KH.comboPlus && !air ? 1 : 0), n = air ? KH.airN : KH.combo, fin = n >= last, tgt = khTarget(air ? 5 : 7.5);
@@ -10803,6 +11146,7 @@ function spawnUruk(kind, pl, a, delay) {
   if (kind === 'X') return spawnSauronKH(pl, delay);
   if (kind === 'T') return spawnTroll(pl, delay);
   if (kind === 'A') return spawnTroll(pl, delay, true);
+  if (kind === 'V') return spawnWatcher(pl, delay);
   if (kind === 'D') return spawnDragonRamparts(pl, delay);
   if (kind === 'G') return spawnDragonHoard(pl, delay);
   if (kind === 'F') return spawnFallBalrog(pl, delay);
@@ -10957,6 +11301,7 @@ function updateOrbs(dt) {
   }
 }
 function updateKH(dt) {
+  if (LV && LV.flight) { updateKHFx(dt); return; }   // (The Escape: on the wing, nothing to swing at)
   if (!khOn()) return;
   khWhite(KH.form > 0);   // (Grey or White, whichever the drive form says, once both models are in)
   saberToBone(KH.sword, hob);
@@ -11125,6 +11470,7 @@ showScreen(null); syncPauseBtns();
     if (q.get('autofight')) AUTOFIGHT = { next: () => { const p = LV.layout.plazas.find(p => !p.done), W_ = LV.layout.path;
       if (W_ && p && p.pi !== undefined && (Math.hypot(P.s - p.s, P.x - p.x) > p.r - 2 || Math.abs(P.y - p.y) > 3)) { let bi = 0, bd = 1e9; for (let i = 0; i < W_.length; i += 2) { const d = Math.hypot(W_[i][0] - P.s, W_[i][1] - P.x) + Math.abs(W_[i][2] - P.y) * 3; if (d < bd) { bd = d; bi = i; } } const ti = Math.min(p.pi, bi + 8); if (ti < p.pi - 1) return [W_[ti][0], W_[ti][1]]; }   // (along the way, at Helm's Deep)
       const dr = LV.layout.hall && LV.layout.hall.door; return p ? [p.s, p.x] : dr ? [dr.s, dr.x] : [P.s, P.x]; } };
+    if (q.get('aimt') && LV.bow) BOW.aim = true;
     if (q.get('sim')) { cheats.god = !q.get('mortal'); for (let i = 0; i < Number(q.get('sim')) * 60; i++) { for (const r of ROUTE) if (Math.round(r[0] * 60) === i) { WALKTO = [r[1], r[2]]; console.log('route t=' + r[0] + ' at ' + P.s.toFixed(0) + ',' + P.x.toFixed(0) + ' foes ' + URUKS.map(u => u.state + '@' + u.s.toFixed(0) + ',' + u.x.toFixed(0)).join(' ')); } step(1 / 60, true); } if (q.get('cast') === 'all' && LV.kh) { const bad = []; for (const p of KH_POWERS) { try { KH.mp = 100; KH.magicCD = 0; KH.atk = null; if (!khCast(p.id)) bad.push(p.id + ' (not cast)'); for (let i = 0; i < 90; i++) step(1 / 60, true); } catch (e) { bad.push(p.id + ': ' + e.message); } } console.log('castall ' + KH_POWERS.length + ' powers, problems: ' + (bad.join('; ') || 'none') + ', kills ' + gs.kills); }   // (&cast=all: every power in turn, for testing)
     if (q.get('cutnow') && KH.boss) { bossFall(KH.boss); for (let i = 0; i < Number(q.get('cutnow')) * 60; i++) step(1 / 60, true); }   // (&cutnow=2: the bridge's ending, 2 seconds in, for testing)
     if (q.get('aimt') && LV.bow) BOW.aim = true;   // (testing: &aimt=1 starts with the sight up)
@@ -11138,7 +11484,8 @@ showScreen(null); syncPauseBtns();
       if (q.get('autorun')) console.log('autorun after ' + q.get('sim') + 's: s ' + P.s.toFixed(1) + ' y ' + P.y.toFixed(1) + ' of end ' + END_S.toFixed(0) + ', falls ' + (gs.falls || 0));
       if (q.get('pos') || q.get('spring')) console.log(`after ${q.get('sim')}s: s ${P.s.toFixed(1)} x ${P.x.toFixed(1)} y ${P.y.toFixed(1)} ground ${P.ground}`); }   // &sim=6 plays 6 seconds first (invincible)
     if (q.get('info')) setTimeout(() => { renderer.info.autoReset = false; renderer.info.reset(); renderer.setRenderTarget(rt); renderer.render(scene, camera); console.log('scene: ' + renderer.info.render.calls + ' draw calls, ' + renderer.info.render.triangles + ' triangles'); renderer.info.autoReset = true; }, 500);   // &info=1 logs how much one frame draws
-    if (q.get('pick')) setTimeout(() => { const [px, py] = q.get('pick').split(',').map(Number), rc = new THREE.Raycaster(); rc.setFromCamera(new THREE.Vector2(px, py), camera); console.log('autorun pick ' + rc.intersectObjects(scene.children, true).slice(0, 5).map(h => [h.object.type, h.distance.toFixed(1), h.object.name, h.object.material && h.object.material.type, h.object.material && h.object.material.color && h.object.material.color.getHexString(), h.object.parent && h.object.parent.type, h.object.parent && h.object.parent.parent && h.object.parent.parent.type].join(':')).join(' | ')); }, 1200);   // &pick=x,y (-1..1): what's on the screen there (testing)
+    if (q.get('spawn')) { const pl = { s: P.s, x: P.x, y: P.y, r: 6, near: true, wave: 0, waveT: 0, done: false, waves: [[]] }; q.get('spawn').split(',').forEach((k, i, A) => { const u = spawnUruk(k, pl, i / A.length * TAU, 0); u.t = .9; }); LV.layout.plazas.push(pl); }   // &spawn=o,E,H: those foes around Gandalf (testing)
+    if (q.get('pick')) setTimeout(() => { const [px, py] = q.get('pick').split(',').map(Number), rc = new THREE.Raycaster(); rc.setFromCamera(new THREE.Vector2(px, py), camera); console.log('autorun skin ' + URUKS.filter(u => u.boss).map(u => u.state + ':' + (u.m.skin && u.m.skin.cur) + ':' + (u.m.skin && u.m.skin.obj && u.m.skin.obj.rotation.toArray().slice(0, 3).map(v => v.toFixed(2)))).join(' ') + ' anims ' + (LOADED.armtroll ? LOADED.armtroll.animations.map(a => a.name).join(',') : '')); console.log('autorun pick ' + rc.intersectObjects(scene.children, true).slice(0, 5).map(h => [h.object.type, h.distance.toFixed(1), h.object.name, h.object.material && h.object.material.type, h.object.material && h.object.material.color && h.object.material.color.getHexString(), h.object.parent && h.object.parent.type, h.object.parent && h.object.parent.parent && h.object.parent.parent.type].join(':')).join(' | ')); }, 1200);   // &pick=x,y (-1..1): what's on the screen there (testing)
     if (q.get('cam')) { const [s, x, y, ls, lx, ly] = q.get('cam').split(',').map(Number); DEBUG_CAM = { p: tw(s, x, y), l: tw(ls, lx, ly) }; }   // &cam=s,x,y,ls,lx,ly: a fixed camera in the level
     if (q.get('peek') && balrogs[0]) { const r = balrogs[0].m.root, [x, y, z] = q.get('peek').split(',').map(Number); r.updateMatrixWorld(true); DEBUG_CAM = { p: r.localToWorld(new V3(x, y, z)), l: r.localToWorld(new V3(0, 5, 0)) }; }   // &peek=8,7,12 looks at the Balrog from there
   }
