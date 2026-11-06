@@ -10,7 +10,10 @@ Put a `.glb` file here with one of these names and Valinor uses it instead of it
 | `shelob.glb` | Shelob, and (smaller) Mirkwood's spiders | The Pass of Cirith Ungol, and Mirkwood |
 | `nazgul.glb` | The nine Nazgûl | Hobbiton |
 | `orc.glb` | Orcs and goblins | Most levels |
-| `fellbeast.glb` | The fell beasts (a Nazgûl on a winged beast) | Minas Tirith, Mordor and Mount Doom |
+| `cavetroll.glb` | The unarmoured cave troll (falls back on `troll.glb`) | Balin's Chamber |
+| `armtroll.glb` | The armoured attack troll (falls back on `troll.glb`) | The Deeping Wall, Mordor |
+| `orcarch.glb`, `orcpike.glb`, `orcbrute.glb`, `easterling.glb`, `haradrim.glb` | Mordor's own soldiers (each falls back on the nearest Uruk-hai model) | Mordor |
+| `fellbeast.glb` | The fell beasts (a Nazgûl on a winged beast) | Minas Tirith |
 | `horse.glb` | Shadowfax | The First Circle |
 | `uruk.glb`, `lurtz.glb`, `theoden.glb` | The Uruk-hai, Lurtz and Théoden | Edoras (and the Uruk-hai at Helm's Deep) |
 | `berserker.glb` | The Uruk berserkers with their torches | Helm's Deep |

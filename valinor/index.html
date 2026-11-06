@@ -1514,28 +1514,6 @@ const THEMES = {
   }),
 
   // Mordor: black rock over a sea of lava, Barad-dûr in the middle with the Eye on top, fell beasts overhead
-  mordor: natTheme({
-    wallTex: TX.lavaRock, floorTex: TX.dark, tint: [.8, .7, .68], door: 0x8a5a4a,
-    env: { sky: [0x100404, 0x3a0c08, 0x7a1c0a, 0xff5a10], fog: [30, 230], fogC: 0x3a120a, amb: [0x6a3a3a, .6], hemi: [0xff9a70, 0x3a0a04, .5], sun: [0xffa080, .35], east: [0xff5a20, .6], cloud: 0x803020, bolts: true, embers: true },
-    orc: { sk: 0x5a4a3a, ska: 0x6a5844, ar: 0x4a2420, le: 0x2a1a12, met: 0x1a1414, sc: 1 },
-    edge(s0, s1) { for (let s = s0 + .4; s < s1 - .4; s += 1.2) cbox(this.gm, s - .45, s + .45, -4.3, -3.5, 0, .5 + hsh(s, 2, 3) * 1.3, { seg: 5, ys: 5, tint: [.6, .5, .5] }); },
-    pil(s) { addTorch(s, 3.0, 2.7); for (const d of [-1, 1]) { const sp = new THREE.Mesh(GEO.cone, lam(0x1a1414)); place(sp, s + d * 1.4, 3.3, 3.5); sp.scale.set(.18, 1.6, .18); scene.add(sp); } },
-    scenery(L) {
-      this.lava = wideFloor(TX.lavaGlow, 0xff7a30, 90, L.base, 700, true);
-      const rocks = [];
-      for (let i = 0; i < 70; i++) { const p = ringPt(rand(0, TAU), R + rand(8, 160), L.base), s = rand(2, 9); rocks.push([p.x, p.y + s * .3, p.z, s, s * rand(.6, 1.8), s, rand(0, 3)]); }
-      instanced(GEO.ico, lam(0x241a18), rocks);
-      let y = Y0 + L.base;
-      const bd = STRAIGHT ? tw(CIRC * .7, -70, 0) : new V3(CX, 0, CZ);   // Barad-dûr
-      for (const [rt, rb, h] of [[11, 15, 20], [8, 11, 40], [6, 8, 34], [4, 5.5, 22]]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 8), lam(0x1a1416)); m.position.set(bd.x, y + h / 2, bd.z); scene.add(m); y += h; }
-      for (const d of [-1, 1]) { const h = new THREE.Mesh(GEO.cone, lam(0x1a1416)); h.position.set(bd.x, y + 6, bd.z + d * 2.6); if (!STRAIGHT) h.position.set(bd.x + d * 2.6, y + 6, bd.z); h.scale.set(1.3, 14, 1.3); if (STRAIGHT) h.rotation.x = d * .2; else h.rotation.z = -d * .2; scene.add(h); }
-      const eye = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.eye, transparent: true, depthWrite: false, fog: false })); eye.position.set(bd.x, y + 6, bd.z); eye.scale.set(9, 13, 1); scene.add(eye);
-      const eg = glowSprite(0xff3a08, 40, .7); eg.material.fog = false; eg.position.copy(eye.position); scene.add(eg);
-      const dp = STRAIGHT ? tw(CIRC + 420, 60, 0) : new V3(CX + 520, 0, CZ + 120);   // Mount Doom
-      const dm = gradCone(150, 230, 7, 0x3a1a1a, 0x140808); dm.position.set(dp.x, Y0 + L.base + 100, dp.z); scene.add(dm);
-      const dg = glowSprite(0xff4a10, 160, .9); dg.material.fog = false; dg.position.set(dp.x, Y0 + L.base + 220, dp.z); scene.add(dg);
-    },
-  }),
 
   // Hobbiton on a golden afternoon: rolling green country, hobbit holes everywhere, Bag End on its hill under the oak,
   // the town and its market, the Water with its stone bridge and mill, the Green Dragon, and Bilbo's party field
@@ -1751,25 +1729,46 @@ const THEMES = {
   // Weathertop: a wind-swept hilltop at night, the ruined watchtower's ring of stones, storm clouds and lightning
   weathertop: natTheme({
     wallTex: TX.rock, floorTex: TX.floor, tint: [.75, .76, .82], door: 0x6a6a7a,
-    env: { sky: [0x05070e, 0x111a2c, 0x2a3448, 0x4a4a5a], fog: [12, 120], fogC: 0x141a26, bloom: .9, amb: [0x50607a, .7], hemi: [0x8aa0c8, 0x1a1a14, .55], sun: [0xb0c0ff, .45], east: [0x6a7aa0, .2], stars: true, bolts: true },
+    env: { sky: [0x05070e, 0x111a2c, 0x2a3448, 0x4a4a5a], fog: [24, 150], fogC: 0x18202e, bloom: .9, amb: [0x6a7a96, .95], hemi: [0xa0b4dc, 0x2a2a24, .75], sun: [0xc0d0ff, .8], east: [0x6a7aa0, .2], stars: true, bolts: true },
     orc: MT_ORC,
     scenery(L) {
-      const [S0, S1, X0, X1] = L.field;
+      const first = scene.children.length, sky = this.env;
       wideFloor(TX.grass, 0x3a4a30, 120, -26, 700);
-      // the hilltop: a round platform of old flagstones with grassy, rocky slopes falling away
-      const top = new THREE.Mesh(new THREE.CylinderGeometry(19, 30, 26, 28, 1), ps1(new THREE.MeshLambertMaterial({ map: TX.rock, color: 0x5a6050 }))); tw(0, 0, -13.02, top.position); scene.add(top);
-      const fl = new THREE.Mesh(new THREE.CircleGeometry(19, 32), ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.floor.clone(); t.needsUpdate = true; t.repeat.set(6, 6); return t; })(), color: 0x9a9aa8 }))); fl.rotation.x = -Math.PI / 2; tw(0, 0, .01, fl.position); scene.add(fl);
-      const grassRing = new THREE.Mesh(new THREE.RingGeometry(16.8, 19.05, 32), lam(0x4a5a3a)); grassRing.rotation.x = -Math.PI / 2; tw(0, 0, .02, grassRing.position); scene.add(grassRing);
-      // the broken ring of standing stones and the stumps of the old tower
-      const stone = ps1(new THREE.MeshLambertMaterial({ map: TX.rock, color: 0x8a8a92 }));
-      for (const [ss, xx, a, h] of L.layout.stones) { const m = new THREE.Mesh(GEO_BOX, stone); tw(ss, xx, h / 2, m.position); m.scale.set(1.6, h, 1.1); m.rotation.y = -a + rand(-.15, .15); m.rotation.z = rand(-.08, .08); scene.add(m); }
-      for (let k = 0; k < 8; k++) { const a = k / 8 * TAU, m = new THREE.Mesh(GEO_BOX, stone); tw(Math.cos(a) * 16.2, Math.sin(a) * 16.2, (k % 2 ? 4.6 : 3.5) + .4, m.position); m.scale.set(1.8, .5, 3.4); m.rotation.y = -a + Math.PI / 2; if (k % 3 === 0) scene.add(m); }
+      // the hilltop: a broad crown of rock, its sides falling away sheer, grass round the outside of the ruin
+      const top = new THREE.Mesh(new THREE.CylinderGeometry(26, 38, 26, 36, 1), surf(TX.rock, { sky, color: 0x6a6a5e, rough: .95, bump: 3, tri: 3 })); tw(0, 0, -13.02, top.position); scene.add(top);
+      const gr = rep => { const t = TX.grass.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep); return t; };
+      const lawn = new THREE.Mesh(new THREE.CircleGeometry(26.05, 44), ps1(new THREE.MeshLambertMaterial({ map: gr(12), color: 0x6a7a52 }))); lawn.rotation.x = -Math.PI / 2; tw(0, 0, -.01, lawn.position); scene.add(lawn);
+      const fl = new THREE.Mesh(new THREE.CircleGeometry(13, 40), ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.floor.clone(); t.needsUpdate = true; t.repeat.set(5, 5); return t; })(), color: 0x9a9aa8 }))); fl.rotation.x = -Math.PI / 2; tw(0, 0, .015, fl.position); scene.add(fl);
+      const stoneA = surf(TX.hdStone || TX.rock, { sky, color: 0xe4e4ec, rough: .9, bump: 3, tri: 2.4 }), stoneB = surf(TX.hdStone || TX.rock, { sky, color: 0xc4c4d0, rough: .9, bump: 3, tri: 2.4 }), stoneC = surf(TX.hdStone || TX.rock, { sky, color: 0xa0a2ac, rough: .95, bump: 3, tri: 2.4 });
+      // the steps, turned as one piece
+      const pts = [[12.7, -.05], [12.7, .35], [13.8, .35], [13.8, .7], [14.8, .7], [14.8, 1.05], [17.9, 1.05], [17.9, .7], [18.9, .7], [18.9, .35], [19.9, .35], [19.9, -.05]].map(([r, y]) => new THREE.Vector2(r, y));
+      const stT = TX.floor.clone(); stT.needsUpdate = true; stT.wrapS = stT.wrapT = THREE.RepeatWrapping; stT.repeat.set(36, 3); const steps = new THREE.Mesh(new THREE.LatheGeometry(pts, 64), ps1(new THREE.MeshLambertMaterial({ map: stT, color: 0xb4b4bc, side: THREE.DoubleSide }))); tw(0, 0, 0, steps.position); scene.add(steps);
+      // the masonry, block on block
+      const lists = [[], [], []]; for (const [s, x, y, w, h, th, a] of L.layout.courses) { const q = tw(s, x, y); lists[Math.random() * 3 | 0].push([q.x, q.y, q.z, w, h, th, -a + rand(-.015, .015)]); }
+      lists.forEach((l, i) => { const m = instanced(GEO_BOX, [stoneA, stoneB, stoneC][i], l); m.castShadow = true; m.userData.cast = true; });
+      // arch stones round the openings, big and pale, and the huge lintel over the gate
+      const arches = [[-.72, 1.6, 6, 17.4], [.62, 1.5, 5.6, 17.4], [0, 2.5, 8.2, 17.4], [2.1, 1.3, 5, 17.4], [-2.05, 1.3, 5, 17.4], [2.88, 1.05, 3.6, 22], [3.14, 1.05, 3.6, 22], [3.4, 1.05, 3.6, 22]];
+      for (const [oa, w, oh, r] of arches) { const spr = oh - w, n = Math.max(7, Math.round(w * 6)); for (let k = 0; k <= n; k++) { const e = k / n * Math.PI, along = Math.cos(e) * (w + .28), up = Math.sin(e) * (w + .28), a = oa + along / r, ns = Math.cos(a) * (r - 1.05), nx = Math.sin(a) * (r - 1.05), q = tw(ns, nx, spr + up), b = part(GEO_BOX, stoneA, scene, q.x, q.y, q.z, .46, .78, .32); b.rotation.y = -a; b.rotateZ(Math.PI / 2 - e); } }
+      { const q = tw(17.4, 0, 12.8); part(GEO_BOX, stoneC, scene, q.x, q.y, q.z, 9.5, 1.5, 3); }
+      for (const a of [-.3, .3]) { const q = tw(Math.cos(a) * 16.2, Math.sin(a) * 16.2, 4.4), c = part(new THREE.CylinderGeometry(.7, .85, 8.8, 10), stoneB, scene, q.x, q.y, q.z); part(GEO_BOX, stoneA, scene, q.x, 8.9, q.z, 1.9, .5, 1.9); part(GEO_BOX, stoneA, scene, q.x, .25, q.z, 2, .5, 2); }
+      // fallen blocks everywhere, and slabs that have come down off the walls, tilted
+      const rub = []; for (let k = 0; k < 150; k++) { const a = rand(0, TAU), r = k % 3 ? rand(15, 25) : rand(9, 16), sz = k % 3 ? rand(.4, 1.1) : rand(.2, .55), q = tw(Math.cos(a) * r, Math.sin(a) * r, sz * .35 + (r > 13 && r < 19.5 ? .9 : 0)); rub.push([q.x, q.y, q.z, sz * rand(1, 1.7), sz * rand(.5, .9), sz, rand(0, 3)]); } instanced(GEO_BOX, stoneB, rub);
+      for (const [a, r, w, h, tz] of [[1.5, 21.5, 7, 1.1, .32], [-1.55, 22, 6, 1.2, -.28], [2.6, 15.8, 3.4, .7, .22], [-.95, 22.5, 5, 1, .2]]) { const q = tw(Math.cos(a) * r, Math.sin(a) * r, .9), b = part(GEO_BOX, stoneC, scene, q.x, q.y, q.z, w, h, 2.4); b.rotation.set(0, a, tz); }
+      // old pillar stumps out on the floor's edge
+      for (const a of [.95, 2.25, -2.2, 3.5]) { const q = tw(Math.cos(a) * 12, Math.sin(a) * 12, .7); part(new THREE.CylinderGeometry(.48, .55, 1.4 + (a > 0 ? .5 : 0), 10), stoneA, scene, q.x, q.y, q.z); }
+      // dead, wind-bent trees clawing up through the ruin
+      const bark = lam(0x4a4034), limb = (p, dir, len, th, d) => { const e = p.clone().addScaledVector(dir, len), m = part(new THREE.CylinderGeometry(th * .62, th, len, 6), bark, scene, (p.x + e.x) / 2, (p.y + e.y) / 2, (p.z + e.z) / 2); m.quaternion.setFromUnitVectors(UPV, dir); if (d <= 0) return; const n = d > 2 ? 2 : 3; for (let k = 0; k < n; k++) { const nd = dir.clone().add(new V3(rand(-.85, .85) + .28, rand(-.1, .55), rand(-.85, .85))).normalize(); limb(e, nd, len * rand(.58, .78), th * .62, d - 1); } };
+      for (const [a, r, h] of [[.98, 15.4, 3.6], [-1.42, 15.2, 4], [2.5, 15.6, 3.2], [-2.45, 15.4, 3.6], [1.62, 20.5, 3.8], [-.42, 21.5, 3.4]]) limb(tw(Math.cos(a) * r, Math.sin(a) * r, r < 18 ? .95 : 0), new V3(.18, 1, .08).normalize(), h, .36, 4);
+      // moss and long yellow grass in the joints and along the wall heads
+      const moss = [], tuft = []; for (const [s, x, , h] of L.layout.stones) { if (Math.random() < .35) { const q = tw(s + rand(-.5, .5), x + rand(-.5, .5), h + rand(-.1, .25)); moss.push([q.x, q.y, q.z, rand(.45, .85), rand(.16, .34), rand(.45, .85)]); } if (Math.random() < .3) { const q = tw(s + rand(-1.4, 1.4), x + rand(-1.4, 1.4), .15); tuft.push([q.x, q.y + .35, q.z, rand(.05, .1), rand(.5, 1), rand(.05, .1), rand(0, 3)]); } }
+      for (let k = 0; k < 420; k++) { const a = rand(0, TAU), r = rand(20, 25.6), q = tw(Math.cos(a) * r, Math.sin(a) * r, .2); tuft.push([q.x, q.y + .2, q.z, rand(.05, .1), rand(.4, .9), rand(.05, .1), rand(0, 3)]); } instanced(GEO.ico, lam(0x5a6a3a), moss); instanced(new THREE.ConeGeometry(1, 1, 3), lam(0x9a9a4a), tuft);
       const rocks = [];
-      for (let i = 0; i < 60; i++) { const a = rand(0, TAU), r = rand(20, 34), p = tw(Math.cos(a) * r, Math.sin(a) * r, -r * .9 + 16), sz = rand(1, 3); rocks.push([p.x, p.y, p.z, sz, sz * .7, sz, rand(0, 3)]); }
+      for (let i = 0; i < 70; i++) { const a = rand(0, TAU), r = rand(27, 42), p = tw(Math.cos(a) * r, Math.sin(a) * r, -r * .9 + 20), sz = rand(1.4, 4); rocks.push([p.x, p.y, p.z, sz, sz * .7, sz, rand(0, 3)]); }
       instanced(GEO.ico, lam(0x4a4a50), rocks);
       // the little campfire the hobbits lit, burnt down to embers at the edge of the ring
       const fp = tw(-11, 7, .2); for (let k = 0; k < 6; k++) { const a = k / 6 * TAU; part(GEO.cyl, lam(0x3a2414), scene, fp.x + Math.cos(a) * .35, .15, fp.z + Math.sin(a) * .35, .07, .7, .07).rotation.set(Math.cos(a) * 1.2, 0, Math.sin(a) * 1.2); }
       const fg = glowSprite(0xff7a20, 2.4, .9); fg.position.copy(fp); scene.add(fg); L.torches.push({ s: -11, p: fp.clone() });
+      bakeScenery(scene.children.slice(first));
       // a big moon behind the storm clouds
       const moonS = glowSprite(0xdde4ff, 70, .9); moonS.material.fog = false; tw(140, -90, 90, moonS.position); scene.add(moonS);
       const moonD = new THREE.Mesh(new THREE.CircleGeometry(9, 24), new THREE.MeshBasicMaterial({ color: 0xf0f2ff, fog: false })); tw(141, -91, 90, moonD.position); moonD.lookAt(tw(0, 0, 0)); scene.add(moonD);
@@ -1922,7 +1921,7 @@ const THEMES = {
   // Mount Doom: rock spires up the side of the mountain, with the lava rising behind you
   doom: natTheme({
     wallTex: TX.lavaRock, floorTex: TX.dark, tint: [.72, .6, .56], door: 0xff8a40,
-    env: { sky: [0x140404, 0x4a0e06, 0x8a2008, 0xff6a10], fog: [30, 230], fogC: 0x4a160a, amb: [0x7a4a40, .65], hemi: [0xffaa70, 0x3a0a04, .55], sun: [0xffb090, .4], east: [0xff5a20, .7], cloud: 0x803020, bolts: true, embers: true },
+    env: { sky: [0x1a0603, 0x5a1206, 0xb82a08, 0xff7a14], fog: [34, 260], fogC: 0x6a1c08, amb: [0x7a4a40, .65], hemi: [0xffaa70, 0x3a0a04, .55], sun: [0xffb090, .4], east: [0xff5a20, .7], cloud: 0x803020, bolts: true, embers: true },
     orc: { sk: 0x5a4a3a, ska: 0x6a5844, ar: 0x4a2420, le: 0x2a1a12, met: 0x1a1414, sc: 1 },
     edge() { },
     pil(s) {
@@ -1930,20 +1929,11 @@ const THEMES = {
       const top = groundBelow(s, 0, 60); if (top < -5) return;
       addTorch(s, 3.0, top + 2.7);
     },
-    scenery(L) {
-      const lt = TX.lavaGlow.clone(); lt.needsUpdate = true; lt.wrapS = lt.wrapT = THREE.RepeatWrapping; lt.repeat.set(60, 60); this.lavaTex = lt;
-      const lava = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), ps1(new THREE.MeshBasicMaterial({ map: lt, color: 0xff8a40 })));
-      lava.rotation.x = -Math.PI / 2; tw(CIRC / 2, -40, L.base, lava.position); scene.add(lava); this.lavaMesh = lava;
-      const rock = ps1(new THREE.MeshLambertMaterial({ map: (() => { const t = TX.lavaRock.clone(); t.needsUpdate = true; t.repeat.set(30, 12); return t; })(), color: 0x6a4a42 }));
-      roadBox(-90, CIRC + 120, 4.6, 40, L.base, L.wallH, rock);   // the mountain itself, rising beside you
-      roadBox(CIRC - 2, CIRC + 120, -40, 40, L.base, (L.endY || 0) - .02, rock);   // the ledge at the top, by the Crack of Doom
-      const bd = tw(CIRC * .4, -260, 0);   // Barad-dûr across the plain
-      let y = Y0 + L.base;
-      for (const [rt, rb, h] of [[11, 15, 30], [8, 11, 50], [6, 8, 40], [4, 5.5, 26]]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 8), lam(0x1a1416)); m.position.set(bd.x, y + h / 2, bd.z); scene.add(m); y += h; }
-      const eye = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.eye, transparent: true, depthWrite: false, fog: false })); eye.position.set(bd.x, y + 8, bd.z); eye.scale.set(14, 20, 1); scene.add(eye);
-      const eg = glowSprite(0xff3a08, 60, .7); eg.material.fog = false; eg.position.copy(eye.position); scene.add(eg);
-      for (let i = 0; i < 24; i++) { const g = glowSprite(0xff5010, rand(20, 50), .5); g.material.fog = false; g.position.copy(tw(rand(-40, CIRC + 80), rand(-160, -20), L.base + 2)); scene.add(g); }
+    island(s0, s1, x0, x1, top) {   // a slab of black rock with the fire showing through, its underside lost in the river
+      cbox(this.gf, s0, s1, x0, x1, top - .7, top, { f: 'toiaz', sh: () => 1, seg: 2, vo: .875, tint: [1.15, 1, .95] });
+      cbox(this.gm, s0, s1, x0 + .12, x1 - .12, top - 14, top - .7, { f: 'oiaz', sh: () => .8, tint: [.62, .5, .46] });
     },
+    scenery(L) { buildDoom(L, this); },
   }),
 };
 function applyEnv(e) {
@@ -2430,11 +2420,11 @@ function addOrc(type, s, x, o = {}) {
 }
 function addPlat(s, x, y, o = {}) {
   const w = o.w || 2.2, l = o.l || 2;
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, .5, l), ps1(new THREE.MeshLambertMaterial({ map: o.crumble ? TX.floor : TX.wood, color: o.crumble ? 0xd8d0d8 : 0xffffff })));
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, .5, l), ps1(new THREE.MeshLambertMaterial(o.stone ? { map: TX.doomRock, color: o.crumble ? 0xd89a70 : 0xffffff, emissive: 0x3a1004 } : { map: o.crumble ? TX.floor : TX.wood, color: o.crumble ? 0xd8d0d8 : 0xffffff })));
   scene.add(mesh);
   const pl = { bs: s, bx: x, by: y, cs: s, cx: x, cy: y, w, l, ax: o.ax || 0, ay: o.ay || 0, sp: o.sp || 1, ph: o.ph || 0, crumble: !!o.crumble, cr: 0, fv: 0, gone: 0, mesh };
   pl.box = solid(s - l / 2, s + l / 2, x - w / 2, x + w / 2, y - .5, y, 'plat', pl);
-  if (!o.crumble) for (const d of [-.8, .8]) { const rope = part(GEO.cyl, lam(0x8a7a5a), scene, 0, 0, 0, .03, 40, .03); rope.userData.off = d; (pl.ropes = pl.ropes || []).push(rope); }
+  if (!o.crumble && !o.stone) for (const d of [-.8, .8]) { const rope = part(GEO.cyl, lam(0x8a7a5a), scene, 0, 0, 0, .03, 40, .03); rope.userData.off = d; (pl.ropes = pl.ropes || []).push(rope); }
   plats.push(pl);
 }
 // =====================================================================
@@ -2444,8 +2434,28 @@ function addPlat(s, x, y, o = {}) {
 const crateList = list => { for (const [t, s, x, st] of list) addCrate(t, s, x, st || 0); };
 // Weathertop: the broken ring of Amon Sûl on its hilltop. The duel is fought inside the ring.
 function weathertopLayout() {
-  const L = { blocks: [], chimneys: [], stones: [] };
-  for (let k = 0; k < 22; k++) { const a = k / 22 * TAU + .1, r = 16.2, h = [3.5, 1.2, 4.6, 2.2, .8][k % 5] + rand(-.4, .4); L.stones.push([Math.cos(a) * r, Math.sin(a) * r, a, h]); }
+  // Amon Sûl, a great ruined drum of a tower: steps round a flagged floor, and masonry far taller than Gandalf round them, block on block, broken off at every height.
+  // Each wall is a run of columns of blocks round the ring: [from angle, to angle, radius, thickness, height along it, openings [angle, half width, height]]
+  const L = { blocks: [], chimneys: [], stones: [], courses: [], lintels: [] }, CH = .78;
+  const wall = (a0, a1, r, th, hAt, ops = []) => {
+    const n = Math.ceil(Math.abs(a1 - a0) * r / 1.3);
+    for (let k = 0; k <= n; k++) {
+      const t = k / n, a = lerp(a0, a1, t), h = Math.max(CH, hAt(t) + rand(-.5, .5)), s = Math.cos(a) * r, x = Math.sin(a) * r, arc = (y) => ops.some(([oa, w, oh]) => { const u = (a - oa) * r / w; return Math.abs(u) < 1 && y < oh - w + w * Math.sqrt(1 - u * u); });
+      let base = 0; for (let y = 0; y < h; y += CH) { const open = arc(y + CH * .5); if (open) { base = y + CH; continue; } const off = (Math.round(y / CH) % 2) * .32; L.courses.push([Math.cos(a + off / r) * r, Math.sin(a + off / r) * r, y + CH / 2, rand(1.12, 1.34), CH - .05, th + rand(-.1, .1), a]); }
+      if (base < h) L.blocks.push([s - .85, s + .85, x - .85, x + .85, h, 'wall', base - .01]);
+      L.stones.push([s, x, a, h]);
+    }
+  };
+  const peaks = (...p) => t => { const q = t * (p.length - 1), i = Math.min(p.length - 2, q | 0), u = q - i; return lerp(p[i], p[i + 1], u); };
+  wall(-.3, -1.28, 17.4, 1.7, peaks(10, 14, 12.5, 7, 9, 3.5), [[-.72, 1.6, 6]]);
+  wall(.3, 1.34, 17.4, 1.7, peaks(10, 15, 11, 12, 6, 2.5), [[.62, 1.5, 5.6]]);
+  wall(-.3, .3, 17.4, 2, () => 12.5, [[0, 2.5, 8.2]]);   // the great gate on the far side, whole to its lintel
+  wall(1.72, 2.5, 17.4, 1.6, peaks(2.5, 8, 12, 6.5, 2), [[2.1, 1.3, 5]]);
+  wall(-1.72, -2.5, 17.4, 1.6, peaks(3, 10, 6, 11.5, 3.5), [[-2.05, 1.3, 5]]);
+  // the long low wall round the near side, outside the ring, pierced by a row of arches: you walk through them
+  wall(2.72, 3.56, 22, 1.5, peaks(5.4, 5.8, 5.6, 5.8, 5.2), [[2.88, 1.05, 3.6], [3.14, 1.05, 3.6], [3.4, 1.05, 3.6]]);
+  // the steps round the floor, climbing to the ring and down outside it
+  for (const [r, y] of [[13.3, .35], [14.3, .7], [15.3, 1.05], [16.3, 1.05], [17.3, 1.05], [18.4, .7], [19.4, .35]]) { const n = Math.ceil(TAU * r / 1.1); for (let k = 0; k < n; k++) { const a = k / n * TAU, s = Math.cos(a) * r, x = Math.sin(a) * r; L.blocks.push([s - .62, s + .62, x - .62, x + .62, y, 'floor', -1]); } }
   return L;
 }
 // Hobbiton, laid out on a field 120 across (s runs north, x east). Everything here is both drawn and solid.
@@ -2524,6 +2534,7 @@ function rivendellLayout() {
 const USTAIR = { FLIGHTS: 6, STEPS: 30, RISE: 7, X: 18, LAND: 23 }, OSG = { TOP: 30, R: 8.6 };   // (the Stairs of Cirith Ungol's size; Osgiliath's tower)
 const RACE_FORD = 520, RACE_END = 572;
 const ER = { WALK: 12, X0: -46, X1: 46, TOWERS: [-46, -23, 0, 23, 46], TOP: 20 };   // (Erebor's ramparts: the walk's height and ends, its towers, their tops)   // (the race to the Ford: where the river crosses the road, and where the road ends)
+const DOOM_R = 46;
 const LEVELS = [
   {
     name: 'THE FIRST CIRCLE', sub: 'RIDE OF SHADOWFAX', loc: 'mt', next: 'CLIMB TO THE SECOND CIRCLE', R: 50, Y0: 0, base: -26, wallH: 12, fog: 0x2c1a48, ride: true,
@@ -2680,25 +2691,11 @@ const LEVELS = [
     content() { edorasContent(this); },
   },
   {
-    straight: true, name: 'MORDOR', sub: 'IN THE SHADOW OF THE EYE', loc: 'mordor', theme: 'mordor', next: 'RETURN TO THE MAP', R: 36, Y0: 0, CX: 25000, CZ: 0, base: -14, wallH: 12,
-    floors: [[-16.6, 32, -3.5], [36, 60, -3.5], [60, 78, .3], [82.5, 104, -3.5], [116, 140, -3.5], [140, 156, -.5], [160, 1e9, -3.5]],
-    pillars: [], bars: [[26, -3.5, .3], [48, -.3, 3.5], [92, -3.5, 3.5], [130, -3.5, .2], [170, .3, 3.5], [190, -3.5, 3.5]],
-    dz: [{ s0: 36, s1: 82, int: 2.6 }, { s0: 118, s1: 204, int: 2.3, multi: 170 }], d3: 160, balrogs: [],
-    content() {
-      addPlat(107.5, 0, 0, { ax: 1.8, sp: 1.5 }); addPlat(111, .2, 0, { crumble: true }); addPlat(114, 0, -.3, { ay: .8, sp: 1.8, ph: .5 });
-      crateList([
-        ['b', 6, -1.5], ['b', 6, 0], ['b', 6, 1.5], ['t', 12, 0], ['q', 16, 2.4], ['n', 20, -1], ['r', 24, 2.4], ['b', 40, -2], ['b', 41, -2], ['c', 44, 0], ['t', 52, 2], ['b', 56, -2.4], ['r', 58, 2.4],
-        ['b', 64, 2], ['n', 68, 1.5], ['q', 72, 2.6], ['l', 76, 2.6], ['b', 86, -2], ['b', 86, 2], ['t', 90, 0], ['p', 96, 0], ['i', 100, 2], ['i', 100, 2, 1],
-        ['c', 120, 0], ['b', 124, -2], ['t', 128, 2], ['r', 134, -2], ['b', 144, 2.4], ['n', 148, 1], ['q', 152, 2.4], ['b', 164, -2], ['b', 164, 2], ['t', 172, -2], ['n', 176, 0], ['q', 180, 2],
-        ['r', 184, -2], ['b', 194, -2], ['b', 198, 2], ['t', 202, 0],
-      ]);
-      aLine(2, 5, 0, .7, 4); aArc(31, 37, 0, .7, 2.6, 5); aLine(38, 46, 0, .7, 7); aLine(62, 76, 2, .7, 10); aArc(77, 84, 1.5, .7, 2.6, 6); aLine(88, 98, 0, .7, 7);
-      aArc(105.5, 109.5, 0, .7, 2, 3); aArc(112, 116, 0, .7, 2, 3); aLine(118, 128, 0, .7, 8); aLine(142, 154, 1.5, .7, 9); aArc(155, 161, 1, .7, 2.6, 5); aLine(166, 190, 0, .7, 14);
-      addOrc('grunt', 10, 0, { patrol: { ax: 'x', amp: 2, sp: 1.8 } }); addOrc('archer', 18, 2.6); addOrc('grunt', 30, -3, { ladder: true }); addOrc('grunt', 46, 0, { patrol: { ax: 'x', amp: 2, sp: 2 } });
-      addOrc('archer', 54, 2.6); addOrc('grunt', 66, 2, { patrol: { ax: 's', amp: 1.4, sp: 1.6 } }); addOrc('grunt', 88, -3, { ladder: true }); addOrc('archer', 98, 2.6);
-      addOrc('grunt', 122, 0, { patrol: { ax: 'x', amp: 2.2, sp: 2.2 } }); addOrc('grunt', 132, -3, { ladder: true }); addOrc('archer', 146, 2.6); addOrc('grunt', 168, 0, { patrol: { ax: 'x', amp: 2, sp: 2.4 } });
-      addOrc('grunt', 178, -3, { ladder: true }); addOrc('archer', 186, -2.4); addOrc('grunt', 196, 0, { patrol: { ax: 'x', amp: 2, sp: 2.6 } });
-    },
+    // the plain of Gorgoroth on foot, a Kingdom Hearts level: war camps of all Mordor's kinds, the Eye searching the ground, the far gate to reach (see Mordor)
+    straight: true, roam: true, kh: true, stepUp: true, camWalls: true, name: 'MORDOR', sub: 'THE EYE IS SEARCHING', loc: 'mordor', theme: 'mordorkh', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 25000, CZ: 0, base: -6, wallH: 0, winTitle: 'YOU HAVE CROSSED GORGOROTH!',
+    ...mordorLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { mordorContent(this); },
   },
   {
     straight: true, name: 'THE PASS OF CIRITH UNGOL', sub: "SHELOB'S LAIR", loc: 'ungol', theme: 'ungol', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 30000, CZ: 0, base: -30, wallH: 26,
@@ -2720,10 +2717,10 @@ const LEVELS = [
   },
   {
     // a lightsaber duel with the Witch-king inside the ruined ring on Weathertop
-    straight: true, roam: true, kh: true, name: 'WEATHERTOP', sub: 'THE WITCH-KING OF ANGMAR', loc: 'weather', theme: 'weathertop', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 45000, CZ: 0, base: -26, wallH: 0, winTitle: 'THE WITCH-KING IS DRIVEN OFF!',
-    field: [-19, 19, -19, 19], start: [-11, 0], layout: { ...weathertopLayout(), plazas: [{ s: 0, x: 0, y: 0, r: 14.5, waves: [['W']], title: 'AMON SÛL', boss: true, last: true, breach: [0, 0], bossHp: 760, noAdds: true }] },   // (a Kingdom Hearts boss fight now: see the Witch-king)
+    straight: true, roam: true, kh: true, stepUp: true, camRing: 15.2, name: 'WEATHERTOP', sub: 'THE WITCH-KING OF ANGMAR', loc: 'weather', theme: 'weathertop', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 45000, CZ: 0, base: -26, wallH: 0, winTitle: 'THE WITCH-KING IS DRIVEN OFF!',
+    field: [-25.5, 25.5, -25.5, 25.5], start: [-10.5, 0], layout: { ...weathertopLayout(), plazas: [{ s: 0, x: 0, y: 0, r: 12.8, waves: [['W']], title: 'AMON SÛL', boss: true, last: true, breach: [0, 0], bossHp: 760, noAdds: true }] },   // (a Kingdom Hearts boss fight now: see the Witch-king)
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
-    content() { for (const [k, s, x] of [['q', -12, 4], ['su', -12, -4], ['b', 12, 0]]) addCrate(k, s, x, 0, 4); },
+    content() { for (const [k, s, x] of [['q', -10, 4.4], ['su', -10, -4.4], ['b', 11, 0]]) addCrate(k, s, x, 0, 4); },
   },
   {
     // Cirith Ungol's second level: the stairs, climbed from the side (see the Stairs of Cirith Ungol)
@@ -2734,29 +2731,17 @@ const LEVELS = [
   },
   {
     // a climb up the side of the mountain on spires of rock, with the lava rising underneath
-    straight: true, name: 'MOUNT DOOM', sub: 'CLIMB TO THE CRACK OF DOOM', loc: 'doom', theme: 'doom', next: 'RETURN TO THE MAP', R: 22, Y0: 0, CX: 35000, CZ: 0, base: -40, wallH: 50, wallTop: 70,
+    straight: true, name: 'MOUNT DOOM', sub: 'THE WAY UP THROUGH THE FIRE', loc: 'doom', theme: 'doom', next: 'RETURN TO THE MAP', R: DOOM_R, Y0: 0, CX: 35000, CZ: 0, base: -14, wallH: 8, wallTop: 90, open: [[-1.6, TAU * DOOM_R - 16.5]],
     floors: [[-16.6, 6.5, -3.5]],
-    pillars: (() => {
-      // stepping stones that zig-zag left and right, a wide resting spire every fourth step
-      const list = []; let s = 6.5, top = 1.1, i = 0;
-      while (s < 113) {
-        const rest = i % 4 === 0, lane = rest ? [-3.5, 3.5] : i % 2 ? [-3.5, .7] : [-.7, 3.5], len = rest ? 4.2 : 2.6;
-        list.push([s, s + len, lane[0], lane[1], +top.toFixed(2)]);
-        s += len + 1.5 + (i % 3) * .35; top += 1.15 + (i % 5 === 4 ? .75 : (i % 2) * .3); i++;
-      }
-      list.push([s, TAU * 22 + 2, -3.5, 3.5, +top.toFixed(2)]);   // the ledge at the top, up to the last gate
-      return list;
-    })(),
-    bars: [], dz: [{ s0: 36, s1: 104, int: 3.4 }], balrogs: [],
-    lava: { rate: .4, delay: 3.5 },
+    pillars: doomC().pillars,
+    bars: [], dz: [], balrogs: [],
+    lava: { fixed: true },
     content() {
-      const P = this.pillars;
-      P.forEach((p, i) => {
-        const [s0, s1, x0, x1, top] = p, sm = (s0 + Math.min(s1, END_S)) / 2, xm = (x0 + x1) / 2;
-        if (i === 8 || i === 16) addCrate('c', sm, xm);
-        else if (i > 0 && i % 4 === 0) addCrate(i % 8 ? 'q' : 'r', sm, xm + 1.6);
-        if (i < P.length - 1) aLine(s0 + .5, Math.min(s1, END_S) - .5, xm, top + .8, 3);
-      });
+      const C = doomC();
+      for (const p of C.plats) addPlat(p.s, p.x, p.y, { stone: true, w: p.w, l: p.l, ax: p.ax, ay: p.ay, sp: p.sp, ph: p.ph, crumble: p.crumble });
+      for (const [k, s, x] of C.crates) addCrate(k, s, x, 0, 60);
+      for (const [t, s, x, y] of C.orcs) addOrc(t, s, x, t === 'grunt' ? { y, patrol: { ax: 'x', amp: 1, sp: 1.5 } } : { y });
+      for (const [a0, a1, x, y, n] of C.apples) aLine(a0, a1, x, y, n);
     },
   },
   {
@@ -2793,14 +2778,14 @@ const LEVELS = [
   },
   {
     // Erebor, the first level: on the ramparts before the Gate with a bow, the dragon wheeling over the valley (see EREBOR)
-    straight: true, roam: true, kh: true, bow: true, startH: Math.PI, startY: 12, name: 'EREBOR', sub: 'THE RAMPARTS · A DRAGON!', loc: 'erebor', theme: 'erebor', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 85000, CZ: 0, base: -20, wallH: 0, winTitle: 'THE DRAGON FLEES INTO THE MOUNTAIN!',
+    straight: true, roam: true, kh: true, bow: true, startH: Math.PI, startY: 12, name: 'EREBOR', sub: 'THE RAMPARTS · SMAUG!', loc: 'erebor', theme: 'erebor', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 85000, CZ: 0, base: -20, wallH: 0, winTitle: 'THE DRAGON FLEES INTO THE MOUNTAIN!',
     ...ereborLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { ereborContent(this); },
   },
   {
     // Erebor, the second level: the dragon in the treasure hall under the Mountain, the Kingdom Hearts way (see EREBOR)
-    straight: true, roam: true, kh: true, name: 'THE TREASURE HALL', sub: 'THE HOARD OF THRÓR', loc: 'erebor', theme: 'hoard', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 90000, CZ: 0, base: -20, wallH: 0, winTitle: 'THE DRAGON IS SLAIN!',
+    straight: true, roam: true, kh: true, name: 'THE TREASURE HALL', sub: 'THE HOARD OF THRÓR', loc: 'erebor', theme: 'hoard', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 90000, CZ: 0, base: -20, wallH: 0, winTitle: 'SMAUG IS SLAIN!',
     ...hoardLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { hoardContent(this); },
@@ -3058,9 +3043,14 @@ function readInput() {
     if (hit.KeyW) { if (T - (KH.lastW ?? -9) < .3) inp.chargeP = true; KH.lastW = T; }
     if (hit.KeyL && !KH.sub) { if (!P.ground && T - (KH.lastL ?? -9) < .45) inp.fjumpP = true; KH.lastL = T; }
   } else { inp.camT = 0; inp.chargeP = inp.fjumpP = false; }
+  if (AUTORUN && LV && state === 'play') {   // testing: &autorun=1 runs and jumps up a run-forward level, steering for a landing place in the air
+    const here = P.standOn, nx = solids.filter(b => b.on && (b.kind === 'floor' || b.kind === 'plat') && b.s0 > P.s + .05 && b.y1 < P.y + 2).sort((u, v) => u.s0 - v.s0)[0], cx = b => (b.x0 + b.x1) / 2;
+    if (P.ground) { AUTOT = null; WALKTO = [P.s + 4, nx && nx.s0 - P.s < 6 ? clamp(cx(nx), (here && here.x0 || -3) + .5, (here && here.x1 || 3) - .5) : here && here.x0 !== undefined ? cx(here) : P.x]; const stepUp = nx && nx.y1 - P.y <= .36 && nx.s0 - (here && here.s1 !== undefined ? here.s1 : P.s) < .05; inp.jump = false; const e1 = here && here.s1 !== undefined ? here.s1 : P.s + 9, gap = nx && nx.s0 - e1 > .05; if (nx && !stepUp && (gap ? P.s > e1 - .75 : nx.s0 - P.s < .9)) { inp.jump = true; inp.jumpP = true; AUTOT = nx; AUTOJ = T; } else if (Math.abs(P.vs) < 1 && T > 1) { hit.KeyK = true; if ((AUTOS += 1 / 60) > 1.5) { AUTOS = 0; inp.jump = true; inp.jumpP = true; AUTOJ = T; } } else AUTOS = 0; }
+    else { if (AUTOT) WALKTO = [AUTOT.s0 + Math.min(1.6, (AUTOT.s1 - AUTOT.s0) / 2), cx(AUTOT)]; inp.jump = P.vy > 0; }
+  }
   if (WALKTO) { const ds = WALKTO[0] - P.s, dx = WALKTO[1] - P.x, d = Math.hypot(ds, dx); if (d > .5) { const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw), us = ds / d, ux = dx / d; inp.z = us * c + ux * sn; inp.x = -us * sn + ux * c; } else inp.x = inp.z = 0; }   // testing: &walkto=s,x
 }
-let WALKTO = null, AUTOFIGHT = null, AUTOK = new URLSearchParams(location.search).get('autok');
+let WALKTO = null, AUTOFIGHT = null, AUTOK = new URLSearchParams(location.search).get('autok'), AUTORUN = new URLSearchParams(location.search).get('autorun'), AUTOT = null, AUTOJ = -9, AUTOS = 0;
 
 // ---- touch: a floating stick under the left thumb, JUMP / SPIN / FIRE under the right ----
 // the buttons press the same keys/hit slots as the keyboard (TJump, TSpin, TFire), so the game reads them like any other key
@@ -3238,7 +3228,7 @@ function die(kind) {
   if (state !== 'play') return;
   if (cheats.god) {
     // QA invincibility: nothing hurts, and falling just puts you back on the last solid ground
-    if (kind === 'fall') {
+    if (kind === 'fall') { gs.falls = (gs.falls || 0) + 1; if (AUTORUN && gs.falls < 12) console.log('autorun fall at', P.s.toFixed(1), P.x.toFixed(1), P.y.toFixed(1));
       let sf = P.safe || gs.cp;
       // on horseback you can't stop, so put the rider across the gap rather than back on the brink of it
       if (LV.ride) { const nx = solids.filter(b => b.kind === 'floor' && b.s0 > sf.s + .5).sort((a, b) => a.s0 - b.s0)[0]; if (nx) sf = { s: nx.s0 + 1, x: clamp(P.x, nx.x0 + .5, 3), y: nx.y1 }; }
@@ -4568,10 +4558,10 @@ function roamWin(title) {
 
 // --- Mount Doom's lava: it rises steadily, so keep climbing ---
 let lavaY = -99, lavaT = 0;
-function resetLava() { if (!LV || !LV.lava) return; lavaY = gs.cp.y - 5; lavaT = 0; }
+function resetLava() { if (!LV || !LV.lava || LV.lava.fixed) return; lavaY = gs.cp.y - 5; lavaT = 0; }
 function updateLava(dt) {
   const L = LV && LV.lava, TH = THEMES.doom;
-  if (!L) return;
+  if (!L || L.fixed) return;   // (L.fixed: the river of fire on the way up the Mountain, see updateDoom)
   if (state === 'play') { lavaT += dt; if (lavaT > L.delay) lavaY += L.rate * dt; if (lavaT - dt <= L.delay && lavaT > L.delay) banner('THE LAVA IS RISING!', 1.6); }
   if (TH.lavaMesh) { TH.lavaMesh.position.y = Y0 + lavaY; TH.lavaTex.offset.x += dt * .015; TH.lavaTex.offset.y += dt * .01; }
   if (state === 'play' && Math.random() < dt * 14) flame(tw(P.s + rand(-8, 14), rand(-10, 3), lavaY + .1, _a), 1.2, 2);
@@ -5177,7 +5167,6 @@ function updateAmbient(dt) {
   if (THEMES.riv.water) THEMES.riv.water.offset.y += dt * .06;
   for (const t of THEMES_FALLS) t.offset.y += dt * 1.2;
   if (THEMES.riv.bigFall) THEMES.riv.bigFall.offset.y += dt * .6;
-  if (THEMES.mordor.lava) THEMES.mordor.lava.offset.x += dt * .01;
   torchSprites.forEach((s, i) => s.scale.set(.7 + Math.sin(T * 13 + i) * .06, 1.15 + Math.sin(T * 11 + i * 2) * .1, 1));
   clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt); updateKhazad(dt); updateFall(dt); updateWeathertop(dt); updateCitadel(dt); updateRivKH(dt); updateErebor(dt); updateBow(dt); updateDeep(dt); updateBalin(dt); updateUstair(dt); updateMine(dt);
   doomGlow.material.opacity = .8 + Math.sin(T * 1.7) * .2;
@@ -5368,6 +5357,7 @@ function updateCamera(dt) {
     const hi = LV.theme === 'isen' || LV.fall ? 1 : 0;   // (on Orthanc's top it looks down over the horns instead of from among them)
     let D = 7.4 + cam.bk * (hi ? 3 : 4.4); const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw);
     if (onDisk) { D = 5.5; for (let k = 0; k < 12 && Math.hypot(P.s - c * D, P.x - sn * D) > ISEN.IN1 - .2; k++) D *= .85; }   // (on a round platform inside: kept within the tower's wall)
+    if (LV.camRing && Math.hypot(P.s, P.x) < LV.camRing) for (let k = 0; k < 14 && Math.hypot(P.s - c * D, P.x - sn * D) > LV.camRing; k++) D *= .88;   // (on Weathertop it stays inside the ring, not behind the walls)
     if (LV.camWalls && TERR) { const cy = cam.gy + 3.9 + cam.bk * 2.2 - .9; let dd = 1.5; while (dd < D) { const y_ = terrainAt(P.s - c * dd, P.x - sn * dd, true); if (y_ > cy) { D = Math.max(2.4, dd - 1); break; } dd += .5; } }   // (between hills and tunnel walls it comes in closer rather than into the rock)
     _a.copy(tw(P.s - c * D, P.x - sn * D, cam.gy + (onDisk ? 4.6 : 3.9) + cam.bk * (hi ? 5.5 : 2.2))); _b.copy(tw(P.s + c * 3, P.x + sn * 3, cam.gy + 1.1 + cam.bk * 2.6));
     if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; }
@@ -5663,13 +5653,13 @@ const NODES = [
   { name: 'EDORAS', x: 10, z: 16.8, open: true, loc: 'rohan', sub: 'TO THE GOLDEN HALL · URUK-HAI' },
   { name: 'MINAS TIRITH', x: 42.2, z: 21, open: true, loc: 'mt', sub: 'THE SIEGE OF GONDOR · 3 LEVELS' },
   { name: 'CIRITH UNGOL', x: 50.5, z: 10, open: true, loc: 'ungol', sub: "THE PASS · THE STAIRS · 2 LEVELS" },
-  { name: 'MORDOR', x: 57, z: -3, open: true, loc: 'mordor', sub: 'IN THE SHADOW OF THE EYE · 1 LEVEL' },
-  { name: 'MOUNT DOOM', x: 62.5, z: 11.5, open: true, loc: 'doom', sub: 'THE CLIMB · OUTRUN THE LAVA' },
+  { name: 'MORDOR', x: 57, z: -3, open: true, loc: 'mordor', sub: 'ACROSS GORGOROTH · AVOID THE EYE' },
+  { name: 'MOUNT DOOM', x: 62.5, z: 11.5, open: true, loc: 'doom', sub: 'THE WAY UP THROUGH THE FIRE' },
   { name: 'WEATHERTOP', x: -34, z: -14, open: true, loc: 'weather', sub: 'DUEL THE WITCH-KING' },   // added last: the road and Minas Tirith go by position in this list
   { name: 'MIRKWOOD', x: 8, z: -24, open: true, loc: 'mirk', sub: 'THE DARK FOREST · SLAY THE SPIDERS' },
   { name: 'ISENGARD', x: -18, z: 9, open: true, loc: 'isen', sub: 'UP THE TOWER OF ORTHANC · SARUMAN BOSS' },
   { name: "HELM'S DEEP", x: -14.6, z: 15.8, open: true, loc: 'helm', sub: 'DOWN THE RAMP · BALROG BOSS' },
-  { name: 'EREBOR', x: 24, z: -34, open: true, loc: 'erebor', sub: 'THE LONELY MOUNTAIN · DRAGON BOSS · 2 LEVELS' },
+  { name: 'EREBOR', x: 24, z: -34, open: true, loc: 'erebor', sub: 'THE LONELY MOUNTAIN · SMAUG · 2 LEVELS' },
   { name: 'OSGILIATH', x: 47.5, z: 19.5, open: true, loc: 'osgil', sub: 'THE RUINED CITY · SHOOT DOWN THE NINE' },
 ];
 const ROAD = (() => {
@@ -5941,7 +5931,7 @@ function step(dt, noRender) {
   else if (state === 'win') updateWin(dt);
   if (state !== 'paused') {
     if (state !== 'title' && state !== 'map' && state !== 'gameover' && state !== 'complete') {
-      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateRace(dt); updateFly(dt); updateFellowship(dt); updateHobbiton(dt); updateDuel(dt); updateSprings(dt); updateKH(gdt);
+      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateRace(dt); updateFly(dt); updateFellowship(dt); updateHobbiton(dt); updateMordorKH(dt); updateDoom(dt); updateDuel(dt); updateSprings(dt); updateKH(gdt);
     }
     updateDragons(dt); updateApples(); updatePhial(dt); updateLightning(dt); updateAmbient(dt); updateTree(dt);
     fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt); poseDuelGandalf(dt);
@@ -6001,8 +5991,10 @@ const MODEL_SLOTS = {
   sauron: { height: 20, turn: -Math.PI / 2 },   // in his own units: the game builds Sauron at .28 scale (about 5.6 tall)
   spider: { height: 1.6, turn: -Math.PI / 2, src: 'shelob' },
   troll: { height: 5.8, turn: -Math.PI / 2, hide: /^BOX|FORGED_BLADE/i },   // (Balin's Chamber: Rise of the Witch-king's hill troll)
+  cavetroll: { height: 5.8, turn: -Math.PI / 2, hide: /BOX|ROCK|FORGED_BLADE/i, fb: 'troll' }, armtroll: { height: 6.4, turn: -Math.PI / 2, hide: /BOX|FORGED_BLADE/i, fb: 'troll' },   // (Balin's Chamber: the unarmoured cave troll; the Deeping Wall and Mordor: the armoured attack troll)
+  orcarch: { height: 1.6, turn: -Math.PI / 2, hide: /ARROWFIRE|FIREAROWTIP/i, fb: 'urukx' }, orcpike: { height: 2.6, turn: -Math.PI / 2, hide: /Banner|FORGED_BLADE/i, fb: 'urukp' }, orcbrute: { height: 2.3, turn: -Math.PI / 2, hide: /FORGED_BLADE/i, fb: 'overseer' }, easterling: { height: 2.05, turn: -Math.PI / 2, hide: /FORGED_BLADE/i, fb: 'uruk' }, haradrim: { height: 2.05, turn: -Math.PI / 2, hide: /FORGED_BLADE/i, fb: 'urukp' },   // (Mordor's own: orc archers, orc pikes, brutes, Easterlings, Haradrim)
   urukp: { height: 3, turn: -Math.PI / 2, hide: /FORGED_BLADE/i }, urukx: { height: 2.1, turn: -Math.PI / 2, hide: /FIREAROWTIP/i }, fanatic: { height: 2.1, turn: -Math.PI / 2 }, overseer: { height: 2.8, turn: -Math.PI / 2, hide: /^BOX/i },   // (the Uruk-hai's pikemen, crossbowmen, fanatics and their overseer)
-  dragon: { height: 7, turn: -Math.PI / 2, anims: { fly: /^fly_a/i, idle: /^idle_a/i, attack: /^attack_a/i, hit: /^hurt_a/i, die: /^die_k/i } },   // (Erebor: Drogoth, Rise of the Witch-king's dragon)
+  dragon: { height: 7, turn: -Math.PI / 2, anims: { fly: /^fly_a/i, idle: /^idle_a/i, attack: /^attack_a/i, hit: /^hurt_a/i, die: /^die_k/i } },   // (Erebor: Smaug, in the shape of Rise of the Witch-king's dragon)
   floodhorse: { height: 4, turn: -Math.PI / 2, anims: { walk: /^run/i }, glow: .5 },   // (the Ford: the water horses of Battle for Middle-earth's flood)
   blackrider: { height: 3.1, turn: -Math.PI / 2, hide: /CINEMA|_NEW/i, anims: { walk: /^run_a/i } },   // (its cinematic duplicates hidden: it has one horse and one rider)   // (the race to the Ford: Rise of the Witch-king's Black Rider, on his horse)   // Mirkwood's spiders: Shelob again (src: whose model it is), smaller
 };
@@ -6108,6 +6100,7 @@ async function loadLocalAssets() {
     catch (e) { if (e instanceof Error) console.warn(`Valinor: models/${slot}.glb is there but would not load:`, e.message); }
   }));
   for (const s in MODEL_SLOTS) if (MODEL_SLOTS[s].src && LOADED[MODEL_SLOTS[s].src]) LOADED[s] = LOADED[MODEL_SLOTS[s].src];   // the same model in another part
+  for (const s in MODEL_SLOTS) if (!LOADED[s] && MODEL_SLOTS[s].fb && LOADED[MODEL_SLOTS[s].fb]) LOADED[s] = LOADED[MODEL_SLOTS[s].fb];   // (not converted yet: the nearest one you have)
   for (const K of SKINS) attachSkin(K);
   if (LOADED.gandalf) mapGandalf();   // your own Gandalf walks the map too
   await boardP;
@@ -7583,6 +7576,227 @@ THEMES.shirekh = natTheme({
   orc: MT_ORC,
 scenery(L) { buildShire(L, this); },
 });
+// --- Mordor: the plain of Gorgoroth, a Kingdom Hearts level you cross on foot. A rust-red wasteland of cracked earth and dust, split rock and dead wood, with bones, stakes and
+//     war camps along a trodden way between the crags. All Mordor's kinds wait in the camps, and the Eye of Sauron searches the ground for you as it does in Battle for Middle-earth:
+//     a burning red pool sliding across the land under a beam from Barad-dûr. Stay in it and it finds you: fire, and hunters sent to the spot. Reach the far gate to win.
+function mordorLayout() {
+  const N = 161, C = 80, hs = new Float32Array(N * N), g = new Array(N * N).fill('g');
+  const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  const WAY = [[-70, 0], [-56, -18], [-38, -32], [-20, -16], [-8, 14], [8, 36], [26, 28], [38, 0], [48, -24], [62, -32], [70, -14], [72, 6]], P_ = (i, k) => WAY[clamp(i, 0, WAY.length - 1)][k], cr = (a, b, c, d, t) => .5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (3 * b - a - 3 * c + d) * t * t * t), path = [];
+  for (let i = 0; i < WAY.length - 1; i++) { const n = Math.ceil(Math.hypot(WAY[i + 1][0] - WAY[i][0], WAY[i + 1][1] - WAY[i][1]) / .5); for (let k = 0; k < n; k++) { const t = k / n; path.push([cr(P_(i - 1, 0), P_(i, 0), P_(i + 1, 0), P_(i + 2, 0), t), cr(P_(i - 1, 1), P_(i, 1), P_(i + 1, 1), P_(i + 2, 1), t), 0, 2.8]); } }
+  path.push([...WAY[WAY.length - 1], 0, 3.2]);
+  const coarse = path.filter((_, i) => i % 6 === 0), wayD = (s, x) => { let b = 1e9; for (const q of coarse) { const d = (s - q[0]) * (s - q[0]) + (x - q[1]) * (x - q[1]); if (d < b) b = d; } return Math.sqrt(b); };
+  const ridged = (s, x) => { const a = Math.abs(Math.sin(s * .071 + Math.sin(x * .043) * 1.7)), b = Math.abs(Math.sin(x * .083 + Math.sin(s * .057) * 1.9)); return 1 - Math.min(a, b); };   // (knife-edged crags)
+  const lie = (s, x) => .9 + Math.sin(s * .05) * Math.cos(x * .04) * .8 + Math.sin(s * .19 + x * .13) * .22 + Math.sin(s * .43 - x * .37) * .08;
+  const plazas = [
+    { s: -56, x: -18, r: 9, waves: [['o', 'o', 'o'], ['M', 'o', 'o', 'o']], names: ['', 'ORC ARCHERS! CLOSE WITH THEM'], title: 'THE FIRST WAR CAMP' },
+    { s: -20, x: -16, r: 11, waves: [['w', 'w', 'o'], ['n', 'w', 'o', 'o'], ['j', 'j', 'M']], names: ['', 'A BLACK RIDER!', 'THEY THROW THEMSELVES AT YOU!'], title: 'THE WARG PENS' },
+    { s: 8, x: 36, r: 11, waves: [['E', 'E', 'M'], ['H', 'H', 'E'], ['Q', 'Q', 'M', 'M']], names: ['', 'THE HARADRIM! SIDESTEP THE LANCES', 'PIKES AND BOWS!'], title: 'THE EASTERLING LINES' },
+    { s: 38, x: 0, r: 12, waves: [['R', 'o', 'o', 'o'], ['n', 'n', 'j', 'M'], ['R', 'H', 'E', 'b']], names: ['', 'THE RIDERS AGAIN!', 'ANOTHER BRUTE!'], title: 'THE BONE FIELD' },
+    { s: 62, x: -32, r: 13, waves: [['o', 'o', 'M', 'M', 'E'], ['A']], names: ['', 'THE GATE TROLL!'], title: 'BEFORE THE LAST GATE', bossHp: 760 },
+  ];
+  const wB = new Float32Array(N * N), yR = new Float32Array(N * N);
+  const carve = (s, x, y, half, fall, kind) => { const j0 = Math.round(C - s), i0 = Math.round(C - x), R_ = Math.ceil(half + fall); for (let j = j0 - R_; j <= j0 + R_; j++) for (let i = i0 - R_; i <= i0 + R_; i++) { if (i < 0 || j < 0 || i >= N || j >= N) continue; const d = Math.hypot(C - j - s, C - i - x), e = clamp((d - half) / fall, 0, 1), w = 1 - e * e * (3 - 2 * e), k = j * N + i; if (w > wB[k]) { wB[k] = w; yR[k] = y; } if (kind && d < half - .2) g[k] = kind; } };
+  for (const p of plazas) p.y = lie(p.s, p.x);
+  for (const q of path) { q[2] = lie(q[0], q[1]); for (const p of plazas) if (Math.hypot(q[0] - p.s, q[1] - p.x) < p.r) q[2] = p.y; }
+  for (let i = 0; i < path.length; i += 2) { const [s, x, y, h] = path[i]; carve(s, x, y, h, 3.5, 'p'); }
+  for (const p of plazas) carve(p.s, p.x, p.y, p.r + .5, 6, 's');
+  const gate = [72, 8], yG = lie(72, 6); carve(gate[0] - 3, gate[1] - 2, yG, 6, 3);
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = C - j, x = C - i, d = wayD(s, x), w = ss(13, 34, d), y = lie(s, x) + w * (2 + ridged(s, x) * ridged(s, x) * 22) + 22 * Math.max(ss(68, 82, Math.abs(s)), ss(68, 82, Math.abs(x))) * (s > 60 && x > -40 && x < 20 ? .35 : 1); hs[k] = lerp(y, yR[k], wB[k]); if (g[k] === 'g' && ridged(s, x) > .93 && w < .1 && Math.sin(s * .9 + x * .7) > .2) g[k] = 'c'; }
+  // stakes, rocks and towers on the way are solid; so are the gate's piers
+  const blocks = [], boulders = [], camps = [];
+  for (let k = 0; k < 230 && boulders.length < 44; k++) { const s = rand(-72, 72), x = rand(-72, 72), d = wayD(s, x); if (d < 6.5 || d > 20 || plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 2.5)) continue; const r = rand(1.2, 3.2); boulders.push([s, x, r, rand(1.4, 3)]); blocks.push([s - r * .72, s + r * .72, x - r * .72, x + r * .72, lie(s, x) + r * 1.7, 'wall', -10]); }
+  for (const p of plazas) for (let a = .4; a < TAU; a += 1.25) { const ps = p.s + Math.cos(a) * (p.r + 3.5), px = p.x + Math.sin(a) * (p.r + 3.5); if (wayD(ps, px) < 4.5) continue; camps.push([ps, px, a]); blocks.push([ps - .3, ps + .3, px - .3, px + .3, p.y + 6, 'wall', -10]); }
+  for (const sd of [-1, 1]) blocks.push([gate[0] - 2.2, gate[0] + 2.2, gate[1] + sd * 5.6 - 1.7, gate[1] + sd * 5.6 + 1.7, yG + 16, 'wall', -10]);
+  return { field: [-76, 76, -76, 76], start: [-68, 0], terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g }, layout: { blocks, path, plazas, boulders, camps, gate: [gate[0], gate[1], yG], wayD } };
+}
+function mordorContent(L) {
+  const Y = L.layout;
+  for (let i = 12; i < Y.path.length - 8; i += 16) { const [s, x, y] = Y.path[i]; if (Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 1)) continue; addApple(s, x, y + .8); }
+  Y.plazas.forEach((p, n) => { for (const [a, k] of [[.9, 'b'], [2.9, n % 2 ? 'su' : 'q'], [4.9, 'b']]) addCrate(k, p.s + Math.cos(a) * (p.r - 1.6), p.x + Math.sin(a) * (p.r - 1.6), 0, p.y + 3); });
+}
+TX.rustGround = hdTex(256, 256, g => { g.fillStyle = '#a06a40'; g.fillRect(0, 0, 256, 256); for (let i = 0; i < 2400; i++) { const v = sr(); g.fillStyle = v < .4 ? 'rgba(90,50,26,.32)' : v < .75 ? 'rgba(170,112,66,.3)' : 'rgba(214,160,104,.24)'; g.fillRect(sr() * 256, sr() * 256, 1 + sr() * 5, 1 + sr() * 3); }
+  g.strokeStyle = 'rgba(40,20,10,.7)'; for (let i = 0; i < 40; i++) { let x = sr() * 256, y = sr() * 256, a = sr() * 6.3; g.lineWidth = .8 + sr() * 1.6; g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 9; k++) { a += (sr() - .5) * 1.5; x += Math.cos(a) * 11; y += Math.sin(a) * 11; g.lineTo(x, y); } g.stroke(); } });
+TX.rustRock = hdTex(256, 256, g => { g.fillStyle = '#5a3a2a'; g.fillRect(0, 0, 256, 256); for (let j = 0; j < 26; j++) { const y = j * 10 + sr() * 6, v = sr(); g.fillStyle = v < .35 ? 'rgba(120,62,30,.55)' : v < .7 ? 'rgba(40,24,18,.5)' : 'rgba(150,92,54,.4)'; g.fillRect(0, y, 256, 2 + sr() * 7); } for (let i = 0; i < 900; i++) { g.fillStyle = sr() < .5 ? 'rgba(20,10,6,.3)' : 'rgba(180,110,70,.16)'; g.fillRect(sr() * 256, sr() * 256, 1 + sr() * 3, 3 + sr() * 12); } });
+TX.eyeSpot = mkTex(128, 128, g => { const r = g.createRadialGradient(64, 64, 2, 64, 64, 64); r.addColorStop(0, 'rgba(255,190,70,1)'); r.addColorStop(.38, 'rgba(255,70,16,.95)'); r.addColorStop(.72, 'rgba(210,20,6,.6)'); r.addColorStop(.93, 'rgba(255,50,10,.8)'); r.addColorStop(1, 'rgba(120,0,0,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); g.fillStyle = 'rgba(10,0,0,.92)'; g.beginPath(); g.ellipse(64, 64, 6, 34, 0, 0, TAU); g.fill(); }, false); TX.eyeSpot.magFilter = THREE.LinearFilter;
+function buildMordorKH(L, TH) {
+  const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
+  const grd = surf(TX.rustGround, { sky, vc: true, rough: 1, bump: 3, env: .03 });
+  groundMesh(T_, TX.rustGround, (k, sl, y) => k === 'p' ? [.72, .66, .6] : k === 's' ? [.8, .72, .64] : k === 'c' ? [.34, .2, .15] : [1.02 - clamp(y / 26, 0, 1) * .5 - (sl > .9 ? .22 : 0), .86 - clamp(y / 26, 0, 1) * .46 - (sl > .9 ? .2 : 0), .74 - clamp(y / 26, 0, 1) * .42 - (sl > .9 ? .16 : 0)], 9, () => grd);
+  wideFloor(TX.rustGround, 0x6a3a22, 80, 12, 900);
+  const rock = surf(TX.rustRock, { sky, color: 0xc89a7a, rough: .95, bump: 4, tri: 5 }), rockD = surf(TX.rustRock, { sky, color: 0x8a6650, rough: .95, bump: 4, tri: 4 }), wood = lam(0x3a2a1c), bone = lam(0xc8bda0), hide = lam(0x5a4028), dark = lam(0x1e1612);
+  const crag = new THREE.IcosahedronGeometry(1, 1); { const p = crag.attributes.position; for (let i = 0; i < p.count; i++) { const k = 1 + Math.sin(p.getX(i) * 7.3 + p.getZ(i) * 5.1) * .22 + Math.cos(p.getY(i) * 9.1) * .12; p.setXYZ(i, p.getX(i) * k, p.getY(i) * k, p.getZ(i) * k); } crag.computeVertexNormals(); }
+  // boulders on the way (solid) and spires and split crags beyond it
+  const bl = [], sp = [], flat = []; for (const [s, x, r, h] of Y.boulders) { const q = tw(s, x, at(s, x)); bl.push([q.x, q.y + r * h * .32, q.z, r, r * h * .6, r * .9, rand(0, 3)]); }
+  for (let k = 0; k < 340; k++) { const s = rand(-74, 74), x = rand(-74, 74), d = Y.wayD(s, x); if (d < 9) continue; const q = tw(s, x, at(s, x)), big = k % 3 === 0, r = big ? rand(2.5, 6) : rand(.7, 2.2); (k % 5 === 0 ? sp : bl).push(k % 5 === 0 ? [q.x, q.y + r * 2, q.z, r * .55, r * 4, r * .55, rand(0, 3)] : [q.x, q.y + r * .2, q.z, r, r * rand(.5, 1.2), r, rand(0, 3)]); }
+  for (let k = 0; k < 180; k++) { const s = rand(-74, 74), x = rand(-74, 74), q = tw(s, x, at(s, x) + .05), r = rand(.2, .75); flat.push([q.x, q.y + r * .15, q.z, r, r * .35, r * rand(.7, 1.3), rand(0, 3)]); }
+  instanced(crag, rock, bl); instanced(new THREE.ConeGeometry(1, 1, 6, 3), rockD, sp); instanced(crag, rockD, flat);
+  // ash pits with embers still in them, smoking
+  TH.plumes = []; for (let k = 0; k < 70 && TH.plumes.length < 12; k++) { const s = rand(-70, 70), x = rand(-70, 70), d = Y.wayD(s, x); if (d < 7 || d > 22) continue; const q = tw(s, x, at(s, x) + .08), m = part(new THREE.CircleGeometry(rand(1.5, 2.6), 14), lam(0x1a100c, { emissive: 0x2a0a02 }), scene, q.x, q.y, q.z); m.rotation.x = -Math.PI / 2; TH.plumes.push([s, x, at(s, x)]); const gl = glowSprite(0xff4a10, 2.6, .35); gl.position.set(q.x, q.y + .3, q.z); scene.add(gl); }
+  // dead trees, black and split
+  const limb = (p, dir, len, th, d) => { const e = p.clone().addScaledVector(dir, len), m = part(new THREE.CylinderGeometry(th * .6, th, len, 5), dark, scene, (p.x + e.x) / 2, (p.y + e.y) / 2, (p.z + e.z) / 2); m.quaternion.setFromUnitVectors(UPV, dir); if (d <= 0) return; for (let k = 0; k < 2; k++) limb(e, dir.clone().add(new V3(rand(-.9, .9), rand(-.05, .5), rand(-.9, .9))).normalize(), len * rand(.55, .78), th * .6, d - 1); };
+  for (let n = 0, k = 0; k < 90 && n < 22; k++) { const s = rand(-72, 72), x = rand(-72, 72), d = Y.wayD(s, x); if (d < 5 || d > 24) continue; n++; limb(tw(s, x, at(s, x) - .1), new V3(rand(-.2, .2), 1, rand(-.2, .2)).normalize(), rand(1.4, 2.6), rand(.14, .28), 3); }
+  // the bones of great beasts lying along the way: curved ribs and a long skull
+  const skeleton = (s, x, f, sc) => { const g = new THREE.Group(); place(g, s, x, at(s, x) - .3, f); scene.add(g); for (let k = 0; k < 8; k++) { const z = (k - 3.5) * 1.1 * sc, h = (3.3 - Math.abs(k - 3.5) * .28) * sc; for (const sd of [-1, 1]) { const r = part(new THREE.TorusGeometry(h, .14 * sc, 5, 12, Math.PI * .72), bone, g, 0, .1, z); r.rotation.y = sd > 0 ? 0 : Math.PI; } } part(GEO.cyl, bone, g, 0, h0(sc), 0, .2 * sc, 9.6 * sc, .2 * sc).rotation.x = Math.PI / 2; const sk = part(GEO.sph, bone, g, 0, .9 * sc, 6.6 * sc, .95 * sc, .72 * sc, 1.6 * sc); for (const sd of [-1, 1]) { const horn = part(GEO.cone, bone, g, sd * .6 * sc, 1.5 * sc, 6 * sc, .16 * sc, 1.6 * sc, .16 * sc); horn.rotation.x = -.6; } }, h0 = sc => 3.2 * sc;
+  for (const [s, x, f, sc] of [[46, -8, .7, 1], [-34, -22, 2.1, .8], [18, 42, 4, .9], [58, -18, 1.2, .9], [-4, 26, 3.2, .7]]) skeleton(s, x, f, sc);
+  const skulls = []; for (let k = 0; k < 60; k++) { const q = Y.path[Math.random() * Y.path.length | 0], s = q[0] + rand(-6, 6), x = q[1] + rand(-6, 6), p = tw(s, x, at(s, x) + .1), r = rand(.09, .17); skulls.push([p.x, p.y, p.z, r, r * .9, r * 1.1, rand(0, 3)]); } instanced(GEO.sph, bone, skulls);
+  // the war camps: stakes with the Eye on red banners, hide tents, a bonfire (wood and hide, nothing forged)
+  const flagM = (() => { const t = mkTex(64, 96, c => { c.fillStyle = '#5a0e08'; c.fillRect(0, 0, 64, 96); c.strokeStyle = '#1a0402'; c.lineWidth = 3; c.strokeRect(3, 3, 58, 90); c.fillStyle = '#e8501a'; c.beginPath(); c.ellipse(32, 42, 22, 12, 0, 0, TAU); c.fill(); c.fillStyle = '#ffd040'; c.beginPath(); c.ellipse(32, 42, 12, 7, 0, 0, TAU); c.fill(); c.fillStyle = '#100'; c.beginPath(); c.ellipse(32, 42, 2.2, 9, 0, 0, TAU); c.fill(); }, false); return ps1(new THREE.MeshLambertMaterial({ map: t, side: THREE.DoubleSide })); })();
+  for (const [s, x, a] of Y.camps) { const y = at(s, x), q = tw(s, x, y); part(GEO.cyl, wood, scene, q.x, q.y + 2.8, q.z, .13, 5.8, .13); part(GEO.cone, wood, scene, q.x, q.y + 5.9, q.z, .14, .5, .14); const f = part(new THREE.PlaneGeometry(1.2, 2), flagM, scene, q.x + .62, q.y + 4.5, q.z); f.rotation.y = a + 1; const sk = part(GEO.sph, bone, scene, q.x, q.y + 3.2, q.z, .24, .22, .26); }
+  for (const p of Y.plazas) { for (let a = .9, n = 0; n < 3; a += 2.1, n++) { const s = p.s + Math.cos(a) * (p.r + 6), x = p.x + Math.sin(a) * (p.r + 6); if (Y.wayD(s, x) < 5) continue; const q = tw(s, x, at(s, x)), t = part(new THREE.ConeGeometry(2.5, 3, 6), hide, scene, q.x, q.y + 1.5, q.z); t.rotation.y = a; part(GEO.cyl, wood, scene, q.x, q.y + 2.9, q.z, .06, 1.2, .06); }
+    { const fs = p.s, fx_ = p.x + p.r + 1, q = tw(fs, fx_, at(fs, fx_)); for (let k = 0; k < 7; k++) { const l = part(GEO.cyl, wood, scene, q.x, q.y + .25, q.z, .1, 1.4, .1); l.rotation.set(Math.cos(k) * 1.1, 0, Math.sin(k) * 1.1); } TH.fires = TH.fires || []; TH.fires.push([fs, fx_, at(fs, fx_)]); const gl = glowSprite(0xff7a20, 4, .6); gl.position.set(q.x, q.y + 1, q.z); scene.add(gl); } }
+  // torches on poles along the trodden way, so you can see it through the dust
+  for (let i = 30; i < Y.path.length - 10; i += 44) { const [s, x, , h] = Y.path[i], a = Math.atan2(Y.path[i + 1][1] - Y.path[i - 1][1], Y.path[i + 1][0] - Y.path[i - 1][0]), sd = i % 88 ? 1 : -1, ps = s - Math.sin(a) * sd * (h + 1.2), px = x + Math.cos(a) * sd * (h + 1.2), q = tw(ps, px, at(ps, px)); part(GEO.cyl, wood, scene, q.x, q.y + 1.5, q.z, .07, 3, .07); TH.fires = TH.fires || []; TH.fires.push([ps, px, at(ps, px) + 3]); const gl = glowSprite(0xffa040, 1.6, .55); gl.position.set(q.x, q.y + 3.1, q.z); scene.add(gl); }
+  // the last gate: two great piers of black rock and a lintel, fire on either side
+  { const [gs_, gx, gy] = Y.gate; for (const sd of [-1, 1]) { const q = tw(gs_, gx + sd * 5.6, gy); part(new THREE.CylinderGeometry(1.9, 2.8, 16, 7), rockD, scene, q.x, q.y + 8, q.z); part(GEO.cone, dark, scene, q.x, q.y + 18.5, q.z, 1.8, 5, 1.8); TH.fires.push([gs_ - 2.6, gx + sd * 5.6, gy + 4.5]); const gl = glowSprite(0xff7a20, 7, .6); gl.position.copy(tw(gs_ - 2.6, gx + sd * 5.6, gy + 4.5)); scene.add(gl); } const lq = tw(gs_, gx, gy + 13); part(GEO_BOX, rockD, scene, lq.x, lq.y, lq.z, 13.5, 2.4, 3.4); const lit = glowSprite(0xffa060, 11, .35); lit.position.copy(tw(gs_ + 1.5, gx, gy + 4)); scene.add(lit); TH.exitGlow = lit; }
+  // on the skyline: Barad-dûr with the Eye on top, and the Mountain burning away to the north
+  const far = lam(0x1c1412), bd = tw(150, 150, 0); TH.eyeAt = new V3(bd.x, 158, bd.z);
+  for (const [rt, rb, h, y] of [[19, 34, 44, 22], [14, 22, 44, 66], [10, 15, 34, 105], [5, 9, 18, 131]]) part(new THREE.CylinderGeometry(rt, rb, h, 8), far, scene, bd.x, y, bd.z);
+  for (const sd of [-1, 1]) { const h = part(GEO.cone, far, scene, bd.x + sd * 7, 152, bd.z, 3, 24, 3); h.rotation.z = -sd * .22; }
+  { const e = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.eye, transparent: true, depthWrite: false, fog: false })); e.scale.set(24, 16, 1); e.position.copy(TH.eyeAt); e.userData.keep = true; scene.add(e); const eg = glowSprite(0xff3a08, 80, .75); eg.material.fog = false; eg.position.copy(TH.eyeAt); scene.add(eg); }
+  { const dm = gradCone(120, 170, 9, 0xa86a40, 0x8a5a38), dp = tw(230, -60, 0); dm.position.set(dp.x, 70, dp.z); scene.add(dm); const dg = glowSprite(0xff5010, 130, .85); dg.material.fog = false; dg.position.set(dp.x, 160, dp.z); scene.add(dg); }
+  bakeScenery(scene.children.slice(first));
+  // the Eye's pool on the ground (a grid laid over the land each frame) and the beam down to it, kept apart from the baked scenery
+  const n = 16, pos = new Float32Array((n + 1) * (n + 1) * 3), uv = [], idx = []; for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) { uv.push(i / n, j / n); if (i < n && j < n) { const a = j * (n + 1) + i; idx.push(a, a + n + 1, a + 1, a + 1, a + n + 1, a + n + 2); } }
+  const eg = new THREE.BufferGeometry(); eg.setAttribute('position', new THREE.BufferAttribute(pos, 3)); eg.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); eg.setIndex(idx);
+  const pool = new THREE.Mesh(eg, new THREE.MeshBasicMaterial({ map: TX.eyeSpot, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false })); pool.frustumCulled = false; pool.userData.keep = true; pool.visible = false; scene.add(pool); TH.pool = pool; TH.poolN = n;
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(.5, 1, 1, 12, 1, true), new THREE.MeshBasicMaterial({ color: 0xff3a10, transparent: true, opacity: .13, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false })); beam.frustumCulled = false; beam.userData.keep = true; beam.visible = false; scene.add(beam); TH.beam = beam;
+}
+const EYE = { s: 0, x: 0, ts: 0, tx: 0, m: 0, cool: 0, stick: 0, t: 0, warned: false, R: 6.4 };
+function resetEye() { Object.assign(EYE, { s: P.s + 34, x: P.x + 26, ts: P.s + 20, tx: P.x, m: 0, cool: 0, stick: 0, t: 0, warned: false }); }
+function updateMordorKH(dt) {
+  const TH = THEMES.mordorkh, on = !!LV && LV.theme === 'mordorkh' && state !== 'map' && state !== 'title'; if (TH.pool) { TH.pool.visible = TH.beam.visible = on; } if (!on) return;
+  const Y = LV.layout, play = state === 'play';
+  // the dust on the wind, the fires, the ash pits
+  if (Math.random() < dt * 14) smoke.spawn(...tw(P.s + rand(-22, 22), P.x + rand(-22, 22), P.y + rand(.3, 3)).toArray(), rand(1, 3), rand(-.1, .3), rand(1, 3), rand(3, 5), 1, 4, [.45, .25, .13], [.6, .36, .2], 0, .12);
+  for (const [s, x, y] of TH.fires || []) if (Math.hypot(s - P.s, x - P.x) < 45 && Math.random() < dt * 16) bfire(tw(s + rand(-.3, .3), x + rand(-.3, .3), y + .4), .9, 1.8);
+  for (const [s, x, y] of TH.plumes || []) if (Math.hypot(s - P.s, x - P.x) < 60 && Math.random() < dt * 2) smoke.spawn(...tw(s, x, y + .5).toArray(), rand(-.3, .3), rand(1.5, 3), rand(-.3, .3), rand(4, 7), 1.4, 6, [.1, .08, .07], [.22, .18, .16], -.1, .25);
+  if (TH.exitGlow) TH.exitGlow.material.opacity = .32 + Math.sin(T * 3) * .1;
+  // the Eye: it wanders the land ahead of you, sometimes turning your way, and it's a little slower than you can run
+  EYE.t += dt; EYE.cool -= dt; EYE.stick -= dt;
+  if (EYE.stick > 0) { EYE.ts = P.s; EYE.tx = P.x; }
+  else if (Math.hypot(EYE.ts - EYE.s, EYE.tx - EYE.x) < 2) {
+    let bi = 0, bd = 1e9; for (let i = 0; i < Y.path.length; i += 6) { const d = Math.hypot(Y.path[i][0] - P.s, Y.path[i][1] - P.x); if (d < bd) { bd = d; bi = i; } }
+    const hunt = Math.random() < .42, q = Y.path[Math.min(Y.path.length - 1, bi + (rand(14, 70) | 0))];
+    EYE.ts = clamp(hunt ? P.s + rand(-5, 5) : q[0] + rand(-14, 14), -72, 72); EYE.tx = clamp(hunt ? P.x + rand(-5, 5) : q[1] + rand(-14, 14), -72, 72);
+  }
+  const ed = Math.hypot(EYE.ts - EYE.s, EYE.tx - EYE.x) || 1, ev = (EYE.stick > 0 ? 8 : EYE.cool > 0 ? 3 : 5.6) * dt; if (play) { EYE.s += (EYE.ts - EYE.s) / ed * Math.min(ed, ev); EYE.x += (EYE.tx - EYE.x) / ed * Math.min(ed, ev); }
+  const n = TH.poolN, pa = TH.pool.geometry.attributes.position, Rr = EYE.R * (1 + Math.sin(T * 3.2) * .03) * 1.15, co = Math.cos(T * .25), si = Math.sin(T * .25); for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) { const u = (i / n * 2 - 1) * Rr, v = (j / n * 2 - 1) * Rr, s = EYE.s + u * co - v * si, x = EYE.x + u * si + v * co, q = tw(s, x, terrainAt(s, x, true) + .22, _a); pa.setXYZ(j * (n + 1) + i, q.x, q.y, q.z); } pa.needsUpdate = true;
+  { const A = TH.eyeAt, B_ = tw(EYE.s, EYE.x, terrainAt(EYE.s, EYE.x, true)), m = TH.beam, dir = B_.clone().sub(A), L_ = dir.length(); m.position.copy(A).addScaledVector(dir, .5); m.quaternion.setFromUnitVectors(UPV, dir.normalize().negate()); m.scale.set(EYE.R, L_, EYE.R); m.material.opacity = .1 + EYE.m * .22; }
+  if (!play) return;
+  const inside = Math.hypot(P.s - EYE.s, P.x - EYE.x) < EYE.R && EYE.cool <= 0 && !KH.reacting;
+  EYE.m = clamp(EYE.m + (inside ? dt / 1.1 : -dt / 1.6), 0, 1);
+  if (inside && !EYE.warned) { EYE.warned = true; banner('THE EYE IS UPON YOU! GET OUT OF THE LIGHT!', 1.6); S.screech(); }
+  if (!inside && EYE.m <= 0) EYE.warned = false;
+  if (inside) cam.shake = Math.max(cam.shake, EYE.m * .22);
+  if (EYE.m >= 1) {   // found: fire on the spot, and hunters sent there. Then it looks away for a while
+    EYE.m = 0; EYE.cool = 9; EYE.stick = 2.2; EYE.warned = false; S.roar(); flashV = Math.max(flashV, .55); cam.shake = .8; banner('THE EYE HAS FOUND YOU!', 2);
+    const p = tw(P.s, P.x, P.y + .4); for (let k = 0; k < 26; k++) bfire(tw(P.s + rand(-2.6, 2.6), P.x + rand(-2.6, 2.6), P.y + rand(0, 2)), 1.8, 3.4); sparks(p, 40, 11, [1, .9, .5], [1, .3, .1], .3);
+    khHurt(20, { s: P.s, x: P.x }, { unblock: true, kb: 5 });
+    if (!Y.plazas.some(q => q.eye && !q.done)) { const a = LV.layout.plazas.filter(q => q.done).length, pk = [['o', 'o', 'M'], ['w', 'w', 'o', 'M'], ['n', 'o', 'M', 'j'], ['n', 'E', 'H', 'w'], ['R', 'n', 'H', 'M']][Math.min(4, a)]; Y.plazas.push({ s: P.s, x: P.x, y: P.y, r: 8, waves: [pk], title: '', eye: true, done: false, wave: 0, near: true, waveT: .5 }); }
+  }
+  // the far gate
+  const G = Y.gate; if (Math.hypot(P.s - G[0], P.x - G[1]) < 3.6 && Math.abs(P.y - G[2]) < 5) { banner('THROUGH THE GATE OF GORGOROTH!', 2.2); roamWin('YOU HAVE CROSSED GORGOROTH!'); }
+}
+THEMES.mordorkh = natTheme({
+  wallTex: TX.rock, floorTex: TX.dark, tint: [.8, .7, .68], door: 0x8a5a4a,
+  env: { sky: [0x3a2214, 0x7a4420, 0xc47a3a, 0xf0b06a], fog: [50, 300], fogC: 0xb07a48, amb: [0xb08a6a, .85], hemi: [0xffd0a0, 0x5a3a20, .7], sun: [0xffc088, 1.1], east: [0xff8a50, .22], cloud: 0x9a6a3e, bloom: .32, sunDir: [70, 34, 60] },
+  orc: MT_ORC,
+  scenery(L) { buildMordorKH(L, this); },
+});
+// --- Mount Doom: run the broken stone way up the Mountain, into the screen, with the camera on your back. A river of fire pours down the slope under the path between walls of burning
+//     rock, lava falls from the crags on either side, and sheets of flame blow across it. Stairs and gaps, slabs that slide and rise, stones that crumble under you, vents that
+//     blow fire in turn so you time your run, burning rocks thrown from the summit, orcs on the wider landings, crates along the way. Fall and the fire has you. The Crack is at the top.
+
+function doomCourse() {
+  const c = { pillars: [], plats: [], jets: [], crates: [], orcs: [], apples: [], bombs: [] }; let s = 6.5, y = 0;
+  const land = (len, x0 = -3.5, x1 = 3.5) => { c.pillars.push([s, s + len, x0, x1, +y.toFixed(2)]); const a = s; s += len; return a; };
+  const stairs = (n, x0, x1, rs = .34, l = .85) => { for (let k = 0; k < n; k++) { y += rs; land(l, x0, x1); } };
+  const gap = g => { s += g; };
+  const row = (a, n, x, gapS = 1.05, k = 'b') => { for (let i = 0; i < n; i++) c.crates.push([k, a + i * gapS, x]); };
+  const line = (a, b, x, n) => c.apples.push([a, b, x, y + .8, n]);
+  // the foot of the path: open, a first few crates and a flight of steps
+  y = 1; let a = land(9); row(a + 2, 3, -2); c.crates.push(['q', a + 6, 2]); line(a + 1, a + 8, 0, 6);
+  stairs(6, -2, 2); y += 0; a = land(7, -2.2, 2.2); line(a + 1, a + 6, 0, 5); c.orcs.push(['grunt', a + 4.5, 0, y]);
+  // stepping stones over the fire, left, right, left
+  for (const [x0, x1] of [[-2.6, -.1], [.1, 2.6], [-2.6, -.1], [.1, 2.6]]) { gap(2.2); y += .55; a = land(3.6, x0, x1); c.apples.push([a + 1.8, a + 1.8, (x0 + x1) / 2, y + .8, 1]); }
+  // a landing and the first vents, one after another: go when the way ahead has died down
+  gap(2); y += .4; a = land(5); c.crates.push(['c', a + 2.5, 2.6]); stairs(4, -1.8, 1.8);
+  a = land(17, -1.9, 1.9); for (const [d, x, ph] of [[3, 0, 0], [7, 0, 1], [11, 0, 2], [15, 0, 3]]) c.jets.push({ s: a + d, x, y, per: 4, ph }); line(a + 1, a + 16, 0, 9);
+  // slabs sliding from side to side
+  for (const [ax, ph] of [[2.2, 0], [2.4, 1.6], [2.2, 3.1]]) { gap(1.8); y += .45; c.plats.push({ s: s + 1.8, x: 0, y, w: 3, l: 3.6, ax, sp: 1.1, ph }); s += 3.6; }
+  gap(1.4); y += .3; a = land(9); row(a + 1, 2, 2.4); c.crates.push(['r', a + 4, -2.4], ['l', a + 7.5, 2.4]); c.orcs.push(['archer', a + 7.5, -2, y], ['grunt', a + 4.5, 1, y]); line(a + 1, a + 8, 0, 6);
+  stairs(8, -1.7, 1.7);
+  // two lanes of vents, out of step: cross from one to the other to get by
+  a = land(22); for (let k = 0; k < 5; k++) c.jets.push({ s: a + 3 + k * 4, x: -1.8, y, per: 3.2, ph: k % 2 ? 0 : 1.6 }, { s: a + 3 + k * 4, x: 1.8, y, per: 3.2, ph: k % 2 ? 1.6 : 0 }); line(a + 1, a + 21, 0, 12); c.crates.push(['c', a + 20.5, -3]);
+  // slabs that rise and fall, climbing: wait for yours
+  for (const [ph, x] of [[0, 0], [1.3, -1.2], [2.6, 1.2], [3.9, 0]]) { gap(1.8); y += .7; c.plats.push({ s: s + 1.8, x, y, w: 3, l: 3.6, ay: .6, sp: 1.1, ph }); s += 3.6; }
+  gap(1.5); y += .8; a = land(10); row(a + 2, 3, -2.2); c.crates.push(['q', a + 3, 2.2], ['su', a + 8, -2.4]); c.orcs.push(['grunt', a + 5, 1.5, y], ['grunt', a + 7.5, -1, y], ['archer', a + 9, 2.4, y]);
+  stairs(6, -1.6, 1.6);
+  // stones that give way the moment you stand on them: don't stop
+  for (const x of [0, 1.1, -.4, -1.3, .3, 1.2]) { gap(1.8); y += .35; c.plats.push({ s: s + 1.7, x, y, w: 2.6, l: 3.4, crumble: true }); s += 3.4; }
+  gap(1.5); y += .3; a = land(6); c.crates.push(['c', a + 3, 2.6]);
+  // the long ledge under the rain of burning rock, narrow, with orcs on it
+  stairs(7, -1.6, 1.6); a = land(26, -1.8, 1.8); c.bombs.push([a, a + 26]); c.orcs.push(["grunt", a + 8, 0, y], ["archer", a + 15, 0, y], ["grunt", a + 22, 0, y]); line(a + 1, a + 25, 0, 14); c.jets.push({ s: a + 11, x: 0, y, per: 3.6, ph: 0 }, { s: a + 19, x: 0, y, per: 3.6, ph: 1.2 });
+  // the last slabs, one more flight, and the ledge up to the Crack
+  for (const [ax, ay, ph] of [[1.8, 0, 0], [0, .9, 1.2], [1.8, 0, 2.2]]) { gap(1.8); y += .6; c.plats.push({ s: s + 1.8, x: 0, y, w: 3, l: 3.6, ax, ay: ay * .7, sp: 1.1, ph }); s += 3.6; }
+  gap(1.5); y += .9; stairs(5, -2, 2);
+  c.pillars.push([s, TAU * DOOM_R + 2, -3.5, 3.5, +y.toFixed(2)]); c.end = s; return c;
+}
+function doomC() { return doomC.c || (doomC.c = doomCourse()); }
+
+function doomYAt(s) {   // (the river of fire's height under the way: the way's own height, smoothed, a good drop below it)
+  const C = doomC(); if (!C.prof) { const N = Math.ceil(TAU * DOOM_R) + 120, a = new Float32Array(N); let last = 0; const list = [...C.pillars.map(p => [p[0], p[1], p[4]]), ...C.plats.map(p => [p.s - p.l / 2, p.s + p.l / 2, p.y])].sort((u, v) => u[0] - v[0]); for (let k = 0, i = 0; k < N; k++) { const s_ = k - 24; while (i < list.length && list[i][0] <= s_) last = list[i++][2]; a[k] = last; } const b = a.slice(); for (let k = 0; k < N; k++) { let t = 0, n = 0; for (let q = -9; q <= 9; q++) { const j = k + q; if (j >= 0 && j < N) { t += a[j]; n++; } } b[k] = t / n; } C.prof = b; }
+  const q = clamp(s + 24, 0, C.prof.length - 1.01), k = q | 0; return lerp(C.prof[k], C.prof[k + 1], q - k) - 5;
+}
+TX.doomRock = hdTex(256, 256, g => { g.fillStyle = '#1e1412'; g.fillRect(0, 0, 256, 256); for (let i = 0; i < 1500; i++) { g.fillStyle = sr() < .55 ? 'rgba(0,0,0,.4)' : 'rgba(92,62,50,.28)'; g.fillRect(sr() * 256, sr() * 256, 1 + sr() * 7, 1 + sr() * 7); } for (let i = 0; i < 34; i++) { let x = sr() * 256, y = sr() * 256, a = sr() * 6.3; const hot = sr() < .45; g.strokeStyle = hot ? 'rgba(255,110,24,.95)' : 'rgba(12,6,4,.9)'; g.lineWidth = hot ? 1 + sr() * 1.8 : 1.5; g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 7; k++) { a += (sr() - .5) * 1.6; x += Math.cos(a) * 12; y += Math.sin(a) * 12; g.lineTo(x, y); } g.stroke(); } });
+TX.lavaFlow = hdTex(256, 256, g => { const gr = g.createLinearGradient(0, 0, 256, 256); gr.addColorStop(0, '#ff7a14'); gr.addColorStop(.5, '#ffb030'); gr.addColorStop(1, '#ff6a10'); g.fillStyle = gr; g.fillRect(0, 0, 256, 256); for (let i = 0; i < 90; i++) { const x = sr() * 256, y = sr() * 256, r = 6 + sr() * 24; for (const [ox, oy] of [[0, 0], [256, 0], [-256, 0], [0, 256], [0, -256]]) { g.fillStyle = sr() < .55 ? 'rgba(60,14,4,.9)' : 'rgba(150,36,6,.82)'; g.beginPath(); g.ellipse(x + ox, y + oy, r, r * (.35 + sr() * .5), sr() * 3, 0, 7); g.fill(); } } for (let i = 0; i < 70; i++) { g.strokeStyle = sr() < .5 ? 'rgba(255,230,120,.9)' : 'rgba(255,170,50,.8)'; g.lineWidth = 1 + sr() * 2.5; let x = sr() * 256, y = sr() * 256; g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 6; k++) { x += (sr() - .5) * 26; y += 6 + sr() * 12; g.lineTo(x, y); } g.stroke(); } });
+function buildDoom(L, TH) {
+  const first = scene.children.length, sky = TH.env, E = TAU * DOOM_R, Ya = doomYAt;
+  // the river of fire pouring down the Mountain, and the slope's walls of burning rock either side of it
+  const flow = TX.lavaFlow.clone(); flow.needsUpdate = true; flow.wrapS = flow.wrapT = THREE.RepeatWrapping; TH.flow = flow;
+  const strip = (x0, x1, nx, yAtX, mat, uvs = 1) => { const ns = 72, pos = [], uv = [], idx = []; for (let j = 0; j <= ns; j++) { const s = -24 + j / ns * (E + 90); for (let i = 0; i <= nx; i++) { const x = lerp(x0, x1, i / nx), q = tw(s, x, Ya(s) + yAtX(x, s)); pos.push(q.x, q.y, q.z); uv.push(x / 9 * uvs, s / 9 * uvs); if (j < ns && i < nx) { const a = j * (nx + 1) + i; idx.push(a, a + 1, a + nx + 1, a + 1, a + nx + 2, a + nx + 1); } } } const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); const m = new THREE.Mesh(g, mat); m.userData.keep = true; m.frustumCulled = false; scene.add(m); return m; };
+  strip(-13, 13, 6, () => 0, new THREE.MeshBasicMaterial({ map: flow, color: 0xd8c8b8, side: THREE.DoubleSide, fog: false }));
+  const rockM = surf(TX.doomRock, { sky, color: 0xa08a7a, rough: .9, bump: 4, glow: .55, side: THREE.DoubleSide }), bank = (x, s) => { const d = Math.abs(x) - 11, v = Math.sin(s * .13 + x * .3) * 1.6 + Math.sin(s * .37 - x * .21) * .8; return Math.max(-.4, d) * (.9 + .35 * Math.sin(s * .05 + x * .08)) + Math.max(0, d) * Math.max(0, d) * .05 + (d > 0 ? v : 0) - .15; };
+  for (const [a, b] of [[-11, -76], [11, 76]]) strip(a, b, 16, bank, rockM);
+  // jagged black crags standing up out of the slope, the hot rock showing through
+  const crag = new THREE.IcosahedronGeometry(1, 1), cr = [], sp = []; for (let k = 0; k < 170; k++) { const sd = k % 2 ? 1 : -1, s = rand(-20, E + 60), x = sd * rand(11.5, 50), big = k % 3 === 0, r = big ? rand(3, 8) : rand(.8, 2.6), q = tw(s, x, Ya(s) + bank(x, s)); (k % 4 === 0 ? sp : cr).push(k % 4 === 0 ? [q.x, q.y + r * 1.6, q.z, r * .6, r * 3.6, r * .6, rand(0, 3)] : [q.x, q.y + r * .3, q.z, r, r * rand(.6, 1.3), r, rand(0, 3)]); } instanced(crag, rockM, cr); instanced(new THREE.ConeGeometry(1, 1, 6, 2), rockM, sp);
+  // rocks standing in the fire itself
+  const isl = []; for (let k = 0; k < 44; k++) { const s = rand(-10, E), x = (k % 2 ? 1 : -1) * rand(4.6, 10.6), r = rand(.5, 1.6), q = tw(s, x, Ya(s)); isl.push([q.x, q.y + r * .1, q.z, r, r * .7, r, rand(0, 3)]); } instanced(crag, rockM, isl);
+  // the lava falls: bright ropes of it pouring off the crags into the river
+  TH.falls = []; const fallT = flow.clone(); fallT.needsUpdate = true; fallT.wrapS = fallT.wrapT = THREE.RepeatWrapping; fallT.repeat.set(1, 3); TH.fallT = fallT; const fallM = new THREE.MeshBasicMaterial({ map: fallT, side: THREE.DoubleSide, fog: false });
+  for (let s = 12, k = 0; s < E; s += rand(20, 32), k++) { const sd = k % 2 ? 1 : -1, x = sd * rand(11.5, 14), w = rand(3, 6), h = rand(14, 26), y0 = Ya(s) - .4, q = tw(s, x, y0 + h / 2), m = new THREE.Mesh(new THREE.PlaneGeometry(w, h, 1, 1), fallM); m.position.copy(q); m.rotation.y = Math.PI / 2 * sd + Math.PI / 2 * 0; m.rotation.y = Math.PI / 2; m.userData.keep = true; scene.add(m); const top = tw(s, x + sd * 1.4, y0 + h + 1); part(GEO.ico, rockM, scene, top.x, top.y, top.z, w * .9, 3, w * .9); const gl = glowSprite(0xff7a20, w * 3.2, .55); gl.position.copy(q); gl.material.fog = false; scene.add(gl); TH.falls.push([s, x, y0]); }
+  // the Mountain's cone filling the sky ahead, its top alight, the Crack's glare over the last gate; Barad-dûr far off, with the Eye
+  { const c = gradCone(190, 240, 10, 0x4a1e12, 0x140807), q = tw(E + 210, 0, 0); c.position.set(q.x, Ya(E) + 80, q.z); scene.add(c); const g1 = glowSprite(0xff5010, 170, .85); g1.material.fog = false; g1.position.set(q.x, Ya(E) + 190, q.z); scene.add(g1); const g2 = glowSprite(0xffa040, 34, .8); g2.material.fog = false; g2.position.copy(tw(E - 4, 0, Ya(E) + 9)); scene.add(g2); }
+  { const bd = tw(E * .35, -280, 0); let y = -20; for (const [rt, rb, h] of [[14, 20, 40], [10, 14, 60], [7, 10, 50], [4, 7, 28]]) { const m = part(new THREE.CylinderGeometry(rt, rb, h, 8), lam(0x120c0c), scene, bd.x, y + h / 2, bd.z); y += h; } const eye = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.eye, transparent: true, depthWrite: false, fog: false })); eye.scale.set(30, 20, 1); eye.position.set(bd.x, y + 10, bd.z); eye.userData.keep = true; scene.add(eye); const eg = glowSprite(0xff3a08, 70, .7); eg.material.fog = false; eg.position.copy(eye.position); scene.add(eg); }
+  // the vents in the path
+  for (const j of doomC().jets) { const q = tw(j.s, j.x, j.y + .02); const v = part(new THREE.CylinderGeometry(.66, .78, .14, 10), lam(0x140c0a), scene, q.x, q.y + .05, q.z); const h = part(new THREE.CircleGeometry(.46, 10), new THREE.MeshBasicMaterial({ color: 0xff6a20 }), scene, q.x, q.y + .13, q.z); h.rotation.x = -Math.PI / 2; j.gl = glowSprite(0xff7a20, 2, .3); j.gl.position.set(q.x, q.y + .5, q.z); scene.add(j.gl); }
+  // braziers on the landings
+  TH.braz = []; for (const [s0, s1, x0, x1, top] of doomC().pillars) { if (s1 - s0 < 5 || x1 - x0 < 5) continue; for (const x of [x0 + .45, x1 - .45]) { const q = tw(s0 + .6, x, top); part(GEO.cyl, lam(0x1a1210), scene, q.x, q.y + .55, q.z, .12, 1.1, .12); part(new THREE.CylinderGeometry(.34, .18, .28, 8), lam(0x2a1a14), scene, q.x, q.y + 1.18, q.z); TH.braz.push([s0 + .6, x, top + 1.3]); const gl = glowSprite(0xff8a30, 2.4, .6); gl.position.set(q.x, q.y + 1.4, q.z); scene.add(gl); } }
+  bakeScenery(scene.children.slice(first));
+}
+THEMES.doom.floorTex = TX.doomRock; THEMES.doom.wallTex = TX.doomRock;
+const DOOM_JETS_ON = 1.15;   // (how long each vent blows)
+function updateDoom(dt) {
+  if (!LV || LV.theme !== 'doom' || state === 'map' || state === 'title') return;
+  const TH = THEMES.doom, play = state === 'play', C = doomC(), yf = doomYAt(P.s);
+  if (TH.flow) { TH.flow.offset.y -= dt * .1; TH.flow.offset.x += Math.sin(T * .2) * dt * .006; } if (TH.fallT) TH.fallT.offset.y += dt * .34;
+  // sheets of fire leaping off the river, curtains of it along the banks, embers rising past you, black smoke overhead
+  for (let k = 0; k < 7; k++) if (Math.random() < dt * 22) { const s = P.s + rand(-8, 40), x = (Math.random() < .5 ? -1 : 1) * rand(3.8, 12.5); bfire(tw(s, x, doomYAt(s) + .2), rand(1.2, 2.8), rand(2, 4.5)); }
+  for (let k = 0; k < 4; k++) if (Math.random() < dt * 20) { const s = P.s + rand(-4, 32), sd = Math.random() < .5 ? -1 : 1; bfire(tw(s, sd * rand(10.8, 12), doomYAt(s) + rand(0, 2)), rand(2, 3.6), rand(3, 6)); }
+  for (let k = 0; k < 5; k++) if (Math.random() < dt * 26) fx.spawn(...tw(P.s + rand(-6, 22), P.x + rand(-10, 10), P.y + rand(-4, 2)).toArray(), rand(-.6, .6), rand(2, 5), rand(-.6, .6), rand(.8, 1.8), .09, .02, [1, .85, .4], [1, .25, .05], -.4, 1);
+  if (Math.random() < dt * 5) { const s = P.s + rand(6, 46); smoke.spawn(...tw(s, rand(-22, 22), doomYAt(s) + rand(5, 12)).toArray(), rand(-.5, .5), rand(2, 4), rand(-.5, .5), rand(7, 11), 3, 14, [.07, .05, .05], [.2, .14, .12], -.15, .28); }
+  for (const [s, x, y] of TH.falls || []) if (Math.abs(s - P.s - 10) < 40 && Math.random() < dt * 14) bfire(tw(s + rand(-2, 2), x * .92, y + .3), rand(1.6, 2.8), 3.2);
+  for (const [s, x, y] of TH.braz || []) if (Math.abs(s - P.s - 6) < 26 && Math.random() < dt * 12) bfire(tw(s, x, y), .55, 1.4);
+  // the vents: each one glows up, then blows
+  for (const j of C.jets) { const t = (gs.time + j.ph) % j.per, on = t < DOOM_JETS_ON, warn = !on && t > j.per - .6, near = Math.abs(j.s - P.s) < 34; if (j.gl) { j.gl.material.opacity = on ? 1 : warn ? .75 : .22; j.gl.scale.setScalar(on ? 4.6 : warn ? 3 : 1.8); } if (!near) continue;
+    if (on) { for (let k = 0; k < 4; k++) bfire(tw(j.s + rand(-.3, .3), j.x + rand(-.3, .3), j.y + rand(.1, 3.2)), rand(.8, 1.3), 4); if (play && Math.abs(P.s - j.s) < .95 && Math.abs(P.x - j.x) < .95 && P.y < j.y + 3.4 && P.y > j.y - 1) hurt('burn'); }
+    else if (warn && Math.random() < dt * 24) sparks(tw(j.s, j.x, j.y + .3), 1, 3, [1, .9, .5], [1, .4, .1], .2); }
+  // burning rocks thrown down from the summit, each marked on the path before it lands
+  if (play) for (const [a, b] of C.bombs) if (P.s > a - 2 && P.s < b + 2) { TH.bombT = (TH.bombT ?? 1) - dt; if (TH.bombT <= 0) { TH.bombT = rand(.9, 1.5); const s = clamp(P.s + P.vs * .9 + rand(-1.5, 2), a + 1, b - 1), x = clamp(P.x + rand(-1.4, 1.4), -1.6, 1.6), y = groundBelow(s, x, P.y + 4), RR = 1.5, ring = new THREE.Mesh(new THREE.RingGeometry(RR * .72, RR, 22), new THREE.MeshBasicMaterial({ color: 0xff3a10, transparent: true, opacity: .8, depthWrite: false, side: THREE.DoubleSide })), rock = glowSprite(0xffa040, 2.2, 1); ring.rotation.x = -Math.PI / 2; tw(s, x, y + .08, ring.position); scene.add(ring); scene.add(rock); const p0 = tw(s + 14, x, y + 20), p1 = tw(s, x, y + .2); khFx(ring, f => { ring.material.opacity = .45 + Math.sin(f.t * 18) * .35; const k = f.t / 1.05; rock.position.lerpVectors(p0, p1, Math.min(1, k)); bfire(rock.position, 1.1, .4); if (k < 1) return true; scene.remove(rock); bblast(p1.clone(), 3); S.smash(); cam.shake = Math.max(cam.shake, .35); if (Math.hypot(P.s - s, P.x - x) < RR && Math.abs(P.y - y) < 2.4 && state === 'play') hurt('burn'); return false; }); } }
+  // fall and the fire has you
+  if (play && P.y < yf - .4) { for (let k = 0; k < 10; k++) bfire(tw(P.s + rand(-1, 1), P.x + rand(-1, 1), yf + rand(0, 1)), 1.6, 3); die('fall'); }
+}
 // --- Rivendell, rebuilt like the film's model: a high bridge over the gorge of the Bruinen onto a promontory of three
 //     terraces climbing to the Last Homely House, elven halls and towers on each, waterfalls falling from the cliffs
 //     behind into its pools and over the lip into the gorge. Battle for Middle-earth's halls, towers, gazebo, gate and
@@ -7854,7 +8068,7 @@ THEMES.ford = natTheme({
 //  EREBOR: the dragon. Level 1, on the ramparts before the Gate: Gandalf with a bow on the wall-walk, the dragon wheeling
 //  over the valley (K looses an arrow: it flies at the dragon only if he's in front of you, and he's quick: loose when he
 //  hangs or comes at you). Level 2, in the treasure hall under the Mountain, the Kingdom Hearts way, among hills of gold.
-//  With your own models the dragon is Battle for Middle-earth's Drogoth (Rise of the Witch-king's), else a built one.
+//  With your own models Smaug wears Battle for Middle-earth's dragon (Rise of the Witch-king's Drogoth), else a built one.
 // =====================================================================
 function makeDrogoth() {
   const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
@@ -7930,7 +8144,7 @@ function buildErebor(L, TH) {
   bakeScenery(scene.children.slice(first));
 }
 function spawnDragonRamparts(pl, delay = 0) {
-  const b = { m: makeDrogoth(), boss: true, kind: 'D', name: 'DROGOTH THE DRAGON', hp: pl.bossHp, max: pl.bossHp, bars: 3, r: 3, tall: 5, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1,
+  const b = { m: makeDrogoth(), boss: true, kind: 'D', name: 'SMAUG', hp: pl.bossHp, max: pl.bossHp, bars: 3, r: 3, tall: 5, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1,
     state: 'intro', t: -delay, s: 60, x: 30, y: 60, h: Math.PI, ang: 0, cd: 2, n: 0, upd: drRampUpdate, hitFn: drHit, reactFn: () => null };
   URUKS.push(b); KH.boss = b; Music.mode = 1; return b;
 }
@@ -7938,8 +8152,8 @@ function drHit(b, dmg, fin) {
   if (!ukLive(b) || b.state === 'intro' || b.state === 'flee') return;
   if (b.state === 'perch' || b.state === 'stun') dmg *= 2; if (KH.form > 0) dmg *= 1.4;
   b.hp -= dmg; b.flash = .12; KH.target = b; KH.targetT = 6; sparks(tw(b.s, b.x, b.y + 2.5), 16, 6, [1, .8, .5], [.8, .3, .1]); S.screech && Math.random() < .3 && S.screech();
-  if (b.phase === 1 && b.hp <= b.max * .5) { b.phase = 2; banner('THE DRAGON IS ENRAGED!', 1.6); S.roar(); }
-  if (b.hp <= 0) { b.hp = 0; b.dead = true; KH.react = null; b.state = b.kind === 'D' ? 'flee' : 'die'; b.t = 0; banner(b.kind === 'D' ? 'THE DRAGON FLEES INTO THE MOUNTAIN!' : 'THE DRAGON IS SLAIN!', 2.6); S.roar(); Music.mode = 0; flashV = Math.max(flashV, .4); }
+  if (b.phase === 1 && b.hp <= b.max * .5) { b.phase = 2; banner('SMAUG IS ENRAGED!', 1.6); S.roar(); }
+  if (b.hp <= 0) { b.hp = 0; b.dead = true; KH.react = null; b.state = b.kind === 'D' ? 'flee' : 'die'; b.t = 0; banner(b.kind === 'D' ? 'SMAUG FLEES INTO THE MOUNTAIN!' : 'SMAUG IS SLAIN!', 2.6); S.roar(); Music.mode = 0; flashV = Math.max(flashV, .4); }
 }
 // a fireball from his mouth onto a red circle (where Gandalf stands)
 function drFireball(b, s, x, y, warn = 1.3, r = 2.2, dmg = 12) {
@@ -7953,7 +8167,7 @@ function drRampUpdate(b, dt) {
   const toward = (s, x, y, sp) => { const ds = s - b.s, dx = x - b.x, dy = y - b.y, d = Math.hypot(ds, dx, dy) || .01, k = Math.min(1, sp * dt / d); b.s += ds * k; b.x += dx * k; b.y += dy * k; if (Math.hypot(ds, dx) > .3) { const h = Math.atan2(dx, ds); b.bank = clamp(angDiff(b.h, h) * 1.5, -.6, .6); b.h += angDiff(b.h, h) * Math.min(1, dt * 3); } return d; };
   switch (b.state) {
     case 'intro':   // down off the Mountain, over the wall with a roar
-      if (!b.said) { b.said = true; S.roar(); } toward(-30, -10, 26, 26); if (b.t > 1 && !b.named) { b.named = true; banner('DROGOTH THE DRAGON!', 2.4); cam.shake = .6; }
+      if (!b.said) { b.said = true; S.roar(); } toward(-30, -10, 26, 26); if (b.t > 1 && !b.named) { b.named = true; banner('SMAUG THE GOLDEN!', 2.4); cam.shake = .6; }
       if (b.t > 3.2) { b.state = 'circle'; b.t = 0; b.ang = Math.atan2(b.x, b.s + 30); } break;
     case 'circle': {   // wheeling over the valley, hurling fire at the wall
       b.ang += dt * (p2 ? .42 : .32); const ts = -30 + Math.cos(b.ang) * 26, tx = Math.sin(b.ang) * 40; toward(ts, tx, 24 + Math.sin(b.t * .7) * 4, 22); b.pitch = 0;
@@ -8062,7 +8276,7 @@ function buildHoard(L, TH) {
   bakeScenery(scene.children.slice(first));
 }
 function spawnDragonHoard(pl, delay = 0) {
-  const b = { m: makeDrogoth(), boss: true, kind: 'G', name: 'DROGOTH THE DRAGON', hp: pl.bossHp, max: pl.bossHp, bars: 4, r: 3.2, tall: 6, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null,
+  const b = { m: makeDrogoth(), boss: true, kind: 'G', name: 'SMAUG', hp: pl.bossHp, max: pl.bossHp, bars: 4, r: 3.2, tall: 6, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null,
     state: 'intro', t: -delay, s: 8, x: 0, y: -8, h: Math.PI, cd: 1.5, n: 0, upd: drHoardUpdate, hitFn: drHit, reactFn: drHoardReact, reaction: drHoardReaction };
   URUKS.push(b); KH.boss = b; Music.mode = 1; return b;
 }
@@ -8080,7 +8294,7 @@ function drHoardUpdate(b, dt) {
   switch (b.state) {
     case 'intro':   // up out of the gold, coins pouring off him
       b.y = lerp(-8, b.ground, Math.min(1, b.t / 2.4)); for (let k = 0; k < 3; k++) fx.spawn(...tw(b.s + rand(-3, 3), b.x + rand(-3, 3), b.y + rand(1, 5)).toArray(), rand(-2, 2), rand(1, 4), rand(-2, 2), rand(.6, 1.2), .25, .1, [1, .9, .4], [.8, .6, .1], 1.2, 0);
-      if (b.t > .2 && !b.said) { b.said = true; S.roar(); cam.shake = .7; } if (b.t > 2.4 && !b.named) { b.named = true; banner('THE DRAGON WAKES!', 2.2); bossWave(b, b.s, b.x, 10, 9, 0); }
+      if (b.t > .2 && !b.said) { b.said = true; S.roar(); cam.shake = .7; } if (b.t > 2.4 && !b.named) { b.named = true; banner('SMAUG WAKES!', 2.2); bossWave(b, b.s, b.x, 10, 9, 0); }
       b.h += angDiff(b.h, toP) * Math.min(1, dt * 2); if (b.t > 3.4) end(); break;
     case 'idle': {
       b.h += angDiff(b.h, toP) * Math.min(1, dt * 2.5); if (d > 7) { [b.s, b.x] = keep(b.s + ds / d * 3.4 * dt, b.x + dx / d * 3.4 * dt); }
@@ -8181,10 +8395,10 @@ function deepLayout() {
   const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = C - j, x = C - i, d = Math.hypot(s, x); let y = (Math.sin(s * .13) * Math.cos(x * .11) * .35) * ss(14, 22, d) + 30 * ss(30, 58, Math.abs(x)) + 26 * ss(20, 56, s); hs[k] = y; g[k] = d < 16 ? 'a' : 'g'; }
   const WH = 10, blocks = [[-2.5, 2.5, -62, -11, WH, 'floor', -30], [-2.5, 2.5, 11, 62, WH, 'floor', -30], [-3.2, -2.5, -62, -11, WH + 3, 'wall', -30], [2.5, 3.2, -62, -11, WH + 3, 'wall', -30], [-3.2, -2.5, 11, 62, WH + 3, 'wall', -30], [2.5, 3.2, 11, 62, WH + 3, 'wall', -30]];
-  const W_ = [['o', 'o', 'u', 'u'], ['u', 'u', 's'], ['a', 'a', 'u', 'u'], ['p', 'p', 's', 'o'], ['j', 'j', 'j', 'u'], ['b', 'a', 'a', 'u'], ['c', 'u', 'u'], ['s', 's', 'p', 'j'], ['c', 'a', 'a', 'b'], ['c', 'c', 'p', 'j', 'a']];
-  const names = ['', 'SHIELDS! GET ROUND THEM, OR A FINISHER BREAKS THEM', 'CROSSBOWS! GUARD AS THE BOLT LANDS AND IT GOES BACK', 'PIKES! SIDESTEP THE RED LINE, THEN STRIKE', 'FANATICS! ROLL OFF THE RED CIRCLES', 'BERSERKERS AND BOLTS!', 'A CAPTAIN! KEEP OUT OF HIS WHIRL, THEN STRIKE', 'THEY KEEP COMING!', 'ANOTHER CAPTAIN!', 'THE LAST OF THEM!'];
+  const W_ = [['o', 'o', 'u', 'u'], ['u', 'u', 's'], ['a', 'a', 'u', 'u'], ['p', 'p', 's', 'o'], ['j', 'j', 'j', 'u'], ['b', 'a', 'a', 'u'], ['c', 'u', 'u'], ['s', 's', 'p', 'j'], ['c', 'a', 'a', 'b'], ['c', 'c', 'p', 'j', 'a'], ['A']];
+  const names = ['', 'SHIELDS! GET ROUND THEM, OR A FINISHER BREAKS THEM', 'CROSSBOWS! GUARD AS THE BOLT LANDS AND IT GOES BACK', 'PIKES! SIDESTEP THE RED LINE, THEN STRIKE', 'FANATICS! ROLL OFF THE RED CIRCLES', 'BERSERKERS AND BOLTS!', 'A CAPTAIN! KEEP OUT OF HIS WHIRL, THEN STRIKE', 'THEY KEEP COMING!', 'ANOTHER CAPTAIN!', 'THE LAST OF THEM!', 'A TROLL IN ARMOUR THROUGH THE BREACH!'];
   return { field: [-30, 30, -56, 56], start: [0, 0], startY: WH, startH: Math.PI, terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g },
-    layout: { blocks, WH, plazas: [{ s: -3, x: 0, y: 0, r: 15, waves: W_, names, title: 'THE WALL IS BREACHED!', boss: true, last: true, breach: [-16, 0], ladders: [Math.PI - .9, Math.PI - .45, Math.PI, Math.PI + .45, Math.PI + .9], noAdds: true }] } };
+    layout: { blocks, WH, plazas: [{ s: -3, x: 0, y: 0, r: 15, waves: W_, names, title: 'THE WALL IS BREACHED!', boss: true, last: true, breach: [-16, 0], from: [-17, 0], to: [-9.5, 0], ladders: [Math.PI - .9, Math.PI - .45, Math.PI, Math.PI + .45, Math.PI + .9], noAdds: true }] } };
 }
 function deepContent(L) { for (const [k, s, x] of [['q', 9, 7], ['b', 9, -7], ['su', 10, 0], ['b', -14, -9], ['q', -14, 9]]) addCrate(k, s, x, 0, terrainAt(s, x, true) + 2); }
 function buildDeep(L, TH) {
@@ -8267,17 +8481,18 @@ function buildBalin(L, TH) {
   // the door (it comes in with the troll)
   const dr = new THREE.Group(), wd = lam(0x4a3420); for (const sx of [-1, 1]) { const q = tw(-22.6, sx * 1.5, 4); part(GEO_BOX, wd, dr, q.x, q.y, q.z, 2.9, 8, .4); } scene.add(dr); TH.door = dr;
 }
-function makeTroll() {
+function makeTroll(slot = 'cavetroll') {
   const root = new THREE.Group(), body = new THREE.Group(); root.add(body); const SK = lam(0x6a6a58, { emissive: 0x0c0c08 }), DK = lam(0x3a3a30), WD = lam(0x4a3420);
   part(GEO.sph, SK, body, 0, 3.1, 0, 1.25, 1.35, 1); part(GEO.sph, SK, body, 0, 4.3, .15, 1, .8, .85); const head = new THREE.Group(); head.position.set(0, 5, .55); body.add(head); part(GEO.sph, SK, head, 0, 0, 0, .46, .4, .52); for (const sx of [-1, 1]) { part(GEO.sph, bas(0xffb030), head, sx * .2, .08, .42, .06, .05, .05); part(GEO.cone, DK, head, sx * .18, -.28, .36, .04, .2, .04); }
   const legs = [-1, 1].map(sx => { const g = new THREE.Group(); g.position.set(sx * .62, 2, 0); body.add(g); part(GEO.cylT, SK, g, 0, 0, 0, .42, 2, .42); part(GEO_BOX, DK, g, 0, -2, .2, .6, .24, .9); return g; });
   const arm = sx => { const g = new THREE.Group(); g.position.set(sx * 1.2, 4.3, 0); body.add(g); part(GEO.cylT, SK, g, 0, 0, 0, .32, 2.6, .32); return g; };
   const armR = arm(1), armL = arm(-1), club = new THREE.Group(); club.position.set(0, -2.6, .1); armR.add(club); part(GEO.cyl, WD, club, 0, 0, 1, .16, 2.4, .16).rotation.x = Math.PI / 2; part(GEO.sph, WD, club, 0, 0, 2.3, .42, .42, .7);
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(1.8, 14), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .45, depthWrite: false })); shadow.rotation.x = -Math.PI / 2; scene.add(shadow); scene.add(root); root.visible = shadow.visible = false;
-  const M = { root, body, head, legs, armR, armL, club, shadow }; addSkin(M, 'troll', body, root); if (M.skin) M.skin.temp = true; return M;
+  const M = { root, body, head, legs, armR, armL, club, shadow }; addSkin(M, slot, body, root); if (M.skin) M.skin.temp = true; return M;
 }
-function spawnTroll(pl, delay = 0) {
-  const b = { m: makeTroll(), boss: true, kind: 'T', name: 'CAVE TROLL', hp: pl.bossHp || 850, max: pl.bossHp || 850, bars: 3, r: 1.5, tall: 5.4, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null, state: 'intro', t: -delay - .5, s: -21, x: 0, y: 0, h: 0, cd: 1.2, n: 0, upd: trUpdate, hitFn: trHit, reactFn: (u, d) => u.state === 'stun' && u.hp <= u.max * .3 && d < 6 ? 'climb' : null, reaction: trReaction };
+function spawnTroll(pl, delay = 0, arm = false) {
+  const fr = LV.balin ? [-21, 0] : pl.from || [pl.s + (P.s > pl.s ? -1 : 1) * (pl.r + 3), pl.x], to = LV.balin ? [-10.5, 0] : pl.to || [lerp(fr[0], pl.s, .55), lerp(fr[1], pl.x, .55)];
+  const b = { m: makeTroll(arm ? 'armtroll' : 'cavetroll'), fr, to, boss: true, kind: 'T', name: arm ? 'ARMOURED TROLL' : 'CAVE TROLL', hp: pl.bossHp || (arm ? 1000 : 850), max: pl.bossHp || (arm ? 1000 : 850), bars: 3, r: 1.5, tall: 5.4, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null, state: 'intro', t: -delay - .5, s: fr[0], x: fr[1], y: 0, h: 0, cd: 1.2, n: 0, upd: trUpdate, hitFn: trHit, reactFn: (u, d) => u.state === 'stun' && u.hp <= u.max * .3 && d < 6 ? 'climb' : null, reaction: trReaction };
   URUKS.push(b); KH.boss = b; Music.mode = 1; return b;
 }
 function trEnd(b) { if (b.a) for (const f of b.a.fx) f.dead = true; b.a = null; b.state = 'idle'; b.t = 0; b.cd = rand(.8, 1.5) / (b.phase > 1 ? 1.3 : 1); }
@@ -8292,12 +8507,12 @@ function trReaction() { const b = KH.boss; if (!b) return; S.smash(); KH.hitstop
 function trUpdate(b, dt) {
   const m = b.m; b.t += dt; b.flash -= dt; b.rev = Math.max(0, b.rev - dt * 10); if (b.t < 0) return;
   const ds = P.s - b.s, dx = P.x - b.x, d = Math.hypot(ds, dx) || .01, toP = Math.atan2(dx, ds), live = state === 'play', pl = b.plaza, A = b.a, p2 = b.phase > 1;
-  const keep = (s, x) => { const dd = Math.hypot(s, x) || .01, r = clamp(dd, 3.6, pl.r - 1); return dd === r ? [s, x] : [s / dd * r, x / dd * r]; }; let walk = 0, arm = -.25;
+  const keep = (s, x) => { const es = s - pl.s, ex = x - pl.x, dd = Math.hypot(es, ex) || .01, r = clamp(dd, LV.balin ? 3.6 : 0, pl.r - 1); return dd === r ? [s, x] : [pl.s + es / dd * r, pl.x + ex / dd * r]; }, gy = landAt(b.s, b.x); let walk = 0, arm = -.25;
   const fxm = (mm) => { const f = khFx(mm, g => { warnPulse(g); return true; }); b.a.fx.push(f); };
   switch (b.state) {
     case 'intro':
-      if (!b.shown) { b.shown = true; m.root.visible = m.shadow.visible = true; S.smash(); S.roar(); cam.shake = 1; flashV = Math.max(flashV, .25); const D = THEMES.balin.door; D.visible = false; const c = tw(-22, 0, 3); sparks(c, 60, 12, [.8, .6, .4], [.4, .3, .2], .35); for (let k = 0; k < 14; k++) { const q = new THREE.Mesh(GEO_BOX, lam(0x4a3420)), v = new V3(rand(-5, 5), rand(3, 8), rand(5, 14)); q.scale.set(rand(.3, 1.2), rand(.3, 1.6), .15); q.position.copy(tw(-22, rand(-3, 3), rand(.5, 7))); khFx(q, (f, dd) => { v.y -= 20 * dd; q.position.addScaledVector(v, dd); q.rotation.x += dd * 5; if (q.position.y < .1) { q.position.y = .1; v.set(0, 0, 0); } return f.t < 3; }); } skinClip(m, 'attack_a', 1); }
-      b.s = lerp(-21, -10.5, Math.min(1, b.t / 1.6)); b.h = toP; walk = 1; if (b.t > 1.9) trEnd(b); break;
+      if (!b.shown) { b.shown = true; m.root.visible = m.shadow.visible = true; S.smash(); S.roar(); cam.shake = 1; flashV = Math.max(flashV, .25); const D = THEMES.balin.door; if (LV.balin) D.visible = false; const c = tw(b.fr[0] - (LV.balin ? 1 : 0), b.fr[1], 3 + gy); sparks(c, 60, 12, [.8, .6, .4], [.4, .3, .2], .35); for (let k = 0; k < 14; k++) { const q = new THREE.Mesh(GEO_BOX, lam(0x4a3420)), v = new V3(rand(-5, 5), rand(3, 8), rand(5, 14)); q.scale.set(rand(.3, 1.2), rand(.3, 1.6), .15); q.position.copy(tw(-22, rand(-3, 3), rand(.5, 7))); khFx(q, (f, dd) => { v.y -= 20 * dd; q.position.addScaledVector(v, dd); q.rotation.x += dd * 5; if (q.position.y < .1) { q.position.y = .1; v.set(0, 0, 0); } return f.t < 3; }); } skinClip(m, 'attack_a', 1); }
+      b.s = lerp(b.fr[0], b.to[0], Math.min(1, b.t / 1.6)); b.x = lerp(b.fr[1], b.to[1], Math.min(1, b.t / 1.6)); b.h = toP; walk = 1; if (b.t > 1.9) trEnd(b); break;
     case 'idle': {
       b.h += angDiff(b.h, toP) * Math.min(1, dt * 3); if (d > 3.4) { [b.s, b.x] = keep(b.s + ds / d * (p2 ? 3 : 2.4) * dt, b.x + dx / d * (p2 ? 3 : 2.4) * dt); walk = 1; }
       b.cd -= dt; if (!live || b.cd > 0) break; b.n++;
@@ -8313,19 +8528,19 @@ function trUpdate(b, dt) {
       A.t += dt; if (A.ph === 'wind') { arm = -2.6; if (A.t >= A.w) { A.ph = 'go'; A.t = 0; } break; }
       arm = .7;
       switch (A.type) {
-        case 'smash': if (!A.hit) { A.hit = true; A.fx.forEach(f => f.dead = true); const p = tw(A.at[0], A.at[1], .2); sparks(p, 40, 9, [.9, .8, .6], [.5, .4, .2], .3); dustAt(A.at[0], A.at[1], 0, 16); S.smash(); cam.shake = .9; if (Math.hypot(P.s - A.at[0], P.x - A.at[1]) < 2.9 && P.y < 1) khHurt(20, b, { kb: 13 }); if (p2) bossWave(b, A.at[0], A.at[1], 9, 8, 10); } A.ph = 'stuck'; if (A.t > 1.5) trEnd(b); break;   // (the club sticks: strike him)
-        case 'sweep': if (!A.hit && A.t > .1) { A.hit = true; A.fx.forEach(f => f.dead = true); S.whoosh(); cam.shake = .4; if (d < 5.8 && Math.abs(angDiff(toP, A.h)) < 1.5 && P.y < 1.1) khHurt(16, b, { kb: 13 }); } b.h = A.h + lerp(1.2, -1.2, Math.min(1, A.t / .35)); if (A.t > .8) { b.h = A.h; trEnd(b); } break;
-        case 'charge': { const ns = b.s + A.v[0] * dt, nx = b.x + A.v[1] * dt, [ks, kx] = keep(ns, nx), hitPil = THEMES.balin && LV.layout.pil.some(q => Math.hypot(q[0] - ns, q[1] - nx) < 2.4); walk = 2; if (ks !== ns || kx !== nx || hitPil || A.t > 1.5) { A.fx.forEach(f => f.dead = true); S.smash(); cam.shake = .9; dustAt(b.s, b.x, 0, 14); b.a = null; b.state = 'stun'; b.t = 0; b.stunT = 2.4; banner('HE REELS!', .9); break; } b.s = ks; b.x = kx; if (!A.hit && d < 2.5) { A.hit = true; khHurt(18, b, { unblock: true, kb: 15 }); } break; }
-        case 'throw': if (!A.thrown) { A.thrown = true; const rock = fallRock(), p0 = tw(b.s, b.x, 5.4), p1 = tw(A.at[0], A.at[1], .4), at = A.at; scene.add(rock); S.whoosh(); khFx(rock, f => { const k = Math.min(1, f.t / .85); rock.position.lerpVectors(p0, p1, k); rock.position.y += Math.sin(k * Math.PI) * 4; rock.rotation.x += .1; if (k < 1) return true; sparks(p1, 24, 7, [.8, .7, .6], [.4, .3, .2], .25); S.stomp(); if (Math.hypot(P.s - at[0], P.x - at[1]) < 2.4 && P.y < 1.2) khHurt(14, { s: at[0], x: at[1] }, { unblock: true, kb: 8 }); A.fx.forEach(q => q.dead = true); return false; }); } if (A.t > 1) { b.a = null; b.state = 'idle'; b.t = 0; b.cd = rand(.5, 1); } break;
+        case 'smash': if (!A.hit) { A.hit = true; A.fx.forEach(f => f.dead = true); const p = tw(A.at[0], A.at[1], gy + .2); sparks(p, 40, 9, [.9, .8, .6], [.5, .4, .2], .3); dustAt(A.at[0], A.at[1], gy, 16); S.smash(); cam.shake = .9; if (Math.hypot(P.s - A.at[0], P.x - A.at[1]) < 2.9 && P.y < gy + 1) khHurt(20, b, { kb: 13 }); if (p2) bossWave(b, A.at[0], A.at[1], 9, 8, 10); } A.ph = 'stuck'; if (A.t > 1.5) trEnd(b); break;   // (the club sticks: strike him)
+        case 'sweep': if (!A.hit && A.t > .1) { A.hit = true; A.fx.forEach(f => f.dead = true); S.whoosh(); cam.shake = .4; if (d < 5.8 && Math.abs(angDiff(toP, A.h)) < 1.5 && P.y < gy + 1.1) khHurt(16, b, { kb: 13 }); } b.h = A.h + lerp(1.2, -1.2, Math.min(1, A.t / .35)); if (A.t > .8) { b.h = A.h; trEnd(b); } break;
+        case 'charge': { const ns = b.s + A.v[0] * dt, nx = b.x + A.v[1] * dt, [ks, kx] = keep(ns, nx), hitPil = LV.balin && LV.layout.pil.some(q => Math.hypot(q[0] - ns, q[1] - nx) < 2.4); walk = 2; if (ks !== ns || kx !== nx || hitPil || A.t > 1.5) { A.fx.forEach(f => f.dead = true); S.smash(); cam.shake = .9; dustAt(b.s, b.x, 0, 14); b.a = null; b.state = 'stun'; b.t = 0; b.stunT = 2.4; banner('HE REELS!', .9); break; } b.s = ks; b.x = kx; if (!A.hit && d < 2.5) { A.hit = true; khHurt(18, b, { unblock: true, kb: 15 }); } break; }
+        case 'throw': if (!A.thrown) { A.thrown = true; const rock = fallRock(), p0 = tw(b.s, b.x, gy + 5.4), p1 = tw(A.at[0], A.at[1], gy + .4), at = A.at; scene.add(rock); S.whoosh(); khFx(rock, f => { const k = Math.min(1, f.t / .85); rock.position.lerpVectors(p0, p1, k); rock.position.y += Math.sin(k * Math.PI) * 4; rock.rotation.x += .1; if (k < 1) return true; sparks(p1, 24, 7, [.8, .7, .6], [.4, .3, .2], .25); S.stomp(); if (Math.hypot(P.s - at[0], P.x - at[1]) < 2.4 && P.y < 1.2) khHurt(14, { s: at[0], x: at[1] }, { unblock: true, kb: 8 }); A.fx.forEach(q => q.dead = true); return false; }); } if (A.t > 1) { b.a = null; b.state = 'idle'; b.t = 0; b.cd = rand(.5, 1); } break;
       }
       break;
     }
     case 'stun': arm = .4; if (Math.random() < .3) sparks(tw(b.s, b.x, 5.6), 2, 2, [1, 1, .8], [1, .8, .2]); if (b.t > b.stunT) trEnd(b); break;
     case 'roar': arm = -2.6; if (!b.called && b.t > .6) { b.called = true; for (let k = 0; k < 3; k++) spawnUruk('o', pl, Math.PI + (k - 1) * .25, k * .3); } if (b.t > 1.5) trEnd(b); break;
-    case 'fall': m.body.rotation.x = damp(m.body.rotation.x, -1.45, 2, dt); if (b.t > 1.4 && !b.thud) { b.thud = true; S.smash(); cam.shake = 1; dustAt(b.s, b.x, 0, 22); } if (b.t > 3) { khRemove(b); return; } break;
+    case 'fall': m.body.rotation.x = damp(m.body.rotation.x, -1.45, 2, dt); if (b.t > 1.4 && !b.thud) { b.thud = true; S.smash(); cam.shake = 1; dustAt(b.s, b.x, gy, 22); } if (b.t > 3) { khRemove(b); return; } break;
   }
   if (d < b.r + .5 && b.state !== 'fall' && m.root.visible) { P.s = b.s + ds / d * (b.r + .5); P.x = b.x + dx / d * (b.r + .5); }
-  place(m.root, b.s, b.x, 0, b.h); tw(b.s, b.x, .03, m.shadow.position); const ph = T * 5; m.legs.forEach((l, i) => l.rotation.x = Math.sin(ph + i * Math.PI) * .45 * Math.min(1, walk)); m.armR.rotation.x = damp(m.armR.rotation.x, arm, 12, dt); m.armL.rotation.x = -.3 + Math.sin(ph) * .25 * Math.min(1, walk); if (b.state !== 'fall') m.body.rotation.x = b.state === 'stun' ? .3 : 0;
+  b.y = gy; place(m.root, b.s, b.x, gy, b.h); tw(b.s, b.x, gy + .03, m.shadow.position); const ph = T * 5; m.legs.forEach((l, i) => l.rotation.x = Math.sin(ph + i * Math.PI) * .45 * Math.min(1, walk)); m.armR.rotation.x = damp(m.armR.rotation.x, arm, 12, dt); m.armL.rotation.x = -.3 + Math.sin(ph) * .25 * Math.min(1, walk); if (b.state !== 'fall') m.body.rotation.x = b.state === 'stun' ? .3 : 0;
   skinPlay(m, b.state === 'fall' ? 'die' : b.state === 'stun' ? 'hit' : b.state === 'roar' ? 'attack' : walk ? 'walk' : 'idle');
 }
 function setupBalin() { if (LV && LV.balin) THEMES.balin.door.visible = true; }
@@ -10142,6 +10357,11 @@ const UK_KINDS = {
   a: { hp: 11, r: .5, name: 'CROSSBOWMAN', speed: 3.8, dmg: 9, slot: 'urukx', style: 'shoot', want: 10 },
   j: { hp: 12, r: .5, name: 'FANATIC', speed: 5, dmg: 13, slot: 'fanatic', style: 'pounce', want: 6.5 },
   c: { hp: 95, r: .85, name: 'URUK CAPTAIN', speed: 2.8, dmg: 15, armor: true, slot: 'overseer', style: 'whirl', want: 3.4 },
+  M: { hp: 11, r: .45, name: 'ORC ARCHER', speed: 4, dmg: 8, slot: 'orcarch', style: 'shoot', want: 10 },
+  Q: { hp: 16, r: .5, name: 'ORC PIKEMAN', speed: 3.4, dmg: 12, slot: 'orcpike', style: 'pike', want: 5.2 },
+  R: { hp: 70, r: .8, name: 'ORC BRUTE', speed: 3, dmg: 14, armor: true, slot: 'orcbrute', style: 'whirl', want: 3.4 },
+  E: { hp: 24, r: .55, name: 'EASTERLING', speed: 3.8, dmg: 10, slot: 'easterling' },
+  H: { hp: 20, r: .55, name: 'HARAD LANCER', speed: 3.6, dmg: 13, slot: 'haradrim', style: 'pike', want: 5.6 },
 };
 const khOn = () => !!(LV && (LV.kh || LV.khl));   // (the full Kingdom Hearts levels, or the old ones with its fighting)
 function setupKH() {
@@ -10166,6 +10386,8 @@ function resetKH(fresh) {
   Object.assign(KH, { slowT: 0, sightT: 0, multiT: 0, berserkT: 0, shield: 0, reflectT: 0 });
   Object.assign(KH, { hp: KH.max, mp: KH.maxMp, combo: 0, airN: 0, atk: null, buf: false, hover: 0, guardT: 0, rollT: 0, invT: 1, react: null, reacting: null, bolts: [], target: null, form: 0, winT: 0 });
   for (const u of URUKS.slice()) khRemove(u); KH.plaza = null;
+  if (LV && LV.layout && LV.layout.plazas) { const pl = LV.layout.plazas; for (let i = pl.length - 1; i >= 0; i--) if (pl[i].eye) pl.splice(i, 1); }   // (the hunters the Eye sent are gone too)
+  if (LV && LV.theme === 'mordorkh') resetEye();
   for (const p of (LV && LV.layout && LV.layout.plazas) || []) if (!p.done) { p.wave = -1; p.waveT = 0; p.near = false; }   // any square you hadn't finished starts again
   for (const o of ORBS) scene.remove(o.sp); ORBS.length = 0; khClearFx();
   if (hadBoss) Music.mode = 0;
@@ -10580,6 +10802,7 @@ function spawnUruk(kind, pl, a, delay) {
   if (kind === 'K') return Object.assign(spawnWitchKing(pl, delay, 'nazgul'), { name: 'KHAMÛL', title: 'KHAMÛL, THE BLACK RIDER!', endTitle: 'KHAMÛL FLEES THE SHIRE!' });
   if (kind === 'X') return spawnSauronKH(pl, delay);
   if (kind === 'T') return spawnTroll(pl, delay);
+  if (kind === 'A') return spawnTroll(pl, delay, true);
   if (kind === 'D') return spawnDragonRamparts(pl, delay);
   if (kind === 'G') return spawnDragonHoard(pl, delay);
   if (kind === 'F') return spawnFallBalrog(pl, delay);
@@ -10807,6 +11030,7 @@ function updateKH(dt) {
       if (KH.boss && KH.boss.plaza === p) Music.mode = p.near ? 1 : 0;
     }
     if (p.waveT > 0) { if (p.near) { p.waveT -= dt; if (p.waveT <= 0) { const w = p.waves[p.wave], a0 = rand(0, TAU); w.forEach((k, i) => spawnUruk(k, p, a0 + i / w.length * TAU + rand(-.3, .3), i * .25)); } } }
+    else if (p.eye && !URUKS.some(u => u.plaza === p)) { p.done = true; p.near = false; }   // (the hunters the Eye sent are beaten)
     else if (!URUKS.some(u => u.plaza === p)) {
       if (p.wave + 1 < p.waves.length) { if (p.near) { p.wave++; p.waveT = 1.2; banner((p.names && p.names[p.wave]) || 'MORE ARE COMING!', p.names ? 2.2 : 1.2); } }
       else {
@@ -10911,8 +11135,10 @@ showScreen(null); syncPauseBtns();
     if (q.get('cast') && q.get('cast') !== 'all' && LV.kh) { KH.mp = 100; KH.magicCD = 0; KH.atk = null; khCast(q.get('cast')); for (let i = 0; i < 12; i++) step(1 / 60, true); }   // (&cast=thunder: a spell just before the picture)
     if (LV.kh) console.log(`${LV.name} after ${q.get('sim')}s: walkto ${WALKTO ? WALKTO.map(v => v.toFixed(1)).join(',') : '-'},${KH.boss ? ` boss ${KH.boss.state}${KH.boss.a ? '/' + KH.boss.a.type + '/' + KH.boss.a.ph : ''} hp ${Math.round(KH.boss.hp)} phase ${KH.boss.phase},` : ''} drive ${Math.round(KH.drive)} form ${KH.form.toFixed(1)}, reactions ${JSON.stringify(KH.rx || {})}, squares done ${LV.layout.plazas.filter(p => p.done).length}/${LV.layout.plazas.length}, in ${KH.plaza ? LV.layout.plazas.indexOf(KH.plaza) : '-'} wave ${KH.plaza ? KH.plaza.wave : '-'}, uruks ${URUKS.length} (${URUKS.map(u => u.state + ':' + Math.round(u.hp)).join(' ')}), HP ${Math.round(KH.hp)} MP ${Math.round(KH.mp)}, kills ${gs.kills}, at ${P.s.toFixed(0)},${P.x.toFixed(0)},${P.y.toFixed(1)} (ground ${TERR ? terrainAt(P.s, P.x).toFixed(1) : 'none'}, on ${P.ground} ${P.standOn ? P.standOn.kind + ' ' + [P.standOn.y0, P.standOn.y1].map(v => v && v.toFixed(1)) : ''}), state ${state}`);
       console.log(`camera at ${camera.position.toArray().map(v => v.toFixed(1)).join(",")} looking ${camera.getWorldDirection(new V3()).toArray().map(v => v.toFixed(2)).join(",")}, Gandalf at ${tw(P.s, P.x, P.y).toArray().map(v => v.toFixed(1)).join(",")}`);
+      if (q.get('autorun')) console.log('autorun after ' + q.get('sim') + 's: s ' + P.s.toFixed(1) + ' y ' + P.y.toFixed(1) + ' of end ' + END_S.toFixed(0) + ', falls ' + (gs.falls || 0));
       if (q.get('pos') || q.get('spring')) console.log(`after ${q.get('sim')}s: s ${P.s.toFixed(1)} x ${P.x.toFixed(1)} y ${P.y.toFixed(1)} ground ${P.ground}`); }   // &sim=6 plays 6 seconds first (invincible)
     if (q.get('info')) setTimeout(() => { renderer.info.autoReset = false; renderer.info.reset(); renderer.setRenderTarget(rt); renderer.render(scene, camera); console.log('scene: ' + renderer.info.render.calls + ' draw calls, ' + renderer.info.render.triangles + ' triangles'); renderer.info.autoReset = true; }, 500);   // &info=1 logs how much one frame draws
+    if (q.get('pick')) setTimeout(() => { const [px, py] = q.get('pick').split(',').map(Number), rc = new THREE.Raycaster(); rc.setFromCamera(new THREE.Vector2(px, py), camera); console.log('autorun pick ' + rc.intersectObjects(scene.children, true).slice(0, 5).map(h => [h.object.type, h.distance.toFixed(1), h.object.name, h.object.material && h.object.material.type, h.object.material && h.object.material.color && h.object.material.color.getHexString(), h.object.parent && h.object.parent.type, h.object.parent && h.object.parent.parent && h.object.parent.parent.type].join(':')).join(' | ')); }, 1200);   // &pick=x,y (-1..1): what's on the screen there (testing)
     if (q.get('cam')) { const [s, x, y, ls, lx, ly] = q.get('cam').split(',').map(Number); DEBUG_CAM = { p: tw(s, x, y), l: tw(ls, lx, ly) }; }   // &cam=s,x,y,ls,lx,ly: a fixed camera in the level
     if (q.get('peek') && balrogs[0]) { const r = balrogs[0].m.root, [x, y, z] = q.get('peek').split(',').map(Number); r.updateMatrixWorld(true); DEBUG_CAM = { p: r.localToWorld(new V3(x, y, z)), l: r.localToWorld(new V3(0, 5, 0)) }; }   // &peek=8,7,12 looks at the Balrog from there
   }
