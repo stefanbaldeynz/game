@@ -5851,7 +5851,7 @@ function updateMap(dt) {
 
 // --- your own War of the Ring board (models/livingmap.glb and livingmap.json, from Battle for Middle-earth II: see
 //     models/README.md): it replaces the little diorama, each stop moves onto its region, and Gandalf walks over its hills ---
-const STOP_REGION = { bree: 'Amon_Sul', shire: 'The_Shire', riv: 'Rhudaur', moria: 'Redhorn_Pass', weather: 'Amon_Sul', rohan: 'Rohan', mt: 'Minas_Tirith', ungol: 'Minas_Morgul', mordor: 'Mordor', doom: 'Mount_Doom', mirk: 'Mirkwood', helm: 'Helms_Deep', isen: 'Isengard', erebor: 'Erebor', osgil: 'Osgiliath' };
+const STOP_REGION = { shire: 'The_Shire', riv: 'Rhudaur', moria: 'Redhorn_Pass', weather: 'Amon_Sul', rohan: 'Rohan', mt: 'Minas_Tirith', ungol: 'Minas_Morgul', mordor: 'Mordor', doom: 'Mount_Doom', mirk: 'Mirkwood', helm: 'Helms_Deep', isen: 'Isengard', erebor: 'Erebor', osgil: 'Osgiliath' };
 // what's hidden (clouds, smoke and BFME's own markers), what's water, and what's the ground itself (its 20 painted tiles)
 const BOARD_HIDE = /^(.*(cloud|pick|smok|sunray|flash|marker|brdr|rallyflag|hero)|impassable|lm_coast)/i, BOARD_WATER = /ocean|water|sea\b|wtr/i, BOARD_GROUND = /^LM_\d\d(_\d+)?$/;   // (three.js adds _1 when a part shares its name with the node holding it)
 // the tiles' pictures, small, so the map can tell the painted sea (blue) from land where Gandalf may walk
@@ -5905,6 +5905,7 @@ function useBoard(gl, regions) {
   let num = 0, den = 0; A.forEach((a, i) => { num += (a[0] - ma[0]) * (Bp[i][0] - mb[0]) + (a[1] - ma[1]) * (Bp[i][1] - mb[1]); den += (a[0] - ma[0]) ** 2 + (a[1] - ma[1]) ** 2; });
   const k = num / den; pivot.scale.setScalar(k); pivot.position.set(mb[0] - k * ma[0], -k * bb.min.y, mb[1] - k * ma[1]);
   for (const p of pts) { const [x, z] = toM(opt, p.r); p.n.x = pivot.position.x + k * x; p.n.z = pivot.position.z + k * z; }
+  { const by = l => NODES.find(n => n.loc === l), a = by('shire'), b = by('weather'), n = by('bree'); n.x = lerp(a.x, b.x, .5); n.z = lerp(a.z, b.z, .5); }   // (Bree has no region of its own on the board: halfway along the road from the Shire to Weathertop)
   // the ground: every board triangle laid into a height grid (the highest wins); land is wherever the tile on top isn't painted sea
   pivot.updateMatrixWorld(true); const box = new THREE.Box3().setFromObject(pivot), step = .5;
   const W = Math.ceil((box.max.x - box.min.x) / step) + 1, H = Math.ceil((box.max.z - box.min.z) / step) + 1, h = new Float32Array(W * H).fill(-99), wetc = new Uint8Array(W * H);
