@@ -6024,7 +6024,7 @@ const LOCAL_ASSETS = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname
 const TROLL_ANIMS = { idle: /^idle_a/i, walk: /^(walk_a|run_a)/i, attack: /^attack_a/i, hit: /^hurt_a/i, die: /^die_/i };   // (their files also hold dismounting clips whose names would pass for attacks)
 const MODEL_SLOTS = {
   eagle: { height: 5.2, turn: -Math.PI / 2, anims: { fly: /^fly_a/i, idle: /^hvra/i, attack: /^attack_b/i, hit: /^hit/i } }, tentacle: { height: 15, fitMax: true, turn: -Math.PI / 2, hide: /BOX/i, anims: { idle: /^idle_a/i, attack: /^attack_a/i, hit: /^spna/i, die: /^dwna/i } },
-  watcher: { height: 5, turn: -Math.PI / 2, anims: { idle: /^idle_a|^idla/i, attack: /eat/i, hit: /^idle_b|^idlb/i, die: /^dwn|^die/i, jump: /^sp/i } }, caldera: { height: 15, fitMax: true, turn: 0, anims: { idle: /^idle_a|^idla/i, die: /^die/i, jump: /^sp/i } },   // (the Watcher's head in its pool, and the crater it bursts up into)
+  watcher: { height: 5, turn: -Math.PI / 2, hide: /SUPRTNTCL/i, anims: { idle: /^idle_a|^idla/i, attack: /eat/i, hit: /^idle_b|^idlb/i, die: /^dwn|^die/i, jump: /^sp/i } }, caldera: { height: 15, fitMax: true, turn: 0, cut: true, hide: /_\d$/, anims: { idle: /^idle_a|^idla/i, die: /^die/i, jump: /^sp/i } },   // (the Watcher's head in its pool, and the crater it bursts up into)
   // (The Escape: Battle for Middle-earth's great eagle; the Watcher: its tentacle)
   gandalf: { height: 1.75, turn: -Math.PI / 2, saberBone: 'B_SWORDBONE' }, balrog: { height: 11, turn: -Math.PI / 2, glow: .35, sink: .45, fx: 0xff7a30, hide: /swordfire/i }, witchking: { height: 2.9, turn: -Math.PI / 2, saberBone: 'B_SWORD', hide: /^mace/i },
   shelob: { height: 3.2, turn: -Math.PI / 2 }, nazgul: { height: 2.3, turn: -Math.PI / 2 }, orc: { height: 1.45, turn: -Math.PI / 2, hide: /^orc[a-f](?![a-z])/i },   // (its six corpses, all on at once, and their picture never came)
@@ -6055,7 +6055,7 @@ function skinMat(m, cfg, fx) {
   if (fx) out = new THREE.MeshBasicMaterial({ map: m.map, color: cfg.fx ?? 0xffffff, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, side: THREE.DoubleSide, skinning: true });
   else {
     // Battle for Middle-earth keeps its team-colour mask in the alpha, so a body is solid whatever the alpha says
-    out = m.clone(); out.transparent = false; out.alphaTest = 0; out.depthWrite = true;
+    out = m.clone(); out.transparent = false; out.alphaTest = cfg.cut ? .5 : 0; out.depthWrite = true;   // (cut: its alpha really is see-through, as the Watcher's crater rim)
     if (cfg.glow && m.map) { out.emissive = new THREE.Color(0xffffff).multiplyScalar(cfg.glow); out.emissiveMap = m.map; }   // glow: it lights itself, by its own picture
   }
   SKIN_MATS.set(key, out); return out;
