@@ -2535,6 +2535,13 @@ const USTAIR = { FLIGHTS: 6, STEPS: 30, RISE: 7, X: 18, LAND: 23 }, OSG = { TOP:
 const RACE_FORD = 520, RACE_END = 572;
 const ER = { WALK: 12, X0: -46, X1: 46, TOWERS: [-46, -23, 0, 23, 46], TOP: 20 };   // (Erebor's ramparts: the walk's height and ends, its towers, their tops)   // (the race to the Ford: where the river crosses the road, and where the road ends)
 const DOOM_R = 46, EAG_S1 = 760, EAG_END = 1560, EAG_V = 25;
+const ARENA_TRIALS = [
+  { name: 'THE ORC TRIAL', sub: 'ORCS AND ARCHERS · 5 ROUNDS', rounds: [['o', 'o', 'o'], ['o', 'o', 'M', 'o'], ['M', 'M', 'o', 'o', 'o'], ['Q', 'o', 'o', 'M'], ['R', 'o', 'o']] },
+  { name: 'THE TRIAL OF ISENGARD', sub: 'URUK-HAI · 6 ROUNDS · LURTZ', rounds: [['u', 'u', 'o'], ['s', 'u', 'a'], ['p', 'p', 'u'], ['b', 'a', 'a', 'u'], ['j', 'j', 's', 'c'], ['L']] },
+  { name: 'THE TRIAL OF MORDOR', sub: 'THE DARK LORD\'S HOSTS · 6 ROUNDS · A TROLL', rounds: [['o', 'M', 'w'], ['E', 'E', 'H'], ['n', 'w', 'w'], ['Q', 'H', 'E', 'M'], ['R', 'n', 'j', 'E'], ['A']] },
+  { name: 'THE TRIAL OF SHADOWS', sub: 'BLACK RIDERS AND BEASTS · 5 ROUNDS · THE WITCH-KING', rounds: [['n', 'w'], ['n', 'n', 'w', 'w'], ['T'], ['n', 'n', 'n', 'j'], ['W']] },
+  { name: 'THE GAUNTLET', sub: 'EVERYTHING · 10 ROUNDS · THE BALROG', rounds: [['o', 'o', 'o', 'o'], ['u', 'M', 'a'], ['w', 'w', 'n'], ['s', 'p', 'Q'], ['E', 'H', 'j', 'j'], ['b', 'b', 'u', 'a'], ['c', 'R'], ['n', 'n', 'n', 'w'], ['T'], ['B']] },
+];
 const LEVELS = [
   {
     name: 'THE FIRST CIRCLE', sub: 'RIDE OF SHADOWFAX', loc: 'mt', next: 'CLIMB TO THE SECOND CIRCLE', R: 50, Y0: 0, base: -26, wallH: 12, fog: 0x2c1a48, ride: true,
@@ -2689,14 +2696,13 @@ const LEVELS = [
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() {},
   },
-  {
-    // up the hill through Edoras to Meduseld, fighting Uruk-hai the Kingdom Hearts II way: each square has its waves
-    // to beat; Lurtz waits at the top, and then Théoden comes out to you
-    straight: true, roam: true, kh: true, name: 'EDORAS', sub: 'THE GOLDEN HALL', loc: 'rohan', theme: 'edoras', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 20000, CZ: 0, base: -4, wallH: 0,
-    ...edorasLayout(),
+  ...ARENA_TRIALS.map((T, k) => ({
+    // the Colosseum of Rohan, where Edoras stood: pick a trial and fight it round by round (see the Colosseum)
+    straight: true, roam: true, kh: true, camRing: 20.5, name: T.name, sub: T.sub, loc: 'rohan', theme: 'arena', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 20000, CZ: 0, base: -4, wallH: 0, winTitle: T.name.replace('THE ', '') + ' WON!',
+    ...arenaLayout(k),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
-    content() { edorasContent(this); },
-  },
+    content() { arenaContent(); },
+  })),
   {
     // the plain of Gorgoroth on foot, a Kingdom Hearts level: war camps of all Mordor's kinds, the Eye searching the ground, the far gate to reach (see Mordor)
     straight: true, roam: true, kh: true, stepUp: true, camWalls: true, name: 'MORDOR', sub: 'THE EYE IS SEARCHING', loc: 'mordor', theme: 'mordorkh', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 25000, CZ: 0, base: -6, wallH: 0, winTitle: 'YOU HAVE CROSSED GORGOROTH!',
@@ -2759,7 +2765,7 @@ const LEVELS = [
     content() { eagleContent(); },
   },
   {
-    // Bree in the rain: through the lanes to The Prancing Pony, keeping out of sight of the Nazgûl (see Bree)
+    // Bree by starlight: through the lanes to The Prancing Pony, keeping out of sight of the Nazgûl (see Bree)
     straight: true, roam: true, kh: true, name: 'BREE', sub: 'THE NINE IN THE LANES', loc: 'bree', theme: 'bree', camGrid: true, next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 125000, CZ: 0, base: -4, wallH: 0, winTitle: 'SAFE AT THE PRANCING PONY!',
     ...breeLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
@@ -2784,7 +2790,7 @@ const LEVELS = [
   },
   {
     // Helm's Deep's second level: the Deeping Wall blows up, and wave after wave comes through the breach (see DEEP)
-    straight: true, roam: true, kh: true, deeping: true, name: 'THE DEEPING WALL', sub: 'THE BREACH', loc: 'helm', theme: 'deeping', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 95000, CZ: 0, base: -4, wallH: 0, winTitle: 'THE BREACH IS HELD!',
+    straight: true, roam: true, kh: true, deeping: true, horde: true, name: 'THE DEEPING WALL', sub: 'THE BREACH', loc: 'helm', theme: 'deeping', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 95000, CZ: 0, base: -4, wallH: 0, winTitle: 'THE BREACH IS HELD!',
     ...deepLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { deepContent(this); },
@@ -3241,6 +3247,7 @@ function moveV(d, lands, bonks) {
   }
   // a walkway: land on it, and keep to it walking down its ramps
   if (DECK && !P.ground) { const dk = deckAt(P.s, P.x, prevY + .45); if (dk > NO_DECK && d <= 0 && (P.y <= dk || (P.airT < .12 && P.y - dk < .45))) { P.y = dk; P.vy = 0; P.ground = true; P.standOn = TERR_FLOOR; } }
+  if (TERR && P.ground && P.standOn === TERR_FLOOR && DECK) { const tg = terrainAt(P.s, P.x); if (P.y < tg) P.y = tg; }   // (a walkway never takes you under the ground)
   if (TERR && !P.ground) { const tg = terrainAt(P.s, P.x); if (P.y <= tg || (d <= 0 && P.airT < .12 && P.y - tg < .45)) { P.y = tg; if (P.vy <= 0) { P.vy = 0; P.ground = true; P.standOn = TERR_FLOOR; } } }
 }
 const TERR_FLOOR = { kind: 'floor' };
@@ -5346,7 +5353,7 @@ function updateCamera(dt) {
     }
     if (LV.bow && (!LV.bowU || BOW.aim)) {   // (with a bow: from over Gandalf's shoulder, out at the sky; Shift and / turn it, and the sight turns it from the edge of the screen)
       const eX = BOW.aim && Math.abs(BOW.cx) > .7 ? Math.sign(BOW.cx) * (Math.abs(BOW.cx) - .7) * 4 : 0, eY = BOW.aim ? (BOW.cy > .7 ? (BOW.cy - .7) * 3 : BOW.cy < -.4 ? (BOW.cy + .4) * 3 : 0) : -(cam.bp || 0) * .8;
-      cam.by = (cam.by || 0) + ((inp.camT || 0) * 1.5 - eX) * dt; if (!LV.bow360) cam.by = clamp(cam.by, -1.3, 1.3); cam.bp = clamp((cam.bp || 0) + eY * dt, 0, 1); cam.yaw = (LV.bow360 ? 0 : Math.PI) + cam.by;
+      cam.by = (cam.by || 0) + ((inp.camT || 0) * 1.5 + eX) * dt; if (!LV.bow360) cam.by = clamp(cam.by, -1.3, 1.3); cam.bp = clamp((cam.bp || 0) + eY * dt, 0, 1); cam.yaw = (LV.bow360 ? 0 : Math.PI) + cam.by;
       const fs = Math.cos(cam.yaw), fx_ = Math.sin(cam.yaw), bk_ = LV.bowU ? 4 : 6.5; _a.copy(tw(P.s - fs * bk_, P.x - fx_ * bk_, P.y + 3.2)); _b.copy(tw(P.s + fs * 30, P.x + fx_ * 30, P.y + 7 + cam.bp * 32));
       if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-8 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp);
       const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
@@ -5443,7 +5450,7 @@ function updateHUD(dt) {
     bb.style.display = duel.wk.state === 'intro' ? 'none' : 'flex'; document.getElementById('bossfill').style.width = duel.wk.hp + '%';
     const ne = document.getElementById('bossName'); if (ne.textContent !== 'THE WITCH-KING') ne.textContent = 'THE WITCH-KING';
   }
-  const nz = document.getElementById('hNaz'), showN = !!(LV && (LV.nazgul || LV.race || LV.flyers)) && state !== 'title' && state !== 'map'; nz.style.display = showN ? '' : 'none'; if (showN) { document.getElementById('nNaz').textContent = LV.flyers ? FLY.left : LV.race ? RACE.left : NAZ.left; document.getElementById('lNaz').textContent = LV.hunt === 'spider' ? 'SPIDERS' : 'NAZGÛL'; }
+  const nz = document.getElementById('hNaz'), showN = !!(LV && (LV.nazgul || LV.race || LV.flyers || (LV.horde && LV.hordeLeft !== undefined))) && state !== 'title' && state !== 'map'; nz.style.display = showN ? '' : 'none'; if (showN) { document.getElementById('nNaz').textContent = LV.horde ? LV.hordeLeft : LV.flyers ? FLY.left : LV.race ? RACE.left : NAZ.left; document.getElementById('lNaz').textContent = LV.horde ? 'THE HORDE' : LV.hunt === 'spider' ? 'SPIDERS' : 'NAZGÛL'; }
   const fe = document.getElementById('hFel'), showF = !!(LV && LV.layout && LV.layout.fellowship) && state !== 'title' && state !== 'map'; fe.style.display = showF ? '' : 'none'; if (showF) document.getElementById('nFel').textContent = FEL.found + '/' + FEL.total;
   document.getElementById('nLives').textContent = Math.max(0, gs.lives);
 }
@@ -5679,7 +5686,7 @@ const NODES = [
   { name: 'THE SHIRE', x: -50, z: -2.5, open: true, loc: 'shire', sub: 'OPEN COUNTRY · DEFEAT THE NINE NAZGÛL' },
   { name: 'RIVENDELL', x: -20, z: -23.5, open: true, loc: 'riv', sub: 'MOONLIT PEAKS · FIND THE FELLOWSHIP' },
   { name: 'MORIA', x: -14.5, z: -3.5, open: true, loc: 'moria', sub: "THE WATCHER · THE MINES · BALIN'S CHAMBER · THE BRIDGE · THE FALL" },
-  { name: 'EDORAS', x: 10, z: 16.8, open: true, loc: 'rohan', sub: 'TO THE GOLDEN HALL · URUK-HAI' },
+  { name: 'THE COLOSSEUM', x: 10, z: 16.8, open: true, loc: 'rohan', sub: 'CHOOSE YOUR TRIAL · 5 TRIALS' },
   { name: 'MINAS TIRITH', x: 42.2, z: 21, open: true, loc: 'mt', sub: 'THE SIEGE OF GONDOR · 3 LEVELS' },
   { name: 'CIRITH UNGOL', x: 50.5, z: 10, open: true, loc: 'ungol', sub: "THE PASS · THE STAIRS · 2 LEVELS" },
   { name: 'MORDOR', x: 57, z: -3, open: true, loc: 'mordor', sub: 'ACROSS GORGOROTH · AVOID THE EYE' },
@@ -5690,7 +5697,7 @@ const NODES = [
   { name: "HELM'S DEEP", x: -14.6, z: 15.8, open: true, loc: 'helm', sub: 'DOWN THE RAMP · BALROG BOSS' },
   { name: 'EREBOR', x: 24, z: -34, open: true, loc: 'erebor', sub: 'THE LONELY MOUNTAIN · SMAUG · 2 LEVELS' },
   { name: 'OSGILIATH', x: 47.5, z: 19.5, open: true, loc: 'osgil', sub: 'THE RUINED CITY · SHOOT DOWN THE NINE' },
-  { name: 'BREE', x: -40, z: -6.5, open: true, loc: 'bree', sub: 'A WALLED TOWN IN THE RAIN · AVOID THE NINE' },
+  { name: 'BREE', x: -40, z: -6.5, open: true, loc: 'bree', sub: 'A MAZE OF LANES BY NIGHT · AVOID THE NINE' },
 ];
 const ROAD = (() => {
   const way = [NODES[0], [-40, -6], [-30, -17], NODES[1], [-18.5, -13], NODES[2], [-5, 3], [1, 11], NODES[3], [21, 17], [31, 14.5], [40, 15.5], NODES[4], [46, 14.5], NODES[5], [54, 3], NODES[6], [62, 0], [65, 6], NODES[7]];
@@ -5962,7 +5969,7 @@ function step(dt, noRender) {
   else if (state === 'win') updateWin(dt);
   if (state !== 'paused') {
     if (state !== 'title' && state !== 'map' && state !== 'gameover' && state !== 'complete') {
-      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateRace(dt); updateFly(dt); updateFellowship(dt); updateHobbiton(dt); updateMordorKH(dt); updateDoom(dt); updateEagleLv(dt); updateBree(dt); updateWatcher(dt); updateRivKH(dt); updatePrimeval(dt); updateDuel(dt); updateSprings(dt); updateKH(gdt);
+      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateRace(dt); updateFly(dt); updateFellowship(dt); updateHobbiton(dt); updateMordorKH(dt); updateDoom(dt); updateEagleLv(dt); updateBree(dt); updateWatcher(dt); updateRivKH(dt); updatePrimeval(dt); updateArena(dt); updateDuel(dt); updateSprings(dt); updateKH(gdt);
     }
     updateDragons(dt); updateApples(); updatePhial(dt); updateLightning(dt); updateAmbient(dt); updateTree(dt);
     fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt); poseDuelGandalf(dt);
@@ -6020,7 +6027,7 @@ const MODEL_SLOTS = {
   shelob: { height: 3.2, turn: -Math.PI / 2 }, nazgul: { height: 2.3, turn: -Math.PI / 2 }, orc: { height: 1.45, turn: -Math.PI / 2, hide: /^orc[a-f](?![a-z])/i },   // (its six corpses, all on at once, and their picture never came)
   frodo: { height: 1.15, turn: -Math.PI / 2 }, sam: { height: 1.15, turn: -Math.PI / 2 }, merry: { height: 1.2, turn: -Math.PI / 2 }, pippin: { height: 1.2, turn: -Math.PI / 2 },
   aragorn: { height: 1.95, turn: -Math.PI / 2 }, legolas: { height: 1.9, turn: -Math.PI / 2 }, gimli: { height: 1.35, turn: -Math.PI / 2 }, boromir: { height: 1.95, turn: -Math.PI / 2 },
-  fellbeast: { height: 7.5, turn: -Math.PI / 2 }, horse: { height: 2.5, turn: -Math.PI / 2, hide: /gandalf/i, anims: { walk: /^run_a/i, jump: /^fly/i } },
+  fellbeast: { height: 7.5, turn: -Math.PI / 2, hide: /^(FELL_BEAST|WINGS)\d/i }, horse: { height: 2.5, turn: -Math.PI / 2, hide: /gandalf/i, anims: { walk: /^run_a/i, jump: /^fly/i } },
   sauron: { height: 20, turn: -Math.PI / 2 },   // in his own units: the game builds Sauron at .28 scale (about 5.6 tall)
   spider: { height: 1.6, turn: -Math.PI / 2, src: 'shelob' },
   troll: { height: 5.8, turn: -Math.PI / 2, hide: /^BOX|FORGED_BLADE/i },   // (Balin's Chamber: Rise of the Witch-king's hill troll)
@@ -7911,7 +7918,7 @@ THEMES.eaglelv = natTheme({
 //     one after another and each must be cut down: they slam along a red line (and lie there a moment: strike), sweep round a red fan, or burst up under you on a red circle. When all are
 //     down the Watcher itself rears up to the shore: strike it while you can. Then it sinks, and more tentacles come. Beat it and the Doors open.
 function watcherLayout() {
-  const bases = [[5.8, -13], [5.8, -3], [5.8, 8], [5.8, -8], [5.8, 3], [5.8, 13]];
+  const bases = [[6.6, -9], [6.6, -3], [6.6, 3], [6.6, 9], [7.4, -14.5], [7.4, 14.5]];
   return { field: [-18, 5.2, -21, 21], start: [-15, 0], layout: { blocks: [[-6, -4.4, -18.5, -16.5, 1.3, 'wall', -1], [-14, -12, 17, 19.5, 1.7, 'wall', -1]], bases, door: [-3, -20.6], plazas: [{ s: -6, x: 0, y: 0, r: 13, waves: [['V']], title: 'THE WATCHER IN THE WATER!', boss: true, last: true, breach: [8, 0], bossHp: 1000, noAdds: true }] } };
 }
 function watcherContent() { for (const [k, s, x] of [['q', -13, 7], ['su', -13, -7], ['b', -9, 14], ['q', -9, -14]]) addCrate(k, s, x, 0, 4); }
@@ -7926,63 +7933,69 @@ function tnDraw(u) {
   M.root.visible = own && !u.sunk; if (own) { place(M.root, b[0], b[1], yw - .5, Math.atan2(u.tgtX - b[1], u.tgtS - b[0])); }
   for (let k = 0; k <= N; k++) { const t = k / N, a = 1 - t, s = a * a * b[0] + 2 * a * t * c[0] + t * t * tip[0], x = a * a * b[1] + 2 * a * t * c[1] + t * t * tip[1], y = a * a * yw + 2 * a * t * c[2] + t * t * tip[2], q = tw(s, x, y); if (prev && !own) { const m = M.segs[k - 1], d = q.clone().sub(prev), L_ = d.length(); m.visible = !u.sunk; m.position.copy(prev).addScaledVector(d, .5); m.scale.set(1, L_ * 1.1, 1); m.quaternion.setFromUnitVectors(UPV, d.normalize()); } else if (prev) M.segs[k - 1].visible = false; prev = q.clone ? q.clone() : q; }
 }
+// the Watcher, fought like a many-headed beast: it stays risen in the lake, out of reach, and fights with its great tentacles. Strike a tentacle when it comes down to the shore until it
+// falls limp across the stones: then STRIKE THE EYE (the reaction command) and the blow runs up it into the Watcher. A cut tentacle sinks and grows back. Hurt, it grows more of them and
+// spits; badly hurt, it heaves itself up onto the shore with its maw open, and can be struck there too.
 function spawnTentacle(body, base, hp, delay) {
-  const pl = body.plaza, u = { m: makeTentacle(), boss: true, kind: 'V', name: 'TENTACLE', parent: body, base, hp, max: hp, r: 1.1, tall: 8, plaza: pl, flash: 0, rev: 0, phase: 1, a: null, state: 'rise', t: -delay, s: base[0] - .6, x: base[1], y: 0, h: Math.PI, cd: rand(.8, 2.2), rootY: -3, tip: [base[0], base[1], -3], arch: 2, tgtS: 0, tgtX: 0, sway: rand(0, 6), upd: tnUpdate, hitFn: tnHit, reactFn: () => null };
-  URUKS.push(u); body.arms.push(u); return u;
+  const pl = body.plaza, u = { m: makeTentacle(), boss: true, kind: 'V', name: 'TENTACLE', parent: body, base, hp, max: hp, r: 1.2, tall: 8, plaza: pl, flash: 0, rev: 0, phase: 1, a: null, state: 'rise', t: -delay, s: base[0] - .6, x: base[1], y: 0, h: Math.PI, cd: rand(.8, 2.2), rootY: -3, tip: [base[0], base[1], -3], arch: 2, tgtS: 0, tgtX: 0, sway: rand(0, 6), upd: tnUpdate, hitFn: tnHit,
+    reactFn: (q, d) => q.state === 'limp' && d < 7.5 ? 'eye' : null, reaction: () => { const B = u.parent; wtHit(B, B.max * .14, true, false, true); u.state = 'cut'; u.t = 0; u.used = true; } };
+  if (u.m.skin && u.m.skin.obj) u.m.root.scale.setScalar(1.25); URUKS.push(u); body.arms.push(u); return u;
 }
 function tnHit(u, dmg, fin) {
-  if (!ukLive(u) || u.state === 'rise' || u.state === 'cut') return; if (u.state === 'stuck') dmg *= 1.6; if (KH.form > 0) dmg *= 1.4;
-  u.hp -= dmg; u.flash = .1; KH.drive = Math.min(100, KH.drive + 2); KH.hitstop = Math.max(KH.hitstop, fin ? .07 : .035); cam.shake = Math.max(cam.shake, fin ? .25 : .1); sparks(tw(u.s, u.x, 1.4), fin ? 18 : 9, 5, [.8, 1, .8], [.2, .5, .3]); S.saberHit();
-  const B = u.parent; if (B.hp > B.max * .5) B.hp = Math.max(B.max * .5, B.hp - dmg * .92);
-  if (u.hp <= 0) { u.hp = 0; u.dead = true; if (u.a) u.a.fx.forEach(f => f.dead = true); u.state = 'cut'; u.t = 0; S.roar(); cam.shake = .5; const left = B.arms.filter(q => ukLive(q)).length; banner(left ? `CUT DOWN! ${left} LEFT` : 'ALL CUT DOWN!', 1.2); gs.kills++; }
+  if (!ukLive(u) || u.state === 'rise' || u.state === 'cut' || u.state === 'limp') return; if (u.state === 'stuck') dmg *= 1.5; if (KH.form > 0) dmg *= 1.4;
+  u.hp -= dmg; u.flash = .1; KH.target = u; KH.targetT = 3; KH.drive = Math.min(100, KH.drive + 2); KH.hitstop = Math.max(KH.hitstop, fin ? .07 : .035); cam.shake = Math.max(cam.shake, fin ? .25 : .1); sparks(tw(u.s, u.x, 1.4), fin ? 18 : 9, 5, [.8, 1, .8], [.2, .5, .3]); S.saberHit();
+  if (u.hp <= 0) { u.hp = 0; if (u.a) u.a.fx.forEach(f => f.dead = true); u.a = null; u.state = 'limp'; u.t = 0; const ang = Math.atan2(P.x - u.base[1], P.s - u.base[0]); u.tipFix = [u.base[0] + Math.cos(ang) * 12, u.base[1] + Math.sin(ang) * 12, .35]; u.s = lerp(u.base[0], u.tipFix[0], .5); u.x = lerp(u.base[1], u.tipFix[1], .5); S.roar(); cam.shake = .5; banner('IT FALLS LIMP! STRIKE THE EYE!', 1.6); }
 }
 function tnUpdate(u, dt) {
   u.t += dt; if (u.t < 0) return; const B = u.parent, [bs, bx] = u.base, ds = P.s - bs, dx = P.x - bx, d = Math.hypot(ds, dx) || .01, toP = Math.atan2(dx, ds), live = state === 'play', A = u.a; u.tgtS = P.s; u.tgtX = P.x;
-  const rest = () => [bs - 1 + Math.cos(T * .9 + u.sway) * 1.3, bx + Math.sin(T * .7 + u.sway) * 1.6, 7.2 + Math.sin(T * 1.2 + u.sway) * .9]; let want = null, k = 8, walk = 'idle';
+  const rest = () => [bs - 1 + Math.cos(T * .9 + u.sway) * 1.3, bx + Math.sin(T * .7 + u.sway) * 1.6, 7.6 + Math.sin(T * 1.2 + u.sway) * 1.1]; let want = null, k = 8;
   switch (u.state) {
     case 'rise': want = rest(); k = 2.4; u.rootY = -.6; if (u.t < .05) { S.orcGrunt(); for (let q = 0; q < 16; q++) puff(tw(bs + rand(-1.4, 1.4), bx + rand(-1.4, 1.4), .1), 1, .6, [.5, .6, .7]); } if (u.t > 1.2) { u.state = 'idle'; u.t = 0; } break;
-    case 'idle': { want = rest(); u.s = damp(u.s, bs - .8, 4, dt); u.x = damp(u.x, bx, 4, dt); u.cd -= dt; const busy = B.arms.filter(q => ukLive(q) && q.a).length; if (!live || u.cd > 0 || busy >= (B.phase > 1 ? 3 : 2) || d > 19) break;
-      const r = Math.random(), type = d < 7 ? (r < .5 ? 'sweep' : 'slam') : d < 13 ? (r < .6 ? 'slam' : 'grab') : 'grab'; u.a = { type, t: 0, fx: [], at: toP, gs: P.s, gx: P.x, ph: 0 }; u.state = 'atk'; u.t = 0; S.orcGrunt();
+    case 'idle': { want = rest(); u.s = damp(u.s, bs - .8, 4, dt); u.x = damp(u.x, bx, 4, dt); u.cd -= dt; const busy = B.arms.filter(q => ukLive(q) && q.a).length; if (!live || u.cd > 0 || busy >= (B.phase > 1 ? 3 : 2) || d > 20 || B.state === 'lunge') break;
+      const r = Math.random(), type = d < 7 ? (r < .5 ? 'sweep' : 'slam') : d < 13 ? (r < .65 ? 'slam' : 'grab') : 'grab'; u.a = { type, t: 0, fx: [], at: toP, gs: P.s, gx: P.x, ph: 0 }; u.state = 'atk'; u.t = 0; S.orcGrunt();
       const mk = mm => u.a.fx.push(khFx(mm, f => { warnPulse(f); return true; }));
       if (type === 'slam') mk(warnMesh(bs, bx, 1, 14, toP - .1, toP + .1)); if (type === 'sweep') mk(warnMesh(bs, bx, 1, 9, toP - 1, toP + 1)); if (type === 'grab') mk(warnMesh(P.s, P.x, 0, 2.3)); break; }
     case 'atk': { A.t += dt; const dur = A.type === 'grab' ? .95 : A.type === 'sweep' ? .85 : .8;
       if (A.ph === 0) { want = A.type === 'grab' ? [bs - .4, bx, -3] : [bs + Math.cos(A.at) * 2.5, bx + Math.sin(A.at) * 2.5, 10.5]; k = 5; if (A.t > dur) { A.ph = 1; A.t = 0; A.fx.forEach(f => f.dead = true); }
-      } else if (A.type === 'slam') { const ts = bs + Math.cos(A.at) * 14, tx = bx + Math.sin(A.at) * 14; want = [ts, tx, .35]; k = 26; u.arch = .9; if (!A.hit && A.t > .12) { A.hit = true; S.smash(); cam.shake = .6; for (let q = 0; q < 8; q++) dustAt(lerp(bs, ts, q / 8), lerp(bx, tx, q / 8), 0, 3); const qx = (P.s - bs) * -Math.sin(A.at) + (P.x - bx) * Math.cos(A.at), al = (P.s - bs) * Math.cos(A.at) + (P.x - bx) * Math.sin(A.at); if (Math.abs(qx) < 1.5 && al > 0 && al < 14.5 && P.y < 1.2) khHurt(16, { s: bs, x: bx }, { kb: 8 }); u.state = 'stuck'; u.t = 0; u.a = null; A.fx.forEach(f => f.dead = true); u.slam = [ts, tx]; u.s = lerp(bs, ts, .55); u.x = lerp(bx, tx, .55); u.tipFix = [ts, tx, .35]; }
+      } else if (A.type === 'slam') { const ts = bs + Math.cos(A.at) * 14, tx = bx + Math.sin(A.at) * 14; want = [ts, tx, .35]; k = 26; if (!A.hit && A.t > .12) { A.hit = true; S.smash(); cam.shake = .6; for (let q = 0; q < 8; q++) dustAt(lerp(bs, ts, q / 8), lerp(bx, tx, q / 8), 0, 3); const qx = (P.s - bs) * -Math.sin(A.at) + (P.x - bx) * Math.cos(A.at), al = (P.s - bs) * Math.cos(A.at) + (P.x - bx) * Math.sin(A.at); if (Math.abs(qx) < 1.5 && al > 0 && al < 14.5 && P.y < 1.2) khHurt(16, { s: bs, x: bx }, { kb: 8 }); u.state = 'stuck'; u.t = 0; u.a = null; u.s = lerp(bs, ts, .55); u.x = lerp(bx, tx, .55); u.tipFix = [ts, tx, .35]; }
       } else if (A.type === 'sweep') { const a = A.at + lerp(1, -1, Math.min(1, A.t / .35)); want = [bs + Math.cos(a) * 9, bx + Math.sin(a) * 9, 1.1]; k = 30; if (!A.hit && A.t > .1) { A.hit = true; S.whoosh(); cam.shake = .3; if (d < 9.3 && Math.abs(angDiff(toP, A.at)) < 1.05 && P.y < 1.6) khHurt(13, { s: bs, x: bx }, { kb: 10 }); } if (A.t > .55) { u.state = 'idle'; u.t = 0; u.cd = rand(1, 2.2); u.a = null; }
-      } else { want = [A.gs, A.gx, 4]; k = 20; u.bendS = (A.gs - bs) * .1; if (!A.hit && A.t > .1) { A.hit = true; S.smash(); for (let q = 0; q < 10; q++) dustAt(A.gs + rand(-1, 1), A.gx + rand(-1, 1), 0, 2); u.s = lerp(bs, A.gs, .85); u.x = lerp(bx, A.gx, .85); if (Math.hypot(P.s - A.gs, P.x - A.gx) < 2.4 && P.y < 2) khHurt(14, { s: A.gs, x: A.gx }, { unblock: true, kb: 5 }); } if (A.t > .8) { u.state = 'idle'; u.t = 0; u.cd = rand(1, 2.2); u.a = null; } }
+      } else { want = [A.gs, A.gx, 4]; k = 20; if (!A.hit && A.t > .1) { A.hit = true; S.smash(); for (let q = 0; q < 10; q++) dustAt(A.gs + rand(-1, 1), A.gx + rand(-1, 1), 0, 2); u.s = lerp(bs, A.gs, .85); u.x = lerp(bx, A.gx, .85); if (Math.hypot(P.s - A.gs, P.x - A.gx) < 2.4 && P.y < 2) khHurt(14, { s: A.gs, x: A.gx }, { unblock: true, kb: 5 }); } if (A.t > .8) { u.state = 'idle'; u.t = 0; u.cd = rand(1, 2.2); u.a = null; } }
       break; }
-    case 'stuck': want = u.tipFix; k = 30; u.arch = .9; if (u.t > 2.3) { u.state = 'idle'; u.t = 0; u.cd = rand(.8, 1.8); u.arch = 2; } break;
-    case 'cut': want = [u.tip[0], u.tip[1], -4]; k = 1.6; u.rootY = -.6 - u.t * 2; if (u.t > 1.6) { u.sunk = true; tnDraw(u); for (const m of u.m.segs) { scene.remove(m); } khRemove(u); return; } break;
+    case 'stuck': want = u.tipFix; k = 30; if (u.t > 2.4) { u.state = 'idle'; u.t = 0; u.cd = rand(.8, 1.8); } break;
+    case 'limp': want = u.tipFix; k = 6; if (u.t > 6.5) { u.state = 'cut'; u.t = 0; } break;   // (no strike: it sinks, and grows back all the same)
+    case 'cut': want = [u.tip[0], u.tip[1], -4]; k = 1.6; u.rootY = -.6 - u.t * 2; if (u.t > 1.6) { u.state = 'gone'; u.t = 0; u.sunk = true; tnDraw(u); } break;
+    case 'gone': if (B.dead) { for (const m of u.m.segs) scene.remove(m); khRemove(u); return; } if (u.t > (B.phase > 2 ? 3 : 4.5)) { u.sunk = false; u.state = 'rise'; u.t = 0; u.max = Math.round(u.max * 1.08); u.hp = u.max; u.rootY = -3; u.tip = [bs, bx, -3]; banner('IT GROWS BACK!', 1); } break;
   }
-  u.arch = damp(u.arch, u.state === 'stuck' ? .9 : 3, 3, dt); if (want) for (let q = 0; q < 3; q++) u.tip[q] = damp(u.tip[q], want[q], k, dt);
-  for (const m of u.m.segs) if (m.material.emissive) m.material.emissive.setHex(0x040a06); tnDraw(u); skinPlay(u.m, u.state === 'cut' ? 'die' : u.state === 'stuck' || u.state === 'atk' ? 'attack' : 'idle');
+  u.arch = damp(u.arch, u.state === 'stuck' || u.state === 'limp' ? .9 : 3, 3, dt); if (want) for (let q = 0; q < 3; q++) u.tip[q] = damp(u.tip[q], want[q], k, dt);
+  tnDraw(u); skinPlay(u.m, u.state === 'cut' || u.state === 'limp' ? 'die' : u.state === 'stuck' || u.state === 'atk' ? 'attack' : 'idle');
 }
 function spawnWatcher(pl, delay = 0) {
-  const root = new THREE.Group(), SK = lam(0x24322a, { emissive: 0x040806 }), head = new THREE.Group(); root.add(head); part(new THREE.SphereGeometry(1, 20, 14), SK, head, 0, 2.4, 0, 3.6, 3.2, 3); const eyes = []; for (const [x, y, z, r] of [[-1.5, 3.4, -2.3, .42], [1.5, 3.4, -2.3, .42], [-.6, 4, -2.3, .26], [.6, 4, -2.3, .26], [-2.3, 2.7, -1.9, .22], [2.3, 2.7, -1.9, .22]]) eyes.push(part(GEO.sph, bas(0xd8ff60), head, x, y, z, r, r, r)); const maw = part(new THREE.SphereGeometry(1, 16, 10), bas(0x1a0505), head, 0, 1.7, -2.5, 1.9, 1, .7); for (let k = 0; k < 11; k++) { const a = (k / 10 - .5) * 2.4, t = part(GEO.cone, lam(0xd8d0b0), head, Math.sin(a) * 1.7, 2.45 - Math.abs(Math.sin(a)) * .35, -2.9 + Math.abs(a) * .2, .1, .46, .1); t.rotation.x = Math.PI; }
+  const root = new THREE.Group(), SK = lam(0x24322a, { emissive: 0x040806 }), head = new THREE.Group(); root.add(head); part(new THREE.SphereGeometry(1, 20, 14), SK, head, 0, 2.4, 0, 4.6, 4, 3.8); const eyes = []; for (const [x, y, z, r] of [[-1.9, 4.3, -3.1, .62], [1.9, 4.3, -3.1, .62], [-.8, 5.1, -3.2, .34], [.8, 5.1, -3.2, .34], [-3, 3.3, -2.5, .28], [3, 3.3, -2.5, .28]]) eyes.push(part(GEO.sph, bas(0xd8ff60), head, x, y, z, r, r, r)); const maw = part(new THREE.SphereGeometry(1, 16, 10), bas(0x1a0505), head, 0, 1.9, -3.3, 2.4, 1.3, .9); for (let k = 0; k < 13; k++) { const a = (k / 12 - .5) * 2.4, t = part(GEO.cone, lam(0xd8d0b0), head, Math.sin(a) * 2.2, 2.8 - Math.abs(Math.sin(a)) * .45, -3.8 + Math.abs(a) * .25, .13, .6, .13); t.rotation.x = Math.PI; }
   const shadow = new THREE.Group(); scene.add(root); root.visible = false;
-  const b = { m: { root, head, shadow, extra: [] }, boss: true, kind: 'V', name: 'THE WATCHER', hp: pl.bossHp, max: pl.bossHp, bars: 4, r: 3.4, tall: 6, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null, state: 'below', t: -delay, s: 9, x: 0, y: -7, h: 0, cd: 1, arms: [], wave: 0, eyes, upd: wtUpdate, hitFn: wtHit, reactFn: () => null };
+  const b = { m: { root, head, shadow, extra: [] }, boss: true, kind: 'V', name: 'THE WATCHER', hp: pl.bossHp, max: pl.bossHp, bars: 4, r: 3.6, tall: 7, plaza: pl, stag: 0, flash: 0, rev: 0, phase: 1, a: null, state: 'rise', t: -delay, s: 14, x: 0, y: -9, h: 0, cd: 2, arms: [], eyes, upd: wtUpdate, hitFn: wtHit, reactFn: () => null, lungeT: 9 };
   URUKS.push(b); KH.boss = b; Music.mode = 1; return b;
 }
-function wtHit(b, dmg, fin) {
-  if (!ukLive(b)) return; if (b.state !== 'open') { if (b.state === 'dive' || b.state === 'rise') return; return; } if (KH.form > 0) dmg *= 1.4;
-  b.hp -= dmg * 1.1; b.flash = .1; KH.target = b; KH.targetT = 6; KH.drive = Math.min(100, KH.drive + 2); KH.hitstop = Math.max(KH.hitstop, fin ? .08 : .04); cam.shake = Math.max(cam.shake, fin ? .3 : .12); sparks(tw(b.s - 2.6, b.x, 2.4), fin ? 26 : 12, 7, [.8, 1, .7], [.3, .6, .3]); S.saberHit();
+function wtHit(b, dmg, fin, air, eye) {
+  if (!ukLive(b)) return; if (!eye && b.state !== 'lunge') { if (fin) { S.clash(); sparks(tw(b.s - 3, b.x, 2), 6, 3, [.8, 1, .8], [.3, .5, .3]); } return; }   // (out in the lake it can't be reached: strike the tentacles)
+  if (KH.form > 0) dmg *= 1.3;
+  b.hp -= dmg; b.flash = .12; KH.target = b; KH.targetT = 6; KH.drive = Math.min(100, KH.drive + (eye ? 12 : 2)); KH.hitstop = Math.max(KH.hitstop, eye ? .25 : fin ? .08 : .04); cam.shake = Math.max(cam.shake, eye ? .9 : fin ? .3 : .12); S.saberHit();
+  if (eye) { const p0 = tw(P.s, P.x, P.y + 1.4), p1 = tw(b.s - 3.2, b.x, b.y + 4.3); for (let k = 0; k <= 14; k++) sparks(p0.clone().lerp(p1, k / 14), 3, 3, [1, 1, 1], [.7, .9, 1]); sparks(p1, 70, 12, [1, 1, .9], [.8, 1, .5], .35); flashV = Math.max(flashV, .55); S.roar(); banner('THE EYE!', 1.2); }
+  else sparks(tw(b.s - 2.8, b.x, 2.4), fin ? 26 : 12, 7, [.8, 1, .7], [.3, .6, .3]);
+  if (b.phase === 1 && b.hp < b.max * .62) { b.phase = 2; banner('IT GROWS MORE ARMS!', 1.8); S.roar(); LV.layout.bases.slice(4).forEach((q, i) => spawnTentacle(b, q, 75, i * .6)); }
+  if (b.phase === 2 && b.hp < b.max * .28) { b.phase = 3; banner('IT DRAGS ITSELF ONTO THE SHORE!', 1.8); S.roar(); b.lungeT = 1.5; }
   if (b.hp <= 0) { b.hp = 0; b.dead = true; b.state = 'fall'; b.t = 0; KH.react = null; banner('THE WATCHER SINKS!', 2.6); S.roar(); cam.shake = 1; flashV = Math.max(flashV, .4); Music.mode = 0; for (const u of URUKS) if (u.parent === b && ukLive(u)) { u.dead = true; u.state = 'cut'; u.t = 0; } }
 }
 function wtUpdate(b, dt) {
-  b.t += dt; if (b.t < 0) return; const m = b.m, live = state === 'play', B = LV.layout.bases, armsUp = b.arms.filter(u => ukLive(u)).length;
+  b.t += dt; if (b.t < 0) return; const m = b.m, live = state === 'play', B = LV.layout.bases;
   switch (b.state) {
-    case 'below':
-      if (b.wave === 0) { if (b.t > .4) { b.wave = 1; banner(b.round ? 'MORE OF THEM!' : 'CUT DOWN EVERY TENTACLE!', 2); const list = b.round ? [B[(b.round * 2) % 6], B[(b.round * 2 + 2) % 6], B[(b.round * 2 + 4) % 6]] : B.slice(0, 3); list.forEach((q, i) => spawnTentacle(b, q, b.round ? 34 : 60, i * .5)); } break; }
-      if (b.wave === 1 && !b.round && armsUp <= 1) { b.wave = 2; b.phase = 2; banner('THERE ARE MORE!', 1.6); S.roar(); B.slice(3).forEach((q, i) => spawnTentacle(b, q, 60, i * .6)); }
-      if (b.wave >= 1 && armsUp === 0 && (b.round || b.wave === 2)) { b.state = 'rise'; b.t = 0; m.root.visible = true; banner('THE WATCHER RISES! STRIKE IT!', 2.2); S.roar(); cam.shake = 1; } break;
-    case 'rise': { const k = Math.min(1, b.t / 1.5); b.s = lerp(12, 8.4, k); b.y = lerp(-7, -.8, k); for (let q = 0; q < 4; q++) puff(tw(b.s + rand(-3, 3), b.x + rand(-3.5, 3.5), .1), 1, .7, [.5, .6, .7]); if (k >= 1) { b.state = 'open'; b.t = 0; b.cd = .9; } break; }
-    case 'open': b.y = -.8 + Math.sin(T * 2) * .12; b.h = -clamp(Math.atan2(P.x - b.x, b.s - P.s), -.5, .5); b.cd -= dt;
-      if (live && b.cd <= 0) { b.cd = 1.7; const s = P.s + P.vs * .5, x = P.x + P.vx * .5, RR = 2.1, blob = glowSprite(0xa0ff70, 2.4, .9), p0 = tw(b.s - 2.5, b.x, 2.6), p1 = tw(s, x, .3); scene.add(blob); S.whoosh(); khFx(warnMesh(s, x, 0, RR, 0, TAU, 0x60ff40), f => { warnPulse(f); const k = Math.min(1, f.t / 1); blob.position.lerpVectors(p0, p1, k); blob.position.y += Math.sin(k * Math.PI) * 4; if (k < 1) return true; scene.remove(blob); puff(p1, 14, 1.4, [.4, .7, .4]); S.smash(); if (Math.hypot(P.s - s, P.x - x) < RR && P.y < 2) khHurt(12, { s, x }, { unblock: true, kb: 6 }); return false; }); }
-      if (b.t > 9) { b.state = 'dive'; b.t = 0; banner('IT SINKS AGAIN!', 1.4); } break;
-    case 'dive': { const k = Math.min(1, b.t / 1.2); b.y = lerp(-.8, -8, k); b.s = lerp(8.4, 12, k); if (k >= 1) { b.state = 'below'; b.t = 0; b.wave = 0; b.round = (b.round || 0) + 1; m.root.visible = false; } break; }
+    case 'rise': { if (b.t < .05) { m.root.visible = true; banner('THE WATCHER IN THE WATER!', 2); S.roar(); cam.shake = 1; } const k = Math.min(1, b.t / 2.2); b.y = lerp(-9, -1.6, k); for (let q = 0; q < 3; q++) puff(tw(b.s + rand(-4, 4), b.x + rand(-4.5, 4.5), .1), 1, .7, [.5, .6, .7]); if (k >= 1) { b.state = 'watch'; b.t = 0; banner('STRIKE ITS ARMS WHEN THEY COME DOWN!', 2.2); B.slice(0, 4).forEach((q, i) => spawnTentacle(b, q, 70, i * .45)); } break; }
+    case 'watch': b.y = -1.6 + Math.sin(T * 1.6) * .18; b.h = -clamp(Math.atan2(P.x - b.x, b.s - P.s), -.4, .4) * .5; b.cd -= dt;
+      if (live && b.phase > 1 && b.cd <= 0) { b.cd = b.phase > 2 ? 2.2 : 3.2; const s = P.s + P.vs * .5, x = P.x + P.vx * .5, RR = 2.1, blob = glowSprite(0xa0ff70, 2.6, .9), p0 = tw(b.s - 3, b.x, b.y + 2.6), p1 = tw(s, x, .3); scene.add(blob); S.whoosh(); khFx(warnMesh(s, x, 0, RR, 0, TAU, 0x60ff40), f => { warnPulse(f); const kk = Math.min(1, f.t / 1); blob.position.lerpVectors(p0, p1, kk); blob.position.y += Math.sin(kk * Math.PI) * 5; if (kk < 1) return true; scene.remove(blob); puff(p1, 14, 1.4, [.4, .7, .4]); S.smash(); if (Math.hypot(P.s - s, P.x - x) < RR && P.y < 2) khHurt(12, { s, x }, { unblock: true, kb: 6 }); return false; }); }
+      if (b.phase > 2 && live && (b.lungeT -= dt) <= 0) { b.state = 'lunge'; b.t = 0; S.roar(); banner('IT LUNGES! STRIKE IT!', 1.4); cam.shake = .8; } break;
+    case 'lunge': { const k = b.t < 1 ? b.t : b.t > 6.4 ? Math.max(0, 7.4 - b.t) : 1; b.s = lerp(14, 8.6, k); b.y = lerp(-1.6, -.4, k); if (b.t > 1 && b.t < 1.05 && Math.abs(P.x - b.x) < 5 && P.s > 1) khHurt(18, { s: b.s, x: b.x }, { unblock: true, kb: 12 }); if (b.t > 7.4) { b.state = 'watch'; b.t = 0; b.lungeT = 11; b.s = 14; } break; }
     case 'fall': b.y -= dt * 2.6; for (let q = 0; q < 3; q++) puff(tw(b.s + rand(-3, 3), b.x + rand(-3, 3), .1), 1, .8, [.5, .6, .7]); if (b.t > 3) { scene.remove(m.root); khRemove(b); return; } break;
   }
-  place(m.root, b.s, b.x, b.y, b.h); for (const e of b.eyes) e.scale.setScalar(e.scale.x); m.head.scale.setScalar(1 + (b.flash > 0 ? .02 : 0)); b.flash -= dt;
+  place(m.root, b.s, b.x, b.y, b.h); m.head.scale.setScalar(1 + (b.flash > 0 ? .03 : 0)); b.flash -= dt; for (const e of b.eyes) e.material.color.setHex(b.state === 'lunge' ? 0xff6040 : 0xd8ff60);
 }
 function buildWatcher(L, TH) {
   const first = scene.children.length, sky = TH.env, Y = L.layout, rock = surf(TX.hdStone || TX.rock, { sky, color: 0x8a8e98, rough: .95, bump: 3, tri: 5 }), rough = surf(TX.rock, { sky, color: 0x5a5e68, rough: .95, bump: 4, tri: 7 });
@@ -8012,7 +8025,7 @@ THEMES.watcher = natTheme({
 //     dread on the cobbles ahead of it. Keep out of it, keep walls between you, slip into the hay when one comes by. Seen, and they come after you: break away, round corners, until they
 //     lose you. Reach the door of The Prancing Pony at the north wall. The town's open squares are checkpoints.
 function breeLayout() {
-  const G = 23, C = 5.5, H = (G - 1) / 2, open = Array.from({ length: G }, () => new Array(G).fill(false)); let seed = 417;
+  const G = 23, C = 6.5, H = (G - 1) / 2, open = Array.from({ length: G }, () => new Array(G).fill(false)); let seed = 417;
   const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const stack = [[1, 11]]; open[1][11] = true;
   while (stack.length) { const [r, c] = stack[stack.length - 1], nx = [[2, 0], [-2, 0], [0, 2], [0, -2]].filter(([a, b]) => r + a > 0 && r + a < G - 1 && c + b > 0 && c + b < G - 1 && !open[r + a][c + b]); if (!nx.length) { stack.pop(); continue; } const [a, b] = nx[rnd() * nx.length | 0]; open[r + a / 2][c + b / 2] = true; open[r + a][c + b] = true; stack.push([r + a, c + b]); }
@@ -8031,41 +8044,55 @@ function breeLayout() {
 }
 function breeContent(L) { const Y = L.layout; let n = 0; for (const [s, x] of Y.squares) { addCrate(n++ % 2 ? 'su' : 'q', s + 3, x + 3, 0, 3); addCrate('b', s - 3, x - 3, 0, 3); } for (let r = 3; r < Y.G - 3; r += 4) for (let c = 1; c < Y.G - 1; c += 4) if (Y.open[r][c]) addApple(Y.cellS(r), Y.cellX(c), .9); }
 function buildBree(L, TH) {
-  const Y = L.layout, first = scene.children.length, sky = TH.env, C = Y.C, cobT = TX.cobble.clone(); cobT.needsUpdate = true; cobT.wrapS = cobT.wrapT = THREE.RepeatWrapping; cobT.repeat.set(58, 58);
-  { const m = new THREE.MeshStandardMaterial({ map: cobT, color: 0x8a8a8e, roughness: .32, metalness: .1 }), e = skyEnv && !RETRO ? skyEnv(sky) : null; if (e) { m.envMap = e; m.envMapIntensity = 1.1; } const g = new THREE.Mesh(new THREE.PlaneGeometry(C * Y.G + 2, C * Y.G + 2), m); g.rotation.x = -Math.PI / 2; g.position.copy(tw(0, 0, .01)); g.receiveShadow = true; g.userData.keep = true; scene.add(g); }
-  wideFloor(TX.grass, 0x1e2a1e, 90, -.5, 700);
-  // puddles shining in the low places
-  { const pd = []; for (let k = 0; k < 140; k++) { const r = 1 + (Math.random() * (Y.G - 2) | 0), c = 1 + (Math.random() * (Y.G - 2) | 0); if (!Y.open[r][c]) continue; const q = tw(Y.cellS(r) + rand(-2, 2), Y.cellX(c) + rand(-2, 2), .025), w = rand(.5, 1.6); pd.push([q.x, q.y, q.z, w, .005, w * rand(.5, 1)]); } instanced(new THREE.CylinderGeometry(1, 1, 1, 12), new THREE.MeshStandardMaterial({ color: 0x20262e, roughness: .04, metalness: .6 }), pd); }
-  // the town: stone below, cream plaster and dark timber above, steep thatch and shingle; the wall of the town all round, higher, with battlements
-  const stone = surf(TX.hdStone || TX.rock, { sky, color: 0x9a9a9e, rough: .85, bump: 3, wet: .6, tri: 2.4 }), plasterA = surf(TX.plaster, { sky, color: 0xb0a488, rough: .9, bump: 1, tri: 2 }), plasterB = surf(TX.plaster, { sky, color: 0x8e8a7a, rough: .9, bump: 1, tri: 2 }), roofA = lam(0x3a2c22, { side: THREE.DoubleSide }), roofB = lam(0x4a3a2a, { side: THREE.DoubleSide }), beam = lam(0x241810), wall = surf(TX.hdStone || TX.rock, { sky, color: 0x7e7e86, rough: .9, bump: 3, wet: .5, tri: 2.6 });
-  const roofG = new THREE.BufferGeometry(); { const v = [-.5, 0, .5, .5, 0, .5, .5, 1, 0, -.5, 0, .5, .5, 1, 0, -.5, 1, 0, .5, 0, -.5, -.5, 0, -.5, -.5, 1, 0, .5, 0, -.5, -.5, 1, 0, .5, 1, 0, .5, 0, .5, .5, 0, -.5, .5, 1, 0, -.5, 0, -.5, -.5, 0, .5, -.5, 1, 0]; roofG.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); roofG.computeVertexNormals(); }
-  const L_ = { st: [], pa: [], pb: [], ra: [], rb: [], bm: [], wn: [], dr: [], wl: [], cn: [], ch: [] }, glows = [], box = (a, s, x, y, ws, h, wx) => { const q = tw(s, x, y); a.push([q.x, q.y, q.z, wx, h, ws]); };
+  // Bree on a clear starry night, a tight warm maze of a town: honey plaster and chunky dark timber, jettied upper storeys on stone footings, steep shingled roofs and chimneys,
+  // glowing shop signs and awnings over the doors, curled iron lamp posts standing in rings of grass, terracotta paving between low stone kerbs, steps up to raised doorways
+  const Y = L.layout, first = scene.children.length, sky = TH.env, C = Y.C;
+  const paveT = mkTex(128, 128, g => { g.fillStyle = '#5a3a2a'; g.fillRect(0, 0, 128, 128); for (let j = 0; j < 8; j++) for (let i = 0; i < 4; i++) { const v = Math.random(); g.fillStyle = v < .35 ? '#b8705a' : v < .7 ? '#c88468' : '#a86452'; g.fillRect(i * 32 + (j % 2) * 16 + 1.5, j * 16 + 1.5, 29, 13); g.fillStyle = 'rgba(255,220,190,.12)'; g.fillRect(i * 32 + (j % 2) * 16 + 2, j * 16 + 2, 28, 3); } }); paveT.magFilter = THREE.LinearFilter; paveT.repeat.set(70, 70);
+  { const g = new THREE.Mesh(new THREE.PlaneGeometry(C * Y.G + 2, C * Y.G + 2), ps1(new THREE.MeshLambertMaterial({ map: paveT, color: 0xd8b8a8 }))); g.rotation.x = -Math.PI / 2; g.position.copy(tw(0, 0, .01)); g.receiveShadow = true; g.userData.keep = true; scene.add(g); }
+  wideFloor(TX.grass, 0x2a3a22, 90, -.5, 700);
+  const stoneT = mkTex(128, 64, g => { g.fillStyle = '#6a6a72'; g.fillRect(0, 0, 128, 64); for (let j = 0; j < 4; j++) for (let i = -1; i < 5; i++) { const v = Math.random(); g.fillStyle = v < .4 ? '#9a9aa4' : v < .75 ? '#a8a8b2' : '#8a8a94'; g.fillRect(i * 32 + (j % 2) * 16 + 2, j * 16 + 2, 28, 12); } }); stoneT.magFilter = THREE.LinearFilter;
+  const plasT = mkTex(64, 64, g => { g.fillStyle = '#e8c890'; g.fillRect(0, 0, 64, 64); for (let i = 0; i < 260; i++) { g.fillStyle = Math.random() < .5 ? 'rgba(255,240,200,.3)' : 'rgba(170,120,70,.12)'; g.fillRect(Math.random() * 64, Math.random() * 64, 3, 2); } }); plasT.magFilter = THREE.LinearFilter;
+  const shinT = mkTex(64, 64, g => { g.fillStyle = '#5a3424'; g.fillRect(0, 0, 64, 64); for (let j = 0; j < 8; j++) for (let i = -1; i < 5; i++) { g.fillStyle = Math.random() < .5 ? '#6e4030' : '#4e2c1e'; g.fillRect(i * 16 + (j % 2) * 8 + 1, j * 8 + 1, 14, 7); } }); shinT.magFilter = THREE.LinearFilter;
+  const stone = ps1(new THREE.MeshLambertMaterial({ map: stoneT })), plasA = ps1(new THREE.MeshLambertMaterial({ map: plasT, color: 0xc8a888 })), plasB = ps1(new THREE.MeshLambertMaterial({ map: plasT, color: 0xb88e70 })), plasC = ps1(new THREE.MeshLambertMaterial({ map: plasT, color: 0xbcae96 }));
+  const roofA = ps1(new THREE.MeshLambertMaterial({ map: shinT, side: THREE.DoubleSide })), roofB = ps1(new THREE.MeshLambertMaterial({ map: shinT, color: 0xc89a8a, side: THREE.DoubleSide })), beam = lam(0x5a3420), beamD = lam(0x3a2014), wall = ps1(new THREE.MeshLambertMaterial({ map: stoneT, color: 0xb0a8a0 }));
+  const roofG = new THREE.BufferGeometry(); { const v = [-.5, 0, .5, .5, 0, .5, .5, 1, 0, -.5, 0, .5, .5, 1, 0, -.5, 1, 0, .5, 0, -.5, -.5, 0, -.5, -.5, 1, 0, .5, 0, -.5, -.5, 1, 0, .5, 1, 0, .5, 0, .5, .5, 0, -.5, .5, 1, 0, -.5, 0, -.5, -.5, 0, .5, -.5, 1, 0]; roofG.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); roofG.setAttribute('uv', new THREE.Float32BufferAttribute(v.map((q, i) => q * 3).filter((q, i) => i % 3 !== 1), 2)); roofG.computeVertexNormals(); }
+  const L_ = { st: [], pa: [], pb: [], pc: [], ra: [], rb: [], bm: [], bd: [], wn: [], dr: [], wl: [], cn: [], ch: [], aw: [], kerb: [], step: [] }, glows = [], signs = [], box = (a, s, x, y, ws, h, wx, r = 0) => { const q = tw(s, x, y); a.push([q.x, q.y, q.z, wx, h, ws, r]); };
+  const signCols = ['#ffd040', '#ff8a40', '#ff6a9a', '#8ae0ff', '#b0ff70'], signWords = ['ITEMS', 'ARMOUR', 'POTIONS', 'BAKER', 'SMITH', 'TAILOR', 'HERBS', 'MAPS', 'CANDLES', 'PIPEWEED'];
+  const signMat = k => { const t = mkTex(160, 64, c => { c.fillStyle = '#2a1408'; c.beginPath(); c.moveTo(8, 4); c.lineTo(152, 4); c.lineTo(156, 32); c.lineTo(152, 60); c.lineTo(8, 60); c.lineTo(4, 32); c.closePath(); c.fill(); c.strokeStyle = signCols[k % 5]; c.lineWidth = 4; c.stroke(); c.fillStyle = signCols[k % 5]; c.shadowColor = signCols[k % 5]; c.shadowBlur = 10; c.font = "bold 28px Georgia, serif"; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(signWords[k % signWords.length], 80, 33); }, false); t.magFilter = THREE.LinearFilter; return new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide }); };
+  const signMats = signWords.map((_, k) => signMat(k)); let nSign = 0;
   for (const o of Y.houses) { const { s, x, h, r, c } = o, W = C + .04;
     if (o.edge) { box(L_.wl, s, x, h / 2, W, h, W); for (const [ds, dx] of [[-1.8, -1.8], [-1.8, 1.8], [1.8, -1.8], [1.8, 1.8]]) box(L_.cn, s + ds, x + dx, h + .5, 1.2, 1, 1.2); continue; }
-    box(L_.st, s, x, 1, W, 2, W); box(o.tone < .5 ? L_.pa : L_.pb, s, x, 2 + (h - 2) / 2, W + .12, h - 2, W + .12);
-    { const q = tw(s, x, h), a = o.tone < .5 ? L_.ra : L_.rb; a.push([q.x, q.y - .02, q.z, W + .9, o.rise, W + .9, o.turn ? Math.PI / 2 : 0]); }
-    for (const [ds, dx] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) box(L_.bm, s + ds * W / 2, x + dx * W / 2, 2 + (h - 2) / 2, .24, h - 2, .24);
-    for (const y of [2.05, h - .1]) { box(L_.bm, s, x + W / 2 + .06, y, W, .18, .1); box(L_.bm, s, x - W / 2 - .06, y, W, .18, .1); box(L_.bm, s + W / 2 + .06, x, y, .1, .18, W); box(L_.bm, s - W / 2 - .06, x, y, .1, .18, W); }
-    for (const [a, b, fs, fx_] of [[1, 0, 1, 0], [-1, 0, -1, 0], [0, 1, 0, 1], [0, -1, 0, -1]]) { const nr = r + a, nc = c + b; if (nr < 0 || nc < 0 || nr >= Y.G || nc >= Y.G || !Y.open[nr][nc]) continue; const ps = s + fs * (W / 2 + .1), px = x + fx_ * (W / 2 + .1), along = fs ? 'x' : 's', lit = Math.random() < .45, off = rand(.9, 1.5), y = h - 1.2;
-      if (lit) { for (const k of [-1, 1]) { fs ? box(L_.wn, ps, px + k * off, y, .08, .9, .7) : box(L_.wn, ps + k * off, px, y, .7, .9, .08); } if (glows.length < 54) glows.push(tw(ps + fs * .4, px + fx_ * .4, y)); }
-      if ((r * 3 + c * 5) % 4 === 0) fs ? box(L_.dr, ps, px, .95, .1, 1.9, 1.05) : box(L_.dr, ps, px, .95, 1.05, 1.9, .1); }
-    if ((r * 7 + c) % 5 === 0) { const q = tw(s + 1.2, x - 1.2, h + o.rise * .5); L_.ch.push([q.x, q.y + 1, q.z, .7, 2.6, .7]); } }
-  instanced(GEO_BOX, stone, L_.st); instanced(GEO_BOX, plasterA, L_.pa); instanced(GEO_BOX, plasterB, L_.pb); instanced(GEO_BOX, wall, L_.wl); instanced(GEO_BOX, wall, L_.cn); instanced(GEO_BOX, stone, L_.ch); instanced(roofG, roofA, L_.ra); instanced(roofG, roofB, L_.rb); instanced(GEO_BOX, beam, L_.bm); instanced(GEO_BOX, new THREE.MeshBasicMaterial({ color: 0xffc060, fog: true }), L_.wn); instanced(GEO_BOX, lam(0x2a1a10), L_.dr);
-  for (const p of glows) { const g = glowSprite(0xffb050, 3, .4); g.position.copy(p); scene.add(g); }
-  // lamps on posts here and there, the only light in the lanes
-  { let n = 0; for (let r = 2; r < Y.G - 2 && n < 34; r += 2) for (let c = 2; c < Y.G - 2 && n < 34; c += 3) if (Y.open[r][c] && !Y.open[r][c - 1]) { n++; const q = tw(Y.cellS(r), Y.cellX(c) - C / 2 + .35, 0); part(GEO.cyl, beam, scene, q.x, 1.5, q.z, .07, 3, .07); part(GEO_BOX, lam(0x1a1a14), scene, q.x, 3.05, q.z, .3, .38, .3); const g = glowSprite(0xffc070, 3.6, .75); g.position.set(q.x, 3.05, q.z); scene.add(g); } }
-  // the south gate shut behind you, the hay to hide in, the wells in the squares, carts and barrels
-  { const gt = tw(Y.cellS(0) + C / 2 + .1, 0, 2.3); part(GEO_BOX, lam(0x2a1a10), scene, gt.x, gt.y, gt.z, 4, 4.6, .3); }
+    const tone = o.tone < .33 ? L_.pa : o.tone < .66 ? L_.pb : L_.pc, J = .45;   // (the upper storey jetties out over the lane)
+    box(L_.st, s, x, .9, W, 1.8, W); box(tone, s, x, 1.8 + 1.5, W - .1, 3, W - .1); box(tone, s, x, 4.8 + (h - 4.8) / 2, W + J * 2, h - 4.8, W + J * 2); box(L_.bd, s, x, 4.86, W + J * 2 + .1, .3, W + J * 2 + .1);
+    { const q = tw(s, x, h), a = o.tone < .5 ? L_.ra : L_.rb; a.push([q.x, q.y - .02, q.z, W + J * 2 + .9, o.rise + .8, W + J * 2 + .9, o.turn ? Math.PI / 2 : 0]); }
+    for (const [ds, dx] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) { box(L_.bm, s + ds * (W / 2 - .05), x + dx * (W / 2 - .05), 3.3, .34, 3, .34); box(L_.bm, s + ds * (W / 2 + J - .05), x + dx * (W / 2 + J - .05), 4.8 + (h - 4.8) / 2, .3, h - 4.8, .3); }
+    for (const [a, b, fs, fx_] of [[1, 0, 1, 0], [-1, 0, -1, 0], [0, 1, 0, 1], [0, -1, 0, -1]]) { const nr = r + a, nc = c + b; if (nr < 0 || nc < 0 || nr >= Y.G || nc >= Y.G || !Y.open[nr][nc]) continue; const fw = (W / 2 + .06), ps = s + fs * fw, px = x + fx_ * fw, pu = s + fs * (fw + J), xu = x + fx_ * (fw + J), y = 4.8 + (h - 4.8) * .45;
+      for (const k of [-1, 1]) { const ss_ = fs ? pu : pu + k * 1.25, xx = fs ? xu + k * 1.25 : xu; fs ? box(L_.wn, ss_, xx, y, .1, 1.1, .8) : box(L_.wn, ss_, xx, y, .8, 1.1, .1); if (glows.length < 70 && Math.random() < .55) glows.push(tw(ss_ + fs * .4, xx + fx_ * .4, y)); }
+      for (const k of [-.8, .8]) { const dd = (fs ? box : box); if (fs) { box(L_.bd, pu + fs * .02, xu + k * 2.1, y, .12, 1.5, .14); } else box(L_.bd, pu + k * 2.1, xu + fx_ * .02, y, .14, 1.5, .12); }
+      if ((r * 3 + c * 5) % 3 === 0) { fs ? box(L_.dr, ps, px, 1.25, .12, 2.5, 1.3) : box(L_.dr, ps, px, 1.25, 1.3, 2.5, .12); for (let k = 0; k < 2; k++) fs ? box(L_.step, ps + fs * (.35 + k * .4), px, .1 + k * .1 * 0, .4, .2 - k * .08, 2) : box(L_.step, ps, px + fx_ * (.35 + k * .4), .1, 2, .2 - k * .08, .4);
+        const aw = tw(ps + fs * .6, px + fx_ * .6, 2.85); L_.aw.push([aw.x, aw.y, aw.z, fs ? .9 : 2.4, .12, fs ? 2.4 : .9, 0]);
+        if (nSign < 40 && (r + c) % 2 === 0) { const q = tw(ps + fs * .12, px + fx_ * .12, 3.35), m = new THREE.Mesh(new THREE.PlaneGeometry(2.1, .84), signMats[nSign++ % signMats.length]); m.position.copy(q); m.rotation.y = fs ? Math.PI / 2 * (fs > 0 ? 1 : -1) : fx_ > 0 ? 0 : Math.PI; m.userData.keep = true; scene.add(m); signs.push(q); } } }
+    if ((r * 7 + c) % 4 === 0) { const q = tw(s + 1.4, x - 1.4, h + o.rise * .5); L_.ch.push([q.x, q.y + 1.2, q.z, .9, 3, .9]); } }
+  instanced(GEO_BOX, stone, L_.st); instanced(GEO_BOX, plasA, L_.pa); instanced(GEO_BOX, plasB, L_.pb); instanced(GEO_BOX, plasC, L_.pc); instanced(GEO_BOX, wall, L_.wl); instanced(GEO_BOX, wall, L_.cn); instanced(GEO_BOX, stone, L_.ch); instanced(roofG, roofA, L_.ra); instanced(roofG, roofB, L_.rb); instanced(GEO_BOX, beam, L_.bm); instanced(GEO_BOX, beamD, L_.bd); instanced(GEO_BOX, new THREE.MeshBasicMaterial({ color: 0xffb040 }), L_.wn); instanced(GEO_BOX, lam(0x5a2a14), L_.dr); instanced(GEO_BOX, lam(0x7a1e22), L_.aw); instanced(GEO_BOX, stone, L_.step);
+  for (const p of glows) { const g = glowSprite(0xffa040, 2.6, .45); g.position.copy(p); scene.add(g); } for (const p of signs) { const g = glowSprite(0xffd890, 3.4, .35); g.position.copy(p); scene.add(g); }
+  // kerbs along the lanes, and curled iron lamp posts, each in a ring of grass, with a cluster of lanterns
+  { const kb = []; for (let r = 1; r < Y.G - 1; r++) for (let c = 1; c < Y.G - 1; c++) { if (!Y.open[r][c]) continue; for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (!Y.open[r + a][c + b]) { const q = tw(Y.cellS(r) + a * (C / 2 - .2), Y.cellX(c) + b * (C / 2 - .2), .12); kb.push([q.x, q.y, q.z, b ? .4 : C, .24, b ? C : .4]); } } instanced(GEO_BOX, stone, kb); }
+  const iron = lam(0x1a1410), lanternM = new THREE.MeshBasicMaterial({ color: 0xffc050 }), grassM = lam(0x3a7a2a); let nL = 0;
+  const lampPost = (s, x) => { const q = tw(s, x, 0), g = new THREE.Group(); g.position.copy(q); scene.add(g); part(new THREE.CylinderGeometry(1.1, 1.2, .3, 16), stone, g, 0, .15, 0); part(new THREE.CylinderGeometry(.95, .95, .06, 16), grassM, g, 0, .31, 0); const pts = []; for (let k = 0; k <= 12; k++) { const t = k / 12; pts.push(new V3(Math.sin(t * 2.4) * .35 * t, t * 4.2, 0)); } const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, .1, 6), iron); g.add(tube); for (const a of [0, 2.1, 4.2]) { const ax = Math.cos(a) * .55, az = Math.sin(a) * .55; const arm = part(GEO_BOX, iron, g, ax / 2 + .2, 4, az / 2, Math.hypot(ax, az) + .1, .06, .06); arm.rotation.y = -a; part(new THREE.CylinderGeometry(.22, .14, .4, 6), lanternM, g, ax + .2, 3.75, az); part(new THREE.ConeGeometry(.28, .22, 6), iron, g, ax + .2, 4.05, az); } const gl = glowSprite(0xffb050, 3.6, .5); gl.position.set(.2, 3.8, 0); g.add(gl); };
+  for (let r = 2; r < Y.G - 2 && nL < 40; r += 2) for (let c = 1; c < Y.G - 1 && nL < 40; c += 2) if (Y.open[r][c] && (r * 5 + c) % 3 === 0) { nL++; lampPost(Y.cellS(r) + 1.2, Y.cellX(c) - 1.2); }
+  for (const [s, x] of Y.squares) { lampPost(s - 3.5, x - 3.5); lampPost(s + 3.5, x + 3.5); }
+  // the south gate shut behind you, hay to hide in, a fountain in each square
+  { const gt = tw(Y.cellS(0) + C / 2 + .1, 0, 2.3); part(GEO_BOX, lam(0x4a2a14), scene, gt.x, gt.y, gt.z, 4, 4.6, .3); }
   { const hayM = surf(TX.sThatch, { sky, rough: 1, bump: 3 }); for (const [s, x] of Y.hay) { const q = tw(s, x, .8); part(new THREE.SphereGeometry(1, 10, 7), hayM, scene, q.x, q.y - .2, q.z, 1.5, 1.25, 1.5); } }
-  for (const [s, x] of Y.squares) { const q = tw(s, x, 0); part(new THREE.CylinderGeometry(1.1, 1.2, .9, 12), stone, scene, q.x, .45, q.z); part(new THREE.CylinderGeometry(.85, .85, .92, 12), lam(0x0a0e12), scene, q.x, .47, q.z); for (const a of [-1, 1]) part(GEO.cyl, beam, scene, q.x + a * .95, 1.5, q.z, .07, 2.2, .07); part(new THREE.ConeGeometry(1.6, .8, 4), roofA, scene, q.x, 2.9, q.z); }
+  TH.fount = []; for (const [s, x] of Y.squares) { const q = tw(s, x, 0); part(new THREE.CylinderGeometry(2.4, 2.6, .7, 20), stone, scene, q.x, .35, q.z); part(new THREE.CylinderGeometry(2.05, 2.05, .72, 20), new THREE.MeshPhongMaterial({ color: 0x3a6a9a, shininess: 90, specular: 0xffffff }), scene, q.x, .36, q.z); part(new THREE.CylinderGeometry(.35, .5, 1.8, 10), stone, scene, q.x, .9, q.z); part(new THREE.CylinderGeometry(.9, .3, .3, 12), stone, scene, q.x, 1.9, q.z); TH.fount.push([s, x]); }
   // The Prancing Pony: three great storeys against the north wall, every window lit, its sign out over the door
-  { const s0 = Y.cellS(Y.G - 1), Wd = C * 5, g = new THREE.Group(); place(g, s0, 0, 0, Math.PI); scene.add(g); part(GEO_BOX, stone, g, 0, 1.5, 0, Wd, 3, C); part(GEO_BOX, plasterA, g, 0, 6, 0, Wd + .3, 6, C + .3); const rf = part(roofG, roofB, g, 0, 9, 0, Wd + 1.2, 5, C + 2); for (let k = -3; k <= 3; k++) { part(GEO_BOX, beam, g, k * Wd / 7, 6, C / 2 + .2, .24, 6, .1); for (const y of [4.6, 7.4]) part(GEO_BOX, new THREE.MeshBasicMaterial({ color: 0xffc860 }), g, k * Wd / 7 + 1, y, C / 2 + .22, 1, 1.1, .05); } for (const y of [3, 6, 9]) part(GEO_BOX, beam, g, 0, y, C / 2 + .22, Wd + .3, .2, .1);
-    part(GEO_BOX, lam(0x2e1c0c), g, 0, 1.3, C / 2 + .08, 2, 2.6, .06); const lit = glowSprite(0xffc060, 9, .8); lit.position.set(0, 1.6, C / 2 + 1); g.add(lit); TH.door = lit;
-    const sg = (() => { const t = mkTex(160, 128, c => { c.fillStyle = '#2a1a0c'; c.fillRect(0, 0, 160, 128); c.strokeStyle = '#c8a050'; c.lineWidth = 4; c.strokeRect(4, 4, 152, 120); c.fillStyle = '#f0e8d8'; c.beginPath(); c.ellipse(72, 58, 26, 14, -.1, 0, 7); c.fill(); c.fillRect(50, 66, 6, 18); c.fillRect(88, 66, 6, 18); c.save(); c.translate(98, 40); c.rotate(-.5); c.fillRect(-7, -16, 14, 28); c.restore(); c.beginPath(); c.ellipse(112, 28, 11, 7, -.3, 0, 7); c.fill(); c.fillStyle = '#e8c870'; c.font = 'bold 15px Georgia, serif'; c.textAlign = 'center'; c.fillText('The Prancing Pony', 80, 112); }, false); t.magFilter = THREE.LinearFilter; return ps1(new THREE.MeshLambertMaterial({ map: t, side: THREE.DoubleSide })); })(); part(new THREE.PlaneGeometry(2.6, 2.1), sg, g, 3, 3.2, C / 2 + 1.7); part(GEO_BOX, beam, g, 3, 4.4, C / 2 + 1, .12, .12, 1.8); const gl2 = glowSprite(0xffc070, 3.6, .7); gl2.position.set(3, 3.2, C / 2 + 2.2); g.add(gl2); }
+  { const s0 = Y.cellS(Y.G - 1), Wd = C * 5, g = new THREE.Group(); place(g, s0, 0, 0, Math.PI); scene.add(g); part(GEO_BOX, stone, g, 0, 1.5, 0, Wd, 3, C); part(GEO_BOX, plasA, g, 0, 6, 0, Wd + .3, 6, C + .3); part(roofG, roofB, g, 0, 9, 0, Wd + 1.2, 5, C + 2); for (let k = -3; k <= 3; k++) { part(GEO_BOX, beam, g, k * Wd / 7, 6, C / 2 + .2, .3, 6, .12); for (const y of [4.6, 7.4]) part(GEO_BOX, new THREE.MeshBasicMaterial({ color: 0xffc860 }), g, k * Wd / 7 + 1, y, C / 2 + .22, 1, 1.1, .05); } for (const y of [3, 6, 9]) part(GEO_BOX, beam, g, 0, y, C / 2 + .22, Wd + .3, .24, .12);
+    part(GEO_BOX, lam(0x5a2a14), g, 0, 1.3, C / 2 + .08, 2, 2.6, .06); const lit = glowSprite(0xffc060, 9, .8); lit.position.set(0, 1.6, C / 2 + 1); g.add(lit); TH.door = lit;
+    const sg = (() => { const t = mkTex(160, 128, c => { c.fillStyle = '#2a1a0c'; c.fillRect(0, 0, 160, 128); c.strokeStyle = '#ffd040'; c.lineWidth = 4; c.strokeRect(4, 4, 152, 120); c.fillStyle = '#f0e8d8'; c.beginPath(); c.ellipse(72, 58, 26, 14, -.1, 0, 7); c.fill(); c.fillRect(50, 66, 6, 18); c.fillRect(88, 66, 6, 18); c.save(); c.translate(98, 40); c.rotate(-.5); c.fillRect(-7, -16, 14, 28); c.restore(); c.beginPath(); c.ellipse(112, 28, 11, 7, -.3, 0, 7); c.fill(); c.fillStyle = '#ffd040'; c.font = 'bold 15px Georgia, serif'; c.textAlign = 'center'; c.fillText('The Prancing Pony', 80, 112); }, false); t.magFilter = THREE.LinearFilter; return new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide }); })(); part(new THREE.PlaneGeometry(2.6, 2.1), sg, g, 3, 3.2, C / 2 + 1.7); part(GEO_BOX, beam, g, 3, 4.4, C / 2 + 1, .12, .12, 1.8); const gl2 = glowSprite(0xffc070, 3.6, .7); gl2.position.set(3, 3.2, C / 2 + 2.2); g.add(gl2); }
   bakeScenery(scene.children.slice(first));
-  // rain: long thin streaks kept round the camera
-  const NR = 1400, pos = new Float32Array(NR * 6); TH.rain = { NR, vel: new Float32Array(NR) }; for (let i = 0; i < NR; i++) { const x = rand(-34, 34), y = rand(0, 26), z = rand(-34, 34); pos.set([x, y, z, x + .03, y + .9, z + .05], i * 6); TH.rain.vel[i] = rand(30, 44); }
-  const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.BufferAttribute(pos, 3)); const rm = new THREE.LineSegments(rg, new THREE.LineBasicMaterial({ color: 0x9ab4d8, transparent: true, opacity: .34, depthWrite: false, fog: false })); rm.frustumCulled = false; rm.visible = false; rm.userData.keep = true; scene.add(rm); TH.rainM = rm;
+  // a big round moon over the roofs
+  { const q = tw(160, -60, 90), md = new THREE.Mesh(new THREE.CircleGeometry(16, 30), new THREE.MeshBasicMaterial({ color: 0xfff4d8, fog: false })); md.position.copy(q); md.lookAt(tw(0, 0, 0)); md.userData.keep = true; scene.add(md); const mg = glowSprite(0xffe8b0, 90, .6); mg.material.fog = false; mg.position.copy(q); scene.add(mg); }
+  TH.rain = { NR: 0, vel: new Float32Array(0) }; { const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3)); TH.rainM = new THREE.LineSegments(rg, new THREE.LineBasicMaterial({ visible: false })); TH.rainM.visible = false; scene.add(TH.rainM); }
   // the Nazgûl and their cones of dread
   TH.riders = []; for (let k = 0; k < 8; k++) { const M = makeNazgul(), fan = new THREE.BufferGeometry(); fan.setAttribute('position', new THREE.BufferAttribute(new Float32Array(16 * 3), 3)); const idx = []; for (let i = 1; i < 15; i++) idx.push(0, i, i + 1); fan.setIndex(idx); const cone = new THREE.Mesh(fan, new THREE.MeshBasicMaterial({ color: 0x9ab8ff, transparent: true, opacity: .2, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false })); cone.frustumCulled = false; cone.userData.keep = true; cone.visible = false; scene.add(cone); M.root.visible = false; if (M.shadow) M.shadow.visible = false; TH.riders.push({ M, cone }); }
 }
@@ -8076,8 +8103,8 @@ function resetBree() {
 function updateBree(dt) {
   const TH = THEMES.bree, on = !!LV && LV.theme === 'bree' && state !== 'map' && state !== 'title'; if (TH.rainM) TH.rainM.visible = on; if (TH.riders) for (const n of TH.riders) { n.M.root.visible = on; n.cone.visible = on; if (n.M.shadow) n.M.shadow.visible = on; } if (!on) return;
   const Y = LV.layout, play = state === 'play', Cp = camera.position, pa = TH.rainM.geometry.attributes.position, A = pa.array; TH.rainM.position.set(Cp.x, 0, Cp.z);
-  for (let i = 0; i < TH.rain.NR; i++) { const k = i * 6; let y = A[k + 1] - TH.rain.vel[i] * dt; if (y < 0) y += 26; A[k + 1] = y; A[k + 4] = y + .9; } pa.needsUpdate = true;
-  for (let k = 0; k < 4; k++) if (Math.random() < dt * 40) fx.spawn(...tw(P.s + rand(-10, 10), P.x + rand(-10, 10), .06).toArray(), rand(-.4, .4), rand(.6, 1.3), rand(-.4, .4), .18, .1, .02, [.7, .8, 1], [.5, .6, .8], 3, .7);
+  for (let i = 0; i < 0; i++) { const k = i * 6; let y = A[k + 1] - TH.rain.vel[i] * dt; if (y < 0) y += 26; A[k + 1] = y; A[k + 4] = y + .9; } pa.needsUpdate = true;
+
   if (AUTORUN && play) { const [r0, c0] = Y.cellOf(P.s, P.x), w = Y.path(r0, c0, Y.G - 2, 11); WALKTO = w.length > 1 ? w[1] : Y.goal; }   // testing
   // hiding in the hay
   const inHay = Y.hay.some(([s, x]) => Math.hypot(s - P.s, x - P.x) < 1.5); if (inHay !== BREE.hidden) { BREE.hidden = inHay; if (inHay && play) banner('HIDDEN IN THE HAY', 1); }
@@ -8110,7 +8137,7 @@ function updateBree(dt) {
 }
 THEMES.bree = natTheme({
   wallTex: TX.rock, floorTex: TX.floor, tint: [.75, .76, .82], door: 0x6a6a7a,
-  env: { sky: [0x03050a, 0x0a1018, 0x141c28, 0x1e2632], fog: [16, 80], fogC: 0x0e141c, bloom: 1, amb: [0x5a6a86, .9], hemi: [0x8aa0c8, 0x14181c, .7], sun: [0xa0b4e0, .5], east: [0x5a6a90, .18], bolts: true, stars: false },
+  env: { sky: [0x050818, 0x0e1430, 0x1e2448, 0x2a2a4a], fog: [30, 120], fogC: 0x161830, bloom: .7, amb: [0x6a5a7a, .55], hemi: [0xd8b090, 0x1a1828, .45], sun: [0x9aa0e0, .4], east: [0xff9050, .25], stars: true },
   orc: MT_ORC,
   scenery(L) { buildBree(L, this); },
 });
@@ -8125,13 +8152,13 @@ function primevalLayout() {
   const at = (s, x) => { const q = clamp(C - x, 0, N - 1.01), v = clamp(C - s, 0, N - 1.01), i = q | 0, j = v | 0; return hs[j * N + i]; };
   // the giants: well spread, off the ruins' floors
   const giants = []; for (let t = 0; t < 900 && giants.length < 40; t++) { const s = rnd() * 176 - 88, x = rnd() * 176 - 88, r = 3 + rnd() * 3.6; if (giants.some(q => Math.hypot(q.s - s, q.x - x) < q.r + r + 11) || ruins.some(([rs, rx, rr]) => Math.hypot(rs - s, rx - x) < rr + r + 3) || Math.hypot(s + 82, x) < 12) continue; giants.push({ s, x, r, y: at(s, x), ph: rnd() * 6 }); }
-  const blocks = giants.map(q => [q.s - q.r * .9, q.s + q.r * .9, q.x - q.r * .9, q.x + q.r * .9, q.y + 80, 'wall', -20]);
+  const blocks = giants.flatMap(q => [[q.s - q.r * .95, q.s + q.r * .95, q.x - q.r * .95, q.x + q.r * .95, q.y + 80, 'wall', -20], [q.s - q.r * 1.75, q.s + q.r * 1.75, q.x - q.r * 1.75, q.x + q.r * 1.75, q.y + 1.8, 'wall', -20]]);   // (the trunk, and the knot of roots round its foot)
   // the ruins: columns standing and fallen, broken walls, a great gate, a stepped plinth with a stone head
   const cols = [], rwalls = [], heads = [];
   ruins.forEach(([rs, rx, r], n) => { const yr = at(rs, rx), m = n === 1 ? 14 : 10; for (let k = 0; k < m; k++) { const a = k / m * TAU + n, cs = rs + Math.cos(a) * r * .9, cx = rx + Math.sin(a) * r * .9, h = k % 3 === 2 ? 1 + rnd() * 2 : 6 + rnd() * 7; cols.push([cs, cx, yr, h]); blocks.push([cs - .85, cs + .85, cx - .85, cx + .85, yr + h, 'wall', -20]); } for (let k = 0; k < 3; k++) { const a = rnd() * TAU, d = r * (.5 + rnd() * .2), ws = rs + Math.cos(a) * d, wx = rx + Math.sin(a) * d, along = rnd() < .5, L_ = 4 + rnd() * 5, h = 1.6 + rnd() * 3; rwalls.push([ws, wx, yr, along, L_, h]); blocks.push(along ? [ws - L_ / 2, ws + L_ / 2, wx - .7, wx + .7, yr + h, 'wall', -20] : [ws - .7, ws + .7, wx - L_ / 2, wx + L_ / 2, yr + h, 'wall', -20]); } heads.push([rs, rx, yr, a0(n)]); blocks.push([rs - 2.1, rs + 2.1, rx - 2.1, rx + 2.1, yr + 3.4, 'wall', -20]); });
   function a0(n) { return n * 1.3; }
   // the walkways: rings round some of the giants joined by plank bridges, climbed by long ramps from the ground
-  const W = 13, deck = newDeck(-100, -100, 201, 201), put = (s, x, y) => { const i = Math.round(x + 100), j = Math.round(s + 100); if (i >= 0 && j >= 0 && i < deck.w && j < deck.h) deckPut(deck, j * deck.w + i, y); };
+  const W = 13, deck = newDeck(-100, -100, 201, 201), put = (s, x, y) => { const i = Math.round(x + 100), j = Math.round(s + 100); if (y < at(s, x) + .25) return; if (i >= 0 && j >= 0 && i < deck.w && j < deck.h) deckPut(deck, j * deck.w + i, y); };
   const inner = giants.filter(q => Math.hypot(q.s, q.x) < 72), hubs = []; for (const q of inner) { if (hubs.length >= 12) break; if (hubs.every(h => Math.hypot(h.s - q.s, h.x - q.x) > 16)) hubs.push(q); }
   const links = []; hubs.forEach((a, i) => { const near = hubs.map((b, j) => [Math.hypot(a.s - b.s, a.x - b.x), j]).filter(o => o[1] !== i).sort((u, v) => u[0] - v[0]).slice(0, 2); for (const [d, j] of near) if (d < 52 && !links.some(l => (l[0] === i && l[1] === j) || (l[0] === j && l[1] === i))) links.push([i, j]); });
   for (const h of hubs) { h.yw = Math.max(W, h.y + 9); h.yw = W + 1; const R0 = h.r + 2.8; for (let a = 0; a < TAU; a += .4 / R0) for (const w of [-1.1, -.4, .4, 1.1]) put(h.s + Math.cos(a) * (R0 + w), h.x + Math.sin(a) * (R0 + w), h.yw); }
@@ -8156,7 +8183,7 @@ function buildPrimeval(L, TH) {
   const barkT = mkTex(128, 256, c => { c.fillStyle = '#3a2c20'; c.fillRect(0, 0, 128, 256); for (let i = 0; i < 700; i++) { const v = Math.random(); c.fillStyle = v < .45 ? 'rgba(14,10,6,.5)' : v < .8 ? 'rgba(92,72,50,.35)' : 'rgba(60,90,40,.28)'; c.fillRect(Math.random() * 128, Math.random() * 256, 1 + Math.random() * 3, 12 + Math.random() * 48); } }); barkT.magFilter = THREE.LinearFilter; const bark = surf(barkT, { sky, color: 0xc0b0a0, rough: .95, bump: 5, env: .03 });
   const stone = surf(TX.rock, { sky, color: 0x7e8a70, rough: .95, bump: 3.5, env: .05, tri: 3 }), stoneD = surf(TX.rock, { sky, color: 0x5a6650, rough: .95, bump: 3.5, env: .05, tri: 3 }), moss = lam(0x4a7a30), wood = lam(0x4a3620), rope = lam(0x8a7a5a), vine = lam(0x2a4a20);
   // the great trees: a trunk with flaring root-buttresses that spread far out over the floor, boughs high above
-  const giantGeo = r => { const NA = 26, NY = 13, H = 86, pos = [], uv = [], idx = []; for (let j = 0; j <= NY; j++) { const t = j / NY, y = t * t * H - 1.5, fl = 1 + 2.5 * Math.exp(-y / 3.2) + .4 * Math.exp(-y / 14); for (let i = 0; i <= NA; i++) { const a = i / NA * TAU, lobe = 1 + (.34 * Math.pow(Math.abs(Math.sin(a * 3.5)), 2.4) - .1) * Math.exp(-y / 9) * 1.8, rr = r * (1 - t * .55) * fl * lobe * (1 + Math.sin(a * 11 + y * .3) * .025); pos.push(Math.cos(a) * rr, y, Math.sin(a) * rr); uv.push(i / NA * 3, y / 14); if (j < NY && i < NA) { const k = j * (NA + 1) + i; idx.push(k, k + NA + 1, k + 1, k + 1, k + NA + 1, k + NA + 2); } } } const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return g; };
+  const giantGeo = r => { const NA = 26, NY = 13, H = 86, pos = [], uv = [], idx = []; for (let j = 0; j <= NY; j++) { const t = j / NY, y = t * t * H - 1.5, fl = 1 + .7 * Math.exp(-y / 2) + .25 * Math.exp(-y / 14); for (let i = 0; i <= NA; i++) { const a = i / NA * TAU, lobe = 1 + (.34 * Math.pow(Math.abs(Math.sin(a * 3.5)), 2.4) - .1) * Math.exp(-y / 9) * .9, rr = r * (1 - t * .55) * fl * lobe * (1 + Math.sin(a * 11 + y * .3) * .025); pos.push(Math.cos(a) * rr, y, Math.sin(a) * rr); uv.push(i / NA * 3, y / 14); if (j < NY && i < NA) { const k = j * (NA + 1) + i; idx.push(k, k + NA + 1, k + 1, k + 1, k + NA + 1, k + NA + 2); } } } const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return g; };
   const lA = [], lB = [], lC = [], bough = []; const geoCache = [giantGeo(1)];
   for (const q of Y.giants) { const p = tw(q.s, q.x, q.y), m = new THREE.Mesh(geoCache[0], bark); m.position.copy(p); m.scale.set(q.r, 1, q.r); m.rotation.y = q.ph; scene.add(m);
     for (let k = 0; k < 7; k++) { const a = rand(0, TAU), y0 = rand(26, 58), L_ = rand(12, 26), e = tw(q.s + Math.cos(a) * L_, q.x + Math.sin(a) * L_, q.y + y0 + rand(4, 10)), b0 = tw(q.s + Math.cos(a) * q.r * .6, q.x + Math.sin(a) * q.r * .6, q.y + y0), d = e.clone().sub(b0), b = part(new THREE.CylinderGeometry(.35, q.r * .28, d.length(), 7), bark, scene, (b0.x + e.x) / 2, (b0.y + e.y) / 2, (b0.z + e.z) / 2); b.quaternion.setFromUnitVectors(UPV, d.normalize());
@@ -8191,6 +8218,46 @@ function updatePrimeval(dt) {
   for (let k = 0; k < 3; k++) if (Math.random() < dt * 20) fx.spawn(...tw(P.s + rand(-18, 18), P.x + rand(-18, 18), P.y + rand(.2, 7)).toArray(), rand(-.15, .15), rand(-.05, .15), rand(-.15, .15), rand(3, 6), .07, .02, [.8, 1, .6], [.4, .7, .3]);   // (motes in the green light)
   if (Math.random() < dt * 5) smoke.spawn(...tw(P.s + rand(-30, 30), P.x + rand(-30, 30), terrainAt(P.s, P.x, true) + rand(.1, .8)).toArray(), rand(-.2, .2), .02, rand(-.2, .2), rand(7, 11), 4, 10, [.2, .32, .2], [.32, .44, .3], 0, .14);   // (ground mist)
 }
+// --- the Colosseum of Rohan: a round arena of pale stone under banners, its stands packed and roaring. Choose a trial from the list, then fight it round by round. A place to try
+//     out any foe in the game, and any new one: a trial is just a list of rounds, each a list of foe kinds (see UK_KINDS and the bosses in spawnUruk)
+function arenaLayout(k) {
+  const T = ARENA_TRIALS[k], names = T.rounds.map((_, i) => i ? `ROUND ${i + 1} OF ${T.rounds.length}` + (i === T.rounds.length - 1 ? ': THE CHAMPION!' : '') : '');
+  const blocks = []; for (let k = 0; k < 96; k++) { const a = k / 96 * TAU, s = Math.cos(a) * 23, x = Math.sin(a) * 23; blocks.push([s - .9, s + .9, x - .9, x + .9, 3, 'wall', -2]); }   // (the wall round the floor)
+  return { field: [-26, 26, -26, 26], start: [-15, 0], layout: { blocks, arena: true, plazas: [{ s: 0, x: 0, y: 0, r: 19, waves: T.rounds, names, title: T.name + ' · ROUND 1', boss: true, last: true, breach: [0, 0], bossTo: [8, 0], bossHp: 700, noAdds: true }] } };
+}
+function arenaContent() { for (const [k, s, x] of [['q', -16, 8], ['su', -16, -8], ['b', 16, 8], ['q', 16, -8]]) addCrate(k, s, x, 0, 4); }
+function buildArena(L, TH) {
+  if (THEMES.arena.built) return; THEMES.arena.built = true;   // (every trial is fought in the one arena)
+  const first = scene.children.length, sky = TH.env;
+  const sand = (() => { const t = mkTex(128, 128, g => { g.fillStyle = '#c8a878'; g.fillRect(0, 0, 128, 128); for (let i = 0; i < 1600; i++) { g.fillStyle = Math.random() < .5 ? 'rgba(120,90,50,.18)' : 'rgba(255,240,200,.2)'; g.fillRect(Math.random() * 128, Math.random() * 128, 1.5, 1.5); } }); t.magFilter = THREE.LinearFilter; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(10, 10); return t; })();
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(22, 48), ps1(new THREE.MeshLambertMaterial({ map: sand }))); floor.rotation.x = -Math.PI / 2; floor.position.copy(tw(0, 0, .01)); floor.receiveShadow = true; floor.userData.keep = true; scene.add(floor);
+  { const ring = new THREE.Mesh(new THREE.RingGeometry(7.6, 8.2, 48), lam(0x8a6a3a)); ring.rotation.x = -Math.PI / 2; ring.position.copy(tw(0, 0, .03)); scene.add(ring); const em = new THREE.Mesh(new THREE.CircleGeometry(3.4, 6), lam(0x2a6a2a)); em.rotation.x = -Math.PI / 2; em.position.copy(tw(0, 0, .04)); scene.add(em); }   // (the horse of Rohan's green, in the middle)
+  const stone = surf(TX.marble, { sky, color: 0xe8dcc0, rough: .7, bump: 1.6, env: .3, tri: 3 }), stoneD = surf(TX.marble, { sky, color: 0xb8a888, rough: .7, bump: 1.6, env: .2, tri: 3 }), gold = lam(0xd8a840, { emissive: 0x2a1a04 }), wood = lam(0x6a4422);
+  // the wall round the floor, and the tiers of seats rising behind it, crowded
+  { const w = new THREE.Mesh(new THREE.CylinderGeometry(22.4, 22.4, 3, 48, 1, true), stoneD); w.position.copy(tw(0, 0, 1.5)); w.material.side = THREE.DoubleSide; scene.add(w); part(new THREE.TorusGeometry(22.5, .3, 6, 48), gold, scene, ...tw(0, 0, 3).toArray()).rotation.x = Math.PI / 2; }
+  const crowd = [], cols = [0x7a2a1a, 0x2a4a7a, 0x3a6a2a, 0xc8a050, 0x6a3a6a, 0x8a8a8a]; for (let t = 0; t < 7; t++) { const r = 23.6 + t * 1.6, y = 3.4 + t * 1.1; const step = new THREE.Mesh(new THREE.CylinderGeometry(r + .8, r + .8, 1.1, 56, 1, true), stone); step.material.side = THREE.DoubleSide; step.position.copy(tw(0, 0, y - .55)); scene.add(step); const top = new THREE.Mesh(new THREE.RingGeometry(r - .8, r + .8, 56), stone); top.rotation.x = -Math.PI / 2; top.position.copy(tw(0, 0, y)); scene.add(top); for (let k = 0; k < r * 3.3; k++) { const a = k / (r * 3.3) * TAU + t; if (Math.abs(Math.sin(a)) < .08 && Math.cos(a) < 0) continue; const q = tw(Math.cos(a) * r, Math.sin(a) * r, y); crowd.push([q.x, q.y + .55, q.z, .26, rand(.85, 1.05), .26, cols[(k * 7 + t * 3) % 6]]); } }
+  for (const c of cols) instanced(new THREE.CylinderGeometry(1, 1.3, 1, 5), lam(c), crowd.filter(q => q[6] === c).map(q => q.slice(0, 6)));
+  TH.crowdHeads = crowd.length;
+  // the great arches round the top, banners of the horse between them, braziers
+  const banT = mkTex(64, 128, g => { g.fillStyle = '#2a6a2a'; g.fillRect(0, 0, 64, 128); g.fillStyle = '#e8c860'; g.fillRect(0, 0, 64, 8); g.beginPath(); g.moveTo(14, 90); g.lineTo(22, 60); g.lineTo(18, 44); g.lineTo(34, 34); g.lineTo(46, 40); g.lineTo(40, 52); g.lineTo(50, 62); g.lineTo(42, 92); g.lineTo(36, 70); g.lineTo(28, 92); g.closePath(); g.fill(); g.beginPath(); g.moveTo(0, 128); g.lineTo(32, 112); g.lineTo(64, 128); g.lineTo(64, 120); g.lineTo(0, 120); g.fill(); }, false); banT.magFilter = THREE.LinearFilter; const banM = ps1(new THREE.MeshLambertMaterial({ map: banT, side: THREE.DoubleSide }));
+  TH.braz = []; for (let k = 0; k < 16; k++) { const a = k / 16 * TAU, r = 35.5, q = tw(Math.cos(a) * r, Math.sin(a) * r, 10.5); part(new THREE.CylinderGeometry(.7, .9, 14, 10), stone, scene, q.x, 5, q.z); const na = (k + .5) / 16 * TAU, ar = part(new THREE.TorusGeometry(r * Math.sin(Math.PI / 16), .55, 6, 14, Math.PI), stone, scene, ...tw(Math.cos(na) * r * Math.cos(Math.PI / 16), Math.sin(na) * r * Math.cos(Math.PI / 16), 11.6).toArray()); ar.rotation.y = -na + Math.PI / 2; const b = tw(Math.cos(a) * (r - 1.6), Math.sin(a) * (r - 1.6), 10.2), bn = part(new THREE.PlaneGeometry(2.2, 4.4), banM, scene, b.x, b.y, b.z); bn.rotation.y = -a + Math.PI / 2; part(new THREE.CylinderGeometry(.6, .4, .7, 8), lam(0x2a2018), scene, q.x, 12.4, q.z); TH.braz.push([Math.cos(a) * r, Math.sin(a) * r, 12.9]); const gl = glowSprite(0xffa040, 5, .7); gl.position.set(q.x, 13.1, q.z); scene.add(gl); }
+  { const g = new THREE.Group(); place(g, -22.6, 0, 0, Math.PI / 2); scene.add(g); for (const sx of [-1, 1]) part(GEO_BOX, stone, g, sx * 3, 3.5, 0, 1.4, 7, 2); part(new THREE.TorusGeometry(3, .6, 8, 18, Math.PI), stone, g, 0, 7, 0); part(GEO_BOX, wood, g, 0, 3, .2, 4.6, 6, .3); part(GEO_BOX, gold, g, 0, 10, 0, 7, .8, 2.2); }   // (the gates you came in by)
+  { const q = tw(23, 0, 9); part(GEO_BOX, stoneD, scene, q.x, q.y, q.z, 4, 1.2, 8); part(GEO_BOX, lam(0x7a1a14), scene, q.x, q.y + .7, q.z, 3.8, .3, 7.6); part(new THREE.ConeGeometry(5, 3, 4), gold, scene, q.x, q.y + 4, q.z).rotation.y = Math.PI / 4; }   // (the king's box)
+  { const hl = []; for (let k = 0; k < 36; k++) { const a = k / 36 * TAU, r = rand(110, 200), q = tw(Math.cos(a) * r, Math.sin(a) * r, -r * .2); hl.push([q.x, q.y, q.z, rand(40, 80), rand(20, 50), rand(40, 80)]); } instanced(new THREE.SphereGeometry(1, 16, 9), lam(0x6a7a3a), hl); }
+  bakeScenery(scene.children.slice(first));
+}
+function updateArena(dt) {
+  if (!LV || LV.theme !== 'arena' || state === 'map' || state === 'title') return; const TH = THEMES.arena;
+  for (const [s, x, y] of TH.braz || []) if (Math.random() < dt * 8) bfire(tw(s, x, y), .8, 1.4);
+  const p = LV.layout.plazas[0]; if (p.wave !== TH.lastWave) { if (TH.lastWave !== undefined && p.wave > 0 && S.roar) { S.check && S.check(); } TH.lastWave = p.wave; }
+  if (Math.random() < dt * 1.2) for (let k = 0; k < 6; k++) { const a = rand(0, TAU), r = rand(24, 33); fx.spawn(...tw(Math.cos(a) * r, Math.sin(a) * r, 5 + (r - 23.6) * .7).toArray(), rand(-.3, .3), rand(1, 2.5), rand(-.3, .3), .5, .14, .05, [1, .9, .5], [1, .7, .3]); }   // (the crowd throws up its hats)
+}
+THEMES.arena = natTheme({
+  wallTex: TX.marble, floorTex: TX.floor, tint: [1, .98, .94], door: 0x8a6a3a,
+  env: { sky: [0x3a78c8, 0x8ab8e0, 0xf0e4c8, 0xffd8a0], fog: [90, 420], fogC: 0xd8d8d0, amb: [0x9a8a78, .6], hemi: [0xe4f0ff, 0x6a5a3a, .65], sun: [0xfff0d8, 1.1], east: [0xffc890, .2], cloud: 0xffffff, sunDir: [40, 80, -60] },
+  orc: MT_ORC,
+  scenery(L) { buildArena(L, this); },
+});
 THEMES.doom.floorTex = TX.doomRock; THEMES.doom.wallTex = TX.doomRock;
 const DOOM_JETS_ON = 1.15;   // (how long each vent blows)
 function updateDoom(dt) {
@@ -8783,7 +8850,7 @@ function deepLayout() {
   const W_ = [['o', 'o', 'u', 'u'], ['u', 'u', 's'], ['a', 'a', 'u', 'u'], ['p', 'p', 's', 'o'], ['j', 'j', 'j', 'u'], ['b', 'a', 'a', 'u'], ['c', 'u', 'u'], ['s', 's', 'p', 'j'], ['c', 'a', 'a', 'b'], ['c', 'c', 'p', 'j', 'a'], ['A']];
   const names = ['', 'SHIELDS! GET ROUND THEM, OR A FINISHER BREAKS THEM', 'CROSSBOWS! GUARD AS THE BOLT LANDS AND IT GOES BACK', 'PIKES! SIDESTEP THE RED LINE, THEN STRIKE', 'FANATICS! ROLL OFF THE RED CIRCLES', 'BERSERKERS AND BOLTS!', 'A CAPTAIN! KEEP OUT OF HIS WHIRL, THEN STRIKE', 'THEY KEEP COMING!', 'ANOTHER CAPTAIN!', 'THE LAST OF THEM!', 'A TROLL IN ARMOUR THROUGH THE BREACH!'];
   return { field: [-30, 30, -56, 56], start: [0, 0], startY: WH, startH: Math.PI, terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g },
-    layout: { blocks, WH, plazas: [{ s: -3, x: 0, y: 0, r: 15, waves: W_, names, title: 'THE WALL IS BREACHED!', boss: true, last: true, breach: [-16, 0], from: [-17, 0], to: [-9.5, 0], ladders: [Math.PI - .9, Math.PI - .45, Math.PI, Math.PI + .45, Math.PI + .9], noAdds: true }] } };
+    layout: { blocks, WH, plazas: [{ s: -3, x: 0, y: 0, r: 15, waves: [['A']], names: ['A TROLL IN ARMOUR THROUGH THE BREACH!'], horde: 999, hordeOf: 999, title: 'THE WALL IS BREACHED!', boss: true, last: true, breach: [-16, 0], from: [-17, 0], to: [-9.5, 0], ladders: [Math.PI - .9, Math.PI - .45, Math.PI, Math.PI + .45, Math.PI + .9], noAdds: true }] } };
 }
 function deepContent(L) { for (const [k, s, x] of [['q', 9, 7], ['b', 9, -7], ['su', 10, 0], ['b', -14, -9], ['q', -14, 9]]) addCrate(k, s, x, 0, terrainAt(s, x, true) + 2); }
 function buildDeep(L, TH) {
@@ -8793,6 +8860,7 @@ function buildDeep(L, TH) {
   wideFloor(TX.hdMud, 0x2a2820, 120, -2, 600);
   const boxes = []; for (const [x0, x1] of [[-62, -11], [11, 62]]) { const q = tw(0, (x0 + x1) / 2, WH / 2); boxes.push([q.x, q.y, q.z, x1 - x0, WH, 5, 0]); for (let x = x0 + .7; x < x1; x += 1.5) for (const s of [-2.85, 2.85]) { const m = tw(s, x, WH + .6); boxes.push([m.x, m.y, m.z, .85, 1.2, .5, 0]); } }
   stoneBox(boxes, st);
+  { const cr = []; for (let k = 0; k < 520; k++) { const s = rand(-26, -120), x = rand(-90, 90), q = tw(s, x, terrainAt(s, x, true)), h = rand(1.7, 2.3); cr.push([q.x, q.y + h / 2, q.z, .38, h, .38, rand(0, 3)]); } TH.crowd = instanced(new THREE.CylinderGeometry(.7, 1, 1, 5), lam(0x16120f), cr); TH.crowdN = cr.length; }   // (the army waiting its turn: it thins as the horde is cut down)
   // torches of the army out in the coomb
   const tg = new THREE.Group(); for (let k = 0; k < 170; k++) { const s = rand(-30, -150), x = rand(-110, 110), sp = glowSprite(0xff9a40, rand(.7, 1.4), .85); tw(s, x, rand(1.5, 3), sp.position); tg.add(sp); } scene.add(tg); tg.userData.keep = true;
   bakeScenery(scene.children.slice(first));
@@ -8804,7 +8872,7 @@ function buildDeep(L, TH) {
   rub.visible = false; scene.add(rub); TH.rub = rub;
 }
 function setupDeep() {
-  if (!LV || !LV.deeping) return; const TH = THEMES.deeping; DEEP.t = 0; DEEP.blown = false; TH.mid.visible = true; TH.rub.visible = false;
+  if (!LV || !LV.deeping) return; const TH = THEMES.deeping; DEEP.t = 0; DEEP.blown = false; TH.mid.visible = true;  LV.hordeLeft = undefined; if (TH.crowd) TH.crowd.count = TH.crowdN; TH.rub.visible = false;
   if (!DEEP.floor) DEEP.floor = [solid(-2.5, 2.5, -11, 11, -30, LV.layout.WH, 'floor'), solid(-3.2, -2.5, -11, 11, -30, LV.layout.WH + 3, 'wall'), solid(2.5, 3.2, -11, 11, -30, LV.layout.WH + 3, 'wall')];
   for (const b of DEEP.floor) { if (!solids.includes(b)) solids.push(b); b.on = true; }
   if (!DEEP.run) DEEP.run = makeUruk('b'); DEEP.run.root.visible = DEEP.run.shadow.visible = false; setLetterbox(true);
@@ -9042,7 +9110,7 @@ function buildOsg(L, TH) {
 }
 function setupFly() {
   const on = !!(LV && LV.flyers); for (const f of FLY.list) { f.on = false; f.m.root.visible = false; } if (!on) return;
-  while (FLY.list.length < 9) { const f = { m: makeDragon(), hitFn: flyHit, aimY: 0, hitR: 3.8 }; FLY.list.push(f); }
+  while (FLY.list.length < 9) { const f = { m: makeDragon(), hitFn: flyHit, aimY: 0, hitR: 5.4 }; f.m.root.scale.setScalar(1.5); FLY.list.push(f); }   // (Osgiliath's fell beasts, half as big again)
   FLY.left = 9; FLY.wave = 0; FLY.t = 0; FLY.list.forEach((f, i) => Object.assign(f, { on: true, state: 'wait', hp: 24, wave: i / 3 | 0, s: 200, x: rand(-200, 200), y: 70, ang: i * 2.1, R: rand(30, 48), alt: rand(42, 56), cd: rand(2, 5), t: 0, ph: rand(0, 6), flash: 0, h: 0 }));
 }
 function flyHit(f, dmg) {
@@ -10765,6 +10833,18 @@ function sarUpdate(b, dt) {
 // =====================================================================
 const KH = { hp: 100, max: 100, mp: 100, maxMp: 100, combo: 0, airN: 0, comboT: 0, atk: null, buf: false, hover: 0, guardT: 0, guardCD: 0, rollT: 0, rollV: [0, 0], invT: 0, hitstop: 0,
   target: null, targetT: 0, react: null, reacting: null, magicCD: 0, bolts: [], sword: null, plaza: null, waveT: 0, theoden: null, ring: null, drive: 0, form: 0, boss: null, winT: 0, cmdT: {} };
+// the Deeping Wall's horde: once the wall's down they keep coming through the breach, a few at a time but without end, nine hundred and ninety-nine of them, while the rest of the army
+// waits its turn out in the coomb (the crowd there thins as you cut it down). Then the armoured troll
+const HORDE_KINDS = ['h', 'h', 'h', 'h', 'h', 'h', 'h', 'o', 'o', 'u', 'a', 's', 'b', 'j', 'p'];
+function updateHorde(p, dt) {
+  if (p.hLeft === undefined) { p.hLeft = p.horde; p.hT = 0; banner('NINE HUNDRED AND NINETY-NINE OF THEM. HOLD!', 2.6); }
+  const alive = URUKS.filter(u => u.plaza === p && ukLive(u)).length; LV.hordeLeft = p.hLeft + alive;
+  { const C_ = THEMES.deeping.crowd; if (C_) C_.count = Math.round(THEMES.deeping.crowdN * Math.min(1, p.hLeft / p.hordeOf)); }
+  if (p.hLeft <= 0) { if (!alive) { p.horde = 0; p.waveT = 1.6; banner('THEY BREAK! ...BUT SOMETHING HUGE IS COMING', 2.4); S.roar(); } return; }
+  p.hT -= dt; const cap = p.hLeft > 600 ? 12 : p.hLeft > 250 ? 15 : 18;
+  if (p.near && p.hT <= 0 && alive < cap) { const n = Math.min(p.hLeft, 2 + (Math.random() * 3 | 0)), a0 = rand(0, TAU); for (let i = 0; i < n; i++) { const k = p.hLeft < 120 && Math.random() < .2 ? 'c' : HORDE_KINDS[Math.random() * HORDE_KINDS.length | 0]; spawnUruk(k, p, a0 + i * .7, i * .18); } p.hLeft -= n; p.hT = rand(.35, .8); }
+  if (p.hLeft % 111 === 0 && p.hSaid !== p.hLeft && p.hLeft < p.horde) { p.hSaid = p.hLeft; banner(`${p.hLeft + alive} LEFT!`, 1.2); }
+}
 const KH_CHASE = 14;   // (how far beyond its square a foe will chase you before it gives up)
 const URUKS = [], ORBS = [], KHFX = [];
 const ukLive = u => !u.dead && !u.gone;
@@ -10776,6 +10856,7 @@ const UK_KINDS = {
   u: { hp: 22, r: .55, name: 'URUK-HAI', speed: 3.6, dmg: 9, slot: 'uruk' },
   L: { hp: 80, r: .7, name: 'LURTZ', speed: 3, dmg: 14, armor: true, slot: 'lurtz' },
   o: { hp: 11, r: .45, name: 'ORC', speed: 4.6, dmg: 6, slot: 'orc' },
+  h: { hp: 5, r: .45, name: 'ORC OF THE HORDE', speed: 4.8, dmg: 5, slot: 'orc' },
   w: { hp: 15, r: .6, name: 'WARG', speed: 6.2, dmg: 9, slot: 'warg' },
   b: { hp: 16, r: .55, name: 'BERSERKER', speed: 3.8, dmg: 18, slot: 'berserker' },
   n: { hp: 26, r: .55, name: 'BLACK RIDER', speed: 3.6, dmg: 11, slot: 'nazgul' },
@@ -10803,7 +10884,7 @@ function setupKH() {
   hob.staff.visible = false;
   document.getElementById('tSpin').firstChild.textContent = 'ATTACK'; document.getElementById('tFire').firstChild.textContent = 'MAGIC'; document.getElementById('tRk').style.display = 'none';
   if (!KH.theoden) KH.theoden = { m: makeHero('theoden') };
-  for (const p of (LV.layout && LV.layout.plazas) || []) { p.done = false; p.wave = -1; p.waveT = 0; p.near = false; }
+  for (const p of (LV.layout && LV.layout.plazas) || []) { p.done = false; p.wave = -1; p.waveT = 0; p.near = false; if (p.hordeOf) { p.horde = p.hordeOf; p.hLeft = undefined; } }
   if (!SORA.list || KH_SORA_IDS.some(i => !SORA.clips[i])) loadSora(KH_SORA_IDS).then(ok => { if (ok) { soraActs(); if (hob.skin) hob.skin.cur = ''; } });   // (Sora's moves for Gandalf, when they're here)
   KH.plaza = null; KH.drive = 0; KH.items = { potion: 4, ether: 2 }; KH.cur = 0; KH.sub = null; KH.spell = 'thunder'; resetKH(true);
 }
@@ -10817,7 +10898,7 @@ function resetKH(fresh) {
   if (LV && LV.theme === 'mordorkh') resetEye();
   if (LV && LV.flight) resetEagle();
   if (LV && LV.theme === 'bree') resetBree();
-  for (const p of (LV && LV.layout && LV.layout.plazas) || []) if (!p.done) { p.wave = -1; p.waveT = 0; p.near = false; }   // any square you hadn't finished starts again
+  for (const p of (LV && LV.layout && LV.layout.plazas) || []) if (!p.done) { p.wave = -1; p.waveT = 0; p.near = false; if (p.hordeOf) { p.horde = p.hordeOf; p.hLeft = undefined; } }   // any square you hadn't finished starts again
   for (const o of ORBS) scene.remove(o.sp); ORBS.length = 0; khClearFx();
   if (hadBoss) Music.mode = 0;
   khWhite(false);
@@ -11108,7 +11189,7 @@ function khWhite(on) {
   hob.skin = on ? hob.skinW : hob.skinG; hob.skin.cur = ''; hob.skin.holdT = 0; skinPlay(hob, 'idle');
 }
 // the reaction commands: what the green prompt does depends on whose moment it is
-const KH_REACT = { takedown: 'TAKEDOWN', repel: 'REPEL', sword: 'SWORD RUN', stand: 'YOU SHALL NOT PASS!', duel: "WIZARDS' DUEL", staff: 'BREAK HIS STAFF', deflect: 'DEFLECT', anor: 'FLAME OF ANOR', narsil: 'CUT THE RING', black: 'THE BLACK ARROW', climb: 'UP HIS BACK' };
+const KH_REACT = { takedown: 'TAKEDOWN', repel: 'REPEL', sword: 'SWORD RUN', stand: 'YOU SHALL NOT PASS!', duel: "WIZARDS' DUEL", staff: 'BREAK HIS STAFF', deflect: 'DEFLECT', anor: 'FLAME OF ANOR', narsil: 'CUT THE RING', black: 'THE BLACK ARROW', climb: 'UP HIS BACK', eye: 'STRIKE THE EYE' };
 function khReaction() {
   const R_ = KH.react; if (!R_) return;
   const u = R_.u; KH.react = null; KH.atk = null; KH.rx = KH.rx || {}; KH.rx[R_.cmd] = (KH.rx[R_.cmd] || 0) + 1;   // (KH.rx: a tally, for testing)
@@ -11120,7 +11201,7 @@ function khReaction() {
   }
   if (R_.cmd === 'sword') { KH.reacting = { u, t: 0, cmd: 'sword', hits: 0, from: [P.s, P.x, P.y] }; KH.invT = 2.4; P.ground = false; skinClip(hob, 'attack_a', .5); S.whoosh(); return; }
   if (R_.cmd === 'stand') { KH.reacting = { u, t: 0, cmd: 'stand' }; KH.invT = 2.5; bossStand(u); return; }
-  if (R_.cmd === 'duel' || R_.cmd === 'staff' || R_.cmd === 'deflect' || R_.cmd === 'anor' || R_.cmd === 'narsil' || R_.cmd === 'black' || R_.cmd === 'climb') { KH.reacting = { u, t: 0, cmd: R_.cmd }; KH.invT = 2.5; u.reaction(R_.cmd); return; }   // (Saruman's)
+  if (R_.cmd === 'duel' || R_.cmd === 'staff' || R_.cmd === 'deflect' || R_.cmd === 'anor' || R_.cmd === 'narsil' || R_.cmd === 'black' || R_.cmd === 'climb' || R_.cmd === 'eye') { KH.reacting = { u, t: 0, cmd: R_.cmd }; KH.invT = 2.5; u.reaction(R_.cmd); return; }   // (Saruman's)
   KH.reacting = { u, t: 0, hit: false, cmd: 'takedown' }; KH.invT = 1.6;
   P.vy = 11; P.ground = false; skinClip(hob, 'attack_c', .85); S.saberSwing();
 }
@@ -11454,12 +11535,13 @@ function updateKH(dt) {
   for (const p of Y.plazas) {
     if (p.done) continue;
     const pd = Math.hypot(P.s - p.s, P.x - p.x), py = Math.abs(P.y - p.y);
-    if (p.wave < 0) { if (play && pd < p.r - 1.5 && py < 4) { p.wave = 0; p.near = true; p.waveT = p.boss ? .2 : .7; banner(p.title, 1.6); S.orcGrunt(); } continue; }
+    if (p.wave < 0) { if (play && pd < p.r - 1.5 && py < 4) { p.wave = 0; p.near = true; p.waveT = p.horde ? 0 : p.boss ? .2 : .7; banner(p.title, 1.6); S.orcGrunt(); } continue; }
     const was = p.near; p.near = p.near ? pd <= p.r + KH_CHASE && py <= 9 : pd < p.r + 5 && py < 4;
     if (was !== p.near && URUKS.some(u => u.plaza === p && ukLive(u))) {
       if (play) { banner(p.near ? 'THEY HAVE SEEN YOU!' : 'YOU HAVE GIVEN THEM THE SLIP', 1.4); if (p.near) S.orcGrunt(); }
       if (KH.boss && KH.boss.plaza === p) Music.mode = p.near ? 1 : 0;
     }
+    if (p.horde) { updateHorde(p, dt); continue; }   // (the Deeping Wall's endless horde comes first)
     if (p.waveT > 0) { if (p.near) { p.waveT -= dt; if (p.waveT <= 0) { const w = p.waves[p.wave], a0 = rand(0, TAU); w.forEach((k, i) => spawnUruk(k, p, a0 + i / w.length * TAU + rand(-.3, .3), i * .25)); } } }
     else if (p.eye && !URUKS.some(u => u.plaza === p)) { p.done = true; p.near = false; }   // (the hunters the Eye sent are beaten)
     else if (!URUKS.some(u => u.plaza === p)) {
@@ -11567,6 +11649,7 @@ showScreen(null); syncPauseBtns();
     if (q.get('cast') && q.get('cast') !== 'all' && LV.kh) { KH.mp = 100; KH.magicCD = 0; KH.atk = null; khCast(q.get('cast')); for (let i = 0; i < 12; i++) step(1 / 60, true); }   // (&cast=thunder: a spell just before the picture)
     if (LV.kh) console.log(`${LV.name} after ${q.get('sim')}s: walkto ${WALKTO ? WALKTO.map(v => v.toFixed(1)).join(',') : '-'},${KH.boss ? ` boss ${KH.boss.state}${KH.boss.a ? '/' + KH.boss.a.type + '/' + KH.boss.a.ph : ''} hp ${Math.round(KH.boss.hp)} phase ${KH.boss.phase},` : ''} drive ${Math.round(KH.drive)} form ${KH.form.toFixed(1)}, reactions ${JSON.stringify(KH.rx || {})}, squares done ${LV.layout.plazas.filter(p => p.done).length}/${LV.layout.plazas.length}, in ${KH.plaza ? LV.layout.plazas.indexOf(KH.plaza) : '-'} wave ${KH.plaza ? KH.plaza.wave : '-'}, uruks ${URUKS.length} (${URUKS.map(u => u.state + ':' + Math.round(u.hp)).join(' ')}), HP ${Math.round(KH.hp)} MP ${Math.round(KH.mp)}, kills ${gs.kills}, at ${P.s.toFixed(0)},${P.x.toFixed(0)},${P.y.toFixed(1)} (ground ${TERR ? terrainAt(P.s, P.x).toFixed(1) : 'none'}, on ${P.ground} ${P.standOn ? P.standOn.kind + ' ' + [P.standOn.y0, P.standOn.y1].map(v => v && v.toFixed(1)) : ''}), state ${state}`);
       console.log(`camera at ${camera.position.toArray().map(v => v.toFixed(1)).join(",")} looking ${camera.getWorldDirection(new V3()).toArray().map(v => v.toFixed(2)).join(",")}, Gandalf at ${tw(P.s, P.x, P.y).toArray().map(v => v.toFixed(1)).join(",")}`);
+      if (LV.flyers && q.get('autorun')) setTimeout(() => { const f0 = FLY.list.find(f => f.state !== 'wait'); if (f0) { const p = tw(f0.s, f0.x, f0.y); DEBUG_CAM = { p: p.clone().add(new V3(14, 4, 14)), l: p }; let n = 0, nm = []; const so = f0.m.skin && f0.m.skin.obj, inS = new Set(); if (so) so.traverse(o => inS.add(o)); f0.m.root.traverse(o => { if (o.isMesh && o.visible) { n++; if (!inS.has(o) && nm.length < 6) nm.push(o.name || o.geometry.type); else if (inS.has(o) && nm.length < 12) nm.push('S:' + o.name); } }); console.log('autorun flyer visible meshes ' + n + ' skin ' + !!so + ' insc ' + inS.size + ' ' + nm.join(',') + ' state ' + f0.state + ' names ' + (so ? (() => { const a = []; so.traverse(o => { if (o.isMesh) a.push(o.name + (o.visible ? '' : '(hid)')); }); return a.join(','); })() : '')); } }, 14000);
       if (q.get('autorun')) console.log('autorun after ' + q.get('sim') + 's: s ' + P.s.toFixed(1) + ' y ' + P.y.toFixed(1) + ' of end ' + END_S.toFixed(0) + ', falls ' + (gs.falls || 0));
       if (q.get('pos') || q.get('spring')) console.log(`after ${q.get('sim')}s: s ${P.s.toFixed(1)} x ${P.x.toFixed(1)} y ${P.y.toFixed(1)} ground ${P.ground}`); }   // &sim=6 plays 6 seconds first (invincible)
     if (q.get('info')) setTimeout(() => { renderer.info.autoReset = false; renderer.info.reset(); renderer.setRenderTarget(rt); renderer.render(scene, camera); console.log('scene: ' + renderer.info.render.calls + ' draw calls, ' + renderer.info.render.triangles + ' triangles'); renderer.info.autoReset = true; }, 500);   // &info=1 logs how much one frame draws
