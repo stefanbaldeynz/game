@@ -2942,7 +2942,7 @@ function nextLevel() {
   if (!LEVELS[LI + 1] || LEVELS[LI + 1].loc !== LV.loc) { backToMap(LV.loc); return; }
   showScreen(null); loadLevel(LI + 1); respawn(true); levelCard(); hudT = 4;
 }
-function levelCard() { banner(LV.name, 2.4); }
+function levelCard() { banner(LV.name, 2.4, true); }
 function restoreCrate(c) { c.alive = true; c.y = c.y0; c.bounces = 0; c.fuse = 0; c.brokenT = -1; c.vy = 0; c.squash = 0; c.box.on = true; c.mesh.visible = true; if (c.type === 't') c.mesh.material = CRATE_MATS.t[0]; syncCrate(c); }
 function resetOrc(o) {
   o.s = o.s0; o.x = o.x0; o.y = o.y0; o.deathT = -1; o.t = rand(0, 6); o.h = Math.PI; o.shootT = rand(1, 2);
@@ -5388,8 +5388,8 @@ function updateCamera(dt) {
     }
     if (LV.bow && (!LV.bowU || BOW.aim)) {   // (with a bow: from over Gandalf's shoulder, out at the sky; Shift and / turn it, and the sight turns it from the edge of the screen)
       const eX = BOW.aim && Math.abs(BOW.cx) > .7 ? Math.sign(BOW.cx) * (Math.abs(BOW.cx) - .7) * 4 : 0, eY = BOW.aim ? (BOW.cy > .7 ? (BOW.cy - .7) * 3 : BOW.cy < -.4 ? (BOW.cy + .4) * 3 : 0) : -(cam.bp || 0) * .8;
-      cam.by = (cam.by || 0) + ((inp.camT || 0) * 1.5 + eX) * dt; if (!LV.bow360) cam.by = clamp(cam.by, -1.3, 1.3); cam.bp = clamp((cam.bp || 0) + eY * dt, 0, 1); cam.yaw = (LV.bow360 ? 0 : Math.PI) + cam.by;
-      const fs = Math.cos(cam.yaw), fx_ = Math.sin(cam.yaw), bk_ = LV.bowU ? 4 : 6.5; _a.copy(tw(P.s - fs * bk_, P.x - fx_ * bk_, P.y + 3.2)); _b.copy(tw(P.s + fs * 30, P.x + fx_ * 30, P.y + 7 + cam.bp * 32));
+      cam.by = (cam.by || 0) + ((inp.camT || 0) * 1.5 + eX) * dt; if (!LV.bow360) cam.by = clamp(cam.by, -1.3, 1.3); cam.bp = clamp((cam.bp || 0) + eY * dt, LV.ent ? -.55 : 0, 1); cam.yaw = (LV.bow360 ? 0 : Math.PI) + cam.by;
+      const fs = Math.cos(cam.yaw), fx_ = Math.sin(cam.yaw), bk_ = LV.bowU ? 4 : 6.5; _a.copy(tw(P.s - fs * bk_, P.x - fx_ * bk_, P.y + 3.2 + Math.max(0, -cam.bp) * 9)); _b.copy(tw(P.s + fs * 30, P.x + fx_ * 30, P.y + (LV.ent ? -2 : 7) + cam.bp * 32));
       if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-8 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp);
       const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
     }
@@ -5490,7 +5490,9 @@ function updateHUD(dt) {
   document.getElementById('nLives').textContent = Math.max(0, gs.lives);
 }
 let bannerTO = 0;
-function banner(txt, dur = 1.3) { const b = document.getElementById('banner'); b.textContent = txt; b.classList.add('on'); clearTimeout(bannerTO); bannerTO = setTimeout(() => b.classList.remove('on'), dur * 1000); }
+// no pop-ups in the middle of play (waves, bosses arriving, getting away, checkpoints...): only the level's name as it starts, prompts for the keys, and the Z / X / G switches
+const BANNER_KEEP = /: |MASH|^INVINCIBLE |^UNLIMITED ROCKETS|^ROCKETS NORMAL|^RETRO LOOK|^HD LOOK/;
+function banner(txt, dur = 1.3, force) { if (txt && !force && !BANNER_KEEP.test(txt)) return; const b = document.getElementById('banner'); b.textContent = txt; b.classList.add('on'); clearTimeout(bannerTO); bannerTO = setTimeout(() => b.classList.remove('on'), dur * 1000); }
 function showScreen(id) {
   document.querySelectorAll('.scr').forEach(s => s.classList.toggle('on', s.id === id));
   document.getElementById('ov').classList.toggle('dim', !!id);
@@ -8592,7 +8594,7 @@ function buildRace(L, TH) {
   const T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
   const grd = surf(TX.meadow, { sky, vc: true, rough: .95, bump: 1.6, env: .2 });
   groundMesh(T_, TX.meadow, (k, sl, y) => k === 'p' ? [.85, .7, .5] : k === 'r' ? [.45, .42, .35] : [.55, .7, .45], 3, () => grd);
-  wideFloor(TX.meadow, 0x3a4a2a, 90, 8, 900);
+  wideFloor(TX.meadow, 0x3a4a2a, 90, -2.5, 900);   /* (below the lowest of the road, the Ford: the hills rise above it) */
   const wt = TX.sea.clone(); wt.needsUpdate = true; wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(10, 2); TH.waterTex = wt;
   const ford = new THREE.Mesh(new THREE.PlaneGeometry(90, 13), new THREE.MeshPhongMaterial({ map: wt, color: 0x5a8aa0, specular: 0xffffff, shininess: 90, transparent: true, opacity: .85 })); ford.rotation.x = -Math.PI / 2; tw(RACE_FORD, 0, -.4, ford.position); scene.add(ford);
   // the flood: a wall of white water held back upstream, loosed when Gandalf is over
@@ -8622,7 +8624,8 @@ function buildRace(L, TH) {
     ferns.forEach((p, i) => { for (let k = 0; k < 3; k++) { Q.setFromEuler(new THREE.Euler(rand(-.4, .4), k * 1.05 + rand(0, 1), 0)); _m4.compose(p, Q, S3.setScalar(rand(.8, 1.4))); fi.setMatrixAt(i * 3 + k, _m4); } }); scene.add(fi);
     TH.shafts = []; for (let s = 30; s < RACE_FORD - 20; s += 40) { const g = glowSprite(0xfff0c0, 14, .12); tw(s, rand(-3, 3), at(s, 0) + 7, g.position); g.scale.set(5, 16, 1); scene.add(g); }   // (light coming down through the leaves)
   }
-  // Rivendell's arch at the end of the road  { const q = tw(RACE_END - 4, 0, at(RACE_END - 4, 0)); const pale = lam(0xf0e8d8); for (const sx of [-1, 1]) part(GEO_BOX, pale, scene, q.x + sx * 5, q.y + 3.5, q.z, 1, 7, 1); const ar = new THREE.Mesh(new THREE.TorusGeometry(5, .45, 6, 18, Math.PI), pale); ar.position.set(q.x, q.y + 7, q.z); scene.add(ar); }
+  // Rivendell's arch at the end of the road
+  { const q = tw(RACE_END - 4, 0, at(RACE_END - 4, 0)); const pale = lam(0xf0e8d8); for (const sx of [-1, 1]) part(GEO_BOX, pale, scene, q.x + sx * 5, q.y + 3.5, q.z, 1, 7, 1); const ar = new THREE.Mesh(new THREE.TorusGeometry(5, .45, 6, 18, Math.PI), pale); ar.position.set(q.x, q.y + 7, q.z); scene.add(ar); }
   bakeScenery(scene.children.slice(first));
 }
 // a Nazgûl on a black horse (with your own models, Battle for Middle-earth's mounted Nazgûl)
@@ -10211,12 +10214,12 @@ function bossUpdate(b, dt) {
   switch (b.state) {
     case 'intro': {   // summoned, as in Battle for Middle-earth: a ring of fire opens in the ground and he rises up out of it
       if (b.t < 0) return; m.root.visible = true; m.shadow.visible = false;
-      if (!b.sum) { b.sum = true; b.s = b.to[0]; b.x = b.to[1]; b.gy = landAt(b.s, b.x); S.roar(); cam.shake = .6; khFx(warnMesh(b.s, b.x, 0, 4.5, 0, TAU, 0xff6a10), f => { f.mesh.material.opacity = .5 + Math.sin(f.t * 12) * .15; return b.state === 'intro' && f.t < 2.4; }); skinClip(m, 'ignite_ta', 2.5); }   // (the whole rise is the summoning: the clip spans it, so nothing cuts in)
+      if (!b.sum) { b.sum = true; b.s = b.to[0]; b.x = b.to[1]; b.gy = landAt(b.s, b.x); S.roar(); cam.shake = .6; khFx(warnMesh(b.s, b.x, 0, 4.5, 0, TAU, 0xff6a10), f => { f.mesh.material.opacity = .5 + Math.sin(f.t * 12) * .15; return b.state === 'intro' && f.t < 2.4; }); if (skinClip(m, 'ignite_ta', clipDur(m, 'ignite_ta', 1.8))) { m.skin.curAct.paused = true; m.skin.holdT = 1e9; } }   /* (he rises held in the first of the summoning, and only once he is up does it play: one move, start to end) */
       const k = clamp((b.t - .5) / 2, 0, 1); b.y = b.gy - 11 * (1 - k * k * (3 - 2 * k)); b.h += angDiff(b.h, toP) * Math.min(1, dt * 3);
       for (let q = 0; q < 6; q++) { const a = rand(0, TAU), r = rand(.5, 4.5); bfire(tw(b.s + Math.cos(a) * r, b.x + Math.sin(a) * r, b.gy + .2), 2, 3); }
       if (Math.random() < .5) smoke.spawn(...tw(b.s + rand(-3, 3), b.x + rand(-3, 3), b.gy + 1).toArray(), rand(-.5, .5), rand(3, 5), rand(-.5, .5), rand(4, 6), 2, 6, [.1, .05, .05], [.2, .15, .15], -.2, .3);
-      if (k >= 1 && !b.landed) { b.landed = true; b.y = b.gy; const p = tw(b.s, b.x, b.y + .3); sparks(p, 60, 12, [1, .9, .6], [1, .4, .1], .3); puff(p, 16, 3); S.smash(); S.roar(); cam.shake = 1.1; skinClip(m, 'roar_a', clipDur(m, 'roar_a', 1.8)); banner('THE BALROG OF MORGOTH!', 2.2); bossWave(b, b.s, b.x, 12, 11, 6); }
-      if (b.t > 2.6 + clipDur(m, 'roar_a', 1.8)) { b.state = 'idle'; b.t = 0; b.cd = .8; }   // (and his roar to its end)
+      if (k >= 1 && !b.landed) { b.landed = true; b.y = b.gy; const p = tw(b.s, b.x, b.y + .3); sparks(p, 60, 12, [1, .9, .6], [1, .4, .1], .3); puff(p, 16, 3); S.smash(); S.roar(); cam.shake = 1.1; if (m.skin && m.skin.cur === 'clip' && m.skin.curAct) { m.skin.curAct.paused = false; m.skin.holdT = T + clipDur(m, 'ignite_ta', 1.8); } bossWave(b, b.s, b.x, 12, 11, 6); }
+      if (b.t > 2.6 + clipDur(m, 'ignite_ta', 1.8)) { b.state = 'idle'; b.t = 0; b.cd = .8; }   // (and the summoning to its end)
       break;
     }
     case 'idle': {
@@ -12196,6 +12199,7 @@ showScreen(null); syncPauseBtns();
       if (W_ && p && p.pi !== undefined && (Math.hypot(P.s - p.s, P.x - p.x) > p.r - 2 || Math.abs(P.y - p.y) > 3)) { let bi = 0, bd = 1e9; for (let i = 0; i < W_.length; i += 2) { const d = Math.hypot(W_[i][0] - P.s, W_[i][1] - P.x) + Math.abs(W_[i][2] - P.y) * 3; if (d < bd) { bd = d; bi = i; } } const ti = Math.min(p.pi, bi + 8); if (ti < p.pi - 1) return [W_[ti][0], W_[ti][1]]; }   // (along the way, at Helm's Deep)
       const dr = LV.layout.hall && LV.layout.hall.door; return p ? [p.s, p.x] : dr ? [dr.s, dr.x] : [P.s, P.x]; } };
     if (q.get('aimt') && LV.bow) BOW.aim = true;
+    const runTests = () => {
     if (q.get('sim')) { cheats.god = !q.get('mortal'); for (let i = 0; i < Number(q.get('sim')) * 60; i++) { for (const r of ROUTE) if (Math.round(r[0] * 60) === i) { WALKTO = [r[1], r[2]]; console.log('route t=' + r[0] + ' at ' + P.s.toFixed(0) + ',' + P.x.toFixed(0) + ' y ' + P.y.toFixed(1) + (DECK ? ' deck ' + deckAt(P.s, P.x).toFixed(1) : '') + ' foes ' + URUKS.map(u => u.state + '@' + u.s.toFixed(0) + ',' + u.x.toFixed(0)).join(' ')); } step(1 / 60, true); } if (q.get('cast') === 'all' && LV.kh) { const bad = []; for (const p of KH_POWERS) { try { KH.mp = 100; KH.magicCD = 0; KH.atk = null; if (!khCast(p.id)) bad.push(p.id + ' (not cast)'); for (let i = 0; i < 90; i++) step(1 / 60, true); } catch (e) { bad.push(p.id + ': ' + e.message); } } console.log('castall ' + KH_POWERS.length + ' powers, problems: ' + (bad.join('; ') || 'none') + ', kills ' + gs.kills); }   // (&cast=all: every power in turn, for testing)
     if (q.get('cutnow') && KH.boss) { bossFall(KH.boss); for (let i = 0; i < Number(q.get('cutnow')) * 60; i++) step(1 / 60, true); }   // (&cutnow=2: the bridge's ending, 2 seconds in, for testing)
     if (q.get('aimt') && LV.bow) BOW.aim = true;   // (testing: &aimt=1 starts with the sight up)
@@ -12214,6 +12218,7 @@ showScreen(null); syncPauseBtns();
     if (q.get('pick')) setTimeout(() => { const [px, py] = q.get('pick').split(',').map(Number), rc = new THREE.Raycaster(); rc.setFromCamera(new THREE.Vector2(px, py), camera); if (LV && LV.layout && LV.layout.ramps) console.log('autorun ramps ' + JSON.stringify(LV.layout.ramps.map(r => [r.sb, r.xb, r.sa, r.xa, r.ya].map(v => +v.toFixed(1))))); console.log('autorun skin ' + URUKS.filter(u => u.boss).map(u => { const O = u.m.skin && u.m.skin.obj; if (!O) return u.state + ':noobj'; const bx = new THREE.Box3().setFromObject(O); return u.state + ':' + u.m.skin.cur + ' root ' + u.m.root.visible + ' ' + u.m.root.position.toArray().map(v => v.toFixed(0)) + ' scale ' + O.scale.x.toFixed(3) + ' box ' + bx.min.toArray().map(v => v.toFixed(1)) + ' .. ' + bx.max.toArray().map(v => v.toFixed(1)); }).join(' | ') + ' hob ' + hob.root.visible + ' ' + hob.root.position.toArray().map(v => v.toFixed(1)) + ' P ' + P.y.toFixed(1)); console.log('autorun pick ' + rc.intersectObjects(scene.children, true).slice(0, 5).map(h => [h.object.type, h.distance.toFixed(1), h.object.name, h.object.material && h.object.material.type, h.object.material && h.object.material.color && h.object.material.color.getHexString(), h.object.parent && h.object.parent.type, h.object.parent && h.object.parent.parent && h.object.parent.parent.type].join(':')).join(' | ')); }, 15000);   // &pick=x,y (-1..1): what's on the screen there (testing)
     if (q.get('cam')) { const [s, x, y, ls, lx, ly] = q.get('cam').split(',').map(Number); DEBUG_CAM = { p: tw(s, x, y), l: tw(ls, lx, ly) }; }   // &cam=s,x,y,ls,lx,ly: a fixed camera in the level
     if (q.get('peek') && balrogs[0]) { const r = balrogs[0].m.root, [x, y, z] = q.get('peek').split(',').map(Number); r.updateMatrixWorld(true); DEBUG_CAM = { p: r.localToWorld(new V3(x, y, z)), l: r.localToWorld(new V3(0, 5, 0)) }; }   // &peek=8,7,12 looks at the Balrog from there
+    }; q.get("waitmodels") ? whenModels(runTests) : runTests();   // (&waitmodels=1: the rest only once your own models are in)
   }
 }
 requestAnimationFrame(frame);
