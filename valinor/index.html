@@ -2832,7 +2832,7 @@ const LEVELS = [
   },
   {
     // Isengard's second level: on Treebeard's shoulder across the plain to Orthanc, shooting down the orcs and wargs that come at him (see THE MARCH OF THE ENTS)
-    straight: true, roam: true, kh: true, bow: true, bowU: true, bow360: true, ent: true, name: 'THE MARCH OF THE ENTS', sub: "ON TREEBEARD'S SHOULDER TO ORTHANC", loc: 'isen', theme: 'isen', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 60000, CZ: 0, base: -4, wallH: 0, winTitle: 'ISENGARD IS TAKEN!',
+    straight: true, roam: true, kh: true, bow: true, bowU: true, bow360: true, ent: true, name: 'THE MARCH OF THE ENTS', sub: "ON TREEBEARD'S SHOULDER TO ORTHANC", loc: 'isen', theme: 'isen', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 135000, CZ: 0, base: -4, wallH: 0, winTitle: 'ISENGARD IS TAKEN!',
     ...entLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { },
@@ -3007,8 +3007,8 @@ addEventListener('mousedown', e => {
 });
 addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('pointermove', e => { if (state === 'map' && (e.buttons & 1) && !(e.target.closest && e.target.closest('[data-key]'))) mapClick(e.clientX, e.clientY, true); });
-addEventListener('blur', () => { for (const k in keys) keys[k] = false; touchReset(); if (state === 'play') pause(true); });
-document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(true); });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; touchReset(); if (state === 'play' && !location.search.includes('sim=')) pause(true); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play' && !location.search.includes('sim=')) pause(true); });
 function onKey(code) {
   if (KH_PMENU.open) { khPowersKey(code); return; }   // (the powers menu has the keys while it's open)
   if (CHAP && state === 'map') { if (!/^Key[MGZX]$/.test(code)) { chapKey(code); return; } }   // (and a level menu)
@@ -6062,7 +6062,7 @@ const MODEL_SLOTS = {
   // (The Escape: Battle for Middle-earth's great eagle; the Watcher: its tentacle)
   gandalf: { height: 1.75, turn: -Math.PI / 2, saberBone: 'B_SWORDBONE' }, balrog: { height: 11, turn: -Math.PI / 2, glow: .35, sink: .45, fx: 0xff7a30, hide: /swordfire/i }, witchking: { height: 2.9, turn: -Math.PI / 2, saberBone: 'B_SWORD', hide: /^mace/i },
   shelob: { height: 3.2, turn: -Math.PI / 2 }, nazgul: { height: 2.3, turn: -Math.PI / 2 }, orc: { height: 1.45, turn: -Math.PI / 2, hide: /^orc[a-f](?![a-z])/i },   // (its six corpses, all on at once, and their picture never came)
-  ent: { height: 12.5, turn: -Math.PI / 2, anims: { walk: /^walk|^wlk/i, idle: /^idle_a|^idla/i, attack: /^attack_a|^atka/i, hit: /^hit|^hurt/i, die: /^die|^diea/i } },   // (the March of the Ents: Battle for Middle-earth's Treebeard)
+  ent: { height: 12.5, turn: -Math.PI / 2, cut: true, anims: { walk: /^walk|^wlk/i, idle: /^idle_a|^idla/i, attack: /^attack_a|^atka/i, hit: /^hit|^hurt/i, die: /^die|^diea/i } },   // (the March of the Ents: Battle for Middle-earth's Treebeard)
   frodo: { height: 1.15, turn: -Math.PI / 2 }, sam: { height: 1.15, turn: -Math.PI / 2 }, merry: { height: 1.2, turn: -Math.PI / 2 }, pippin: { height: 1.2, turn: -Math.PI / 2 },
   aragorn: { height: 1.95, turn: -Math.PI / 2 }, legolas: { height: 1.9, turn: -Math.PI / 2 }, gimli: { height: 1.35, turn: -Math.PI / 2 }, boromir: { height: 1.95, turn: -Math.PI / 2 },
   fellbeast: { height: 7.5, turn: -Math.PI / 2, hide: /^(FELL_BEAST|WINGS)\d/i }, horse: { height: 2.5, turn: -Math.PI / 2, hide: /gandalf/i, anims: { walk: /^run_a/i, jump: /^fly/i } },
@@ -10635,7 +10635,7 @@ function updateEnt(dt) {
     if (ENT.s > -65 && !ENT.cp2) { ENT.cp2 = true; gs.cp = { s: ENT.s, x: 0, y: 0, t: gs.time, deaths: 0 }; ENT.cpSent = ENT.sent; S.check(); banner('CHECKPOINT', 1); }
     ENT.spawnT -= dt; if (ENT.sent < ENT.total && ENT.spawnT <= 0 && alive.length < 12) { const n = 1 + (Math.random() * (ENT.sent > 20 ? 4 : 3) | 0); for (let k = 0; k < n && ENT.sent < ENT.total; k++) entSpawn(); ENT.spawnT = rand(1.6, 3); if (!ENT.said) { ENT.said = true; banner('ORCS OF ISENGARD! U: TAKE AIM · K: LOOSE', 2.6); } }
     // a stamp of his great feet on anything about them
-    ENT.stompT -= dt; if (ENT.stompT <= 0) { ENT.stompT = rand(3.5, 5); const near = alive.filter(f => Math.hypot(f.s - ENT.s, f.x - ENT.x) < 4.2); if (near.length) { for (const f of near) entFoeHit(f, 99); dustAt(ENT.s, ENT.x, terrainAt(ENT.s, ENT.x, true), 18); S.smash(); cam.shake = Math.max(cam.shake, .5); skinClip(M, 'attack_a', .9); } }
+    ENT.stompT -= dt; if (ENT.stompT <= 0) { ENT.stompT = rand(2.6, 3.6); const near = alive.filter(f => Math.hypot(f.s - ENT.s, f.x - ENT.x) < 4.2); if (near.length) { for (const f of near) entFoeHit(f, 99); dustAt(ENT.s, ENT.x, terrainAt(ENT.s, ENT.x, true), 18); S.smash(); cam.shake = Math.max(cam.shake, .5); skinClip(M, 'attack_a', .9); } }
     if (ENT.hp <= 0 && !ENT.down) { ENT.down = true; banner('TREEBEARD IS BROUGHT DOWN!', 2); KH.hp = 0; die('hit'); }
     if (ENT.s >= ENT.goal - .2 && ENT.sent >= ENT.total && !alive.length && !ENT.won) { ENT.won = true; banner('ISENGARD IS TAKEN!', 2.4); roamWin(LV.winTitle || 'ISENGARD IS TAKEN!'); }
   }
@@ -10645,7 +10645,7 @@ function updateEnt(dt) {
     if (f.dead) { f.t += dt; m.body.rotation.x = -Math.min(1.4, f.t * 4); m.body.position.y = -Math.max(0, f.t - .5) * .8; if (f.t > 1.4) { scene.remove(m.root); scene.remove(m.shadow); f.gone = true; } continue; }
     const ds = ENT.s - f.s, dx = ENT.x - f.x, d = Math.hypot(ds, dx) || .01; f.h = Math.atan2(dx, ds);
     if (d > 2.6) { if (play) { f.s += ds / d * f.sp * dt; f.x += dx / d * f.sp * dt; } skinPlay(m, 'walk'); f.ph = (f.ph || 0) + dt * 12; m.legs.forEach((l, i) => l.rotation.x = Math.sin(f.ph + i * Math.PI) * .7); }
-    else { f.cd -= dt; skinPlay(m, 'attack'); m.armR.rotation.x = Math.sin(T * 9) * 1.4 - 1; if (play && f.cd <= 0) { f.cd = rand(.9, 1.3); ENT.hp -= f.kind === 'w' ? 3 : 2; ENT.hurtT = .25; S.orcGrunt(); sparks(tw(f.s + ds / d * .8, f.x + dx / d * .8, f.y + 1.2), 8, 4, [.8, .6, .4], [.4, .3, .2]); } }
+    else { f.cd -= dt; skinPlay(m, 'attack'); m.armR.rotation.x = Math.sin(T * 9) * 1.4 - 1; if (play && f.cd <= 0) { f.cd = rand(1.1, 1.5); if (!cheats.god) ENT.hp -= f.kind === 'w' ? 1.5 : 1; ENT.hurtT = .25; S.orcGrunt(); sparks(tw(f.s + ds / d * .8, f.x + dx / d * .8, f.y + 1.2), 8, 4, [.8, .6, .4], [.4, .3, .2]); } }
     f.y = terrainAt(f.s, f.x, true); place(m.root, f.s, f.x, f.y, f.h); tw(f.s, f.x, f.y + .03, m.shadow.position);
   }
   ENT.foes = ENT.foes.filter(f => !f.gone);
