@@ -280,9 +280,27 @@ const angDiff = (a, b) => { let d = (b - a) % TAU; if (d > Math.PI) d -= TAU; if
 // track space: s = arc distance along the rampart, x = lateral (+ = inward, towards the city), y = height
 // on a straight level the same (s, x) frame is laid out flat: s runs along +z, and x (inward) along -x, so the road
 // looks exactly like the ring at its starting point, just without the bend
-function tw(s, x, y, out) { out = out || new V3(); if (STRAIGHT) return out.set(CX + R - x, y + Y0, CZ + s); const th = s / R, r = R - x; return out.set(CX + Math.cos(th) * r, y + Y0, CZ + Math.sin(th) * r); }
-function toTrack(v) { if (STRAIGHT) return { s: v.z - CZ, x: R - (v.x - CX), y: v.y - Y0 }; const dx = v.x - CX, dz = v.z - CZ; let s = Math.atan2(dz, dx) * R; if (s < -25) s += CIRC; return { s, x: R - Math.hypot(dx, dz), y: v.y - Y0 }; }
-const trackAng = s => STRAIGHT ? 0 : s / R;   // which way the road faces at s
+function tw(s, x, y, out) { out = out || new V3(); if (CURVE) { const c = curveAt(s); return out.set(CX + R + c[0] - x * Math.cos(c[2]), y + Y0, CZ + c[1] - x * Math.sin(c[2])); } if (STRAIGHT) return out.set(CX + R - x, y + Y0, CZ + s); const th = s / R, r = R - x; return out.set(CX + Math.cos(th) * r, y + Y0, CZ + Math.sin(th) * r); }
+function toTrack(v) { if (CURVE) return curveFind(v); if (STRAIGHT) return { s: v.z - CZ, x: R - (v.x - CX), y: v.y - Y0 }; const dx = v.x - CX, dz = v.z - CZ; let s = Math.atan2(dz, dx) * R; if (s < -25) s += CIRC; return { s, x: R - Math.hypot(dx, dz), y: v.y - Y0 }; }
+const trackAng = s => CURVE ? curveAt(s)[2] : STRAIGHT ? 0 : s / R;   // which way the road faces at s
+// a winding road (L.curve: which way it heads at each s, 0 being straight on): its centre line worked out a metre at a time. tw, place and toTrack follow it,
+// so a level built along s and x in the usual way bends and winds without knowing it (the Ford race: the road through the woods)
+let CURVE = null; const CV = [0, 0, 0];
+function buildCurve(fn, s0 = -200, s1 = 1600) {
+  const n = s1 - s0 + 1, X = new Float64Array(n), Z = new Float64Array(n), A = new Float64Array(n); for (let i = 0; i < n; i++) A[i] = fn(s0 + i);
+  for (let i = 1; i < n; i++) { const a = (A[i - 1] + A[i]) / 2; X[i] = X[i - 1] - Math.sin(a); Z[i] = Z[i - 1] + Math.cos(a); }
+  const ox = X[-s0], oz = Z[-s0]; for (let i = 0; i < n; i++) { X[i] -= ox; Z[i] -= oz; } return { s0, n, X, Z, A };
+}
+function curveAt(s) {
+  const C = CURVE, f = clamp(s - C.s0, 0, C.n - 1.0001), i = f | 0, u = f - i, e = s - C.s0 - f, a = C.A[i] + (C.A[i + 1] - C.A[i]) * u;
+  CV[0] = C.X[i] + (C.X[i + 1] - C.X[i]) * u - Math.sin(a) * e; CV[1] = C.Z[i] + (C.Z[i + 1] - C.Z[i]) * u + Math.cos(a) * e; CV[2] = a; return CV;
+}
+function curveFind(v) {   // (the nearest point of the centre line, then how far along and across from it)
+  const C = CURVE, lx = v.x - CX - R, lz = v.z - CZ; let best = 1e18, bi = 0;
+  for (let i = 0; i < C.n; i += 4) { const d = (C.X[i] - lx) ** 2 + (C.Z[i] - lz) ** 2; if (d < best) { best = d; bi = i; } }
+  for (let i = Math.max(0, bi - 4), e = Math.min(C.n - 1, bi + 4); i <= e; i++) { const d = (C.X[i] - lx) ** 2 + (C.Z[i] - lz) ** 2; if (d < best) { best = d; bi = i; } }
+  const a = C.A[bi], dx = lx - C.X[bi], dz = lz - C.Z[bi]; return { s: C.s0 + bi - dx * Math.sin(a) + dz * Math.cos(a), x: -(dx * Math.cos(a) + dz * Math.sin(a)), y: v.y - Y0 };
+}
 function place(o, s, x, y, h = 0) { tw(s, x, y, o.position); o.rotation.set(0, -(trackAng(s) + h), 0); }
 const _a = new V3(), _b = new V3(), _c = new V3(), _d = new V3(), _g = new V3();
 
@@ -999,7 +1017,7 @@ function inSolid(t) { for (const b of solids) if (b.on && t.s > b.s0 && t.s < b.
 //  Every ring's visuals are built once so the circles you've climbed stay visible below; solids only for the level being played.
 // =====================================================================
 let LV = null, LI = 0, START_S = 1.2, END_S = 298.16, torches = [], buildL = null;
-function setFrame(L) { R = L.R; Y0 = L.Y0; CIRC = TAU * R; CX = L.CX || 0; CZ = L.CZ || 0; STRAIGHT = !!L.straight; TERR = L.terrain || null; DECK = L.deck || null; }
+function setFrame(L) { R = L.R; Y0 = L.Y0; CIRC = TAU * R; CX = L.CX || 0; CZ = L.CZ || 0; STRAIGHT = !!L.straight; CURVE = L.curve ? (L.curveT || (L.curveT = buildCurve(L.curve))) : null; TERR = L.terrain || null; DECK = L.deck || null; }
 const GM = new Geo(), GF = new Geo();
 const rubbleList = [], cityFires = [], torchSprites = [];
 function rubble(s, x, y) { rubbleList.push({ p: tw(s, x, y), sz: rand(.3, .8) }); }
@@ -2534,7 +2552,7 @@ function rivendellLayout() {
 const USTAIR = { FLIGHTS: 6, STEPS: 30, RISE: 7, X: 18, LAND: 23 }, OSG = { TOP: 30, R: 8.6 };   // (the Stairs of Cirith Ungol's size; Osgiliath's tower)
 const RACE_FORD = 520, RACE_END = 572;
 const ER = { WALK: 12, X0: -46, X1: 46, TOWERS: [-46, -23, 0, 23, 46], TOP: 20 };   // (Erebor's ramparts: the walk's height and ends, its towers, their tops)   // (the race to the Ford: where the river crosses the road, and where the road ends)
-const DOOM_R = 46, EAG_S1 = 760, EAG_END = 1560, EAG_V = 25;
+const DOOM_R = 46, UNG_R = 50, EAG_S1 = 760, EAG_END = 1560, EAG_V = 25;
 const ARENA_TRIALS = [
   { name: 'THE ORC TRIAL', sub: 'ORCS AND ARCHERS · 5 ROUNDS', rounds: [['o', 'o', 'o'], ['o', 'o', 'M', 'o'], ['M', 'M', 'o', 'o', 'o'], ['Q', 'o', 'o', 'M'], ['R', 'o', 'o']] },
   { name: 'THE TRIAL OF ISENGARD', sub: 'URUK-HAI · 6 ROUNDS · LURTZ', rounds: [['u', 'u', 'o'], ['s', 'u', 'a'], ['p', 'p', 'u'], ['b', 'a', 'a', 'u'], ['j', 'j', 's', 'c'], ['L']] },
@@ -2656,7 +2674,7 @@ const LEVELS = [
   },
   {
     // Rivendell's second level: the race to the Ford of Bruinen on Shadowfax, the Nine riding him down (see THE FORD OF BRUINEN)
-    straight: true, roam: true, ride: true, race: true, name: 'THE FORD OF BRUINEN', sub: 'RACE THE NINE', loc: 'riv', theme: 'ford', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 80000, CZ: 0, base: -6, wallH: 0,
+    straight: true, curve: raceCurve, roam: true, ride: true, race: true, name: 'THE FORD OF BRUINEN', sub: 'RACE THE NINE', loc: 'riv', theme: 'ford', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 80000, CZ: 0, base: -6, wallH: 0,
     ...raceLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { raceContent(this); },
@@ -2737,15 +2755,23 @@ const LEVELS = [
     content() { for (const [k, s, x] of [['q', -10, 4.4], ['su', -10, -4.4], ['b', 11, 0]]) addCrate(k, s, x, 0, 4); },
   },
   {
-    // Cirith Ungol's second level: the stairs, climbed from the side (see the Stairs of Cirith Ungol)
-    straight: true, roam: true, stepUp: true, name: 'THE STAIRS OF CIRITH UNGOL', sub: 'THE LONG CLIMB', loc: 'ungol', theme: 'ustair', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 105000, CZ: 0, base: -8, wallH: 0,
-    ...ustairLayout(),
-    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
-    content() { ustairContent(this); },
+    // Cirith Ungol's second level: the stairs, run into the screen like Mount Doom (see the Stairs of Cirith Ungol)
+    straight: true, curve: ungolCurve, run: 'ungol', name: 'THE STAIRS OF CIRITH UNGOL', sub: 'THE LONG CLIMB', loc: 'ungol', theme: 'ungolrun', next: 'RETURN TO THE MAP', R: UNG_R, Y0: 0, CX: 105000, CZ: 0, base: -14, wallH: 8, wallTop: 90, open: [[-1.6, TAU * UNG_R - 16.5]],
+    floors: [[-16.6, 6.5, -2.6]],
+    pillars: runC('ungol').pillars,
+    bars: [], dz: [], balrogs: [],
+    lava: { fixed: true },
+    content() {
+      const C = runC('ungol');
+      for (const p of C.plats) addPlat(p.s, p.x, p.y, { stone: true, w: p.w, l: p.l, ax: p.ax, ay: p.ay, sp: p.sp, ph: p.ph, crumble: p.crumble });
+      for (const [k, s, x] of C.crates) addCrate(k, s, x, 0, 60);
+      for (const [t, s, x, y] of C.orcs) addOrc(t, s, x, t === 'grunt' ? { y, patrol: { ax: 'x', amp: .8, sp: 1.5 } } : { y });
+      for (const [a0, a1, x, y, n] of C.apples) aLine(a0, a1, x, y, n);
+    },
   },
   {
     // a climb up the side of the mountain on spires of rock, with the lava rising underneath
-    straight: true, name: 'MOUNT DOOM', sub: 'THE WAY UP THROUGH THE FIRE', loc: 'doom', theme: 'doom', next: 'FLY OUT ON THORONDOR', R: DOOM_R, Y0: 0, CX: 35000, CZ: 0, base: -14, wallH: 8, wallTop: 90, open: [[-1.6, TAU * DOOM_R - 16.5]],
+    straight: true, curve: doomCurve, name: 'MOUNT DOOM', sub: 'THE WAY UP THROUGH THE FIRE', loc: 'doom', theme: 'doom', next: 'FLY OUT ON THORONDOR', R: DOOM_R, Y0: 0, CX: 35000, CZ: 0, base: -14, wallH: 8, wallTop: 90, open: [[-1.6, TAU * DOOM_R - 16.5]],
     floors: [[-16.6, 6.5, -3.5]],
     pillars: doomC().pillars,
     bars: [], dz: [], balrogs: [],
@@ -2803,6 +2829,13 @@ const LEVELS = [
     ...isenLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { isenContent(this); },
+  },
+  {
+    // Isengard's second level: on Treebeard's shoulder across the plain to Orthanc, shooting down the orcs and wargs that come at him (see THE MARCH OF THE ENTS)
+    straight: true, roam: true, kh: true, bow: true, bowU: true, bow360: true, ent: true, name: 'THE MARCH OF THE ENTS', sub: "ON TREEBEARD'S SHOULDER TO ORTHANC", loc: 'isen', theme: 'isen', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 135000, CZ: 0, base: -4, wallH: 0, winTitle: 'ISENGARD IS TAKEN!',
+    ...entLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { },
   },
   {
     // Erebor, the first level: on the ramparts before the Gate with a bow, the dragon wheeling over the valley (see EREBOR)
@@ -2891,7 +2924,7 @@ function loadLevel(li) {
   gs.crateTotal = crates.filter(c => c.type !== 'i' && c.type !== 'ib').length;
   // in the courtyard you start on the south side, facing the tree
   gs.cp = LV.arena ? { s: R * Math.PI / 2, x: R - 9.5, y: 0, t: -1, deaths: 0 } : { s: START_S, x: LV.roam ? LV.start[1] : 0, y: LV.startY ?? (TERR ? terrainAt(START_S, LV.start[1]) : 0), t: -1, deaths: 0 };
-  setupNazgul(); setupRace(); setupDuel(); setupFellowship(); setupKH(); setupDeep(); setupBalin(); setupUstair(); setupFly();
+  setupNazgul(); setupRace(); setupDuel(); setupFellowship(); setupKH(); setupDeep(); setupBalin(); setupUstair(); setupFly(); setupEnt();
   chase.active = chase.done = false;
   if (LV.door) { LV.door.endBlock.on = true; LV.door.L.rotation.y = LV.door.Rr.rotation.y = 0; LV.door.light.visible = LV.door.glow.visible = false; }
   dragons.forEach((d, i) => { d.active = i < 2 && LV.dz.length > 0; d.away = 0; d.hits = 0; d.spitT = 0; d.s = START_S + rand(30, 60); d.x = -70; d.y = 45; });
@@ -2909,7 +2942,7 @@ function nextLevel() {
   if (!LEVELS[LI + 1] || LEVELS[LI + 1].loc !== LV.loc) { backToMap(LV.loc); return; }
   showScreen(null); loadLevel(LI + 1); respawn(true); levelCard(); hudT = 4;
 }
-function levelCard() { banner(LV.name, 2.4); }
+function levelCard() { banner(LV.name, 2.4, true); }
 function restoreCrate(c) { c.alive = true; c.y = c.y0; c.bounces = 0; c.fuse = 0; c.brokenT = -1; c.vy = 0; c.squash = 0; c.box.on = true; c.mesh.visible = true; if (c.type === 't') c.mesh.material = CRATE_MATS.t[0]; syncCrate(c); }
 function resetOrc(o) {
   o.s = o.s0; o.x = o.x0; o.y = o.y0; o.deathT = -1; o.t = rand(0, 6); o.h = Math.PI; o.shootT = rand(1, 2);
@@ -2940,6 +2973,7 @@ function respawn(fresh) {
   if (!ch || cp.s < ch.def.r1) { chase.active = false; chase.done = false; }
   if (LV.boss) resetBoss();
   if (LV.race && !fresh) resetRace();
+  if (LV.ent && !fresh) setupEnt();
   resetShelob(); resetLava();
   cam.mode = 0; cam.m = 0; Music.mode = 0;
   for (const pl of plats) { pl.gone = 0; pl.cr = 0; pl.fv = 0; pl.cy = pl.by; pl.box.on = true; pl.mesh.visible = true; }
@@ -2973,8 +3007,8 @@ addEventListener('mousedown', e => {
 });
 addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('pointermove', e => { if (state === 'map' && (e.buttons & 1) && !(e.target.closest && e.target.closest('[data-key]'))) mapClick(e.clientX, e.clientY, true); });
-addEventListener('blur', () => { for (const k in keys) keys[k] = false; touchReset(); if (state === 'play') pause(true); });
-document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(true); });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; touchReset(); if (state === 'play' && !location.search.includes('sim=')) pause(true); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play' && !location.search.includes('sim=')) pause(true); });
 function onKey(code) {
   if (KH_PMENU.open) { khPowersKey(code); return; }   // (the powers menu has the keys while it's open)
   if (CHAP && state === 'map') { if (!/^Key[MGZX]$/.test(code)) { chapKey(code); return; } }   // (and a level menu)
@@ -5198,7 +5232,7 @@ function updateAmbient(dt) {
   for (const t of THEMES_FALLS) t.offset.y += dt * 1.2;
   if (THEMES.riv.bigFall) THEMES.riv.bigFall.offset.y += dt * .6;
   torchSprites.forEach((s, i) => s.scale.set(.7 + Math.sin(T * 13 + i) * .06, 1.15 + Math.sin(T * 11 + i * 2) * .1, 1));
-  clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt); updateKhazad(dt); updateFall(dt); updateWeathertop(dt); updateCitadel(dt); updateRivKH(dt); updateErebor(dt); updateBow(dt); updateDeep(dt); updateBalin(dt); updateUstair(dt); updateMine(dt);
+  clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt); updateEnt(dt); updateKhazad(dt); updateFall(dt); updateWeathertop(dt); updateCitadel(dt); updateRivKH(dt); updateErebor(dt); updateBow(dt); updateDeep(dt); updateBalin(dt); updateUstair(dt); updateMine(dt);
   doomGlow.material.opacity = .8 + Math.sin(T * 1.7) * .2;
   // embers rising from the burning city below
   if (ENV.embers) for (let k = 0; k < 2; k++) { tw(P.s + rand(-6, 26), rand(-14, -4), rand(-8, 0), _a); fx.spawn(_a.x, _a.y, _a.z, rand(-.5, .5), rand(1.5, 3), rand(-.5, .5), rand(2, 3.5), .12, .05, [1, .7, .3], [1, .2, .05]); }
@@ -5354,8 +5388,8 @@ function updateCamera(dt) {
     }
     if (LV.bow && (!LV.bowU || BOW.aim)) {   // (with a bow: from over Gandalf's shoulder, out at the sky; Shift and / turn it, and the sight turns it from the edge of the screen)
       const eX = BOW.aim && Math.abs(BOW.cx) > .7 ? Math.sign(BOW.cx) * (Math.abs(BOW.cx) - .7) * 4 : 0, eY = BOW.aim ? (BOW.cy > .7 ? (BOW.cy - .7) * 3 : BOW.cy < -.4 ? (BOW.cy + .4) * 3 : 0) : -(cam.bp || 0) * .8;
-      cam.by = (cam.by || 0) + ((inp.camT || 0) * 1.5 + eX) * dt; if (!LV.bow360) cam.by = clamp(cam.by, -1.3, 1.3); cam.bp = clamp((cam.bp || 0) + eY * dt, 0, 1); cam.yaw = (LV.bow360 ? 0 : Math.PI) + cam.by;
-      const fs = Math.cos(cam.yaw), fx_ = Math.sin(cam.yaw), bk_ = LV.bowU ? 4 : 6.5; _a.copy(tw(P.s - fs * bk_, P.x - fx_ * bk_, P.y + 3.2)); _b.copy(tw(P.s + fs * 30, P.x + fx_ * 30, P.y + 7 + cam.bp * 32));
+      cam.by = (cam.by || 0) + ((inp.camT || 0) * 1.5 + eX) * dt; if (!LV.bow360) cam.by = clamp(cam.by, -1.3, 1.3); cam.bp = clamp((cam.bp || 0) + eY * dt, LV.ent ? -.55 : 0, 1); cam.yaw = (LV.bow360 ? 0 : Math.PI) + cam.by;
+      const fs = Math.cos(cam.yaw), fx_ = Math.sin(cam.yaw), bk_ = LV.bowU ? 4 : 6.5; _a.copy(tw(P.s - fs * bk_, P.x - fx_ * bk_, P.y + 3.2 + Math.max(0, -cam.bp) * 9)); _b.copy(tw(P.s + fs * 30, P.x + fx_ * 30, P.y + (LV.ent ? -2 : 7) + cam.bp * 32));
       if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-8 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp);
       const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
     }
@@ -5413,7 +5447,7 @@ function updateCamera(dt) {
   // a giant Balrog in the abyss: stand back, over the far rail, and look up at him
   const giant = balrogs.some(b => b.def.big && (b.state === 'active' || b.state === 'rise')); cam.bf = damp(cam.bf || 0, giant ? 1 : 0, 1.5, dt);
   const rd = LV.ride, phi = cam.m * Math.PI, D = (rd ? 7.6 : 6.8) - Math.sin(phi) * .6 + cam.bf * 3;
-  const cs = P.s - Math.cos(phi) * D, cx = clamp(P.x * .55 - Math.sin(phi) * D * .95 + cam.bf * 1.5, -14, 3 - cam.bf * .8), cy = cam.gy + (rd ? 4.2 : 3.4) + Math.sin(phi) * .4 + cam.bf * 1.5;
+  const cs = P.s - Math.cos(phi) * D, cx = clamp(P.x * .55 - Math.sin(phi) * D * .95 + cam.bf * 1.5, -14, 3 - cam.bf * .8), cy = Math.max(cam.gy + (rd ? 4.2 : 3.4) + Math.sin(phi) * .4 + cam.bf * 1.5, rd && TERR ? terrainAt(P.s - Math.cos(phi) * D, 0, true) + 2.6 : -1e9);   // (riding over a hilltop: never down inside the hill behind)
   const ls = P.s + Math.cos(phi) * (rd ? 9 : 5), lx = P.x * .7 - cam.bf * 3, ly = state === 'dying' && dieKind === 'fall' ? P.y + .5 : cam.gy + 1.3 + cam.bf * 3.5;
   if (cam.snap) { cam.s = cs; cam.x = cx; cam.y = cy; cam.ls = ls; cam.lx = lx; cam.ly = ly; cam.snap = false; }
   if (state !== 'dying' || dieKind !== 'fall') { cam.s = damp(cam.s, cs, 9, dt); cam.x = damp(cam.x, cx, 5, dt); cam.y = damp(cam.y, cy, 5, dt); cam.ls = damp(cam.ls, ls, 9, dt); cam.lx = damp(cam.lx, lx, 5, dt); }
@@ -5451,12 +5485,14 @@ function updateHUD(dt) {
     bb.style.display = duel.wk.state === 'intro' ? 'none' : 'flex'; document.getElementById('bossfill').style.width = duel.wk.hp + '%';
     const ne = document.getElementById('bossName'); if (ne.textContent !== 'THE WITCH-KING') ne.textContent = 'THE WITCH-KING';
   }
-  const nz = document.getElementById('hNaz'), showN = !!(LV && (LV.nazgul || LV.race || LV.flyers || (LV.horde && LV.hordeLeft !== undefined))) && state !== 'title' && state !== 'map'; nz.style.display = showN ? '' : 'none'; if (showN) { document.getElementById('nNaz').textContent = LV.horde ? LV.hordeLeft : LV.flyers ? FLY.left : LV.race ? RACE.left : NAZ.left; document.getElementById('lNaz').textContent = LV.horde ? 'THE HORDE' : LV.hunt === 'spider' ? 'SPIDERS' : 'NAZGÛL'; }
+  const nz = document.getElementById('hNaz'), showN = !!(LV && (LV.nazgul || LV.race || LV.flyers || LV.ent || (LV.horde && LV.hordeLeft !== undefined))) && state !== 'title' && state !== 'map'; nz.style.display = showN ? '' : 'none'; if (showN) { document.getElementById('nNaz').textContent = LV.ent ? `${LV.entLeft ?? ENT.total} · TREEBEARD ${Math.max(0, Math.round(ENT.hp))}%` : LV.horde ? LV.hordeLeft : LV.flyers ? FLY.left : LV.race ? RACE.left : NAZ.left; document.getElementById('lNaz').textContent = LV.ent ? 'ORCS' : LV.horde ? 'THE HORDE' : LV.hunt === 'spider' ? 'SPIDERS' : 'NAZGÛL'; }
   const fe = document.getElementById('hFel'), showF = !!(LV && LV.layout && LV.layout.fellowship) && state !== 'title' && state !== 'map'; fe.style.display = showF ? '' : 'none'; if (showF) document.getElementById('nFel').textContent = FEL.found + '/' + FEL.total;
   document.getElementById('nLives').textContent = Math.max(0, gs.lives);
 }
 let bannerTO = 0;
-function banner(txt, dur = 1.3) { const b = document.getElementById('banner'); b.textContent = txt; b.classList.add('on'); clearTimeout(bannerTO); bannerTO = setTimeout(() => b.classList.remove('on'), dur * 1000); }
+// no pop-ups in the middle of play (waves, bosses arriving, getting away, checkpoints...): only the level's name as it starts, prompts for the keys, and the Z / X / G switches
+const BANNER_KEEP = /: |MASH|^INVINCIBLE |^UNLIMITED ROCKETS|^ROCKETS NORMAL|^RETRO LOOK|^HD LOOK/;
+function banner(txt, dur = 1.3, force) { if (txt && !force && !BANNER_KEEP.test(txt)) return; const b = document.getElementById('banner'); b.textContent = txt; b.classList.add('on'); clearTimeout(bannerTO); bannerTO = setTimeout(() => b.classList.remove('on'), dur * 1000); }
 function showScreen(id) {
   document.querySelectorAll('.scr').forEach(s => s.classList.toggle('on', s.id === id));
   document.getElementById('ov').classList.toggle('dim', !!id);
@@ -6028,6 +6064,7 @@ const MODEL_SLOTS = {
   // (The Escape: Battle for Middle-earth's great eagle; the Watcher: its tentacle)
   gandalf: { height: 1.75, turn: -Math.PI / 2, saberBone: 'B_SWORDBONE' }, balrog: { height: 11, turn: -Math.PI / 2, glow: .35, sink: .45, fx: 0xff7a30, hide: /swordfire/i }, witchking: { height: 2.9, turn: -Math.PI / 2, saberBone: 'B_SWORD', hide: /^mace/i },
   shelob: { height: 3.2, turn: -Math.PI / 2 }, nazgul: { height: 2.3, turn: -Math.PI / 2 }, orc: { height: 1.45, turn: -Math.PI / 2, hide: /^orc[a-f](?![a-z])/i },   // (its six corpses, all on at once, and their picture never came)
+  ent: { height: 12.5, turn: -Math.PI / 2, cut: true, anims: { walk: /^walk|^wlk/i, idle: /^idle_a|^idla/i, attack: /^attack_a|^atka/i, hit: /^hit|^hurt/i, die: /^die|^diea/i } },   // (the March of the Ents: Battle for Middle-earth's Treebeard)
   frodo: { height: 1.15, turn: -Math.PI / 2 }, sam: { height: 1.15, turn: -Math.PI / 2 }, merry: { height: 1.2, turn: -Math.PI / 2 }, pippin: { height: 1.2, turn: -Math.PI / 2 },
   aragorn: { height: 1.95, turn: -Math.PI / 2 }, legolas: { height: 1.9, turn: -Math.PI / 2 }, gimli: { height: 1.35, turn: -Math.PI / 2 }, boromir: { height: 1.95, turn: -Math.PI / 2 },
   fellbeast: { height: 7.5, turn: -Math.PI / 2, hide: /^(FELL_BEAST|WINGS)\d/i }, horse: { height: 2.5, turn: -Math.PI / 2, hide: /gandalf/i, anims: { walk: /^run_a/i, jump: /^fly/i } },
@@ -6043,7 +6080,7 @@ const MODEL_SLOTS = {
 };
 // which animation plays for each action: the first clip whose name matches (case doesn't matter)
 const ANIM_NAMES = { idle: /idle|stand|breath|ready/i, fly: /fly|glid|hover/i, walk: /walk|wala|run|move|gallop/i, attack: /attack|atk|smash|swing|slash|strike|hit_?a/i, hit: /hurt|damage|stun|flinch|react/i, die: /die|death|dead|dtha/i, jump: /jump|fall|air/i };
-const TEXTURE_SLOTS = ['meadow', 'grass', 'rock', 'path', 'turf', 'moss', 'marble', 'floor', 'dark', 'lavaRock', 'wood', 'roof', 'plains', 'metal', 'mosaic', 'rrRock', 'rrWood', 'rrFern', 'rrGrass', 'rrWeb', 'rrBarrel', 'rrCrate', 'rrPlate'];
+const TEXTURE_SLOTS = ['meadow', 'grass', 'rock', 'path', 'turf', 'moss', 'marble', 'floor', 'dark', 'lavaRock', 'wood', 'roof', 'plains', 'metal', 'mosaic', 'rrRock', 'rrWood', 'rrFern', 'rrGrass', 'rrWeb', 'rrBarrel', 'rrCrate', 'rrPlate', 'arMoss', 'arRoots', 'arTwig', 'arGrass', 'arBark', 'arLeaves', 'arBranch', 'arVines', 'arFern', 'arRope'];
 const LOADED = {}, SKINS = [];
 // game models keep their flames, glows and eyes as flat cards: drawn as plain added light, never lit or shadowed
 const FX_MAT = /fire|flame|cloud|flar|glow|light|eyes?\b|spark|smoke/i, SKIN_MATS = new Map();
@@ -6089,7 +6126,41 @@ function attachSkin(K) {
     skinPlay({ skin: K }, 'idle');
   }
 }
-function skinPlay(M, key) {
+// a model frozen in its first pose of standing, as plain geometry: for crowds of thousands, drawn instanced (skinning each would cost far too much)
+const BAKED = {}, MODEL_WAIT = []; let MODELS_DONE = false;
+const whenModels = fn => MODELS_DONE ? fn() : MODEL_WAIT.push(fn);
+function bakeModel(slot, height) {
+  if (BAKED[slot] !== undefined) return BAKED[slot]; const gl = LOADED[slot]; if (!gl || !THREE.SkeletonUtils) return null; const cfg = MODEL_SLOTS[slot] || {};
+  const obj = THREE.SkeletonUtils.clone(gl.scene), clip = gl.animations.find(a => /^idle/i.test(a.name)) || gl.animations[0];
+  if (clip) { const mx = new THREE.AnimationMixer(obj); mx.clipAction(clip).play(); mx.update(.01); }
+  obj.updateMatrixWorld(true); const parts = [], box = new THREE.Box3(), v = new V3();
+  obj.traverse(o => {
+    if (!o.isMesh || (cfg.hide && cfg.hide.test(o.name)) || isFx(o)) return;
+    const src = o.geometry, pos = src.attributes.position, out = new Float32Array(pos.count * 3);
+    for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i); if (o.isSkinnedMesh) o.boneTransform(i, v); v.applyMatrix4(o.matrixWorld); out[i * 3] = v.x; out[i * 3 + 1] = v.y; out[i * 3 + 2] = v.z; box.expandByPoint(v); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(out, 3)); if (src.attributes.uv) g.setAttribute('uv', src.attributes.uv); if (src.index) g.setIndex(src.index); g.computeVertexNormals();
+    const m = o.material; if (m.map) m.map.encoding = THREE.sRGBEncoding; parts.push({ g, mat: ps1(new THREE.MeshLambertMaterial({ map: m.map || null, color: m.map ? 0xffffff : m.color ? m.color.getHex() : 0x808080 })) });
+  });
+  if (!parts.length || box.isEmpty()) return BAKED[slot] = null;
+  const c = box.getCenter(new V3()), sc = height / Math.max(.01, box.max.y - box.min.y), M = new THREE.Matrix4().makeRotationY(cfg.turn || 0).multiply(new THREE.Matrix4().makeScale(sc, sc, sc)).multiply(new THREE.Matrix4().makeTranslation(-c.x, -box.min.y, -c.z));
+  for (const p of parts) p.g.applyMatrix4(M);
+  return BAKED[slot] = parts;
+}
+// a crowd of one baked model: list of [x, y, z, rotY, scale] in the world; null if the model isn't here
+function bakedCrowd(slot, height, list) {
+  const parts = bakeModel(slot, height); if (!parts || !list.length) return null; const Q = new THREE.Quaternion(), S3 = new V3(), P3 = new V3(), out = [];
+  for (const { g, mat } of parts) { const im = new THREE.InstancedMesh(g, mat, list.length); list.forEach((d, i) => { Q.setFromAxisAngle(UPV, d[3] || 0); _m4.compose(P3.set(d[0], d[1], d[2]), Q, S3.setScalar(d[4] || 1)); im.setMatrixAt(i, _m4); }); im.frustumCulled = false; im.userData.noCast = true; scene.add(im); out.push(im); }
+  return out;
+}
+// Saruman's army as Battle for Middle-earth's own pikemen (urukp.glb) when it's here: the nearest 2400 (by `near`) become real pikemen, the rest stay plain dark shapes far off
+function armyModels(bodies, imB, imH, imP, near) {
+  whenModels(() => {
+    const idx = bodies.map((b, i) => [near(b), i]).sort((a, b) => a[0] - b[0]).slice(0, 2400).map(q => q[1]);
+    if (!bakedCrowd('urukp', 2.6, idx.map(i => { const b = bodies[i]; return [b[0], b[1] - .75, b[2], b[6], rand(.92, 1.08)]; }))) return;
+    const zero = new THREE.Matrix4().makeScale(0, 0, 0); for (const i of idx) { imB.setMatrixAt(i, zero); imH.setMatrixAt(i, zero); if (i % 2 === 0 && imP && i / 2 < imP.count) imP.setMatrixAt(i / 2, zero); }
+    imB.instanceMatrix.needsUpdate = imH.instanceMatrix.needsUpdate = true; if (imP) imP.instanceMatrix.needsUpdate = true;
+  });
+}function skinPlay(M, key) {
   const K = M && M.skin; if (!K || !K.mixer || K.cur === key || (K.holdT > T && key !== 'die')) return;   // a one-off clip (skinClip) plays to the end
   const A_ = khOn() && K.khActs && K.khActs[key] ? K.khActs : K.acts;   // (Sora's own, in the Kingdom Hearts levels)
   const next = A_[key] || (key === 'jump' || key === 'hit' ? K.acts.idle : key === 'attack' ? K.acts.walk || K.acts.idle : K.acts.idle);
@@ -6145,6 +6216,7 @@ async function loadLocalAssets() {
   for (const s in MODEL_SLOTS) if (MODEL_SLOTS[s].src && LOADED[MODEL_SLOTS[s].src]) LOADED[s] = LOADED[MODEL_SLOTS[s].src];   // the same model in another part
   for (const s in MODEL_SLOTS) if (!LOADED[s] && MODEL_SLOTS[s].fb && LOADED[MODEL_SLOTS[s].fb]) LOADED[s] = LOADED[MODEL_SLOTS[s].fb];   // (not converted yet: the nearest one you have)
   for (const K of SKINS) attachSkin(K);
+  MODELS_DONE = true; for (const fn of MODEL_WAIT.splice(0)) fn();   // (crowds built before the models were in)
   if (LOADED.gandalf) mapGandalf();   // your own Gandalf walks the map too
   await boardP;
   if (got.length) console.log('Valinor is using your own files:\n  ' + got.join('\n  '));
@@ -7665,10 +7737,10 @@ TX.rustRock = hdTex(256, 256, g => { g.fillStyle = '#5a3a2a'; g.fillRect(0, 0, 2
 TX.eyeSpot = mkTex(128, 128, g => { const r = g.createRadialGradient(64, 64, 2, 64, 64, 64); r.addColorStop(0, 'rgba(255,190,70,1)'); r.addColorStop(.38, 'rgba(255,70,16,.95)'); r.addColorStop(.72, 'rgba(210,20,6,.6)'); r.addColorStop(.93, 'rgba(255,50,10,.8)'); r.addColorStop(1, 'rgba(120,0,0,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); g.fillStyle = 'rgba(10,0,0,.92)'; g.beginPath(); g.ellipse(64, 64, 6, 34, 0, 0, TAU); g.fill(); }, false); TX.eyeSpot.magFilter = THREE.LinearFilter;
 function buildMordorKH(L, TH) {
   const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
-  const grd = surf(TX.rustGround, { sky, vc: true, rough: 1, bump: 3, env: .03 });
-  groundMesh(T_, TX.rustGround, (k, sl, y) => k === 'p' ? [.72, .66, .6] : k === 's' ? [.8, .72, .64] : k === 'c' ? [.34, .2, .15] : [1.02 - clamp(y / 26, 0, 1) * .5 - (sl > .9 ? .22 : 0), .86 - clamp(y / 26, 0, 1) * .46 - (sl > .9 ? .2 : 0), .74 - clamp(y / 26, 0, 1) * .42 - (sl > .9 ? .16 : 0)], 9, () => grd);
-  wideFloor(TX.rustGround, 0x6a3a22, 80, 12, 900);
-  const rock = surf(TX.rustRock, { sky, color: 0xc89a7a, rough: .95, bump: 4, tri: 5 }), rockD = surf(TX.rustRock, { sky, color: 0x8a6650, rough: .95, bump: 4, tri: 4 }), wood = lam(0x3a2a1c), bone = lam(0xc8bda0), hide = lam(0x5a4028), dark = lam(0x1e1612);
+  const grd = surf(TX.hdRock || TX.rustGround, { sky, vc: true, rough: 1, bump: 3, env: .03 });   // (ash-grey stone and grit, as Battle for Middle-earth's Mordor)
+  groundMesh(T_, TX.hdRock || TX.rustGround, (k, sl, y) => { const g = .62 - clamp(y / 26, 0, 1) * .3 - (sl > .9 ? .14 : 0); return k === 'p' ? [.5, .48, .46] : k === 's' ? [.56, .54, .52] : k === 'c' ? [.2, .17, .15] : [g, g * .97, g * .94]; }, 9, () => grd);
+  wideFloor(TX.hdRock || TX.rustGround, 0x3a3836, 80, 12, 900);
+  const rock = surf(TX.hdStone || TX.rock, { sky, color: 0x7a7672, rough: .95, bump: 4, tri: 5 }), rockD = surf(TX.hdStone || TX.rock, { sky, color: 0x4a4644, rough: .95, bump: 4, tri: 4 }), wood = lam(0x3a2a1c), bone = lam(0xc8bda0), hide = lam(0x5a4028), dark = lam(0x1e1612);
   const crag = new THREE.IcosahedronGeometry(1, 1); { const p = crag.attributes.position; for (let i = 0; i < p.count; i++) { const k = 1 + Math.sin(p.getX(i) * 7.3 + p.getZ(i) * 5.1) * .22 + Math.cos(p.getY(i) * 9.1) * .12; p.setXYZ(i, p.getX(i) * k, p.getY(i) * k, p.getZ(i) * k); } crag.computeVertexNormals(); }
   // boulders on the way (solid) and spires and split crags beyond it
   const bl = [], sp = [], flat = []; for (const [s, x, r, h] of Y.boulders) { const q = tw(s, x, at(s, x)); bl.push([q.x, q.y + r * h * .32, q.z, r, r * h * .6, r * .9, rand(0, 3)]); }
@@ -7698,7 +7770,7 @@ function buildMordorKH(L, TH) {
   for (const [rt, rb, h, y] of [[19, 34, 44, 22], [14, 22, 44, 66], [10, 15, 34, 105], [5, 9, 18, 131]]) part(new THREE.CylinderGeometry(rt, rb, h, 8), far, scene, bd.x, y, bd.z);
   for (const sd of [-1, 1]) { const h = part(GEO.cone, far, scene, bd.x + sd * 7, 152, bd.z, 3, 24, 3); h.rotation.z = -sd * .22; }
   { const e = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.eye, transparent: true, depthWrite: false, fog: false })); e.scale.set(24, 16, 1); e.position.copy(TH.eyeAt); e.userData.keep = true; scene.add(e); const eg = glowSprite(0xff3a08, 80, .75); eg.material.fog = false; eg.position.copy(TH.eyeAt); scene.add(eg); }
-  { const dm = gradCone(120, 170, 9, 0xa86a40, 0x8a5a38), dp = tw(230, -60, 0); dm.position.set(dp.x, 70, dp.z); scene.add(dm); const dg = glowSprite(0xff5010, 130, .85); dg.material.fog = false; dg.position.set(dp.x, 160, dp.z); scene.add(dg); }
+  { const dm = gradCone(120, 170, 9, 0x3a3432, 0x24201e), dp = tw(230, -60, 0); dm.position.set(dp.x, 70, dp.z); scene.add(dm); const dg = glowSprite(0xff5010, 130, .85); dg.material.fog = false; dg.position.set(dp.x, 160, dp.z); scene.add(dg); }
   bakeScenery(scene.children.slice(first));
   // the Eye's pool on the ground (a grid laid over the land each frame) and the beam down to it, kept apart from the baked scenery
   const n = 16, pos = new Float32Array((n + 1) * (n + 1) * 3), uv = [], idx = []; for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) { uv.push(i / n, j / n); if (i < n && j < n) { const a = j * (n + 1) + i; idx.push(a, a + n + 1, a + 1, a + 1, a + n + 1, a + n + 2); } }
@@ -7712,7 +7784,7 @@ function updateMordorKH(dt) {
   const TH = THEMES.mordorkh, on = !!LV && LV.theme === 'mordorkh' && state !== 'map' && state !== 'title'; if (TH.pool) { TH.pool.visible = TH.beam.visible = on; } if (!on) return;
   const Y = LV.layout, play = state === 'play';
   // the dust on the wind, the fires, the ash pits
-  if (Math.random() < dt * 14) smoke.spawn(...tw(P.s + rand(-22, 22), P.x + rand(-22, 22), P.y + rand(.3, 3)).toArray(), rand(1, 3), rand(-.1, .3), rand(1, 3), rand(3, 5), 1, 4, [.45, .25, .13], [.6, .36, .2], 0, .12);
+  if (Math.random() < dt * 14) smoke.spawn(...tw(P.s + rand(-22, 22), P.x + rand(-22, 22), P.y + rand(.3, 3)).toArray(), rand(1, 3), rand(-.1, .3), rand(1, 3), rand(3, 5), 1, 4, [.26, .25, .24], [.36, .34, .32], 0, .12);
   for (const [s, x, y] of TH.fires || []) if (Math.hypot(s - P.s, x - P.x) < 45 && Math.random() < dt * 16) bfire(tw(s + rand(-.3, .3), x + rand(-.3, .3), y + .4), .9, 1.8);
   for (const [s, x, y] of TH.plumes || []) if (Math.hypot(s - P.s, x - P.x) < 60 && Math.random() < dt * 2) smoke.spawn(...tw(s, x, y + .5).toArray(), rand(-.3, .3), rand(1.5, 3), rand(-.3, .3), rand(4, 7), 1.4, 6, [.1, .08, .07], [.22, .18, .16], -.1, .25);
   if (TH.exitGlow) TH.exitGlow.material.opacity = .32 + Math.sin(T * 3) * .1;
@@ -7744,7 +7816,7 @@ function updateMordorKH(dt) {
 }
 THEMES.mordorkh = natTheme({
   wallTex: TX.rock, floorTex: TX.dark, tint: [.8, .7, .68], door: 0x8a5a4a,
-  env: { sky: [0x3a2214, 0x7a4420, 0xc47a3a, 0xf0b06a], fog: [50, 300], fogC: 0xb07a48, amb: [0xb08a6a, .85], hemi: [0xffd0a0, 0x5a3a20, .7], sun: [0xffc088, 1.1], east: [0xff8a50, .22], cloud: 0x9a6a3e, bloom: .32, sunDir: [70, 34, 60] },
+  env: { sky: [0x101012, 0x1e1e22, 0x34322f, 0x5a4a3c], fog: [45, 260], fogC: 0x3a3836, amb: [0x8a8684, .8], hemi: [0xc8c4c0, 0x2a2624, .55], sun: [0xd8ccc0, .8], east: [0xff7a40, .12], cloud: 0x2e2c2a, bloom: .3, sunDir: [70, 34, 60] },   // (ash-dark sky over grey rock, only the Mountain's glow red)
   orc: MT_ORC,
   scenery(L) { buildMordorKH(L, this); },
 });
@@ -7752,10 +7824,13 @@ THEMES.mordorkh = natTheme({
 //     rock, lava falls from the crags on either side, and sheets of flame blow across it. Stairs and gaps, slabs that slide and rise, stones that crumble under you, vents that
 //     blow fire in turn so you time your run, burning rocks thrown from the summit, orcs on the wider landings, crates along the way. Fall and the fire has you. The Crack is at the top.
 
+// the way winds left and right as it climbs (straight at the foot, and at the last gate)
+function doomCurve(s) { const E = TAU * DOOM_R, k = clamp((s - 10) / 25, 0, 1) * clamp((E - 14 - s) / 25, 0, 1); return k * (.38 * Math.sin(s * .026 + .5) + .2 * Math.sin(s * .058 + 1.3)); }
 function doomCourse() {
   const c = { pillars: [], plats: [], jets: [], crates: [], orcs: [], apples: [], bombs: [] }; let s = 6.5, y = 0;
   const land = (len, x0 = -3.5, x1 = 3.5) => { c.pillars.push([s, s + len, x0, x1, +y.toFixed(2)]); const a = s; s += len; return a; };
   const stairs = (n, x0, x1, rs = .34, l = .85) => { for (let k = 0; k < n; k++) { y += rs; land(l, x0, x1); } };
+  const dip = (n, x0 = -1.8, x1 = 1.8, deep = .42) => { for (let k = 0; k < n; k++) { y -= deep; land(.9, x0, x1); } land(4, x0 - .4, x1 + .4); for (let k = 0; k < n; k++) { y += deep; land(.9, x0, x1); } };   // (down into a hollow in the rock and up out of it again)
   const gap = g => { s += g; };
   const row = (a, n, x, gapS = 1.05, k = 'b') => { for (let i = 0; i < n; i++) c.crates.push([k, a + i * gapS, x]); };
   const line = (a, b, x, n) => c.apples.push([a, b, x, y + .8, n]);
@@ -7769,7 +7844,7 @@ function doomCourse() {
   a = land(17, -1.9, 1.9); for (const [d, x, ph] of [[3, 0, 0], [7, 0, 1], [11, 0, 2], [15, 0, 3]]) c.jets.push({ s: a + d, x, y, per: 4, ph }); line(a + 1, a + 16, 0, 9);
   // slabs sliding from side to side
   for (const [ax, ph] of [[2.2, 0], [2.4, 1.6], [2.2, 3.1]]) { gap(1.8); y += .45; c.plats.push({ s: s + 1.8, x: 0, y, w: 3, l: 3.6, ax, sp: 1.1, ph }); s += 3.6; }
-  gap(1.4); y += .3; a = land(9); row(a + 1, 2, 2.4); c.crates.push(['r', a + 4, -2.4], ['l', a + 7.5, 2.4]); c.orcs.push(['archer', a + 7.5, -2, y], ['grunt', a + 4.5, 1, y]); line(a + 1, a + 8, 0, 6);
+  gap(1.4); y += .3; dip(4); a = land(9); row(a + 1, 2, 2.4); c.crates.push(['r', a + 4, -2.4], ['l', a + 7.5, 2.4]); c.orcs.push(['archer', a + 7.5, -2, y], ['grunt', a + 4.5, 1, y]); line(a + 1, a + 8, 0, 6);
   stairs(8, -1.7, 1.7);
   // two lanes of vents, out of step: cross from one to the other to get by
   a = land(22); for (let k = 0; k < 5; k++) c.jets.push({ s: a + 3 + k * 4, x: -1.8, y, per: 3.2, ph: k % 2 ? 0 : 1.6 }, { s: a + 3 + k * 4, x: 1.8, y, per: 3.2, ph: k % 2 ? 1.6 : 0 }); line(a + 1, a + 21, 0, 12); c.crates.push(['c', a + 20.5, -3]);
@@ -7779,18 +7854,20 @@ function doomCourse() {
   stairs(6, -1.6, 1.6);
   // stones that give way the moment you stand on them: don't stop
   for (const x of [0, 1.1, -.4, -1.3, .3, 1.2]) { gap(1.8); y += .35; c.plats.push({ s: s + 1.7, x, y, w: 2.6, l: 3.4, crumble: true }); s += 3.4; }
-  gap(1.5); y += .3; a = land(6); c.crates.push(['c', a + 3, 2.6]);
+  gap(1.5); y += .3; a = land(6); c.crates.push(['c', a + 3, 2.6]); dip(5, -1.6, 1.6, .5);
   // the long ledge under the rain of burning rock, narrow, with orcs on it
   stairs(7, -1.6, 1.6); a = land(26, -1.8, 1.8); c.bombs.push([a, a + 26]); c.orcs.push(["grunt", a + 8, 0, y], ["archer", a + 15, 0, y], ["grunt", a + 22, 0, y]); line(a + 1, a + 25, 0, 14); c.jets.push({ s: a + 11, x: 0, y, per: 3.6, ph: 0 }, { s: a + 19, x: 0, y, per: 3.6, ph: 1.2 });
   // the last slabs, one more flight, and the ledge up to the Crack
   for (const [ax, ay, ph] of [[1.8, 0, 0], [0, .9, 1.2], [1.8, 0, 2.2]]) { gap(1.8); y += .6; c.plats.push({ s: s + 1.8, x: 0, y, w: 3, l: 3.6, ax, ay: ay * .7, sp: 1.1, ph }); s += 3.6; }
   gap(1.5); y += .9; stairs(5, -2, 2);
-  c.pillars.push([s, TAU * DOOM_R + 2, -3.5, 3.5, +y.toFixed(2)]); c.end = s; return c;
+  c.pillars.push([s, TAU * DOOM_R + 2, -3.5, 3.5, +y.toFixed(2)]); c.end = s; c.R = DOOM_R; return c;
 }
-function doomC() { return doomC.c || (doomC.c = doomCourse()); }
+function runC(id) { return runC[id] || (runC[id] = id === 'ungol' ? ungolCourse() : doomCourse()); }   // (the run's course: Mount Doom's, or the Stairs of Cirith Ungol's)
+function doomC() { return runC('doom'); }
+const curC = () => runC(LV && LV.run || 'doom');
 
 function doomYAt(s) {   // (the river of fire's height under the way: the way's own height, smoothed, a good drop below it)
-  const C = doomC(); if (!C.prof) { const N = Math.ceil(TAU * DOOM_R) + 120, a = new Float32Array(N); let last = 0; const list = [...C.pillars.map(p => [p[0], p[1], p[4]]), ...C.plats.map(p => [p.s - p.l / 2, p.s + p.l / 2, p.y])].sort((u, v) => u[0] - v[0]); for (let k = 0, i = 0; k < N; k++) { const s_ = k - 24; while (i < list.length && list[i][0] <= s_) last = list[i++][2]; a[k] = last; } const b = a.slice(); for (let k = 0; k < N; k++) { let t = 0, n = 0; for (let q = -9; q <= 9; q++) { const j = k + q; if (j >= 0 && j < N) { t += a[j]; n++; } } b[k] = t / n; } C.prof = b; }
+  const C = curC(); if (!C.prof) { const N = Math.ceil(TAU * C.R) + 120, a = new Float32Array(N); let last = 0; const list = [...C.pillars.map(p => [p[0], p[1], p[4]]), ...C.plats.map(p => [p.s - p.l / 2, p.s + p.l / 2, p.y])].sort((u, v) => u[0] - v[0]); for (let k = 0, i = 0; k < N; k++) { const s_ = k - 24; while (i < list.length && list[i][0] <= s_) last = list[i++][2]; a[k] = last; } const b = a.slice(); for (let k = 0; k < N; k++) { let t = 0, n = 0; for (let q = -9; q <= 9; q++) { const j = k + q; if (j >= 0 && j < N) { t += a[j]; n++; } } b[k] = t / n; } C.prof = b; }
   const q = clamp(s + 24, 0, C.prof.length - 1.01), k = q | 0; return lerp(C.prof[k], C.prof[k + 1], q - k) - 5;
 }
 TX.doomRock = hdTex(256, 256, g => { g.fillStyle = '#1e1412'; g.fillRect(0, 0, 256, 256); for (let i = 0; i < 1500; i++) { g.fillStyle = sr() < .55 ? 'rgba(0,0,0,.4)' : 'rgba(92,62,50,.28)'; g.fillRect(sr() * 256, sr() * 256, 1 + sr() * 7, 1 + sr() * 7); } for (let i = 0; i < 34; i++) { let x = sr() * 256, y = sr() * 256, a = sr() * 6.3; const hot = sr() < .45; g.strokeStyle = hot ? 'rgba(255,110,24,.95)' : 'rgba(12,6,4,.9)'; g.lineWidth = hot ? 1 + sr() * 1.8 : 1.5; g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 7; k++) { a += (sr() - .5) * 1.6; x += Math.cos(a) * 12; y += Math.sin(a) * 12; g.lineTo(x, y); } g.stroke(); } });
@@ -7802,7 +7879,7 @@ function buildDoom(L, TH) {
   const strip = (x0, x1, nx, yAtX, mat, uvs = 1) => { const ns = 72, pos = [], uv = [], idx = []; for (let j = 0; j <= ns; j++) { const s = -24 + j / ns * (E + 90); for (let i = 0; i <= nx; i++) { const x = lerp(x0, x1, i / nx), q = tw(s, x, Ya(s) + yAtX(x, s)); pos.push(q.x, q.y, q.z); uv.push(x / 9 * uvs, s / 9 * uvs); if (j < ns && i < nx) { const a = j * (nx + 1) + i; idx.push(a, a + 1, a + nx + 1, a + 1, a + nx + 2, a + nx + 1); } } } const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); const m = new THREE.Mesh(g, mat); m.userData.keep = true; m.frustumCulled = false; scene.add(m); return m; };
   strip(-13, 13, 6, () => 0, new THREE.MeshBasicMaterial({ map: flow, color: 0xd8c8b8, side: THREE.DoubleSide, fog: false }));
   const rockM = surf(TX.doomRock, { sky, color: 0xa08a7a, rough: .9, bump: 4, glow: .55, side: THREE.DoubleSide }), bank = (x, s) => { const d = Math.abs(x) - 11, v = Math.sin(s * .13 + x * .3) * 1.6 + Math.sin(s * .37 - x * .21) * .8; return Math.max(-.4, d) * (.9 + .35 * Math.sin(s * .05 + x * .08)) + Math.max(0, d) * Math.max(0, d) * .05 + (d > 0 ? v : 0) - .15; };
-  for (const [a, b] of [[-11, -76], [11, 76]]) strip(a, b, 16, bank, rockM);
+  for (const [a, b] of [[-11, -58], [11, 58]]) strip(a, b, 16, bank, rockM);
   // jagged black crags standing up out of the slope, the hot rock showing through
   const crag = new THREE.IcosahedronGeometry(1, 1), cr = [], sp = []; for (let k = 0; k < 170; k++) { const sd = k % 2 ? 1 : -1, s = rand(-20, E + 60), x = sd * rand(11.5, 50), big = k % 3 === 0, r = big ? rand(3, 8) : rand(.8, 2.6), q = tw(s, x, Ya(s) + bank(x, s)); (k % 4 === 0 ? sp : cr).push(k % 4 === 0 ? [q.x, q.y + r * 1.6, q.z, r * .6, r * 3.6, r * .6, rand(0, 3)] : [q.x, q.y + r * .3, q.z, r, r * rand(.6, 1.3), r, rand(0, 3)]); } instanced(crag, rockM, cr); instanced(new THREE.ConeGeometry(1, 1, 6, 2), rockM, sp);
   // rocks standing in the fire itself
@@ -7923,10 +8000,9 @@ THEMES.eaglelv = natTheme({
 //     round a red fan, or burst up under you on a red circle. Beaten limp, STRIKE THE EYE sends the blow up the tentacle into it. Hurt, it grows more arms and spits; badly
 //     hurt, it heaves itself up over the rim at you, and can be struck there too. Beat it and the Doors open.
 function watcherLayout() {
-  const cs = 6, cx = 0, bases = [Math.PI, Math.PI - 1.26, Math.PI + 1.26, .63, -.63, Math.PI - .63, Math.PI + .63, 0].map(a => [cs + Math.cos(a) * 5.2, cx + Math.sin(a) * 5.2, a]);
+  const cs = 30, cx = 0, bases = [Math.PI, Math.PI - .5, Math.PI + .5, Math.PI - 1, Math.PI + 1, Math.PI - 1.35, Math.PI + 1.35, Math.PI - .25].map(a => [cs + Math.cos(a) * 6.5, cx + Math.sin(a) * 6.5, a]);   // (it rises out of the lake just off the shore; its arms come up out of the shallows along the edge)
   const blocks = [[-6, -4.4, -18.5, -16.5, 1.3, 'wall', -1], [-14, -12, 17, 19.5, 1.7, 'wall', -1]];
-  for (let k = 0; k < 30; k++) { const a = k / 30 * TAU, s = cs + Math.cos(a) * 6.4, x = cx + Math.sin(a) * 6.4; blocks.push([s - .8, s + .8, x - .8, x + .8, 1.5, 'wall', -1]); }   // (the crater's rim of broken slabs: round it, not through it)
-  return { field: [-18, 22, -21, 21], start: [-15, 0], layout: { blocks, bases, crater: [cs, cx], door: [-3, -20.6], plazas: [{ s: 4, x: 0, y: 0, r: 17, waves: [['V']], title: 'THE WATCHER IN THE WATER!', boss: true, last: true, breach: [cs, cx], bossHp: 1000, noAdds: true }], crater: [cs, cx] } };
+  return { field: [-18, 22, -21, 21], start: [-15, 0], layout: { blocks, bases, crater: [cs, cx], door: [-3, -20.6], plazas: [{ s: 8, x: 0, y: 0, r: 16, waves: [['V']], title: 'THE WATCHER IN THE WATER!', boss: true, last: true, breach: [cs, cx], bossHp: 1000, noAdds: true }], crater: [cs, cx] } };
 }
 function watcherContent() { for (const [k, s, x] of [['q', -13, 7], ['su', -13, -7], ['b', -9, 14], ['q', -9, -14]]) addCrate(k, s, x, 0, 4); }
 function makeTentacle() {
@@ -8007,7 +8083,7 @@ function wtUpdate(b, dt) {
   switch (b.state) {
     case 'rise': {   // up through the shore in a burst of broken paving, the pool welling round it
       if (b.t < .05 && !b.burst) { b.burst = true; m.root.visible = true; banner('THE WATCHER IN THE WATER!', 2); S.roar(); S.smash(); cam.shake = 1.3; flashV = Math.max(flashV, .3); b.h = toP;
-        const st = THEMES.watcher.slabM || lam(0x6a6e78); for (let k = 0; k < 22; k++) { const q = new THREE.Mesh(GEO_BOX, st), a = rand(0, TAU), v = new V3(Math.cos(a) * rand(3, 9), rand(7, 15), Math.sin(a) * rand(3, 9)); q.scale.set(rand(.5, 1.4), rand(.15, .3), rand(.5, 1.2)); q.position.copy(tw(cs + rand(-2, 2), cx + rand(-2, 2), .5)); khFx(q, (f, d) => { v.y -= 24 * d; q.position.addScaledVector(v, d); q.rotation.x += d * 4; q.rotation.z += d * 3; return q.position.y > -1 && f.t < 3; }); } }
+        const st = THEMES.watcher.slabM || lam(0x6a6e78); for (let k = 0; k < 0; k++) { const q = new THREE.Mesh(GEO_BOX, st), a = rand(0, TAU), v = new V3(Math.cos(a) * rand(3, 9), rand(7, 15), Math.sin(a) * rand(3, 9)); q.scale.set(rand(.5, 1.4), rand(.15, .3), rand(.5, 1.2)); q.position.copy(tw(cs + rand(-2, 2), cx + rand(-2, 2), .5)); khFx(q, (f, d) => { v.y -= 24 * d; q.position.addScaledVector(v, d); q.rotation.x += d * 4; q.rotation.z += d * 3; return q.position.y > -1 && f.t < 3; }); } }
       const k = Math.min(1, b.t / 2.2); b.y = lerp(-8, -1.8, easeOut(k)); for (let q = 0; q < 4; q++) { const a = rand(0, TAU), r = rand(0, 5); fx.spawn(...tw(cs + Math.cos(a) * r, cx + Math.sin(a) * r, .4).toArray(), rand(-1, 1), rand(3, 7), rand(-1, 1), rand(.5, 1), .5, 1, [.9, .95, 1], [.6, .7, .8], 9); }
       if (k >= 1) { b.state = 'watch'; b.t = 0; banner('STRIKE ITS ARMS WHEN THEY COME DOWN!', 2.2); B.slice(0, 5).forEach((q, i) => spawnTentacle(b, q, 70, i * .4)); } break;
     }
@@ -8029,34 +8105,26 @@ function buildWatcher(L, TH) {
   // the shore of old paving, broken; the black water; the cliffs of the Misty Mountains shutting it in
   { const t = TX.floor.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(11, 11); const sh = new THREE.Mesh(new THREE.PlaneGeometry(58, 53), ps1(new THREE.MeshLambertMaterial({ map: t, color: 0x8a8e94 }))); sh.rotation.x = -Math.PI / 2; sh.position.copy(tw(-2.5, 0, -.01)); scene.add(sh); }
   const wt = TX.sea.clone(); wt.needsUpdate = true; wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(14, 10); TH.waterTex = wt; const water = new THREE.Mesh(new THREE.PlaneGeometry(200, 130), new THREE.MeshPhongMaterial({ map: wt, color: 0x1a2a34, specular: 0x8ab0d0, shininess: 70 })); water.rotation.x = -Math.PI / 2; water.position.copy(tw(89, 0, -.28)); water.userData.keep = true; scene.add(water);
-  { const rub = []; for (let k = 0; k < 130; k++) { const s = rand(-17, 22), x = rand(-20, 20), z = rand(.1, .4), q = tw(s, x, z * .4); if (Math.hypot(s - Y.crater[0], x - Y.crater[1]) < 8) continue; rub.push([q.x, q.y, q.z, rand(.25, .8), z, rand(.25, .8), rand(0, 3)]); } instanced(GEO_BOX, rock, rub); const edge = []; for (let x = -24; x < 24; x += 2.1) { const q = tw(24.1 + rand(-.2, .2), x, -.1); edge.push([q.x, q.y, q.z, 2.1, .55, rand(.7, 1.1), rand(-.08, .08)]); } instanced(GEO_BOX, rock, edge); }
+  { const rub = []; for (let k = 0; k < 130; k++) { const s = rand(-17, 22), x = rand(-20, 20), z = rand(.1, .4), q = tw(s, x, z * .4); rub.push([q.x, q.y, q.z, rand(.25, .8), z, rand(.25, .8), rand(0, 3)]); } instanced(GEO_BOX, rock, rub); const edge = []; for (let x = -24; x < 24; x += 2.1) { const q = tw(24.1 + rand(-.2, .2), x, -.1); edge.push([q.x, q.y, q.z, 2.1, .55, rand(.7, 1.1), rand(-.08, .08)]); } instanced(GEO_BOX, rock, edge); }
   const crag = new THREE.IcosahedronGeometry(1, 1), cl = []; for (let k = 0; k < 90; k++) { const a = k / 90 * Math.PI * 1.45 - Math.PI * 1.22, r = rand(40, 64), s = 6 + Math.cos(a) * r * .9, x = Math.sin(a) * r, h = rand(14, 40), q = tw(s, x, h * .4); cl.push([q.x, q.y, q.z, rand(7, 13), h, rand(7, 13), rand(0, 3)]); } for (let k = 0; k < 34; k++) { const sd = k % 2 ? 1 : -1, s = rand(-34, 40), x = sd * rand(36, 46), h = rand(16, 34), q = tw(s, x, h * .4); cl.push([q.x, q.y, q.z, rand(5, 9), h, rand(5, 9), rand(0, 3)]); } for (let k = 0; k < 12; k++) { const x = rand(-40, 40), h = rand(10, 20), q = tw(-38, x, h * .4); cl.push([q.x, q.y, q.z, rand(5, 9), h, rand(4, 7), rand(0, 3)]); } instanced(crag, rough, cl);
   // the Doors of Durin, drawn in moon-silver on the sheer rock to the west, two great holly trees standing beside them
   { const [ds, dx] = Y.door, g = new THREE.Group(); place(g, ds, dx, 0, Math.PI / 2); scene.add(g); part(GEO_BOX, rock, g, 0, 5.4, -1.4, 13, 12, 2.6); const tx = mkTex(256, 320, c => { c.fillStyle = '#10141c'; c.fillRect(0, 0, 256, 320); c.strokeStyle = '#cfe4ff'; c.fillStyle = '#e8f4ff'; c.shadowColor = '#9ad0ff'; c.shadowBlur = 8; c.lineWidth = 3; c.beginPath(); c.moveTo(34, 320); c.lineTo(34, 120); c.arc(128, 120, 94, Math.PI, 0); c.lineTo(222, 320); c.stroke(); c.lineWidth = 2; c.beginPath(); c.moveTo(128, 26); c.lineTo(128, 320); c.stroke(); for (const sx of [-1, 1]) { const tx0 = 128 + sx * 62; c.beginPath(); c.moveTo(tx0, 320); c.lineTo(tx0, 150); c.stroke(); for (let k = 0; k < 5; k++) { c.beginPath(); c.moveTo(tx0, 190 + k * 24); c.quadraticCurveTo(tx0 + sx * 18, 170 + k * 24, tx0 + sx * 28, 158 + k * 24); c.moveTo(tx0, 190 + k * 24); c.quadraticCurveTo(tx0 - sx * 18, 170 + k * 24, tx0 - sx * 26, 158 + k * 24); c.stroke(); } } c.beginPath(); for (let k = 0; k < 16; k++) { const a = k / 16 * TAU, r = k % 2 ? 7 : 26; c[k ? 'lineTo' : 'moveTo'](128 + Math.cos(a) * r, 112 + Math.sin(a) * r); } c.closePath(); c.fill(); c.beginPath(); c.arc(128, 60, 6, 0, TAU); c.fill(); c.lineWidth = 2; c.beginPath(); c.arc(128, 120, 78, Math.PI, 0); c.stroke(); }, false); tx.magFilter = THREE.LinearFilter; const m = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 8), new THREE.MeshBasicMaterial({ map: tx, fog: false })); m.position.set(0, 4, .02); m.userData.keep = true; g.add(m); TH.doorM = m; const gl = glowSprite(0x9ad0ff, 11, .4); gl.material.fog = false; gl.position.set(0, 4, .6); gl.userData.keep = true; g.add(gl); TH.doorGl = gl;
     const bark = lam(0x2a2620), leaf = lam(0x1e3626); for (const sx of [-1, 1]) { part(new THREE.CylinderGeometry(.34, .6, 7, 8), bark, g, sx * 5.2, 3.5, 1); for (let k = 0; k < 16; k++) { const a = rand(0, TAU), r = rand(0, 2.2); part(GEO.ico, leaf, g, sx * 5.2 + Math.cos(a) * r, rand(6, 9.4), 1 + Math.sin(a) * r, rand(.7, 1.3), rand(.6, 1), rand(.7, 1.3)); } } }
   { const moon = glowSprite(0xdde4ff, 60, .85); moon.material.fog = false; moon.position.copy(tw(120, 40, 80)); scene.add(moon); const d = new THREE.Mesh(new THREE.CircleGeometry(7, 22), new THREE.MeshBasicMaterial({ color: 0xf2f4ff, fog: false })); d.position.copy(tw(121, 40, 80)); d.rotation.y = Math.PI; scene.add(d); }
   bakeScenery(scene.children.slice(first));
-  // the crater it bursts up into: a ring of heaved-up paving slabs round a pool of churning pale water (Battle for Middle-earth's own, models/caldera.glb, when it's here).
-  // It lies hidden under the shore until the Watcher comes
-  { const [cs, cx] = Y.crater, g = new THREE.Group(), proc = new THREE.Group(); tw(cs, cx, 0, g.position); TH.caldY = g.position.y; g.position.y -= 3.4; g.visible = false; scene.add(g); g.add(proc); TH.cald = g; TH.slabM = rock;
-    const slab = (r, a, w, h, lean, y) => { const m = part(GEO_BOX, Math.random() < .3 ? rough : rock, proc, -Math.sin(a) * r, y, Math.cos(a) * r, w, h, rand(.3, .45)); m.rotation.order = 'YXZ'; m.rotation.y = Math.atan2(-Math.sin(a), Math.cos(a)); m.rotation.x = lean; m.rotation.z = rand(-.2, .2); };
-    for (let k = 0; k < 30; k++) slab(rand(6, 7), k / 30 * TAU + rand(-.06, .06), rand(1.8, 2.6), rand(1.6, 2.4), rand(.55, .95), rand(.3, .8));      // (the outer ring, leaning out)
-    for (let k = 0; k < 22; k++) slab(rand(5, 5.7), k / 22 * TAU + rand(-.08, .08), rand(1.5, 2.1), rand(1.2, 1.8), rand(-.6, -.2), rand(0, .4));      // (the inner, tipped in toward the water)
-    for (let k = 0; k < 40; k++) { const a = rand(0, TAU), r = rand(7, 9.5); part(GEO.ico, rough, proc, -Math.sin(a) * r, .1, Math.cos(a) * r, rand(.2, .6), rand(.15, .35), rand(.2, .6)); }   // (rubble thrown out round it)
-    const wt2 = TX.sea.clone(); wt2.needsUpdate = true; wt2.wrapS = wt2.wrapT = THREE.RepeatWrapping; wt2.repeat.set(3, 3); TH.poolTex = wt2;
-    const pool = new THREE.Mesh(new THREE.CircleGeometry(5.7, 36), new THREE.MeshPhongMaterial({ map: wt2, color: 0xa8b4b8, emissive: 0x1a2024, specular: 0xd0e0f0, shininess: 70 })); pool.rotation.x = -Math.PI / 2; pool.position.y = .3; proc.add(pool);
-    const foam = new THREE.Mesh(new THREE.RingGeometry(3.6, 5.8, 36), new THREE.MeshBasicMaterial({ map: TX.glow, color: 0xe8f4ff, transparent: true, opacity: .35, depthWrite: false })); foam.rotation.x = -Math.PI / 2; foam.position.y = .34; proc.add(foam); TH.foam = foam;
-    const M = { root: g }; addSkin(M, 'caldera', g, proc, [], g); TH.caldM = M; }
-}
+  // where it comes up: the black lake churning white round it, just off the shore (TH.cald: the foam, hidden until it rises)
+  { const [cs, cx] = Y.crater, g = new THREE.Group(); tw(cs, cx, -.22, g.position); TH.caldY = g.position.y; g.visible = false; scene.add(g); TH.cald = g; TH.slabM = rock;
+    const foam = new THREE.Mesh(new THREE.RingGeometry(2.5, 9, 40), new THREE.MeshBasicMaterial({ map: TX.glow, color: 0xdce8f0, transparent: true, opacity: .35, depthWrite: false })); foam.rotation.x = -Math.PI / 2; g.add(foam); TH.foam = foam;
+    const inner = new THREE.Mesh(new THREE.CircleGeometry(4.5, 32), new THREE.MeshBasicMaterial({ map: TX.glow, color: 0x8aa0b0, transparent: true, opacity: .3, depthWrite: false })); inner.rotation.x = -Math.PI / 2; inner.position.y = .02; g.add(inner); }}
 function updateWatcher(dt) {
   if (!LV || LV.theme !== 'watcher' || state === 'map' || state === 'title') return; const TH = THEMES.watcher; if (TH.waterTex) { TH.waterTex.offset.x += dt * .006; TH.waterTex.offset.y += dt * .01; }
   if (Math.random() < dt * 6) { smoke.spawn(...tw(rand(4, 34), rand(-26, 26), rand(.1, .6)).toArray(), rand(-.3, .3), .05, rand(-.3, .3), rand(6, 9), 3, 8, [.2, .24, .3], [.32, .36, .42], 0, .14); }
   const won = LV.layout.plazas[0].done; if (TH.doorGl) { TH.doorGl.material.opacity = won ? .95 : .34 + Math.sin(T * 1.3) * .08; TH.doorGl.scale.setScalar(won ? 18 : 11); }
   // the crater: under the shore until the Watcher bursts up, then the pool churning and throwing up spray round it
   const b = KH.boss && KH.boss.kind === 'V' && !KH.boss.gone ? KH.boss : null, up = !!b || won, [cs, cx] = LV.layout.crater;
-  if (TH.cald) { const g = TH.cald, off = g.position.y - TH.caldY; g.position.y = TH.caldY + (up ? damp(off, 0, b && b.state === 'rise' ? 7 : 3, dt) : -3.4); g.visible = off > -3.3 || up; if (TH.caldM) skinPlay(TH.caldM, 'idle'); }
-  if (TH.poolTex) { TH.poolTex.offset.x += dt * .05; TH.poolTex.offset.y -= dt * .08; } if (TH.foam) { TH.foam.rotation.z += dt * .4; TH.foam.material.opacity = .28 + Math.sin(T * 3) * .08; }
-  if (b && b.state !== 'fall') for (let q = 0; q < 2; q++) if (Math.random() < dt * 14) { const a = rand(0, TAU), r = rand(1, 5.4); fx.spawn(...tw(cs + Math.cos(a) * r, cx + Math.sin(a) * r, .45).toArray(), rand(-.6, .6), rand(1.5, 4), rand(-.6, .6), rand(.4, .8), .35, .7, [.9, .95, 1], [.6, .7, .8], 8); }
+  if (TH.cald) TH.cald.visible = !!b;
+  if (TH.foam) { TH.foam.rotation.z += dt * .4; TH.foam.material.opacity = .28 + Math.sin(T * 3) * .08; }
+  if (b && b.state !== 'fall') for (let q = 0; q < 2; q++) if (Math.random() < dt * 14) { const a = rand(0, TAU), r = rand(1, 7); fx.spawn(...tw(cs + Math.cos(a) * r, cx + Math.sin(a) * r, 0).toArray(), rand(-.6, .6), rand(1.5, 4), rand(-.6, .6), rand(.4, .8), .35, .7, [.9, .95, 1], [.6, .7, .8], 8); }
 }
 THEMES.watcher = natTheme({
   wallTex: TX.rock, floorTex: TX.floor, tint: [.75, .76, .82], door: 0x6a6a7a,
@@ -8115,14 +8183,14 @@ function buildBree(L, TH) {
       for (const k of [-.8, .8]) { const dd = (fs ? box : box); if (fs) { box(L_.bd, pu + fs * .02, xu + k * 2.1, y, .12, 1.5, .14); } else box(L_.bd, pu + k * 2.1, xu + fx_ * .02, y, .14, 1.5, .12); }
       if ((r * 3 + c * 5) % 3 === 0) { fs ? box(L_.dr, ps, px, 1.25, .12, 2.5, 1.3) : box(L_.dr, ps, px, 1.25, 1.3, 2.5, .12); for (let k = 0; k < 2; k++) fs ? box(L_.step, ps + fs * (.35 + k * .4), px, .1 + k * .1 * 0, .4, .2 - k * .08, 2) : box(L_.step, ps, px + fx_ * (.35 + k * .4), .1, 2, .2 - k * .08, .4);
         const aw = tw(ps + fs * .6, px + fx_ * .6, 2.85); L_.aw.push([aw.x, aw.y, aw.z, fs ? .9 : 2.4, .12, fs ? 2.4 : .9, 0]);
-        if (nSign < 40 && (r + c) % 2 === 0) { const q = tw(ps + fs * .12, px + fx_ * .12, 3.35), m = new THREE.Mesh(new THREE.PlaneGeometry(2.1, .84), signMats[nSign++ % signMats.length]); m.position.copy(q); m.rotation.y = fs ? Math.PI / 2 * (fs > 0 ? 1 : -1) : fx_ > 0 ? 0 : Math.PI; m.userData.keep = true; scene.add(m); signs.push(q); } } }
+        if (nSign < 40 && (r + c) % 2 === 0) { const q = tw(ps + fs * .12, px + fx_ * .12, 3.35), m = new THREE.Mesh(new THREE.PlaneGeometry(2.1, .84), signMats[nSign++ % signMats.length]); m.position.copy(q); m.rotation.y = fs ? (fs > 0 ? 0 : Math.PI) : fx_ > 0 ? -Math.PI / 2 : Math.PI / 2;   /* (flat on the wall, facing the lane) */ m.userData.keep = true; scene.add(m); signs.push(q); } } }
     if ((r * 7 + c) % 4 === 0) { const q = tw(s + 1.4, x - 1.4, h + o.rise * .5); L_.ch.push([q.x, q.y + 1.2, q.z, .9, 3, .9]); } }
-  instanced(GEO_BOX, stone, L_.st); instanced(GEO_BOX, plasA, L_.pa); instanced(GEO_BOX, plasB, L_.pb); instanced(GEO_BOX, plasC, L_.pc); instanced(GEO_BOX, wall, L_.wl); instanced(GEO_BOX, wall, L_.cn); instanced(GEO_BOX, stone, L_.ch); instanced(roofG, roofA, L_.ra); instanced(roofG, roofB, L_.rb); instanced(GEO_BOX, beam, L_.bm); instanced(GEO_BOX, beamD, L_.bd); instanced(GEO_BOX, new THREE.MeshBasicMaterial({ color: 0xffb850 }), L_.wn); instanced(GEO_BOX, lam(0x141018), L_.wd); instanced(GEO_BOX, lam(0x5a2a14), L_.dr); instanced(GEO_BOX, lam(0x7a1e22), L_.aw); instanced(GEO_BOX, stone, L_.step);
-  for (const p of signs) { const g = glowSprite(0xffd890, 3.4, .35); g.position.copy(p); scene.add(g); }
+  instanced(GEO_BOX, stone, L_.st); instanced(GEO_BOX, plasA, L_.pa); instanced(GEO_BOX, plasB, L_.pb); instanced(GEO_BOX, plasC, L_.pc); instanced(GEO_BOX, wall, L_.wl); instanced(GEO_BOX, wall, L_.cn); instanced(GEO_BOX, stone, L_.ch); instanced(roofG, roofA, L_.ra); instanced(roofG, roofB, L_.rb); instanced(GEO_BOX, beam, L_.bm); instanced(GEO_BOX, beamD, L_.bd); instanced(GEO_BOX, new THREE.MeshBasicMaterial({ color: 0xc8843a }), L_.wn); instanced(GEO_BOX, lam(0x141018), L_.wd); instanced(GEO_BOX, lam(0x5a2a14), L_.dr); instanced(GEO_BOX, lam(0x7a1e22), L_.aw); instanced(GEO_BOX, stone, L_.step);
+  for (const p of signs) { const g = glowSprite(0xffd890, 2.6, .18); g.position.copy(p); scene.add(g); }
   // kerbs along the lanes, and curled iron lamp posts, each in a ring of grass, with a cluster of lanterns
   { const kb = []; for (let r = 1; r < Y.G - 1; r++) for (let c = 1; c < Y.G - 1; c++) { if (!Y.open[r][c]) continue; for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (!Y.open[r + a][c + b]) { const q = tw(Y.cellS(r) + a * (C / 2 - .2), Y.cellX(c) + b * (C / 2 - .2), .12); kb.push([q.x, q.y, q.z, b ? .4 : C, .24, b ? C : .4]); } } instanced(GEO_BOX, stone, kb); }
   const iron = lam(0x1a1410), lanternM = new THREE.MeshBasicMaterial({ color: 0xffd070 }), grassM = lam(0x2a5a22); let nL = 0; L.glows = [];
-  const lampPost = (s, x) => { const q = tw(s, x, 0), g = new THREE.Group(); g.position.copy(q); scene.add(g); part(new THREE.CylinderGeometry(1.1, 1.2, .3, 16), stone, g, 0, .15, 0); part(new THREE.CylinderGeometry(.95, .95, .06, 16), grassM, g, 0, .31, 0); const pts = []; for (let k = 0; k <= 12; k++) { const t = k / 12; pts.push(new V3(Math.sin(t * 2.4) * .35 * t, t * 4.2, 0)); } const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, .1, 6), iron); g.add(tube); for (const a of [0, 2.1, 4.2]) { const ax = Math.cos(a) * .55, az = Math.sin(a) * .55; const arm = part(GEO_BOX, iron, g, ax / 2 + .2, 4, az / 2, Math.hypot(ax, az) + .1, .06, .06); arm.rotation.y = -a; part(new THREE.CylinderGeometry(.22, .14, .4, 6), lanternM, g, ax + .2, 3.75, az); part(new THREE.ConeGeometry(.28, .22, 6), iron, g, ax + .2, 4.05, az); } const gl = glowSprite(0xffb050, 4.4, .75); gl.position.set(.2, 3.8, 0); g.add(gl); pools.push([s, x, 9]); L.glows.push({ p: tw(s, x, 3.6), c: 0xffa850, i: 1.1 }); };
+  const lampPost = (s, x) => { const q = tw(s, x, 0), g = new THREE.Group(); g.position.copy(q); scene.add(g); part(new THREE.CylinderGeometry(1.1, 1.2, .3, 16), stone, g, 0, .15, 0); part(new THREE.CylinderGeometry(.95, .95, .06, 16), grassM, g, 0, .31, 0); const pts = []; for (let k = 0; k <= 12; k++) { const t = k / 12; pts.push(new V3(Math.sin(t * 2.4) * .35 * t, t * 4.2, 0)); } const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, .1, 6), iron); g.add(tube); for (const a of [0, 2.1, 4.2]) { const ax = Math.cos(a) * .55, az = Math.sin(a) * .55; const arm = part(GEO_BOX, iron, g, ax / 2 + .2, 4, az / 2, Math.hypot(ax, az) + .1, .06, .06); arm.rotation.y = -a; part(new THREE.CylinderGeometry(.22, .14, .4, 6), lanternM, g, ax + .2, 3.75, az); part(new THREE.ConeGeometry(.28, .22, 6), iron, g, ax + .2, 4.05, az); } const gl = glowSprite(0xffb050, 3.4, .5); gl.position.set(.2, 3.8, 0); g.add(gl); pools.push([s, x, 9]); L.glows.push({ p: tw(s, x, 3.6), c: 0xffa850, i: .75 }); };
   for (let r = 2; r < Y.G - 2 && nL < 40; r += 2) for (let c = 1; c < Y.G - 1 && nL < 40; c += 2) if (Y.open[r][c] && (r * 5 + c) % 3 === 0) { nL++; lampPost(Y.cellS(r) + 1.2, Y.cellX(c) - 1.2); }
   for (const [s, x] of Y.squares) { lampPost(s - 3.5, x - 3.5); lampPost(s + 3.5, x + 3.5); }
   // the south gate shut behind you, hay to hide in, a fountain in each square
@@ -8136,12 +8204,12 @@ function buildBree(L, TH) {
   bakeScenery(scene.children.slice(first));
   // the light of the town on a black wet night: a soft glow round every lit window, pools of lamplight and window light on the cobbles
   const glowPts = (list, col, size, op) => { const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(list.flatMap(p => [p.x, p.y, p.z]), 3)); const pts = new THREE.Points(geo, new THREE.PointsMaterial({ map: TX.glow, color: col, size, sizeAttenuation: true, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false })); pts.frustumCulled = false; scene.add(pts); return pts; };
-  glowPts(glows, 0xffa040, 2.4, .32); glowPts(glows, 0xffd8a0, 1, .5);
+  glowPts(glows, 0xffa040, 2, .2); glowPts(glows, 0xffd8a0, .8, .36);
   const decals = (list, col, op) => { const im = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: TX.glow, color: col, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false }), list.length), Q = new THREE.Quaternion(); list.forEach(([s, x, r], i) => { _m4.compose(tw(s, x, .04), Q, new V3(r, 1, r)); im.setMatrixAt(i, _m4); }); im.frustumCulled = false; scene.add(im); return im; };
-  decals(pools, 0xffa850, .2); decals(spill, 0xff9a40, .13); TH.pools = pools;
+  decals(pools, 0xffa850, .13); decals(spill, 0xff9a40, .08); TH.pools = pools;
   // the rain: streaks all round you, the dark low cloud
-  { const NR = 2600, A = new Float32Array(NR * 6), vel = new Float32Array(NR); for (let i = 0; i < NR; i++) { const x = rand(-22, 22), z = rand(-22, 22), y = rand(0, 26); A.set([x, y, z, x + .05, y + .9, z + .03], i * 6); vel[i] = rand(22, 30); }
-    const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.BufferAttribute(A, 3)); TH.rainM = new THREE.LineSegments(rg, new THREE.LineBasicMaterial({ color: 0x8a9cc0, transparent: true, opacity: .42 })); TH.rainM.frustumCulled = false; TH.rainM.visible = false; scene.add(TH.rainM); TH.rain = { NR, vel }; }
+  { const NR = 4200, A = new Float32Array(NR * 6), vel = new Float32Array(NR); for (let i = 0; i < NR; i++) { const x = rand(-22, 22), z = rand(-22, 22), y = rand(0, 26); A.set([x, y, z, x + .12, y + 1.1, z + .06], i * 6); vel[i] = rand(26, 34); }
+    const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.BufferAttribute(A, 3)); TH.rainM = new THREE.LineSegments(rg, new THREE.LineBasicMaterial({ color: 0x8a9cc0, transparent: true, opacity: .5 })); TH.rainM.frustumCulled = false; TH.rainM.visible = false; scene.add(TH.rainM); TH.rain = { NR, vel }; }
   // the Nazgûl and their cones of dread
   TH.riders = []; for (let k = 0; k < 8; k++) { const M = makeNazgul(), fan = new THREE.BufferGeometry(); fan.setAttribute('position', new THREE.BufferAttribute(new Float32Array(16 * 3), 3)); const idx = []; for (let i = 1; i < 15; i++) idx.push(0, i, i + 1); fan.setIndex(idx); const cone = new THREE.Mesh(fan, new THREE.MeshBasicMaterial({ color: 0x9ab8ff, transparent: true, opacity: .2, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false })); cone.frustumCulled = false; cone.userData.keep = true; cone.visible = false; scene.add(cone); M.root.visible = false; if (M.shadow) M.shadow.visible = false; TH.riders.push({ M, cone }); }
 }
@@ -8152,7 +8220,8 @@ function resetBree() {
 function updateBree(dt) {
   const TH = THEMES.bree, on = !!LV && LV.theme === 'bree' && state !== 'map' && state !== 'title'; if (TH.rainM) TH.rainM.visible = on; if (TH.riders) for (const n of TH.riders) { n.M.root.visible = on; n.cone.visible = on; if (n.M.shadow) n.M.shadow.visible = on; } if (!on) return;
   const Y = LV.layout, play = state === 'play', Cp = camera.position, pa = TH.rainM.geometry.attributes.position, A = pa.array; TH.rainM.position.set(Cp.x, 0, Cp.z);
-  TH.rainM.position.y = Y0; for (let i = 0; i < TH.rain.NR; i++) { const k = i * 6; let y = A[k + 1] - TH.rain.vel[i] * dt; if (y < 0) y += 26; A[k + 1] = y; A[k + 4] = y + .9; } pa.needsUpdate = true;
+  TH.rainM.position.y = Y0; for (let i = 0; i < TH.rain.NR; i++) { const k = i * 6; let y = A[k + 1] - TH.rain.vel[i] * dt; if (y < 0) y += 26; A[k + 1] = y; A[k + 4] = y + 1.1; } pa.needsUpdate = true;
+  if (play && Math.random() < dt * .12) { const a = rand(0, TAU), r = rand(40, 120); boltAt(new V3(camera.position.x + Math.cos(a) * r, rand(-40, -10), camera.position.z + Math.sin(a) * r)); }   // (the storm right over the town, more often than elsewhere)
   for (let q = 0; q < 4; q++) if (Math.random() < dt * 30) { const a = rand(0, TAU), r = rand(.5, 13); tw(P.s + Math.cos(a) * r, P.x + Math.sin(a) * r, .05, _a); fx.spawn(_a.x, _a.y, _a.z, rand(-.5, .5), rand(1.2, 2.2), rand(-.5, .5), .22, .12, .03, [.75, .8, .95], [.45, .5, .7], 12); }   // (it splashes on the cobbles)
 
   if (AUTORUN && play) { const [r0, c0] = Y.cellOf(P.s, P.x), w = Y.path(r0, c0, Y.G - 2, 11); WALKTO = w.length > 1 ? w[1] : Y.goal; }   // testing
@@ -8187,7 +8256,7 @@ function updateBree(dt) {
 }
 THEMES.bree = natTheme({
   wallTex: TX.rock, floorTex: TX.floor, tint: [.75, .76, .82], door: 0x6a6a7a,
-  env: { sky: [0x010206, 0x04060e, 0x0a0e1a, 0x121624], fog: [16, 92], fogC: 0x0a0d16, bloom: 1, amb: [0x4a4a66, .5], hemi: [0x8a94b8, 0x1a1410, .36], sun: [0x8a9ad8, .22], east: [0xff9050, .18], bolts: true, cloud: 0x262c3a },   // (a black night of rain and thunder)
+  env: { sky: [0x000104, 0x020308, 0x060810, 0x0a0c16], fog: [12, 72], fogC: 0x06080e, bloom: 1, amb: [0x3a3c58, .36], hemi: [0x6a7498, 0x100c0a, .26], sun: [0x7a88c8, .14], east: [0xff9050, .1], bolts: true, cloud: 0x1a1e2a },   // (a black night of rain and thunder)
   orc: MT_ORC,
   scenery(L) { buildBree(L, this); },
 });
@@ -8227,11 +8296,11 @@ function primevalContent(L) {
 }
 function buildPrimeval(L, TH) {
   const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
-  const TLeaf = TX.lush || TX.grass, grd = surf(TLeaf, { sky, vc: true, rough: 1, bump: 2, env: .03 });
-  groundMesh(T_, TLeaf, (k, sl, y) => k === 'r' ? [.36, .4, .32] : [.2 + Math.random() * .06, .3 + clamp(y / 20, 0, .08), .15], 5, () => grd);
-  wideFloor(TLeaf, 0x1a2a14, 90, 12, 800);
-  const barkT = mkTex(128, 256, c => { c.fillStyle = '#3a2c20'; c.fillRect(0, 0, 128, 256); for (let i = 0; i < 700; i++) { const v = Math.random(); c.fillStyle = v < .45 ? 'rgba(14,10,6,.5)' : v < .8 ? 'rgba(92,72,50,.35)' : 'rgba(60,90,40,.28)'; c.fillRect(Math.random() * 128, Math.random() * 256, 1 + Math.random() * 3, 12 + Math.random() * 48); } }); barkT.magFilter = THREE.LinearFilter; const bark = surf(barkT, { sky, color: 0xc0b0a0, rough: .95, bump: 5, env: .03 });
-  const stone = surf(TX.rock, { sky, color: 0x7e8a70, rough: .95, bump: 3.5, env: .05, tri: 3 }), stoneD = surf(TX.rock, { sky, color: 0x5a6650, rough: .95, bump: 3.5, env: .05, tri: 3 }), moss = lam(0x4a7a30), wood = lam(0x4a3620), rope = lam(0x8a7a5a), vine = lam(0x2a4a20);
+  const TLeaf = TX.arMoss, grd = surf(TLeaf, { sky, vc: true, rough: 1, bump: 2.4, env: .03 });   // (Tokara's own mossy forest floor, from Unreal Tournament 2004's Arborea)
+  groundMesh(T_, TLeaf, (k, sl, y) => k === 'r' ? [.5, .5, .44] : [.58 + Math.random() * .1, .66 + clamp(y / 20, 0, .08), .5], 7, () => grd);
+  wideFloor(TLeaf, 0x3a4a2a, 90, 12, 800);
+  const barkT = TX.arBark || mkTex(128, 256, c => { c.fillStyle = '#3a2c20'; c.fillRect(0, 0, 128, 256); for (let i = 0; i < 700; i++) { const v = Math.random(); c.fillStyle = v < .45 ? 'rgba(14,10,6,.5)' : v < .8 ? 'rgba(92,72,50,.35)' : 'rgba(60,90,40,.28)'; c.fillRect(Math.random() * 128, Math.random() * 256, 1 + Math.random() * 3, 12 + Math.random() * 48); } }); barkT.magFilter = THREE.LinearFilter; const bark = surf(barkT, { sky, color: 0xc0b0a0, rough: .95, bump: 5, env: .03 });
+  const stone = surf(TX.rock, { sky, color: 0x7e8a70, rough: .95, bump: 3.5, env: .05, tri: 3 }), stoneD = surf(TX.rock, { sky, color: 0x5a6650, rough: .95, bump: 3.5, env: .05, tri: 3 }), moss = lam(0x4a7a30), wood = surf(TX.rrWood || TX.wood, { sky, color: 0x9a7a5a, rough: .9, bump: 2, tri: 1.2 }), rope = surf(TX.arRope, { sky, color: 0xc8b890, rough: 1, bump: 1 }), vine = lam(0x2a4a20);   // (the planks in Rrajigar's wood, the ropes in Arborea's)
   // the great trees: a trunk with flaring root-buttresses that spread far out over the floor, boughs high above
   const giantGeo = r => { const NA = 26, NY = 13, H = 86, pos = [], uv = [], idx = []; for (let j = 0; j <= NY; j++) { const t = j / NY, y = t * t * H - 1.5, fl = 1 + .7 * Math.exp(-y / 2) + .25 * Math.exp(-y / 14); for (let i = 0; i <= NA; i++) { const a = i / NA * TAU, lobe = 1 + (.34 * Math.pow(Math.abs(Math.sin(a * 3.5)), 2.4) - .1) * Math.exp(-y / 9) * .9, rr = r * (1 - t * .55) * fl * lobe * (1 + Math.sin(a * 11 + y * .3) * .025); pos.push(Math.cos(a) * rr, y, Math.sin(a) * rr); uv.push(i / NA * 3, y / 14); if (j < NY && i < NA) { const k = j * (NA + 1) + i; idx.push(k, k + NA + 1, k + 1, k + 1, k + NA + 1, k + NA + 2); } } } const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return g; };
   const lA = [], lB = [], lC = [], bough = []; const geoCache = [giantGeo(1)];
@@ -8241,13 +8310,21 @@ function buildPrimeval(L, TH) {
   // lesser trees, the roof of leaves, vines hanging out of it
   { const sm = [], tr = new THREE.CylinderGeometry(1, 1.25, 1, 7); for (let k = 0; k < 150; k++) { const s = rand(-90, 90), x = rand(-90, 90); if (Y.giants.some(q => Math.hypot(q.s - s, q.x - x) < q.r * 2.2) || Y.ruins.some(([rs, rx, r]) => Math.hypot(rs - s, rx - x) < r)) continue; const q = tw(s, x, at(s, x)), h = rand(9, 20), r = rand(.22, .5); sm.push([q.x, q.y + h / 2, q.z, r, h, r, 0]); for (let c = 0; c < 4; c++) { const sc = rand(1.6, 3.6); (c % 2 ? lB : lC).push([q.x + rand(-2.5, 2.5), q.y + h + rand(-1.5, 2), q.z + rand(-2.5, 2.5), sc, sc * .6, sc]); } } instanced(tr, bark, sm); }
   for (let k = 0; k < 900; k++) { const q = tw(rand(-120, 120), rand(-120, 120), rand(44, 62)), sc = rand(7, 14); (k % 3 ? k % 3 === 1 ? lA : lB : lC).push([q.x, q.y, q.z, sc, sc * .45, sc]); }
-  const leafM = c => { const m = surf(TX.leaf, { sky, color: c, rough: 1, bump: 2, env: .03 }); return m; }, lg = new THREE.IcosahedronGeometry(1, 1); instanced(lg, leafM(0x5a8a3a), lA); instanced(lg, leafM(0x3e6e2e), lB); instanced(lg, leafM(0x2c5426), lC);
-  { const vs = []; for (let k = 0; k < 340; k++) { const s = rand(-88, 88), x = rand(-88, 88), y0 = at(s, x) + rand(3, 14), h = rand(20, 44), q = tw(s, x, y0 + h / 2); vs.push([q.x, q.y, q.z, rand(.03, .08), h, rand(.03, .08), rand(0, 3)]); } instanced(GEO.cyl, vine, vs); }
+  const leafM = c => { const m = surf(TX.leaf, { sky, color: c, rough: 1, bump: 2, env: .03 }); return m; }, lg = new THREE.IcosahedronGeometry(1, 1); {   // the roof of leaves: crossed cards of Arborea's leafy sprays and bare branches, thousands of them, so the light comes through in flecks (TX.arLeaves, TX.arBranch)
+    const card = new THREE.PlaneGeometry(1, 1), Q = new THREE.Quaternion(), S3 = new V3(), Pq = new V3(), E_ = new THREE.Euler();
+    const cards = (list, tex, col, per, k = 1.5) => { const m = ps1(new THREE.MeshLambertMaterial({ map: tex, color: col, alphaTest: .42, side: THREE.DoubleSide })), im = new THREE.InstancedMesh(card, m, list.length * per); let i = 0; for (const [x, y, z, sx, sy] of list) for (let c = 0; c < per; c++) { E_.set(rand(-.9, .9), rand(0, TAU), rand(-.5, .5)); Q.setFromEuler(E_); _m4.compose(Pq.set(x + rand(-sx, sx) * .4, y + rand(-sy, sy) * .5, z + rand(-sx, sx) * .4), Q, S3.set(sx * k, sx * k, 1)); im.setMatrixAt(i++, _m4); } im.frustumCulled = false; scene.add(im); return im; };
+    cards(lA, TX.arLeaves, 0xb0d090, 3); cards(lB, TX.arLeaves, 0x8ab070, 3); cards(lC, TX.arBranch, 0x6a7a5a, 2, 1.8); cards(lC, TX.arLeaves, 0x6a9058, 2);
+  }
+  { const vs = []; for (let k = 0; k < 340; k++) { const s = rand(-88, 88), x = rand(-88, 88), y0 = at(s, x) + rand(3, 14), h = rand(20, 44), q = tw(s, x, y0 + h / 2); vs.push([q.x, q.y, q.z, rand(.03, .08), h, rand(.03, .08), rand(0, 3)]); } { const vm = ps1(new THREE.MeshLambertMaterial({ map: TX.arVines, color: 0x9ab080, alphaTest: .4, side: THREE.DoubleSide })), vg = new THREE.PlaneGeometry(1, 1), vi = new THREE.InstancedMesh(vg, vm, vs.length), Q = new THREE.Quaternion(), S3 = new V3(), Pq = new V3(); vs.forEach((v, i) => { Q.setFromAxisAngle(UPV, v[6]); _m4.compose(Pq.set(v[0], v[1], v[2]), Q, S3.set(rand(1.6, 3.2), v[4], 1)); vi.setMatrixAt(i, _m4); }); vi.frustumCulled = false; scene.add(vi); } }   // (hanging curtains of Arborea's vines)
   // giant ferns (crossed cards), pale fungus that glows, roots and boulders on the floor
   const fernT = mkTex(128, 128, c => { c.clearRect(0, 0, 128, 128); for (let f = 0; f < 7; f++) { const a = -1.5 + f * .5, bx = 64, by = 126; let x = bx, y = by, d = a; c.lineWidth = 2; c.strokeStyle = '#3e7a2e'; for (let k = 0; k < 14; k++) { const nx = x + Math.sin(d) * 8, ny = y - Math.cos(d) * 8; c.beginPath(); c.moveTo(x, y); c.lineTo(nx, ny); c.stroke(); const L_ = (14 - k) * 1.5; c.strokeStyle = k % 2 ? '#5aa03a' : '#4a8e32'; c.beginPath(); c.moveTo(nx, ny); c.lineTo(nx + Math.cos(d) * L_, ny + Math.sin(d) * L_ * .4); c.moveTo(nx, ny); c.lineTo(nx - Math.cos(d) * L_, ny - Math.sin(d) * L_ * .4); c.stroke(); x = nx; y = ny; d += a * .05; } } }, false); fernT.magFilter = THREE.LinearFilter;
-  { const fm = new THREE.MeshLambertMaterial({ map: fernT, alphaTest: .4, side: THREE.DoubleSide }), fg = new THREE.PlaneGeometry(1, 1), l = []; for (let k = 0; k < 1700; k++) { const s = rand(-90, 90), x = rand(-90, 90); if (Y.giants.some(q => Math.hypot(q.s - s, q.x - x) < q.r * .9)) continue; const q = tw(s, x, at(s, x)), z = rand(1.2, 3.4); const r = rand(0, 3); l.push([q.x, q.y + z * .45, q.z, z * 1.5, z, 1, r], [q.x, q.y + z * .45, q.z, z * 1.5, z, 1, r + 1.57]); } instanced(fg, fm, l); }
+  { const fm = new THREE.MeshLambertMaterial({ map: TX.arFern || fernT, color: 0xc0d8a8, alphaTest: .4, side: THREE.DoubleSide }), fg = new THREE.PlaneGeometry(1, 1), l = []; for (let k = 0; k < 1700; k++) { const s = rand(-90, 90), x = rand(-90, 90); if (Y.giants.some(q => Math.hypot(q.s - s, q.x - x) < q.r * .9)) continue; const q = tw(s, x, at(s, x)), z = rand(1.2, 3.4); const r = rand(0, 3); l.push([q.x, q.y + z * .45, q.z, z * 1.5, z, 1, r], [q.x, q.y + z * .45, q.z, z * 1.5, z, 1, r + 1.57]); } instanced(fg, fm, l); }
   { const caps = [], stems = [], gl = []; for (let k = 0; k < 170; k++) { const s = rand(-90, 90), x = rand(-90, 90), q = tw(s, x, at(s, x)), z = rand(.2, .75); stems.push([q.x, q.y + z * .5, q.z, z * .14, z, z * .14]); caps.push([q.x, q.y + z, q.z, z * .6, z * .24, z * .6]); if (k % 5 === 0) gl.push(q.clone().setY(q.y + z)); } instanced(GEO.cyl, lam(0xc8c8a0), stems); instanced(GEO.sph, new THREE.MeshBasicMaterial({ color: 0x8affc8 }), caps); gl.slice(0, 26).forEach(p => { const g = glowSprite(0x6affb0, 3, .4); g.position.copy(p); scene.add(g); }); }
   { const bo = []; for (let k = 0; k < 150; k++) { const s = rand(-90, 90), x = rand(-90, 90), q = tw(s, x, at(s, x)), r = rand(.5, 2.2); bo.push([q.x, q.y + r * .2, q.z, r, r * .6, r, rand(0, 3)]); } instanced(new THREE.IcosahedronGeometry(1, 1), stoneD, bo); }
+  // tall grass over the floor in clumps, thickest in the open between the trunks (Arborea's grass cards, crossed)
+  { const gm = ps1(new THREE.MeshLambertMaterial({ map: TX.arGrass, color: 0xa8c088, alphaTest: .45, side: THREE.DoubleSide })), gg = new THREE.PlaneGeometry(1, 1).translate(0, .5, 0), list = [];
+    for (let k = 0; k < 9000 && list.length < 5200; k++) { const s = rand(-90, 90), x = rand(-90, 90); if (Y.giants.some(q => Math.hypot(q.s - s, q.x - x) < q.r * 1.9) || Y.ruins.some(([rs, rx, r]) => Math.hypot(rs - s, rx - x) < r * .8)) continue; if (Math.sin(s * .13) * Math.cos(x * .11) + Math.sin(s * .05 + x * .07) < -.4) continue; list.push(tw(s, x, at(s, x) - .05)); }
+    const gi = new THREE.InstancedMesh(gg, gm, list.length * 2), Q = new THREE.Quaternion(), S3 = new V3(); list.forEach((p, i) => { const a = rand(0, Math.PI), h = rand(.8, 1.6), w = rand(1.2, 2.2); for (let c = 0; c < 2; c++) { Q.setFromAxisAngle(UPV, a + c * Math.PI / 2); _m4.compose(p, Q, S3.set(w, h, 1)); gi.setMatrixAt(i * 2 + c, _m4); } }); gi.frustumCulled = false; scene.add(gi); }
   // the ruins: fluted columns, some standing to their capitals, some broken; walls with a lintel; a great stone head on a plinth, staring
   for (const [s, x, y, h] of Y.cols) { const q = tw(s, x, y); part(new THREE.CylinderGeometry(.75, .9, h, 10), stone, scene, q.x, q.y + h / 2, q.z); part(GEO_BOX, stoneD, scene, q.x, q.y + .3, q.z, 2.2, .6, 2.2); if (h > 5) part(new THREE.CylinderGeometry(1.25, .8, .9, 10), stone, scene, q.x, q.y + h + .1, q.z); part(GEO.ico, moss, scene, q.x + rand(-.7, .7), q.y + rand(1, h), q.z + rand(-.7, .7), rand(.4, .9), rand(.3, .8), rand(.4, .9)); }
   for (const [s, x, y, along, L_, h] of Y.rwalls) { const q = tw(s, x, y + h / 2); part(GEO_BOX, stoneD, scene, q.x, q.y, q.z, along ? 1.4 : L_, h, along ? L_ : 1.4); part(GEO.ico, moss, scene, q.x, q.y + h / 2, q.z, along ? 1 : L_ * .45, .4, along ? L_ * .45 : 1); }
@@ -8308,11 +8385,74 @@ THEMES.arena = natTheme({
   orc: MT_ORC,
   scenery(L) { buildArena(L, this); },
 });
+// --- the Stairs of Cirith Ungol, run into the screen like Mount Doom: up the endless stair cut into the cliffs of the Ephel Dúath, winding left and right, the gorge falling
+//     away into darkness under you. Steep flights and broken ledges, stepping stones over the drop, slabs that slide and rise, steps that crumble the moment you stand on
+//     them, grates that blow pale Morgul-fire in turn, boulders rolled down from above onto the marked stair, orcs on the landings. Fall and the dark has you. The tunnel is at the top.
+function ungolCurve(s) { const E = TAU * UNG_R, k = clamp((s - 8) / 22, 0, 1) * clamp((E - 14 - s) / 22, 0, 1); return k * (.42 * Math.sin(s * .031 + 2.2) + .22 * Math.sin(s * .067 + .4)); }
+function ungolCourse() {
+  const c = { pillars: [], plats: [], jets: [], crates: [], orcs: [], apples: [], bombs: [], R: UNG_R }; let s = 6.5, y = 0;
+  const land = (len, x0 = -2.6, x1 = 2.6) => { c.pillars.push([s, s + len, x0, x1, +y.toFixed(2)]); const a = s; s += len; return a; };
+  const stairs = (n, x0 = -1.5, x1 = 1.5, rs = .38, l = .8) => { for (let k = 0; k < n; k++) { y += rs; land(l, x0, x1); } };
+  const gap = g => { s += g; };
+  const line = (a, b, x, n) => c.apples.push([a, b, x, y + .8, n]);
+  // the foot of the stair: a ledge, crates, and the first long flight
+  y = 1; let a = land(8); c.crates.push(['b', a + 3, -1.6], ['b', a + 4.1, -1.6], ['q', a + 6, 1.6]); line(a + 1, a + 7, 0, 5);
+  stairs(10); a = land(5, -2.2, 2.2); c.orcs.push(['grunt', a + 3, 0, y]); line(a + 1, a + 4, 0, 3);
+  // broken steps over the drop: left, right, left
+  for (const [x0, x1] of [[-2.2, -.2], [.2, 2.2], [-2.2, -.2], [.2, 2.2]]) { gap(1.9); y += .5; a = land(3.2, x0, x1); c.apples.push([a + 1.6, a + 1.6, (x0 + x1) / 2, y + .8, 1]); }
+  gap(1.8); y += .3; a = land(6); c.crates.push(['c', a + 3, 2]); stairs(8, -1.3, 1.3);
+  // a ledge with grates of pale fire in it, blowing one after another
+  a = land(16, -1.7, 1.7); for (const [d, ph] of [[3, 0], [7, 1], [11, 2], [14.5, 3]]) c.jets.push({ s: a + d, x: 0, y, per: 4, ph }); line(a + 1, a + 15, 0, 8);
+  // slabs sliding from side to side over the gorge
+  for (const [ax, ph] of [[2, 0], [2.2, 1.5], [2, 3]]) { gap(1.8); y += .45; c.plats.push({ s: s + 1.7, x: 0, y, w: 2.8, l: 3.4, ax, sp: 1.15, ph }); s += 3.4; }
+  gap(1.4); y += .3; a = land(8); c.crates.push(['r', a + 3, -1.8], ['l', a + 6, 1.8]); c.orcs.push(['archer', a + 6.5, -1.4, y], ['grunt', a + 3.5, 1, y]); line(a + 1, a + 7, 0, 5);
+  // the long stair under the boulders: they come bounding down onto the marked steps
+  stairs(6); a = s; for (let k = 0; k < 14; k++) { y += .36; land(.85, -1.4, 1.4); } c.bombs.push([a, s]); line(a, s, 0, 8);
+  a = land(5, -2, 2); c.crates.push(['su', a + 2.5, 1.6]);
+  // stones that give way under you: keep going
+  for (const x of [0, .9, -.5, -1.1, .2]) { gap(1.7); y += .35; c.plats.push({ s: s + 1.6, x, y, w: 2.4, l: 3.2, crumble: true }); s += 3.2; }
+  gap(1.4); y += .3; a = land(9); c.orcs.push(['grunt', a + 3, -1, y], ['grunt', a + 6, 1, y], ['archer', a + 8.5, 0, y]); c.crates.push(['q', a + 5, 2.2]); line(a + 1, a + 8, 0, 6);
+  // slabs rising and falling up a sheer face: wait for each
+  for (const [ph, x] of [[0, 0], [1.3, -1], [2.6, 1], [3.9, 0]]) { gap(1.7); y += .75; c.plats.push({ s: s + 1.7, x, y, w: 2.8, l: 3.4, ay: .6, sp: 1.1, ph }); s += 3.4; }
+  gap(1.4); y += .8; stairs(8, -1.2, 1.2);
+  // two lanes of grates out of step, then the last stair under falling rock to the tunnel mouth
+  a = land(18, -2, 2); for (let k = 0; k < 4; k++) c.jets.push({ s: a + 3 + k * 4, x: -1.1, y, per: 3.2, ph: k % 2 ? 0 : 1.6 }, { s: a + 3 + k * 4, x: 1.1, y, per: 3.2, ph: k % 2 ? 1.6 : 0 }); line(a + 1, a + 17, 0, 10);
+  a = s; stairs(12, -1.3, 1.3, .42); c.bombs.push([a, s]);
+  c.pillars.push([s, TAU * UNG_R + 2, -2.6, 2.6, +y.toFixed(2)]); c.end = s; return c;
+}
+function buildUngolRun(L, TH) {
+  const first = scene.children.length, sky = TH.env, E = TAU * UNG_R, Ya = doomYAt;
+  const rock = surf(TX.hdRock || TX.rock, { sky, color: 0x6a6a72, rough: .95, bump: 4, tri: 3, side: THREE.DoubleSide }), rockD = surf(TX.hdStone || TX.rock, { sky, color: 0x4a4a52, rough: .95, bump: 4, tri: 3 });
+  // the gorge: its walls going up sheer on either side of the stair and down out of sight below it
+  const strip = (x0, x1, nx, yAtX, mat) => { const ns = 90, pos = [], uv = [], idx = []; for (let j = 0; j <= ns; j++) { const s = -24 + j / ns * (E + 60); for (let i = 0; i <= nx; i++) { const x = lerp(x0, x1, i / nx), q = tw(s, x, Ya(s) + 5 + yAtX(x, s)); pos.push(q.x, q.y, q.z); uv.push(s * .08, x * .08 + yAtX(x, s) * .05); } } for (let j = 0; j < ns; j++) for (let i = 0; i < nx; i++) { const k = j * (nx + 1) + i; idx.push(k, k + 1, k + nx + 1, k + 1, k + nx + 2, k + nx + 1); } const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); const m = new THREE.Mesh(g, mat); m.receiveShadow = true; scene.add(m); };
+  const wall = (x, s) => { const d = Math.abs(x) - 5.5, v = Math.sin(s * .21 + x * .4) * 1.4 + Math.sin(s * .53 - x * .3) * .7; return d < 0 ? -40 + Math.abs(x) * 2 : Math.min(48, d * 6 + v * (1 + d * .3)); };
+  for (const [a, b] of [[-5.5, -22], [5.5, 22]]) strip(a, b, 18, wall, rock);
+  strip(-5.5, 5.5, 4, x => -40 + Math.abs(x) * 2, rockD);   // (the bottom of the gorge, far down in the dark)
+  // crags and fallen blocks clinging to the walls; mist lying in the gorge
+  const crag = new THREE.IcosahedronGeometry(1, 1), cr = []; for (let k = 0; k < 150; k++) { const sd = k % 2 ? 1 : -1, s = rand(-20, E + 40), x = sd * rand(6, 16), q = tw(s, x, Ya(s) + 5 + wall(x, s) * rand(.2, .9)), r = rand(.8, 3); cr.push([q.x, q.y, q.z, r, r * rand(.6, 1.4), r, rand(0, 3)]); } instanced(crag, rockD, cr);
+  TH.mist = []; for (let k = 0; k < 40; k++) { const s = rand(-10, E + 20), g = glowSprite(0x8a9aa8, rand(16, 26), .16); tw(s, rand(-4, 4), Ya(s) - rand(4, 12), g.position); g.material.blending = THREE.NormalBlending; scene.add(g); TH.mist.push(g); }
+  // the grates in the stair, and braziers of pale Morgul-fire on the landings
+  for (const j of runC('ungol').jets) { const q = tw(j.s, j.x, j.y + .02); part(new THREE.CylinderGeometry(.62, .72, .12, 8), lam(0x1a1c1e), scene, q.x, q.y + .05, q.z); const h = part(new THREE.CircleGeometry(.44, 8), bas(0x0a1a0e), scene, q.x, q.y + .12, q.z); h.rotation.x = -Math.PI / 2; const gl = glowSprite(0x7aff8a, 1.8, .22); gl.position.set(q.x, q.y + .3, q.z); scene.add(gl); j.gl = gl; }
+  TH.braz = []; for (const [s0, s1, x0, x1, top] of runC('ungol').pillars) { if (s1 - s0 < 5) continue; for (const x of [x0 + .35, x1 - .35]) { const q = tw(s0 + .6, x, top); part(GEO.cyl, lam(0x1a1c1e), scene, q.x, q.y + .55, q.z, .1, 1.1, .1); part(new THREE.CylinderGeometry(.3, .18, .3, 7), lam(0x1a1c1e), scene, q.x, q.y + 1.2, q.z); const g = glowSprite(0x8affa0, 2.2, .7); g.position.set(q.x, q.y + 1.5, q.z); scene.add(g); TH.braz.push([s0 + .6, x, top + 1.4]); } }
+  // the tower of Cirith Ungol high above the pass ahead, a pale light in it; the mouth of the tunnel at the top of the stair
+  { const q = tw(E + 140, -30, 0), tg = lam(0x2a2a30); let y = Ya(E) + 10; for (const [rt, rb, h] of [[9, 14, 30], [6, 9, 26], [4, 6, 18], [2, 4, 12]]) { const m = part(new THREE.CylinderGeometry(rt, rb, h, 6), tg, scene, q.x, y + h / 2, q.z); y += h; } const g = glowSprite(0x9affb0, 30, .5); g.material.fog = false; g.position.set(q.x, y + 2, q.z); scene.add(g); }
+  { const q = tw(E - 6, 0, Ya(E - 6) + 5); const mouth = part(new THREE.CircleGeometry(3.2, 18), bas(0x000000), scene, q.x, q.y + 2.6, q.z); mouth.rotation.y = Math.PI - trackAng(E - 6); }
+  bakeScenery(scene.children.slice(first));
+}
+THEMES.ungolrun = natTheme({
+  wallTex: TX.hdRock || TX.rock, floorTex: TX.hdStone || TX.rock, tint: [.62, .64, .7], door: 0x4a4a52,
+  env: { sky: [0x020304, 0x06080a, 0x0e1214, 0x1a2420], fog: [26, 160], fogC: 0x0c1012, amb: [0x5a6a6a, .7], hemi: [0x9aaab0, 0x101414, .45], sun: [0xa8c0c0, .45], east: [0x7aff9a, .1], cloud: 0x14181a, bloom: .6, sunDir: [40, 70, -60] },
+  orc: MT_ORC,
+  scenery(L) { buildUngolRun(L, this); },
+});
 THEMES.doom.floorTex = TX.doomRock; THEMES.doom.wallTex = TX.doomRock;
 const DOOM_JETS_ON = 1.15;   // (how long each vent blows)
 function updateDoom(dt) {
-  if (!LV || LV.theme !== 'doom' || state === 'map' || state === 'title') return;
-  const TH = THEMES.doom, play = state === 'play', C = doomC(), yf = doomYAt(P.s);
+  if (!LV || (LV.theme !== 'doom' && LV.theme !== 'ungolrun') || state === 'map' || state === 'title') return;
+  const ung = LV.theme === 'ungolrun', TH = THEMES[LV.theme], play = state === 'play', C = curC(), yf = doomYAt(P.s);
+  const vf = ung ? (p, a, b) => fx.spawn(p.x + rand(-.2, .2) * a, p.y, p.z + rand(-.2, .2) * a, rand(-.3, .3), rand(.8, 1.4) * b, rand(-.3, .3), rand(.3, .6), .55 * a, .1 * a, [.75, 1, .7], [.15, .7, .3]) : bfire;   // (Cirith Ungol's fire is the pale green of Minas Morgul)
+  if (ung) { for (const [s, x, y] of TH.braz || []) if (Math.abs(s - P.s - 6) < 26 && Math.random() < dt * 10) vf(tw(s, x, y), .5, 1.2); if (Math.random() < dt * 8) fx.spawn(...tw(P.s + rand(-4, 30), P.x + rand(-6, 6), P.y + rand(2, 10)).toArray(), rand(-.2, .2), -rand(1, 2), rand(-.2, .2), rand(1.5, 3), .05, .02, [.7, .75, .8], [.4, .45, .5]); for (const g of TH.mist || []) g.position.y += Math.sin(T * .3 + g.position.x) * .002; }
+  else {
   if (TH.flow) { TH.flow.offset.y -= dt * .1; TH.flow.offset.x += Math.sin(T * .2) * dt * .006; } if (TH.fallT) TH.fallT.offset.y += dt * .34;
   // sheets of fire leaping off the river, curtains of it along the banks, embers rising past you, black smoke overhead
   for (let k = 0; k < 7; k++) if (Math.random() < dt * 22) { const s = P.s + rand(-8, 40), x = (Math.random() < .5 ? -1 : 1) * rand(3.8, 12.5); bfire(tw(s, x, doomYAt(s) + .2), rand(1.2, 2.8), rand(2, 4.5)); }
@@ -8321,14 +8461,15 @@ function updateDoom(dt) {
   if (Math.random() < dt * 5) { const s = P.s + rand(6, 46); smoke.spawn(...tw(s, rand(-22, 22), doomYAt(s) + rand(5, 12)).toArray(), rand(-.5, .5), rand(2, 4), rand(-.5, .5), rand(7, 11), 3, 14, [.07, .05, .05], [.2, .14, .12], -.15, .28); }
   for (const [s, x, y] of TH.falls || []) if (Math.abs(s - P.s - 10) < 40 && Math.random() < dt * 14) bfire(tw(s + rand(-2, 2), x * .92, y + .3), rand(1.6, 2.8), 3.2);
   for (const [s, x, y] of TH.braz || []) if (Math.abs(s - P.s - 6) < 26 && Math.random() < dt * 12) bfire(tw(s, x, y), .55, 1.4);
+  }
   // the vents: each one glows up, then blows
   for (const j of C.jets) { const t = (gs.time + j.ph) % j.per, on = t < DOOM_JETS_ON, warn = !on && t > j.per - .6, near = Math.abs(j.s - P.s) < 34; if (j.gl) { j.gl.material.opacity = on ? 1 : warn ? .75 : .22; j.gl.scale.setScalar(on ? 4.6 : warn ? 3 : 1.8); } if (!near) continue;
-    if (on) { for (let k = 0; k < 4; k++) bfire(tw(j.s + rand(-.3, .3), j.x + rand(-.3, .3), j.y + rand(.1, 3.2)), rand(.8, 1.3), 4); if (play && Math.abs(P.s - j.s) < .95 && Math.abs(P.x - j.x) < .95 && P.y < j.y + 3.4 && P.y > j.y - 1) hurt('burn'); }
+    if (on) { for (let k = 0; k < 4; k++) vf(tw(j.s + rand(-.3, .3), j.x + rand(-.3, .3), j.y + rand(.1, 3.2)), rand(.8, 1.3), 4); if (play && Math.abs(P.s - j.s) < .95 && Math.abs(P.x - j.x) < .95 && P.y < j.y + 3.4 && P.y > j.y - 1) hurt('burn'); }
     else if (warn && Math.random() < dt * 24) sparks(tw(j.s, j.x, j.y + .3), 1, 3, [1, .9, .5], [1, .4, .1], .2); }
   // burning rocks thrown down from the summit, each marked on the path before it lands
-  if (play) for (const [a, b] of C.bombs) if (P.s > a - 2 && P.s < b + 2) { TH.bombT = (TH.bombT ?? 1) - dt; if (TH.bombT <= 0) { TH.bombT = rand(.9, 1.5); const s = clamp(P.s + P.vs * .9 + rand(-1.5, 2), a + 1, b - 1), x = clamp(P.x + rand(-1.4, 1.4), -1.6, 1.6), y = groundBelow(s, x, P.y + 4), RR = 1.5, ring = new THREE.Mesh(new THREE.RingGeometry(RR * .72, RR, 22), new THREE.MeshBasicMaterial({ color: 0xff3a10, transparent: true, opacity: .8, depthWrite: false, side: THREE.DoubleSide })), rock = glowSprite(0xffa040, 2.2, 1); ring.rotation.x = -Math.PI / 2; tw(s, x, y + .08, ring.position); scene.add(ring); scene.add(rock); const p0 = tw(s + 14, x, y + 20), p1 = tw(s, x, y + .2); khFx(ring, f => { ring.material.opacity = .45 + Math.sin(f.t * 18) * .35; const k = f.t / 1.05; rock.position.lerpVectors(p0, p1, Math.min(1, k)); bfire(rock.position, 1.1, .4); if (k < 1) return true; scene.remove(rock); bblast(p1.clone(), 3); S.smash(); cam.shake = Math.max(cam.shake, .35); if (Math.hypot(P.s - s, P.x - x) < RR && Math.abs(P.y - y) < 2.4 && state === 'play') hurt('burn'); return false; }); } }
+  if (play) for (const [a, b] of C.bombs) if (P.s > a - 2 && P.s < b + 2) { TH.bombT = (TH.bombT ?? 1) - dt; if (TH.bombT <= 0) { TH.bombT = rand(.9, 1.5); const s = clamp(P.s + P.vs * .9 + rand(-1.5, 2), a + 1, b - 1), x = clamp(P.x + rand(-1.4, 1.4), -1.6, 1.6), y = groundBelow(s, x, P.y + 4), RR = 1.5, ring = new THREE.Mesh(new THREE.RingGeometry(RR * .72, RR, 22), new THREE.MeshBasicMaterial({ color: 0xff3a10, transparent: true, opacity: .8, depthWrite: false, side: THREE.DoubleSide })), rock = ung ? fallRock() : glowSprite(0xffa040, 2.2, 1); if (ung) rock.scale.setScalar(.8); ring.rotation.x = -Math.PI / 2; tw(s, x, y + .08, ring.position); scene.add(ring); scene.add(rock); const p0 = tw(s + 14, x, y + 20), p1 = tw(s, x, y + .2); khFx(ring, f => { ring.material.opacity = .45 + Math.sin(f.t * 18) * .35; const k = f.t / 1.05; rock.position.lerpVectors(p0, p1, Math.min(1, k)); if (ung) rock.rotation.x += .2; else bfire(rock.position, 1.1, .4); if (k < 1) return true; scene.remove(rock); if (ung) { dustAt(s, x, y, 14); sparks(p1, 14, 6, [.8, .8, .8], [.4, .4, .4]); } else bblast(p1.clone(), 3); S.smash(); cam.shake = Math.max(cam.shake, .35); if (Math.hypot(P.s - s, P.x - x) < RR && Math.abs(P.y - y) < 2.4 && state === 'play') hurt('burn'); return false; }); } }
   // fall and the fire has you
-  if (play && P.y < yf - .4) { for (let k = 0; k < 10; k++) bfire(tw(P.s + rand(-1, 1), P.x + rand(-1, 1), yf + rand(0, 1)), 1.6, 3); die('fall'); }
+  if (play && P.y < yf - .4) { if (!ung) for (let k = 0; k < 10; k++) bfire(tw(P.s + rand(-1, 1), P.x + rand(-1, 1), yf + rand(0, 1)), 1.6, 3); die('fall'); }
 }
 // --- Rivendell, rebuilt like the film's model: a high bridge over the gorge of the Bruinen onto a promontory of three
 //     terraces climbing to the Last Homely House, elven halls and towers on each, waterfalls falling from the cliffs
@@ -8426,9 +8567,11 @@ THEMES.rivkh = natTheme({
 //     them; three blows unhorse one. Fallen trees across the road to jump. Over the Ford, the river rises in a flood of
 //     white horses and sweeps away every rider still behind.
 const RACE = { list: [], left: 0, cut: null, cpN: 0 };
+// the road through the Trollshaws winds left and right through the woods (straight at the start and down to the Ford)
+function raceCurve(s) { const k = clamp((s - 15) / 40, 0, 1) * clamp(Math.abs(s - RACE_FORD) / 45 - .3, 0, 1); return k * (.5 * Math.sin(s * .0135 + .4) + .24 * Math.sin(s * .034 + 1.7)); }
 function raceGround(s, x) {
   const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
-  let y = 2 * Math.sin(s * .012) + 1.4 * Math.sin(s * .031 + 1) + 1;
+  let y = 3.2 * Math.sin(s * .011) + 1.7 * Math.sin(s * .029 + 1) + .55 * Math.sin(s * .071 + 2) + 2.4;   // (rising and dipping through the hills)
   y += ss(6.5, 16, Math.abs(x)) * (5 + Math.sin(s * .07 + x * .2) * 2) + ss(16, 40, Math.abs(x)) * 10;   // (wooded banks either side)
   const fd = Math.abs(s - RACE_FORD); y = lerp(-1.1, y, ss(6, 14, fd));   // (down to the Ford and out again)
   return y;
@@ -8451,7 +8594,7 @@ function buildRace(L, TH) {
   const T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
   const grd = surf(TX.meadow, { sky, vc: true, rough: .95, bump: 1.6, env: .2 });
   groundMesh(T_, TX.meadow, (k, sl, y) => k === 'p' ? [.85, .7, .5] : k === 'r' ? [.45, .42, .35] : [.55, .7, .45], 3, () => grd);
-  wideFloor(TX.meadow, 0x3a4a2a, 90, 8, 900);
+  wideFloor(TX.meadow, 0x3a4a2a, 90, -2.5, 900);   /* (below the lowest of the road, the Ford: the hills rise above it) */
   const wt = TX.sea.clone(); wt.needsUpdate = true; wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(10, 2); TH.waterTex = wt;
   const ford = new THREE.Mesh(new THREE.PlaneGeometry(90, 13), new THREE.MeshPhongMaterial({ map: wt, color: 0x5a8aa0, specular: 0xffffff, shininess: 90, transparent: true, opacity: .85 })); ford.rotation.x = -Math.PI / 2; tw(RACE_FORD, 0, -.4, ford.position); scene.add(ford);
   // the flood: a wall of white water held back upstream, loosed when Gandalf is over
@@ -8462,7 +8605,25 @@ function buildRace(L, TH) {
   const trees = propsOf(['ptree01', 'ptree02', 'sb_tree01', 'sb_tree03', 'ptelvnwood01']), wood = lam(0x5a3e24), leaf = lam(0x3a5a2a), list = [];
   for (let k = 0; k < 260; k++) { const s = rand(-10, RACE_END + 20), side = k % 2 ? 1 : -1, x = side * rand(9, 38); if (Math.abs(s - RACE_FORD) < 10) continue; list.push([s, x]); }
   list.forEach(([s, x], n) => { const y = at(s, x); if (trees.length && n % 2) { propOne(trees[n % trees.length], s, x, y - .3, rand(0, TAU), rand(9, 15), 'h'); return; } const q = tw(s, x, y); part(GEO.cyl, wood, scene, q.x, q.y + 3, q.z, .45, 6, .45); part(GEO.cone, leaf, scene, q.x, q.y + 8, q.z, 3, 7, 3); });
-  for (const [s, x0, x1] of L.layout.logs) { const w = x1 - x0, x = (x0 + x1) / 2, q = tw(s, x, at(s, x) + .4), m = part(GEO.cyl, wood, scene, q.x, q.y, q.z, .4, w + .6, .4); m.rotation.z = Math.PI / 2; m.updateMatrixWorld(); for (let k = 0; k < 3; k++) { const b = tw(s + rand(-.3, .3), x0 + rand(0, w), at(s, x) + .7); part(GEO.cyl, wood, scene, b.x, b.y, b.z, .08, 1.2, .08).rotation.set(rand(-1, 1), 0, rand(-1, 1)); } }
+  for (const [s, x0, x1] of L.layout.logs) { const w = x1 - x0, x = (x0 + x1) / 2, q = tw(s, x, at(s, x) + .4), m = part(GEO.cyl, wood, scene, q.x, q.y, q.z, .4, w + .6, .4); m.rotation.set(0, -trackAng(s), Math.PI / 2); m.updateMatrixWorld(); for (let k = 0; k < 3; k++) { const b = tw(s + rand(-.3, .3), x0 + rand(0, w), at(s, x) + .7); part(GEO.cyl, wood, scene, b.x, b.y, b.z, .08, 1.2, .08).rotation.set(rand(-1, 1), 0, rand(-1, 1)); } }
+  // the woods closing in: great old trees leaning in from both banks, their boughs meeting over the road in long green tunnels, ferns and bracken on the banks
+  { const bark = surf(TX.rrWood || TX.wood, { sky, color: 0x6a5440, rough: .95, bump: 3, tri: 2 }), leafT = TX.rrFern || null, leafM = ps1(new THREE.MeshLambertMaterial({ color: 0x3e6a2c, map: leafT, side: THREE.DoubleSide, alphaTest: leafT ? .4 : 0 })), leafD = ps1(new THREE.MeshLambertMaterial({ color: 0x2a4a22, side: THREE.DoubleSide }));
+    const trunks = [], boughs = [], clumps = [], clumpsD = [], ferns = [], tunnel = s => Math.sin(s * .045) + Math.sin(s * .017 + 2) > .1;
+    for (let s = -6; s < RACE_END + 12; s += rand(5.5, 9)) { if (Math.abs(s - RACE_FORD) < 12) continue;
+      for (const sd of [-1, 1]) { if (Math.random() < .25) continue; const x = sd * rand(7.5, 11), y = at(s, x) - .4, h = rand(10, 15), lean = rand(.12, .3), a = -trackAng(s);
+        const top = tw(s + rand(-1, 1), x - sd * h * lean, y + h); const base = tw(s, x, y), mid = base.clone().lerp(top, .5), dir = top.clone().sub(base), L_ = dir.length(); dir.normalize();
+        trunks.push([mid, L_, dir, rand(.55, .9)]);
+        if (tunnel(s)) { const reach = rand(5, 9); for (let b = 0; b < 3; b++) { const bs = s + rand(-2.5, 2.5), bx = x - sd * (h * lean + reach * (b + 1) / 3), by = y + h - rand(.5, 2.5); boughs.push([top.clone(), tw(bs, bx, by), rand(.18, .3)]); (b % 2 ? clumpsD : clumps).push([tw(bs, bx, by + .6), rand(2.4, 3.6)]); } }
+        for (let c = 0; c < 4; c++) (c % 2 ? clumpsD : clumps).push([tw(s + rand(-2.5, 2.5), x - sd * h * lean + rand(-2.5, 2.5), y + h + rand(-1, 2)), rand(2.6, 4)]); }
+      for (let q = 0; q < 3; q++) { const sd = q % 2 ? 1 : -1, x = sd * rand(5.8, 9); ferns.push(tw(s + rand(-3, 3), x, at(s, x) + .25)); } }
+    const cyl = new THREE.CylinderGeometry(.6, 1, 1, 7), Q = new THREE.Quaternion(), S3 = new V3(), stick = (list, mat) => { const im = new THREE.InstancedMesh(cyl, mat, list.length); list.forEach(([m, L_, d, r], i) => { Q.setFromUnitVectors(UPV, d); _m4.compose(m, Q, S3.set(r, L_, r)); im.setMatrixAt(i, _m4); }); scene.add(im); };
+    stick(trunks, bark); stick(boughs.map(([a, b, r]) => [a.clone().lerp(b, .5), a.distanceTo(b), b.clone().sub(a).normalize(), r]), bark);
+    const blob = new THREE.IcosahedronGeometry(1, 1), cl = (list, mat) => { const im = new THREE.InstancedMesh(blob, mat, list.length); list.forEach(([p, r], i) => { Q.setFromEuler(new THREE.Euler(rand(0, 3), rand(0, 3), 0)); _m4.compose(p, Q, S3.set(r, r * .6, r)); im.setMatrixAt(i, _m4); }); scene.add(im); };
+    cl(clumps, leafM); cl(clumpsD, leafD);
+    const fern = new THREE.PlaneGeometry(1.6, 1.1), fm = ps1(new THREE.MeshLambertMaterial({ map: TX.rrFern || null, color: TX.rrFern ? 0xb0d090 : 0x4a7a3a, side: THREE.DoubleSide, alphaTest: TX.rrFern ? .4 : 0 })), fi = new THREE.InstancedMesh(fern, fm, ferns.length * 3);
+    ferns.forEach((p, i) => { for (let k = 0; k < 3; k++) { Q.setFromEuler(new THREE.Euler(rand(-.4, .4), k * 1.05 + rand(0, 1), 0)); _m4.compose(p, Q, S3.setScalar(rand(.8, 1.4))); fi.setMatrixAt(i * 3 + k, _m4); } }); scene.add(fi);
+    TH.shafts = []; for (let s = 30; s < RACE_FORD - 20; s += 40) { const g = glowSprite(0xfff0c0, 14, .12); tw(s, rand(-3, 3), at(s, 0) + 7, g.position); g.scale.set(5, 16, 1); scene.add(g); }   // (light coming down through the leaves)
+  }
   // Rivendell's arch at the end of the road
   { const q = tw(RACE_END - 4, 0, at(RACE_END - 4, 0)); const pale = lam(0xf0e8d8); for (const sx of [-1, 1]) part(GEO_BOX, pale, scene, q.x + sx * 5, q.y + 3.5, q.z, 1, 7, 1); const ar = new THREE.Mesh(new THREE.TorusGeometry(5, .45, 6, 18, Math.PI), pale); ar.position.set(q.x, q.y + 7, q.z); scene.add(ar); }
   bakeScenery(scene.children.slice(first));
@@ -8512,9 +8673,9 @@ function updateRace(dt) {
     C.t += dt; P.invT = 5; P.heading = damp(P.heading, Math.PI, 3, dt);
     if (C.t > 2.4 && !C.rum) { C.rum = true; S.thunder && S.thunder(); S.roar(); banner('THE RIVER RISES!', 2); }
     if (C.t > 2.4) cam.shake = Math.max(cam.shake, .25);
-    const k = Math.max(0, C.t - 3.2), fx_ = -58 + k * 19; FL.visible = C.t > 3.2 && fx_ < 70; tw(RACE_FORD, fx_, -.4, FL.position);
+    const k = Math.max(0, C.t - 3.2), fx_ = -58 + k * 19; FL.visible = C.t > 3.2 && fx_ < 70; tw(RACE_FORD, fx_, -.4, FL.position); FL.rotation.y = -trackAng(RACE_FORD);
     if (FL.visible) for (let q = 0; q < 8; q++) smoke.spawn(FL.position.x + rand(-2, 2), FL.position.y + rand(0, 7), FL.position.z + rand(-9, 9), rand(-4, 4), rand(1, 4), rand(-2, 2), rand(.8, 1.5), 2, 5, [.95, .98, 1], [.8, .9, 1], .4, .4);
-    for (const h of RACE.horses) { const x = fx_ + h.lag * .9 + 2, hz = h.hz; hz.root.visible = C.t > 3.2 && x < 72; if (!hz.root.visible) continue; tw(RACE_FORD + h.ds, x, .6 + Math.abs(Math.sin(T * 5 + h.bob)) * .7, hz.root.position); hz.root.rotation.set(0, -(trackAng(RACE_FORD) + Math.PI / 2), 0); raceGallop(hz, 14); if (hz.skin) skinPlay(hz, 'walk'); }
+    for (const h of RACE.horses) { const x = fx_ + h.lag * .9 + 2, hz = h.hz; hz.root.visible = C.t > 3.2 && x < 72; if (!hz.root.visible) continue; tw(RACE_FORD + h.ds, x, -1.15 + Math.abs(Math.sin(T * 5 + h.bob)) * .4, hz.root.position); hz.root.rotation.set(0, -(trackAng(RACE_FORD) + Math.PI / 2), 0); raceGallop(hz, 14); if (hz.skin) skinPlay(hz, 'walk'); }
     for (const n of RACE.list) if (n.state === 'ford' && fx_ + 2 > n.x) { n.state = 'swept'; n.wt = 0; S.screech(); sparks(tw(n.s, n.x, 1.5), 20, 8, [1, 1, 1], [.7, .85, 1], .3); }
     if (C.t > 3.2 + 110 / 19 && !C.done) { C.done = true; RACE.left = 0; banner('THE NINE ARE SWEPT AWAY!', 2.4); }
     if (C.t > 3.2 + 110 / 19 + 2) { RACE.cut = null; RACE.ended = true; setLetterbox(false); for (const h of RACE.horses) h.hz.root.visible = false; FL.visible = false; roamWin('YOU REACH RIVENDELL!'); return; }
@@ -8587,11 +8748,17 @@ function makeDrogoth() {
 function drDraw(b, dt, fly, open) {
   const m = b.m; place(m.root, b.s, b.x, b.y, b.h); m.root.rotation.z = b.bank || 0; m.body.rotation.x = b.pitch || 0;
   b.flap = (b.flap || 0) + dt * (fly ? 5 : 1.2); m.wings.forEach((w, i) => { w.rotation.z = (i ? -1 : 1) * (fly ? Math.sin(b.flap) * .6 : .9); });
-  m.jaw.rotation.x = damp(m.jaw.rotation.x, open ? .7 : .05, 10, dt); m.mouth.material.opacity = open ? .9 : .15;
+  m.jaw.rotation.x = damp(m.jaw.rotation.x, open ? .7 : .05, 10, dt); m.mouth.material.opacity = open ? .9 : .15; { const mp = skinMouth(m); if (mp) { m.root.updateMatrixWorld(true); m.mouth.position.copy(m.head.worldToLocal(mp)); } }
   const gy = b.ground ?? 0; tw(b.s, b.x, gy + .05, m.shadow.position); m.shadow.scale.setScalar(Math.max(.3, 1.4 - (b.y - gy) * .03)); m.shadow.material.opacity = clamp(.5 - (b.y - gy) * .012, .08, .5);
   if (b.flash > 0) m.root.traverse(o => { if (o.isMesh && o.material.emissive) o.material.emissive.setHex(0x803020); }); else if (b.flashWas) m.root.traverse(o => { if (o.isMesh && o.material.emissive) o.material.emissive.setHex(0x1a0604); }); b.flashWas = b.flash > 0;
 }
-const drMouth = b => b.m.head.localToWorld(new V3(0, -.2, 1.8));
+// the mouth: with your own model, out along its head from the jaw bone (BAT_HEAD to BAT_JAW), not the hidden built head's place
+function skinMouth(M, k = .9) {
+  const K = M && M.skin; if (!K || !K.obj) return null;
+  if (K.mb === undefined) { K.mb = null; let h = null, j = null; K.obj.traverse(o => { if (/^BAT_HEAD$/i.test(o.name)) h = o; if (/^BAT_JAW$/i.test(o.name)) j = o; }); if (h && j) K.mb = [h, j]; }
+  if (!K.mb) return null; const h = K.mb[0].getWorldPosition(new V3()), j = K.mb[1].getWorldPosition(new V3()); return j.clone().add(j.sub(h).multiplyScalar(k));
+}
+const drMouth = b => skinMouth(b.m) || b.m.head.localToWorld(new V3(0, -.2, 1.8));
 // his fire: a stream from the mouth onto the marked ground (drawn as many small flames)
 function drBreathFx(b, to) { const from = drMouth(b); for (let k = 0; k < 4; k++) { const t = Math.random(), p = from.clone().lerp(to, t); bfire(p.add(_a.set(rand(-.6, .6), rand(-.6, .6), rand(-.6, .6))), 1 + t * 1.6, .4); } }
 
@@ -8706,7 +8873,7 @@ const BOW = { arrows: [], cd: 0, mesh: null, aim: false, cx: 0, cy: .25 };
 // the bow. Press U to take aim: a sight comes up and W A S D move it (Gandalf stands still; push it to the edge of the screen and the view turns
 // after it). K looses: with the sight on him, the arrow flies at him and hits. Press U again to walk. Without the sight, an arrow flies straight
 // at him if he's roughly in front of the camera, but he's quick, and it may miss.
-const bowFoes = () => LV.flyers ? FLY.list.filter(flyLive) : KH.boss && ukLive(KH.boss) && KH.boss.hitFn === drHit ? [KH.boss] : [];
+const bowFoes = () => LV.ent ? ENT.foes.filter(f => !f.dead) : LV.flyers ? FLY.list.filter(flyLive) : KH.boss && ukLive(KH.boss) && KH.boss.hitFn === drHit ? [KH.boss] : [];
 const bowAt = f => tw(f.s, f.x, f.y + (f.aimY ?? 2.5));
 function bowRay() { return BOW.aim ? new V3(BOW.cx, BOW.cy, .5).unproject(camera).sub(camera.position).normalize() : camera.getWorldDirection(new V3()); }
 function bowPick(cone) { const dir = bowRay(); let best = null, bd = Math.cos(cone); for (const f of bowFoes()) { const d = bowAt(f).sub(camera.position).normalize().dot(dir); if (d > bd) { bd = d; best = f; } } return best; }
@@ -8726,7 +8893,7 @@ function updateBow(dt) {
   BOW.mesh.visible = on && (!LV.bowU || BOW.aim); if (on) { tw(P.s + Math.cos(P.heading) * .35, P.x + Math.sin(P.heading) * .35 + Math.cos(P.heading) * -.25, P.y + 1.25, BOW.mesh.position); BOW.mesh.rotation.set(0, -(trackAng(P.s) + P.heading) + Math.PI / 2, 0); }
   const show = on && BOW.aim && state === 'play'; BOW.el.style.display = show ? 'block' : 'none';
   if (show) { BOW.el.style.left = (BOW.cx + 1) * 50 + '%'; BOW.el.style.top = (1 - BOW.cy) * 50 + '%'; BOW.el.classList.toggle('on', !!bowPick(.1)); }
-  if (on && BOW.hintAt && T > BOW.hintAt && state === 'play') { BOW.hintAt = 0; banner(LV.bowU ? 'K: THE SWORD · U: THE BOW AND ITS SIGHT · SHOOT SMAUG ON THE WING' : 'U: TAKE AIM · W A S D: THE SIGHT · K: LOOSE', 3.8); }
+  if (on && BOW.hintAt && T > BOW.hintAt && state === 'play') { BOW.hintAt = 0; banner(LV.ent ? 'U: TAKE AIM · W A S D: THE SIGHT · K: LOOSE' : LV.bowU ? 'K: THE SWORD · U: THE BOW AND ITS SIGHT · SHOOT SMAUG ON THE WING' : 'U: TAKE AIM · W A S D: THE SIGHT · K: LOOSE', 3.8); }
   if (!on && BOW.arrows.length) { for (const a of BOW.arrows) scene.remove(a.m); BOW.arrows = []; }
   for (let i = BOW.arrows.length - 1; i >= 0; i--) {
     const a = BOW.arrows[i]; a.life -= dt; const p0 = a.p.clone();
@@ -9150,7 +9317,7 @@ function deepLayout() {
   const W_ = [['o', 'o', 'u', 'u'], ['u', 'u', 's'], ['a', 'a', 'u', 'u'], ['p', 'p', 's', 'o'], ['j', 'j', 'j', 'u'], ['b', 'a', 'a', 'u'], ['c', 'u', 'u'], ['s', 's', 'p', 'j'], ['c', 'a', 'a', 'b'], ['c', 'c', 'p', 'j', 'a'], ['A']];
   const names = ['', 'SHIELDS! GET ROUND THEM, OR A FINISHER BREAKS THEM', 'CROSSBOWS! GUARD AS THE BOLT LANDS AND IT GOES BACK', 'PIKES! SIDESTEP THE RED LINE, THEN STRIKE', 'FANATICS! ROLL OFF THE RED CIRCLES', 'BERSERKERS AND BOLTS!', 'A CAPTAIN! KEEP OUT OF HIS WHIRL, THEN STRIKE', 'THEY KEEP COMING!', 'ANOTHER CAPTAIN!', 'THE LAST OF THEM!', 'A TROLL IN ARMOUR THROUGH THE BREACH!'];
   return { field: [-30, 30, -56, 56], start: [0, 0], startY: WH, startH: Math.PI, terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g },
-    layout: { blocks, WH, plazas: [{ s: -3, x: 0, y: 0, r: 15, waves: [['A']], names: ['A TROLL IN ARMOUR THROUGH THE BREACH!'], horde: 999, hordeOf: 999, title: 'THE WALL IS BREACHED!', boss: true, last: true, breach: [-16, 0], from: [-17, 0], to: [-9.5, 0], ladders: [Math.PI - .9, Math.PI - .45, Math.PI, Math.PI + .45, Math.PI + .9], noAdds: true }] } };
+    layout: { blocks, WH, plazas: [{ s: -3, x: 0, y: 0, r: 15, waves: [['A']], names: ['A TROLL IN ARMOUR THROUGH THE BREACH!'], horde: 500, hordeOf: 500, title: 'THE WALL IS BREACHED!', boss: true, last: true, breach: [-16, 0], from: [-17, 0], to: [-9.5, 0], ladders: [Math.PI - .9, Math.PI - .45, Math.PI, Math.PI + .45, Math.PI + .9], noAdds: true }] } };
 }
 function deepContent(L) { for (const [k, s, x] of [['q', 9, 7], ['b', 9, -7], ['su', 10, 0], ['b', -14, -9], ['q', -14, 9]]) addCrate(k, s, x, 0, terrainAt(s, x, true) + 2); }
 function buildDeep(L, TH) {
@@ -9253,7 +9420,7 @@ function trHit(b, dmg, fin, air, react) {
   if (!ukLive(b) || b.state === 'intro') return; const p = tw(lerp(b.s, P.s, .4), lerp(b.x, P.x, .4), P.y + 1.3);
   if (b.state === 'stun' || (b.a && b.a.ph === 'stuck')) dmg *= 1.6; if (KH.form > 0) dmg *= 1.5;
   b.hp -= dmg; b.flash = .1; if (!react) b.rev += fin ? 18 : 7; KH.target = b; KH.targetT = 6; if (KH.form <= 0) KH.drive = Math.min(100, KH.drive + 2); KH.hitstop = Math.max(KH.hitstop, fin ? .07 : .035); cam.shake = Math.max(cam.shake, fin ? .3 : .12); sparks(p, fin ? 24 : 12, fin ? 8 : 5, [1, .9, .7], [.5, .4, .2]); S.saberHit();
-  if (b.hp <= 0) { b.hp = 0; trEnd(b); b.state = 'fall'; b.t = 0; b.dead = true; KH.react = null; skinPlay(b.m, 'die'); banner('THE TROLL IS SLAIN!', 2.2); S.roar(); cam.shake = .7; KH.hitstop = .3; Music.mode = 0; for (const o of URUKS) if (!o.boss && ukLive(o)) khHit(o, 999, true); return; }
+  if (b.hp <= 0) { b.hp = 0; trEnd(b); b.state = 'fall'; b.t = 0; b.dead = true; KH.react = null; skinPlay(b.m, 'die'); banner('THE TROLL IS SLAIN!', 2.2); S.roar(); cam.shake = .7; KH.hitstop = .3; Music.mode = 0; if (!b.noWipe) for (const o of URUKS) if (!o.boss && ukLive(o)) khHit(o, 999, true); return; }
   if (b.phase === 1 && b.hp <= b.max * .5) { b.phase = 2; trEnd(b); b.state = 'roar'; b.t = 0; banner('HE RAGES!', 1.4); S.roar(); }
 }
 function trReaction() { const b = KH.boss; if (!b) return; S.smash(); KH.hitstop = .4; cam.shake = 1; flashV = Math.max(flashV, .6); banner('UP HIS BACK!', 1.8); skinClip(hob, khc(KH_SORA.ground[4], 'attack_e'), .8); P.y = 4.8; P.ground = false; P.vy = 3; sparks(tw(b.s, b.x, 5), 60, 11, [1, 1, 1], [.7, .85, 1], .3); trHit(b, 9999, true, false, true); }
@@ -9452,7 +9619,17 @@ THEMES.osg = natTheme({
 TX.rrRock = smoothTex(mkTex(256, 256, g => { g.fillStyle = '#5a5248'; g.fillRect(0, 0, 256, 256); for (let i = 0; i < 1500; i++) { const v = Math.random(); g.fillStyle = v < .35 ? '#4a4238' : v < .7 ? '#6a6052' : v < .9 ? '#7a7058' : '#3a3a2a'; g.beginPath(); g.ellipse(Math.random() * 256, Math.random() * 256, 2 + Math.random() * 12, 1 + Math.random() * 6, Math.random() * 3, 0, 7); g.fill(); } }));
 TX.rrWood = smoothTex(mkTex(128, 128, g => { g.fillStyle = '#5a4028'; g.fillRect(0, 0, 128, 128); for (let i = 0; i < 4; i++) { g.fillStyle = i % 2 ? '#4e3722' : '#62462c'; g.fillRect(i * 32 + 1, 0, 30, 128); } for (let i = 0; i < 90; i++) { g.fillStyle = 'rgba(30,18,8,.45)'; g.fillRect(Math.random() * 128, Math.random() * 128, 1, 8 + Math.random() * 30); } }));
 TX.rrFern = mkTex(128, 128, g => { g.clearRect(0, 0, 128, 128); g.strokeStyle = '#4a7a2a'; g.lineWidth = 3; for (let k = 0; k < 2; k++) { const x0 = 40 + k * 50; g.beginPath(); g.moveTo(x0, 4); g.quadraticCurveTo(x0 + 6, 60, x0, 124); g.stroke(); for (let y = 10; y < 118; y += 7) { const l = 24 * Math.sin((y / 124) * Math.PI) + 3; g.fillStyle = y % 2 ? '#5e8e34' : '#6a9a3a'; for (const sx of [-1, 1]) { g.beginPath(); g.ellipse(x0 + sx * l * .55, y + 4, l * .55, 2.6, sx * .35, 0, 7); g.fill(); } } } });
-TX.rrGrass = mkTex(64, 64, g => { g.clearRect(0, 0, 64, 64); g.strokeStyle = '#6a9a3a'; g.lineWidth = 1.6; for (let k = 0; k < 26; k++) { const x = 18 + Math.random() * 28; g.beginPath(); g.moveTo(x, 64); g.quadraticCurveTo(x + rand(-8, 8), 34, x + rand(-22, 22), 4 + Math.random() * 30); g.stroke(); } });
+// Mirkwood's, from Unreal Tournament 2004's Arborea (Tokara Forest's own: Prep-Arborea.ps1 puts them in textures/ar*.png); these built ones stand in without them
+TX.arMoss = smoothTex(mkTex(128, 128, g => { g.fillStyle = '#3e5a26'; g.fillRect(0, 0, 128, 128); for (let i = 0; i < 900; i++) { g.fillStyle = Math.random() < .5 ? 'rgba(20,34,12,.4)' : 'rgba(110,140,60,.3)'; g.fillRect(Math.random() * 128, Math.random() * 128, 2 + Math.random() * 5, 2 + Math.random() * 5); } }));
+TX.arRoots = smoothTex(mkTex(64, 64, g => { g.fillStyle = '#4a4228'; g.fillRect(0, 0, 64, 64); }));
+TX.arTwig = smoothTex(mkTex(64, 64, g => { g.fillStyle = '#4a3a24'; g.fillRect(0, 0, 64, 64); }));
+TX.arGrass = mkTex(64, 64, g => { g.clearRect(0, 0, 64, 64); for (let k = 0; k < 26; k++) { const x = 4 + Math.random() * 56; g.strokeStyle = Math.random() < .5 ? '#4a7a2a' : '#6a9a3a'; g.lineWidth = 2; g.beginPath(); g.moveTo(x, 64); g.quadraticCurveTo(x + rand(-6, 6), 40, x + rand(-10, 10), 6 + Math.random() * 30); g.stroke(); } }, false);
+TX.arBark = smoothTex(mkTex(128, 256, g => { g.fillStyle = '#3a2c20'; g.fillRect(0, 0, 128, 256); for (let i = 0; i < 700; i++) { const v = Math.random(); g.fillStyle = v < .45 ? 'rgba(14,10,6,.5)' : v < .8 ? 'rgba(92,72,50,.35)' : 'rgba(60,90,40,.28)'; g.fillRect(Math.random() * 128, Math.random() * 256, 1 + Math.random() * 3, 12 + Math.random() * 48); } }));
+TX.arLeaves = mkTex(64, 64, g => { g.clearRect(0, 0, 64, 64); for (let k = 0; k < 40; k++) { g.fillStyle = Math.random() < .5 ? '#3e6e2e' : '#5a8a3a'; g.beginPath(); g.ellipse(8 + Math.random() * 48, 8 + Math.random() * 48, 6, 3, Math.random() * 3, 0, TAU); g.fill(); } }, false);
+TX.arBranch = mkTex(64, 64, g => { g.clearRect(0, 0, 64, 64); g.strokeStyle = '#3a2a1a'; g.lineWidth = 2; g.beginPath(); g.moveTo(32, 64); g.lineTo(30, 20); g.lineTo(14, 6); g.moveTo(30, 34); g.lineTo(50, 10); g.stroke(); }, false);
+TX.arVines = mkTex(64, 128, g => { g.clearRect(0, 0, 64, 128); for (let k = 0; k < 7; k++) { const x = 4 + k * 9; g.strokeStyle = '#2e4a22'; g.lineWidth = 2; g.beginPath(); g.moveTo(x, 0); g.quadraticCurveTo(x + rand(-5, 5), 64, x + rand(-4, 4), 60 + Math.random() * 68); g.stroke(); } }, false);
+TX.arFern = mkTex(64, 64, g => { g.clearRect(0, 0, 64, 64); g.strokeStyle = '#4a7a2a'; g.lineWidth = 2; for (let k = 0; k < 5; k++) { g.beginPath(); g.moveTo(32, 64); g.quadraticCurveTo(10 + k * 11, 30, 4 + k * 14, 2); g.stroke(); } }, false);
+TX.arRope = smoothTex(mkTex(32, 32, g => { g.fillStyle = '#8a7a5a'; g.fillRect(0, 0, 32, 32); for (let i = 0; i < 8; i++) { g.fillStyle = 'rgba(60,44,24,.5)'; g.fillRect(0, i * 4, 32, 1); } }));TX.rrGrass = mkTex(64, 64, g => { g.clearRect(0, 0, 64, 64); g.strokeStyle = '#6a9a3a'; g.lineWidth = 1.6; for (let k = 0; k < 26; k++) { const x = 18 + Math.random() * 28; g.beginPath(); g.moveTo(x, 64); g.quadraticCurveTo(x + rand(-8, 8), 34, x + rand(-22, 22), 4 + Math.random() * 30); g.stroke(); } });
 TX.rrWeb = mkTex(128, 128, g => { g.clearRect(0, 0, 128, 128); g.strokeStyle = 'rgba(235,235,235,.75)'; for (let k = 0; k < 9; k++) { const a = k / 9 * 1.57; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a) * 128, Math.sin(a) * 128); g.stroke(); } for (let r = 20; r < 128; r += 18) { g.beginPath(); g.arc(0, 0, r, 0, 1.57); g.stroke(); } });
 TX.rrBarrel = smoothTex(mkTex(64, 64, g => { g.fillStyle = '#5a3a20'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#2a2622'; for (const y of [8, 28, 50]) g.fillRect(0, y, 64, 5); }));
 TX.rrCrate = smoothTex(mkTex(64, 64, g => { g.fillStyle = '#4a3a30'; g.fillRect(0, 0, 64, 64); g.strokeStyle = '#6a5a4a'; g.lineWidth = 6; g.strokeRect(3, 3, 58, 58); }));
@@ -9580,6 +9757,7 @@ THEMES.minekh = natTheme({
 // the Balrog in The Fall: his bones posed by hand each frame (no clip of his lies him out): flat on his back, wings spread wide to each side, arms flung out,
 // legs trailing, head up the screen looking at Gandalf; then the whole of him moved so his body's middle lies on the middle of the shaft
 const _fq = new THREE.Quaternion(), _fw = new THREE.Quaternion(), _fp = new THREE.Quaternion(), _f1 = new V3(), _f2 = new V3(), _f3 = new V3();
+let FALL_HEAD = Number(new URLSearchParams(location.search).get('fhead') || 1.3);
 function fallBones(b) {
   const m = b.m, K = m.skin; if (!K || !K.obj || !m.root.visible) return; if (!m.bb) { m.bb = {}; K.obj.traverse(o => { if (o.isBone && !m.bb[o.name]) m.bb[o.name] = o; }); }
   const B = m.bb; if (!B.BAT_CLAV_L || !B.BAT_CLAV_R) return; m.root.updateMatrixWorld(true);
@@ -9601,6 +9779,8 @@ function fallBones(b) {
   const hipL = B.BAT_HIP_L, hipR = B.BAT_HIP_R; if (hipL && hipR) { const hip = wp(hipL, new V3()).add(wp(hipR, new V3())).multiplyScalar(.5), mid = wp(B.BAT_CLAV_L, new V3()).add(wp(B.BAT_CLAV_R, new V3())).multiplyScalar(.5).add(hip).multiplyScalar(.5), want = tw(b.s, b.x, b.y); m.root.position.add(want.sub(mid)); m.root.updateMatrixWorld(true); }
   // fire along him: at the wings, the shoulders and the hips, not in Gandalf's way
   const pts = [W_('L', 'ELBO'), W_('R', 'ELBO'), W_('L', 'HAND'), W_('R', 'HAND'), 'BAT_HIP_L', 'BAT_HIP_R', 'BAT_CLAV_L', 'BAT_CLAV_R']; for (let k = 0; k < (b.phase > 1 ? 4 : 3); k++) { const o = B[pts[Math.random() * pts.length | 0]]; if (o) bfire(wp(o, new V3()).add(_f1.set(rand(-1.4, 1.4), rand(-.6, .4), rand(-1.4, 1.4))), rand(1.2, 2.3), 2.4); }
+  // his face turned up out of the screen to you, not along his body up the screen (FALL_HEAD: how far the head is tipped back)
+  if (B.BAT_HEAD) { const h = B.BAT_HEAD; h.getWorldQuaternion(_fw); _fq.setFromAxisAngle(R0, FALL_HEAD); _fw.premultiply(_fq); h.parent.getWorldQuaternion(_fp); h.quaternion.copy(_fp.invert().multiply(_fw)); h.updateMatrixWorld(true); }
 }
 const W_ = (n, q) => 'BAT_W_' + q + '_' + n;
 function buildHelms(L, TH) {
@@ -9695,7 +9875,7 @@ function buildHelms(L, TH) {
     if (n % 9 === 0) torches.push(wW(s, x, y + 2.3));
   }
   const armyM = lam(0x121216), helmM = lam(0x2a2a30, { emissive: 0x050508 });
-  instanced(GEO_BOX, armyM, bodies).userData.noCast = true; instanced(GEO.sph, helmM, heads).userData.noCast = true; instanced(GEO.cyl, armyM, pikes).userData.noCast = true;
+  { const imB = instanced(GEO_BOX, armyM, bodies), imH = instanced(GEO.sph, helmM, heads), imP = instanced(GEO.cyl, armyM, pikes); imB.userData.noCast = imH.userData.noCast = imP.userData.noCast = true; armyModels(bodies, imB, imH, imP, b => Math.hypot(b[0] - tw(0, 0, 0).x, b[2] - tw(0, 0, 0).z)); }
   for (const p of torches) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.fire, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); sp.position.copy(p); sp.scale.set(.6, 1, 1); scene.add(sp); torchSprites.push(sp); const gl = glowSprite(0xff7a2a, 2.6, .35); gl.position.copy(p); scene.add(gl); }
   // rain, falling round wherever the camera is
   { const n = 2600, pos = new Float32Array(n * 6), geo = new THREE.BufferGeometry();
@@ -9873,11 +10053,11 @@ function bossPick(b, d) {
   bossStart(b, t);
 }
 const BOSS_ATK = new URLSearchParams(location.search).get('bossatk');
-const BOSS_WIND = { whip: .85, slam: .95, breath: .8, leap: .5, meteor: 1, charge: 1.1, burst: .4, wings: .8 };
+const BOSS_WIND = { whip: .85, slam: .95, breath: 1.2, leap: .5, meteor: 1, charge: 1.1, burst: .4, wings: .8 };
 const BOSS_CLIP = { whip: 'attack_whip_a', slam: 'attack_a', breath: 'attack_fire_a', leap: 'jump_1', meteor: 'roar_b', charge: 'roar_a', burst: 'ignite_tb', wings: 'fly_a' };
 function bossStart(b, type) {
   const f = b.phase > 1 ? .78 : 1, A = b.a = { type, t: 0, ph: 'wind', wT: BOSS_WIND[type] * f, fx: [] }, pl = b.plaza;
-  b.state = 'atk'; b.t = 0; b.last = type; skinClip(b.m, BOSS_CLIP[type], A.wT + .5);
+  b.state = 'atk'; b.t = 0; b.last = type; skinClip(b.m, BOSS_CLIP[type], type === 'breath' ? A.wT + 3 : A.wT + .5);   // (the breath plays out whole: rearing back, the long stream of fire, and the close)
   const mark = m => { const fx = khFx(m, f2 => { warnPulse(f2); return true; }); A.fx.push(fx); return fx; };
   if (type === 'whip') { A.h = b.h; mark(warnMesh(b.s, b.x, 1.5, 10.5, A.h - 1.75, A.h + 1.75)); S.orcGrunt(); }
   if (type === 'slam') { A.tgt = [P.s, P.x]; A.mark = mark(flatMark(3.2)); }
@@ -9919,11 +10099,11 @@ function balAttack(b, dt, d, toP) {
     case 'breath':
       if (A.ph === 'wind') { if (A.t >= A.wT) { A.ph = 'fire'; A.t = 0; S.roar(); } break; }
       if (A.ph === 'fire') {
-        const u = clamp(A.t / 1.5, 0, 1), ang = A.h - 1.1 + u * 2.2, hp = tw(b.s + Math.cos(b.h) * 2, b.x + Math.sin(b.h) * 2, b.y + 6.2);
+        const u = clamp(A.t / 2.6, 0, 1), ang = A.h - 1.1 + u * 2.2, hp = skinMouth(b.m, .6) || tw(b.s + Math.cos(b.h) * 2, b.x + Math.sin(b.h) * 2, b.y + 6.2);
         b.h = ang; for (let k = 0; k < 7; k++) { const r = rand(1, 13), a2 = ang + rand(-.22, .22), gp = tw(b.s + Math.cos(a2) * r, b.x + Math.sin(a2) * r, landAt(b.s, b.x) + rand(.2, 1.6)); bfire(_a.copy(hp).lerp(gp, r / 13), .9 + r * .12, 1); }
         const pa = Math.atan2(P.x - b.x, P.s - b.s); if (d < 13.5 && Math.abs(angDiff(pa, ang)) < .3 && P.y - landAt(P.s, P.x) < 3) khHurt(9, src, { unblock: true, kb: 6 });
         if (u >= 1) { A.ph = 'end'; A.t = 0; A.fx.forEach(x => x.dead = true); }
-      } else if (A.t > .5) endBossAtk(b);
+      } else if (A.t > .4) endBossAtk(b);
       break;
     case 'leap':
       if (A.ph === 'wind') { if (A.t >= A.wT) { A.ph = 'air'; A.t = 0; A.y0 = b.y; S.whoosh(); } break; }
@@ -10010,8 +10190,11 @@ function balHit(b, dmg, fin, air, react) {
   KH.hitstop = Math.max(KH.hitstop, react ? .12 : fin ? .07 : .035); cam.shake = Math.max(cam.shake, fin ? .3 : .12);
   sparks(p, fin ? 26 : 12, fin ? 8 : 5, [1, .95, .8], [1, .5, .1]); S.saberHit();
   if (b.hp <= 0) { bossFall(b); return; }
-  if (b.phase === 1 && b.hp <= b.max * .5) {   // half its gauge gone: it blazes up, and calls more to it
-    b.phase = 2; endBossAtk(b); b.state = 'roar'; b.t = 0; b.addsT = 1.1; b.roarT = Math.max(2.4, clipDur(b.m, 'ignite_tb', 2.4) + .3); skinClip(b.m, 'ignite_tb', clipDur(b.m, 'ignite_tb', 2.4)) || skinClip(b.m, 'roar_a', 2);   // (all of it: he blazes up)
+  if (b.phase === 1 && b.hp <= b.max * .5) { if (b.state === 'atk') b.phaseDue = true; else balPhase2(b); }   // (not in the middle of an attack: it finishes that first)
+}
+function balPhase2(b) {   // half its gauge gone: it blazes up, and calls more to it
+  {
+    b.phase = 2; b.phaseDue = false; endBossAtk(b); b.state = 'roar'; b.t = 0; b.addsT = 1.1; b.roarT = Math.max(2.4, clipDur(b.m, 'ignite_tb', 2.4) + .3); skinClip(b.m, 'ignite_tb', clipDur(b.m, 'ignite_tb', 2.4)) || skinClip(b.m, 'roar_a', 2);   // (all of it: he blazes up)
     banner('ITS FIRE BLAZES UP!', 1.8); S.roar(); cam.shake = .7; flashV = Math.max(flashV, .3);
     for (let k = 0; k < 40; k++) bfire(tw(b.s + rand(-2.5, 2.5), b.x + rand(-2.5, 2.5), b.y + rand(0, 8)), 2, 2);
   }
@@ -10031,12 +10214,12 @@ function bossUpdate(b, dt) {
   switch (b.state) {
     case 'intro': {   // summoned, as in Battle for Middle-earth: a ring of fire opens in the ground and he rises up out of it
       if (b.t < 0) return; m.root.visible = true; m.shadow.visible = false;
-      if (!b.sum) { b.sum = true; b.s = b.to[0]; b.x = b.to[1]; b.gy = landAt(b.s, b.x); S.roar(); cam.shake = .6; khFx(warnMesh(b.s, b.x, 0, 4.5, 0, TAU, 0xff6a10), f => { f.mesh.material.opacity = .5 + Math.sin(f.t * 12) * .15; return b.state === 'intro' && f.t < 2.4; }); skinClip(m, 'ignite_ta', clipDur(m, 'ignite_ta', 2.6)); }
+      if (!b.sum) { b.sum = true; b.s = b.to[0]; b.x = b.to[1]; b.gy = landAt(b.s, b.x); S.roar(); cam.shake = .6; khFx(warnMesh(b.s, b.x, 0, 4.5, 0, TAU, 0xff6a10), f => { f.mesh.material.opacity = .5 + Math.sin(f.t * 12) * .15; return b.state === 'intro' && f.t < 2.4; }); if (skinClip(m, 'ignite_ta', clipDur(m, 'ignite_ta', 1.8))) { m.skin.curAct.paused = true; m.skin.holdT = 1e9; } }   /* (he rises held in the first of the summoning, and only once he is up does it play: one move, start to end) */
       const k = clamp((b.t - .5) / 2, 0, 1); b.y = b.gy - 11 * (1 - k * k * (3 - 2 * k)); b.h += angDiff(b.h, toP) * Math.min(1, dt * 3);
       for (let q = 0; q < 6; q++) { const a = rand(0, TAU), r = rand(.5, 4.5); bfire(tw(b.s + Math.cos(a) * r, b.x + Math.sin(a) * r, b.gy + .2), 2, 3); }
       if (Math.random() < .5) smoke.spawn(...tw(b.s + rand(-3, 3), b.x + rand(-3, 3), b.gy + 1).toArray(), rand(-.5, .5), rand(3, 5), rand(-.5, .5), rand(4, 6), 2, 6, [.1, .05, .05], [.2, .15, .15], -.2, .3);
-      if (k >= 1 && !b.landed) { b.landed = true; b.y = b.gy; const p = tw(b.s, b.x, b.y + .3); sparks(p, 60, 12, [1, .9, .6], [1, .4, .1], .3); puff(p, 16, 3); S.smash(); S.roar(); cam.shake = 1.1; skinClip(m, 'roar_a', clipDur(m, 'roar_a', 1.8)); banner('THE BALROG OF MORGOTH!', 2.2); bossWave(b, b.s, b.x, 12, 11, 6); }
-      if (b.t > 4.6) { b.state = 'idle'; b.t = 0; b.cd = .8; }
+      if (k >= 1 && !b.landed) { b.landed = true; b.y = b.gy; const p = tw(b.s, b.x, b.y + .3); sparks(p, 60, 12, [1, .9, .6], [1, .4, .1], .3); puff(p, 16, 3); S.smash(); S.roar(); cam.shake = 1.1; if (m.skin && m.skin.cur === 'clip' && m.skin.curAct) { m.skin.curAct.paused = false; m.skin.holdT = T + clipDur(m, 'ignite_ta', 1.8); } bossWave(b, b.s, b.x, 12, 11, 6); }
+      if (b.t > 2.6 + clipDur(m, 'ignite_ta', 1.8)) { b.state = 'idle'; b.t = 0; b.cd = .8; }   // (and the summoning to its end)
       break;
     }
     case 'idle': {
@@ -10045,7 +10228,7 @@ function bossUpdate(b, dt) {
       b.cd -= dt; if (live && b.cd <= 0) bossPick(b, d);
       break;
     }
-    case 'atk': balAttack(b, dt, d, toP); if (!b.a) b.cd = rand(.9, 1.8) / f; break;
+    case 'atk': balAttack(b, dt, d, toP); if (!b.a) { b.cd = rand(.9, 1.8) / f; if (b.phaseDue && b.state === 'idle') balPhase2(b); } break;
     case 'stun': if (b.t > b.stunT) { b.state = 'idle'; b.t = 0; b.cd = .6; } break;
     case 'roar':
       if (b.addsT > 0 && !b.plaza.noAdds) { b.addsT -= dt; if (b.addsT <= 0) ['o', 'o', 'b', 'o'].forEach((k, i) => spawnUruk(k, b.plaza, rand(0, TAU), i * .3)); }
@@ -10383,14 +10566,14 @@ function buildIsen(L, TH) {
   { const bodies = [], heads = [], pikes = [], torches = [];
     for (let i = 0, n = 0; i < 40000 && n < 6000; i++) {
       const s = rand(-165, 165), x = rand(-165, 165), r = Math.hypot(s, x), y = at(s, x);
-      if (r > 162 || r < 17 || Math.hypot(s + 50, x) < 15 || (Math.abs(x) < 7 && s < -8 && s > -46) || Y.pits.some(([ps, px]) => Math.hypot(s - ps, x - px) < 9) || spots.some(([ps, px]) => Math.hypot(s - ps, x - px) < 8)) continue;
+      if (r > 162 || r < 17 || (L.ent && Math.abs(x) < 18 && s < -12) || Math.hypot(s + 50, x) < 15 || (Math.abs(x) < 7 && s < -8 && s > -46) || Y.pits.some(([ps, px]) => Math.hypot(s - ps, x - px) < 9) || spots.some(([ps, px]) => Math.hypot(s - ps, x - px) < 8)) continue;
       n++; const p = tw(s, x, y), h = Math.atan2(-x, -s) + rand(-.3, .3);
       bodies.push([p.x, p.y + .75, p.z, .55, 1.4, .36, h]); heads.push([p.x, p.y + 1.62, p.z, .19, .2, .19, h]);
       if (n % 2) pikes.push([p.x + rand(-.3, .3), p.y + 1.9, p.z + rand(-.3, .3), .035, 3.4, .035, 0]);
       if (n % 6 === 0) torches.push(tw(s, x, y + 2.3));
     }
     const armyM = lam(0x121216), helmM = lam(0x2a2a30, { emissive: 0x050508 });
-    instanced(GEO_BOX, armyM, bodies).userData.noCast = true; instanced(GEO.sph, helmM, heads).userData.noCast = true; instanced(GEO.cyl, armyM, pikes).userData.noCast = true;
+    { const imB = instanced(GEO_BOX, armyM, bodies), imH = instanced(GEO.sph, helmM, heads), imP = instanced(GEO.cyl, armyM, pikes); imB.userData.noCast = imH.userData.noCast = imP.userData.noCast = true; armyModels(bodies, imB, imH, imP, L.ent ? b => { const q = toTrack(_g.set(b[0], b[1], b[2])); return Math.hypot(Math.max(0, Math.abs(q.x) - 18), q.s < -150 ? q.s + 150 : q.s > -20 ? q.s + 20 : 0); } : b => Math.hypot(b[0] - tw(0, 0, 0).x, b[2] - tw(0, 0, 0).z));   /* (on the March of the Ents: those nearest Treebeard's way) */ }
     for (const p of torches) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.fire, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); sp.position.copy(p); sp.scale.set(.7, 1.1, 1); scene.add(sp); torchSprites.push(sp); const gl = glowSprite(0xff7a2a, 3, .4); gl.position.copy(p); scene.add(gl); }
   }
   for (const [ps, px] of Y.pits) for (let k = 0; k < 3; k++) { const gl = glowSprite(0xff5a14, rand(6, 9), .55); tw(ps + rand(-2, 2), px + rand(-2, 2), at(ps, px) + 1, gl.position); gl.userData.keep = true; scene.add(gl); }
@@ -10412,6 +10595,68 @@ function updateIsen(dt) {
   if (state === 'play' && !(KH.plaza && KH.plaza.boss) && Math.hypot(P.s - e[0], P.x - e[1]) < 2.6 && Math.abs(P.y - e[2]) < 2.5) {   // through the archway: out onto the top of Orthanc
     P.s = -7.4; P.x = 0; P.y = ISEN.TOP + .3; P.vs = P.vx = P.vy = 0; P.heading = 0; cam.yaw = 0; cam.snap = true; flashV = 1; S.whoosh(); banner('THE TOP OF ORTHANC', 1.6);
   }
+}
+// --- the March of the Ents: Gandalf rides on Treebeard's shoulder across the plain of Isengard to Orthanc. The Ent walks on by himself; Saruman's orcs, Uruk-hai and wargs come running
+//     at him from ahead and the sides, and every one that reaches him hacks at his bark. Press U to take aim (W A S D move the sight, the view turns after it at the edge of the
+//     screen) and K to loose; U again lowers the bow. Treebeard stamps on anything at his feet now and then. Keep him standing to the foot of the tower.
+const ENT = { s: 0, x: 0, hp: 100, foes: [], m: null, spawnT: 0, sent: 0, total: 48, stompT: 3, goal: -26, hurtT: 0 };
+function entLayout() { const L = isenLayout(); L.layout.plazas = []; L.start = [-150, 0]; L.startY = undefined; return L; }
+function makeEnt() {
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body); const bark = lam(0x5a4632), barkD = lam(0x3a2c20), moss = lam(0x4e6a2c), leaf = lam(0x3e5e26);
+  part(new THREE.CylinderGeometry(1.05, 1.45, 5.6, 9), bark, body, 0, 6.3, 0); part(new THREE.CylinderGeometry(.85, 1.05, 2.2, 9), bark, body, 0, 10, .1);
+  for (let k = 0; k < 10; k++) { const a = rand(0, TAU); part(GEO_BOX, barkD, body, Math.cos(a) * 1.15, rand(4, 9), Math.sin(a) * 1.15, .12, rand(1.2, 2.6), .12).rotation.y = -a; }   // (ridges of bark)
+  const head = new THREE.Group(); head.position.set(0, 11.6, .35); body.add(head); part(GEO.sph, bark, head, 0, 0, 0, .85, 1.15, .8);
+  for (const sx of [-1, 1]) part(GEO.sph, bas(0xffc040), head, sx * .3, .2, .7, .1, .07, .05);
+  for (let k = 0; k < 9; k++) part(GEO.cone, moss, head, rand(-.5, .5), -1.1, .45 + rand(-.1, .2), .14, rand(1, 1.8), .14).rotation.x = Math.PI;   // (his beard of moss)
+  for (let k = 0; k < 14; k++) part(GEO.ico, leaf, head, rand(-1, 1), rand(.8, 1.9), rand(-.9, .6), rand(.4, .8));   // (leaves for hair)
+  const legs = [-1, 1].map(sx => { const g = new THREE.Group(); g.position.set(sx * .7, 3.6, 0); body.add(g); part(GEO.cylT, bark, g, 0, 0, 0, .55, 3.6, .55); for (let k = 0; k < 4; k++) part(GEO.cone, barkD, g, Math.cos(k * 1.6) * .5, -3.4, Math.sin(k * 1.6) * .5 + .3, .2, .9, .2).rotation.set(Math.PI / 2 + .9, k * 1.6, 0); return g; });
+  const arm = sx => { const g = new THREE.Group(); g.position.set(sx * 1.3, 9.6, 0); body.add(g); part(GEO.cylT, bark, g, 0, 0, 0, .38, 4.8, .38); for (let k = 0; k < 4; k++) part(GEO.cylT, barkD, g, (k - 1.5) * .14, -4.8, .1, .07, 1.1, .07).rotation.z = (k - 1.5) * .25; for (let k = 0; k < 3; k++) part(GEO.ico, leaf, g, rand(-.4, .4), -rand(.5, 3), rand(-.3, .3), rand(.3, .5)); return g; };
+  const armR = arm(1), armL = arm(-1);
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(2.6, 16), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .4, depthWrite: false })); shadow.rotation.x = -Math.PI / 2; scene.add(shadow); scene.add(root);
+  const M = { root, body, head, legs, armR, armL, shadow }; addSkin(M, 'ent', body, root); return M;
+}
+function setupEnt() {
+  for (const f of ENT.foes) { scene.remove(f.m.root); scene.remove(f.m.shadow); } ENT.foes = [];
+  if (!LV || !LV.ent) { if (ENT.m) ENT.m.root.visible = ENT.m.shadow.visible = false; return; }
+  if (!ENT.m) ENT.m = makeEnt(); ENT.m.root.visible = ENT.m.shadow.visible = true;
+  Object.assign(ENT, { s: gs.cp.s, x: 0, hp: 100, spawnT: 3, sent: Math.min(ENT.sent, ENT.cpSent || 0), stompT: 3, won: false, said: false, hurtT: 0, ph: 0 }); ENT.down = false; if (gs.cp.s <= LV.start[0] + 1) { ENT.sent = ENT.cpSent = 0; ENT.cp1 = ENT.cp2 = false; }
+  BOW.aim = false; BOW.hintAt = T + 2.5;
+}
+function entFoeHit(f, dmg) { if (f.dead) return; f.hp -= dmg; sparks(tw(f.s, f.x, f.y + 1), 10, 4, [1, .9, .7], [.7, .3, .1]); if (f.hp <= 0) { f.dead = true; f.t = 0; gs.kills++; S.orcHit && S.orcHit(); const p = tw(f.s, f.x, f.y + 1); collectApple(p, 0); } }
+function entSpawn() {
+  const late = ENT.sent > ENT.total * .5, kind = Math.random() < (late ? .4 : .2) ? 'w' : Math.random() < .3 ? 'u' : 'o', a = rand(-1.25, 1.25), r = rand(46, 60);
+  const s = ENT.s + Math.cos(a) * r, x = ENT.x + Math.sin(a) * r * 1.2, m = makeUruk(kind === 'u' ? 'u' : kind); m.root.visible = m.shadow.visible = true;
+  ENT.foes.push({ m, kind, s, x, y: terrainAt(s, x, true), h: 0, hp: kind === 'w' ? 12 : kind === 'u' ? 14 : 8, sp: kind === 'w' ? 8.4 : kind === 'u' ? 4.6 : 5.6, cd: rand(.3, 1), aimY: kind === 'w' ? .9 : 1.2, hitR: 1.5, hitFn: entFoeHit, dead: false, t: 0 }); ENT.sent++;
+}
+function updateEnt(dt) {
+  if (!LV || !LV.ent || !ENT.m || state === 'map' || state === 'title') return; const M = ENT.m, play = state === 'play';
+  const alive = ENT.foes.filter(f => !f.dead); LV.entLeft = ENT.total - ENT.sent + alive.length;
+  if (play) {
+    // he walks on toward the tower, a little slower with foes hacking at him
+    const busy = alive.filter(f => Math.hypot(f.s - ENT.s, f.x - ENT.x) < 3).length; if (ENT.s < ENT.goal) { ENT.s = Math.min(ENT.goal, ENT.s + (busy ? 1.5 : 2.5) * dt); ENT.ph += dt * (busy ? 1.6 : 2.6); }
+    if (ENT.s > -110 && !ENT.cp1) { ENT.cp1 = true; gs.cp = { s: ENT.s, x: 0, y: 0, t: gs.time, deaths: 0 }; ENT.cpSent = ENT.sent; S.check(); banner('CHECKPOINT', 1); }
+    if (ENT.s > -65 && !ENT.cp2) { ENT.cp2 = true; gs.cp = { s: ENT.s, x: 0, y: 0, t: gs.time, deaths: 0 }; ENT.cpSent = ENT.sent; S.check(); banner('CHECKPOINT', 1); }
+    ENT.spawnT -= dt; if (ENT.sent < ENT.total && ENT.spawnT <= 0 && alive.length < 12) { const n = 1 + (Math.random() * (ENT.sent > 20 ? 4 : 3) | 0); for (let k = 0; k < n && ENT.sent < ENT.total; k++) entSpawn(); ENT.spawnT = rand(1.6, 3); if (!ENT.said) { ENT.said = true; banner('ORCS OF ISENGARD! U: TAKE AIM · K: LOOSE', 2.6); } }
+    // a stamp of his great feet on anything about them
+    ENT.stompT -= dt; if (ENT.stompT <= 0) { ENT.stompT = rand(2.6, 3.6); const near = alive.filter(f => Math.hypot(f.s - ENT.s, f.x - ENT.x) < 4.2); if (near.length) { for (const f of near) entFoeHit(f, 99); dustAt(ENT.s, ENT.x, terrainAt(ENT.s, ENT.x, true), 18); S.smash(); cam.shake = Math.max(cam.shake, .5); skinClip(M, 'attack_a', .9); } }
+    if (ENT.hp <= 0 && !ENT.down) { ENT.down = true; banner('TREEBEARD IS BROUGHT DOWN!', 2); KH.hp = 0; die('hit'); }
+    if (ENT.s >= ENT.goal - .2 && ENT.sent >= ENT.total && !alive.length && !ENT.won) { ENT.won = true; banner('ISENGARD IS TAKEN!', 2.4); roamWin(LV.winTitle || 'ISENGARD IS TAKEN!'); }
+  }
+  // the orcs: run at him, hack at his legs; the fallen sink away
+  for (const f of ENT.foes) {
+    const m = f.m;
+    if (f.dead) { f.t += dt; m.body.rotation.x = -Math.min(1.4, f.t * 4); m.body.position.y = -Math.max(0, f.t - .5) * .8; if (f.t > 1.4) { scene.remove(m.root); scene.remove(m.shadow); f.gone = true; } continue; }
+    const ds = ENT.s - f.s, dx = ENT.x - f.x, d = Math.hypot(ds, dx) || .01; f.h = Math.atan2(dx, ds);
+    if (d > 2.6) { if (play) { f.s += ds / d * f.sp * dt; f.x += dx / d * f.sp * dt; } skinPlay(m, 'walk'); f.ph = (f.ph || 0) + dt * 12; m.legs.forEach((l, i) => l.rotation.x = Math.sin(f.ph + i * Math.PI) * .7); }
+    else { f.cd -= dt; skinPlay(m, 'attack'); m.armR.rotation.x = Math.sin(T * 9) * 1.4 - 1; if (play && f.cd <= 0) { f.cd = rand(1.1, 1.5); if (!cheats.god) ENT.hp -= f.kind === 'w' ? 1.5 : 1; ENT.hurtT = .25; S.orcGrunt(); sparks(tw(f.s + ds / d * .8, f.x + dx / d * .8, f.y + 1.2), 8, 4, [.8, .6, .4], [.4, .3, .2]); } }
+    f.y = terrainAt(f.s, f.x, true); place(m.root, f.s, f.x, f.y, f.h); tw(f.s, f.x, f.y + .03, m.shadow.position);
+  }
+  ENT.foes = ENT.foes.filter(f => !f.gone);
+  // Treebeard himself, and Gandalf up on his shoulder
+  const gy = terrainAt(ENT.s, ENT.x, true); place(M.root, ENT.s, ENT.x, gy, 0); tw(ENT.s, ENT.x, gy + .05, M.shadow.position); ENT.hurtT -= dt;
+  M.legs.forEach((l, i) => l.rotation.x = Math.sin(ENT.ph + i * Math.PI) * .35); M.armR.rotation.x = Math.sin(ENT.ph + Math.PI) * .25; M.armL.rotation.x = Math.sin(ENT.ph) * .25; M.body.rotation.z = Math.sin(ENT.ph) * .03;
+  skinPlay(M, ENT.s < ENT.goal && play ? 'walk' : 'idle');
+  if (play) { P.s = ENT.s - .3; P.x = ENT.x - 1.7; P.y = gy + 10.2; P.vs = P.vx = P.vy = 0; P.ground = true; }
 }
 THEMES.isen = natTheme({
   wallTex: TX.hdStone, floorTex: TX.hdFlag, tint: [.7, .7, .74], door: 0x3a3a44,
@@ -11133,17 +11378,17 @@ function sarUpdate(b, dt) {
 // =====================================================================
 const KH = { hp: 100, max: 100, mp: 100, maxMp: 100, combo: 0, airN: 0, comboT: 0, atk: null, buf: false, hover: 0, guardT: 0, guardCD: 0, rollT: 0, rollV: [0, 0], invT: 0, hitstop: 0,
   target: null, targetT: 0, react: null, reacting: null, magicCD: 0, bolts: [], sword: null, plaza: null, waveT: 0, theoden: null, ring: null, drive: 0, form: 0, boss: null, winT: 0, cmdT: {} };
-// the Deeping Wall's horde: once the wall's down they keep coming through the breach, a few at a time but without end, nine hundred and ninety-nine of them, while the rest of the army
+// the Deeping Wall's horde: once the wall's down they keep coming through the breach, three armoured trolls at the head of them, then five hundred more a few at a time, while the rest of the army
 // waits its turn out in the coomb (the crowd there thins as you cut it down). Then the armoured troll
 const HORDE_KINDS = ['h', 'h', 'h', 'h', 'h', 'h', 'h', 'o', 'o', 'u', 'a', 's', 'b', 'j', 'p'];
 function updateHorde(p, dt) {
-  if (p.hLeft === undefined) { p.hLeft = p.horde; p.hT = 0; banner('NINE HUNDRED AND NINETY-NINE OF THEM. HOLD!', 2.6); }
+  if (p.hLeft === undefined) { p.hLeft = p.horde; p.hT = 1.2; banner('THREE TROLLS AND FIVE HUNDRED MORE! HOLD!', 2.6); S.roar(); for (let k = 0; k < 3; k++) { const b = spawnTroll(p, k * .7, true), x = (k - 1) * 6; Object.assign(b, { fr: [p.s - 15, x], to: [p.s - 7, x * .8], s: p.s - 15, x, hp: 600, max: 600, noWipe: true }); } }   // (the first rush through the breach: three armoured trolls at the head of it)
   const alive = URUKS.filter(u => u.plaza === p && ukLive(u)).length; LV.hordeLeft = p.hLeft + alive;
   { const C_ = THEMES.deeping.crowd; if (C_) C_.count = Math.round(THEMES.deeping.crowdN * Math.min(1, p.hLeft / p.hordeOf)); }
   if (p.hLeft <= 0) { if (!alive) { p.horde = 0; p.waveT = 1.6; banner('THEY BREAK! ...BUT SOMETHING HUGE IS COMING', 2.4); S.roar(); } return; }
   p.hT -= dt; const cap = p.hLeft > 600 ? 12 : p.hLeft > 250 ? 15 : 18;
   if (p.near && p.hT <= 0 && alive < cap) { const n = Math.min(p.hLeft, 2 + (Math.random() * 3 | 0)), a0 = rand(0, TAU); for (let i = 0; i < n; i++) { const k = p.hLeft < 120 && Math.random() < .2 ? 'c' : HORDE_KINDS[Math.random() * HORDE_KINDS.length | 0]; spawnUruk(k, p, a0 + i * .7, i * .18); } p.hLeft -= n; p.hT = rand(.35, .8); }
-  if (p.hLeft % 111 === 0 && p.hSaid !== p.hLeft && p.hLeft < p.horde) { p.hSaid = p.hLeft; banner(`${p.hLeft + alive} LEFT!`, 1.2); }
+  if (p.hLeft % 100 === 0 && p.hSaid !== p.hLeft && p.hLeft < p.horde) { p.hSaid = p.hLeft; banner(`${p.hLeft + alive} LEFT!`, 1.2); }
 }
 const KH_CHASE = 14;   // (how far beyond its square a foe will chase you before it gives up)
 const URUKS = [], ORBS = [], KHFX = [];
@@ -11935,7 +12180,7 @@ newGame(0); state = 'map'; iris.mode = 'none';
 showScreen(null); syncPauseBtns();
 // ?play=shire (or riv, moria, rohan, mt, ungol, mordor, doom, weather) opens a place straight away, for testing
 {
-  const q = new URLSearchParams(location.search), li = /^\d+$/.test(q.get('play') || '') ? Number(q.get('play')) : LEVELS.findIndex(L => L.loc === q.get('play') || (q.get('play') && (L.name || '').replace(/ /g, '').includes(q.get('play').toUpperCase())));   // or ?play=2 for the third level in the list
+  const q = new URLSearchParams(location.search), li = /^\d+$/.test(q.get('play') || '') ? Number(q.get('play')) : (LEVELS.findIndex(L => L.loc === q.get('play')) + 1 || LEVELS.findIndex(L => q.get('play') && (L.name || '').replace(/ /g, '').includes(q.get('play').toUpperCase())) + 1) - 1;   // or ?play=2 for the third level in the list
   if (q.get('look')) setLook(q.get('look') === 'retro');   // ?look=retro or ?look=hd
   if (q.get('mapat')) backToMap(q.get('mapat'));
   if (q.get('chap')) { backToMap(q.get('chap')); openChap(q.get('chap')); }   // ?chap=moria: that place's level menu (testing)   // ?mapat=helm: the map, with Gandalf at that place (testing)
@@ -11954,6 +12199,7 @@ showScreen(null); syncPauseBtns();
       if (W_ && p && p.pi !== undefined && (Math.hypot(P.s - p.s, P.x - p.x) > p.r - 2 || Math.abs(P.y - p.y) > 3)) { let bi = 0, bd = 1e9; for (let i = 0; i < W_.length; i += 2) { const d = Math.hypot(W_[i][0] - P.s, W_[i][1] - P.x) + Math.abs(W_[i][2] - P.y) * 3; if (d < bd) { bd = d; bi = i; } } const ti = Math.min(p.pi, bi + 8); if (ti < p.pi - 1) return [W_[ti][0], W_[ti][1]]; }   // (along the way, at Helm's Deep)
       const dr = LV.layout.hall && LV.layout.hall.door; return p ? [p.s, p.x] : dr ? [dr.s, dr.x] : [P.s, P.x]; } };
     if (q.get('aimt') && LV.bow) BOW.aim = true;
+    const runTests = () => {
     if (q.get('sim')) { cheats.god = !q.get('mortal'); for (let i = 0; i < Number(q.get('sim')) * 60; i++) { for (const r of ROUTE) if (Math.round(r[0] * 60) === i) { WALKTO = [r[1], r[2]]; console.log('route t=' + r[0] + ' at ' + P.s.toFixed(0) + ',' + P.x.toFixed(0) + ' y ' + P.y.toFixed(1) + (DECK ? ' deck ' + deckAt(P.s, P.x).toFixed(1) : '') + ' foes ' + URUKS.map(u => u.state + '@' + u.s.toFixed(0) + ',' + u.x.toFixed(0)).join(' ')); } step(1 / 60, true); } if (q.get('cast') === 'all' && LV.kh) { const bad = []; for (const p of KH_POWERS) { try { KH.mp = 100; KH.magicCD = 0; KH.atk = null; if (!khCast(p.id)) bad.push(p.id + ' (not cast)'); for (let i = 0; i < 90; i++) step(1 / 60, true); } catch (e) { bad.push(p.id + ': ' + e.message); } } console.log('castall ' + KH_POWERS.length + ' powers, problems: ' + (bad.join('; ') || 'none') + ', kills ' + gs.kills); }   // (&cast=all: every power in turn, for testing)
     if (q.get('cutnow') && KH.boss) { bossFall(KH.boss); for (let i = 0; i < Number(q.get('cutnow')) * 60; i++) step(1 / 60, true); }   // (&cutnow=2: the bridge's ending, 2 seconds in, for testing)
     if (q.get('aimt') && LV.bow) BOW.aim = true;   // (testing: &aimt=1 starts with the sight up)
@@ -11972,6 +12218,7 @@ showScreen(null); syncPauseBtns();
     if (q.get('pick')) setTimeout(() => { const [px, py] = q.get('pick').split(',').map(Number), rc = new THREE.Raycaster(); rc.setFromCamera(new THREE.Vector2(px, py), camera); if (LV && LV.layout && LV.layout.ramps) console.log('autorun ramps ' + JSON.stringify(LV.layout.ramps.map(r => [r.sb, r.xb, r.sa, r.xa, r.ya].map(v => +v.toFixed(1))))); console.log('autorun skin ' + URUKS.filter(u => u.boss).map(u => { const O = u.m.skin && u.m.skin.obj; if (!O) return u.state + ':noobj'; const bx = new THREE.Box3().setFromObject(O); return u.state + ':' + u.m.skin.cur + ' root ' + u.m.root.visible + ' ' + u.m.root.position.toArray().map(v => v.toFixed(0)) + ' scale ' + O.scale.x.toFixed(3) + ' box ' + bx.min.toArray().map(v => v.toFixed(1)) + ' .. ' + bx.max.toArray().map(v => v.toFixed(1)); }).join(' | ') + ' hob ' + hob.root.visible + ' ' + hob.root.position.toArray().map(v => v.toFixed(1)) + ' P ' + P.y.toFixed(1)); console.log('autorun pick ' + rc.intersectObjects(scene.children, true).slice(0, 5).map(h => [h.object.type, h.distance.toFixed(1), h.object.name, h.object.material && h.object.material.type, h.object.material && h.object.material.color && h.object.material.color.getHexString(), h.object.parent && h.object.parent.type, h.object.parent && h.object.parent.parent && h.object.parent.parent.type].join(':')).join(' | ')); }, 15000);   // &pick=x,y (-1..1): what's on the screen there (testing)
     if (q.get('cam')) { const [s, x, y, ls, lx, ly] = q.get('cam').split(',').map(Number); DEBUG_CAM = { p: tw(s, x, y), l: tw(ls, lx, ly) }; }   // &cam=s,x,y,ls,lx,ly: a fixed camera in the level
     if (q.get('peek') && balrogs[0]) { const r = balrogs[0].m.root, [x, y, z] = q.get('peek').split(',').map(Number); r.updateMatrixWorld(true); DEBUG_CAM = { p: r.localToWorld(new V3(x, y, z)), l: r.localToWorld(new V3(0, 5, 0)) }; }   // &peek=8,7,12 looks at the Balrog from there
+    }; q.get("waitmodels") ? whenModels(runTests) : runTests();   // (&waitmodels=1: the rest only once your own models are in)
   }
 }
 requestAnimationFrame(frame);

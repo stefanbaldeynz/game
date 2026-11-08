@@ -13,6 +13,7 @@ Put a `.glb` file here with one of these names and Valinor uses it instead of it
 | `eagle.glb` | Thorondor (Battle for Middle-earth's great eagle) | The Escape from Mount Doom |
 | `tentacle.glb` | The Watcher's tentacles | The Watcher in the Water |
 | `watcher.glb` | The Watcher's head, peering out of its pool (Battle for Middle-earth II's `mulrkr`) | The Watcher in the Water |
+| `ent.glb` | Treebeard, Gandalf riding on his shoulder (Battle for Middle-earth II's `rutreeberd`) | The March of the Ents |
 | `caldera.glb` | The crater of broken slabs and churning water it bursts up into (`excauldera`) | The Watcher in the Water |
 | `cavetroll.glb` | The unarmoured cave troll (falls back on `troll.glb`) | Balin's Chamber |
 | `armtroll.glb` | The armoured attack troll (falls back on `troll.glb`) | The Deeping Wall, Mordor |
