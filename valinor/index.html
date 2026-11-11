@@ -234,15 +234,15 @@ body.touch #bossbar .bar{width:min(50vw,420px)}
       <b>SPIN</b><span>J / Shift / □ &nbsp;— smash crates &amp; orcs</span>
       <b>FIREWORK</b><span>L / F / Click / ○ &nbsp;— a homing firework from Gandalf's staff</span>
       <b>PAUSE</b><span>Esc / P / Start &nbsp;·&nbsp; M mutes music</span>
-      <b>QA</b><span>Z invincible &nbsp;·&nbsp; X unlimited rockets &nbsp;·&nbsp; 1 / 2 / 3 jump straight to a level</span>
+      <b>QA</b><span>Z invincible &nbsp;·&nbsp; X unlimited magic &nbsp;·&nbsp; 1 / 2 / 3 jump straight to a level</span>
     </div>
   </div>
   <div class="scr" id="sPause">
     <span class="big">PAUSED</span>
     <div class="press kOnly" style="animation:none">ENTER — RESUME</div>
     <div class="tbtns"><div data-key="Enter">RESUME</div><div data-key="KeyR">RESTART</div><div data-key="KeyQ">QUIT</div><div data-key="KeyM" id="tMute">MUSIC ON</div><div data-key="KeyG" id="tLook">LOOK: HD</div></div>
-    <div class="tbtns"><div data-key="KeyZ" id="tGod">INVINCIBLE: OFF</div><div data-key="KeyX" id="tAmmo">UNLIMITED ROCKETS: OFF</div></div>
-    <div class="ctl kOnly"><b>R</b><span>Restart from the beginning</span><b>Q</b><span>Quit to the Minas Tirith menu</span><b>M</b><span>Mute music</span><b>G</b><span>HD or retro PS1 look</span><b>Z / X</b><span>Invincible / unlimited rockets</span></div>
+    <div class="tbtns"><div data-key="KeyZ" id="tGod">INVINCIBLE: OFF</div><div data-key="KeyX" id="tAmmo">UNLIMITED MAGIC: OFF</div></div>
+    <div class="ctl kOnly"><b>R</b><span>Restart from the beginning</span><b>Q</b><span>Quit to the Minas Tirith menu</span><b>M</b><span>Mute music</span><b>G</b><span>HD or retro PS1 look</span><b>Z / X</b><span>Invincible / unlimited magic</span></div>
   </div>
   <div class="scr" id="sOver">
     <span class="big">GAME OVER</span>
@@ -2553,7 +2553,7 @@ function rivendellLayout() {
 const USTAIR = { FLIGHTS: 6, STEPS: 30, RISE: 7, X: 18, LAND: 23 }, OSG = { TOP: 30, R: 8.6 };   // (the Stairs of Cirith Ungol's size; Osgiliath's tower)
 const RACE_FORD = 520, RACE_END = 572;
 const ER = { WALK: 12, X0: -46, X1: 46, TOWERS: [-46, -23, 0, 23, 46], TOP: 20 };   // (Erebor's ramparts: the walk's height and ends, its towers, their tops)   // (the race to the Ford: where the river crosses the road, and where the road ends)
-const DOOM_R = 46, UNG_R = 50, EAG_S1 = 760, EAG_END = 1560, EAG_V = 25;
+const DOOM_R = 50, UNG_R = 50,   /* (Mount Doom long enough for its whole climb: its last gate stands on the top ledge, past the last flight) */ EAG_S1 = 760, EAG_END = 1560, EAG_V = 25;
 const ARENA_TRIALS = [
   { name: 'THE ORC TRIAL', sub: 'ORCS AND ARCHERS · 5 ROUNDS', rounds: [['o', 'o', 'o'], ['o', 'o', 'M', 'o'], ['M', 'M', 'o', 'o', 'o'], ['Q', 'o', 'o', 'M'], ['R', 'o', 'o']] },
   { name: 'THE TRIAL OF ISENGARD', sub: 'URUK-HAI · 6 ROUNDS · LURTZ', rounds: [['u', 'u', 'o'], ['s', 'u', 'a'], ['p', 'p', 'u'], ['b', 'a', 'a', 'u'], ['j', 'j', 's', 'c'], ['L']] },
@@ -2718,7 +2718,7 @@ const LEVELS = [
   },
   ...ARENA_TRIALS.map((T, k) => ({
     // the Colosseum of Rohan, where Edoras stood: pick a trial and fight it round by round (see the Colosseum)
-    straight: true, roam: true, kh: true, camRing: 20.5, name: T.name, sub: T.sub, loc: 'rohan', theme: 'arena', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 20000, CZ: 0, base: -4, wallH: 0, winTitle: T.name.replace('THE ', '') + ' WON!',
+    straight: true, roam: true, kh: true, camRing: 17, name: T.name, sub: T.sub, loc: 'rohan', theme: 'arena', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 20000, CZ: 0, base: -4, wallH: 0, winTitle: T.name.replace('THE ', '') + ' WON!',
     ...arenaLayout(k),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { arenaContent(); },
@@ -2884,7 +2884,7 @@ const chase = { active: false, done: false, s: 0 };
 let dieT = 0, dieKind = '', winT = 0, hudT = 0, flashV = 0, nextBolt = 3, dzTimer = 2;
 const iris = { mode: 'none', t: 0, r: 1e4 };
 const phial = { g: null, p: new V3() };
-const cheats = { god: false, ammo: false };   // QA switches: Z = invincible, X = unlimited rockets
+const cheats = { god: false, ammo: false };   // QA switches: Z = invincible, X = unlimited magic (MP and rockets)
 let BALROG_POOL = [];
 
 function setupEntities() {
@@ -3019,7 +3019,7 @@ function onKey(code) {
   if (code === 'KeyG') { setLook(!RETRO); if (state !== 'paused') banner(RETRO ? 'RETRO LOOK' : 'HD LOOK', 1); syncPauseBtns(); return; }
   if (code === 'KeyZ') { cheats.god = !cheats.god; if (state !== 'paused') banner(cheats.god ? 'INVINCIBLE ON' : 'INVINCIBLE OFF', 1); syncPauseBtns(); return; }
   if (code === 'KeyC' && state === 'play') { duelStance(); return; }
-  if (code === 'KeyX') { cheats.ammo = !cheats.ammo; if (state !== 'paused') banner(cheats.ammo ? 'UNLIMITED ROCKETS' : 'ROCKETS NORMAL', 1); syncPauseBtns(); return; }
+  if (code === 'KeyX') { cheats.ammo = !cheats.ammo; if (state !== 'paused') banner(cheats.ammo ? 'UNLIMITED MAGIC' : 'MAGIC NORMAL', 1); syncPauseBtns(); return; }
   if (state === 'map') {
     if (code === 'Enter' || code === 'Space') mapSelect();   // walking is read every frame from the held keys
     else if (/^(Digit|Numpad)[123]$/.test(code)) startGame(+code.slice(-1) - 1);
@@ -3047,7 +3047,7 @@ function syncPauseBtns() {
   set('tMute', musicOn ? 'MUSIC ON' : 'MUSIC OFF', false);
   set('tLook', 'LOOK: ' + (RETRO ? 'RETRO' : 'HD'), false);
   set('tGod', 'INVINCIBLE: ' + (cheats.god ? 'ON' : 'OFF'), cheats.god);
-  set('tAmmo', 'UNLIMITED ROCKETS: ' + (cheats.ammo ? 'ON' : 'OFF'), cheats.ammo);
+  set('tAmmo', 'UNLIMITED MAGIC: ' + (cheats.ammo ? 'ON' : 'OFF'), cheats.ammo);
 }
 // level select on the title screen
 let menuSel = 0;
@@ -5467,7 +5467,7 @@ function updateHUD(dt) {
   if (on !== hudShown) { hudShown = on; hudEls.forEach(e => e.classList.toggle('on', on)); }
   document.getElementById('nApple').textContent = gs.apples;
   document.getElementById('nRocket').textContent = cheats.ammo ? '∞' : gs.rockets;
-  const qa = (cheats.god ? 'INVINCIBLE' : '') + (cheats.god && cheats.ammo ? ' · ' : '') + (cheats.ammo ? 'UNLIMITED ROCKETS' : '');
+  const qa = (cheats.god ? 'INVINCIBLE' : '') + (cheats.god && cheats.ammo ? ' · ' : '') + (cheats.ammo ? 'UNLIMITED MAGIC' : '');
   const qe = document.getElementById('qa'); qe.textContent = qa ? 'QA: ' + qa : ''; qe.style.display = qa && state !== 'title' && state !== 'map' ? 'block' : 'none';
   const bal = balrogs.find(b => b.def.boss && !b.won && (b.state === 'active' || b.state === 'rise'));
   const bb = document.getElementById('bossbar'), showB = LV && ((LV.boss && (bossLive() || boss.state === 'intro' || boss.state === 'transform' || boss.state === 'dying')) || bal) && state !== 'title' && state !== 'map';
@@ -5492,7 +5492,7 @@ function updateHUD(dt) {
 }
 let bannerTO = 0;
 // no pop-ups in the middle of play (waves, bosses arriving, getting away, checkpoints...): only the level's name as it starts, prompts for the keys, and the Z / X / G switches
-const BANNER_KEEP = /: |MASH|^INVINCIBLE |^UNLIMITED ROCKETS|^ROCKETS NORMAL|^RETRO LOOK|^HD LOOK/;
+const BANNER_KEEP = /: |MASH|^INVINCIBLE |^UNLIMITED MAGIC|^MAGIC NORMAL|^RETRO LOOK|^HD LOOK/;
 function banner(txt, dur = 1.3, force) { if (txt && !force && !BANNER_KEEP.test(txt)) return; const b = document.getElementById('banner'); b.textContent = txt; b.classList.add('on'); clearTimeout(bannerTO); bannerTO = setTimeout(() => b.classList.remove('on'), dur * 1000); }
 function showScreen(id) {
   document.querySelectorAll('.scr').forEach(s => s.classList.toggle('on', s.id === id));
@@ -6158,10 +6158,10 @@ function bakedCrowd(slot, height, list) {
   for (const { g, mat } of parts) { const im = new THREE.InstancedMesh(g, mat, list.length); list.forEach((d, i) => { Q.setFromAxisAngle(UPV, d[3] || 0); _m4.compose(P3.set(d[0], d[1], d[2]), Q, S3.setScalar(d[4] || 1)); im.setMatrixAt(i, _m4); }); im.frustumCulled = false; im.userData.noCast = true; scene.add(im); out.push(im); }
   return out;
 }
-// Saruman's army as Battle for Middle-earth's own pikemen (urukp.glb) when it's here: the nearest 2400 (by `near`) become real pikemen, the rest stay plain dark shapes far off
+// Saruman's army as Battle for Middle-earth's own pikemen (urukp.glb) when it's here: every one becomes a real pikeman
 function armyModels(bodies, imB, imH, imP, near) {
   whenModels(() => {
-    const idx = bodies.map((b, i) => [near(b), i]).sort((a, b) => a[0] - b[0]).slice(0, 2400).map(q => q[1]);
+    const idx = bodies.map((b, i) => [near(b), i]).sort((a, b) => a[0] - b[0]).map(q => q[1]);   // (every one of them: drawn as copies of one baked pikeman, they're cheap)
     if (!bakedCrowd('urukp', 2.6, idx.map(i => { const b = bodies[i]; return [b[0], b[1] - .75, b[2], b[6], rand(.92, 1.08)]; }))) return;
     const zero = new THREE.Matrix4().makeScale(0, 0, 0); for (const i of idx) { imB.setMatrixAt(i, zero); imH.setMatrixAt(i, zero); if (i % 2 === 0 && imP && i / 2 < imP.count) imP.setMatrixAt(i / 2, zero); }
     imB.instanceMatrix.needsUpdate = imH.instanceMatrix.needsUpdate = true; if (imP) imP.instanceMatrix.needsUpdate = true;
@@ -7666,9 +7666,9 @@ function buildShire(L, TH) {
     bed(g, -W / 2 - 1.5, .9, big ? 20 : 12, .9); bed(g, W / 2 + 1.5, .9, big ? 20 : 12, .9);
     return g;
   };
-  // (with Overlord's models here: its own hobbit holes, each dug into its turf mound, a tub of flowers by the door)
+  // (with Overlord's models here: its own hobbit holes, each dug into its turf mound, a basket of flowers by the door)
   const ovHome = (h, i) => { if (!OV_HOMES.length) return null; const g = new THREE.Group(); place(g, h.s, h.x, h.y - .35, h.f); scene.add(g); g.updateMatrixWorld(true);
-    const r = propIn(g, OV_HOMES[i % OV_HOMES.length], 0, 0, OVH.front, 0, OVH.h, 'h'); propIn(g, 'ov_barrel_flowers', (i % 2 ? 1 : -1) * 2.8, .35, 1.2, 0, 1.3, 'h', false); return r; };
+    const r = propIn(g, OV_HOMES[i % OV_HOMES.length], 0, 0, OVH.front, 0, OVH.h, 'h'); propIn(g, 'ov_flowerbasket', (i % 2 ? 1 : -1) * 2.8, .35, 1.2, 0, 1.1, 'h', false); return r; };
   Y.homes.forEach((h, i) => {
     if (!ovHome(h, i)) hole(h.s, h.x, h.f, h.y, doorCols[i % doorCols.length]);
     const n = Math.max(3, Math.round(Math.hypot(h.to[0] - h.s, h.to[1] - h.x) / .75)); for (let k = 1; k < n - 3; k++) { const t = k / n, wob = Math.sin(t * 7 + i) * .45, ns = -Math.sin(h.f), nx = Math.cos(h.f), s = lerp(h.s, h.to[0], t) + ns * wob, x = lerp(h.x, h.to[1], t) + nx * wob, q = tw(s, x, at(s, x) + .05), r = rand(.26, .4); stones.push([q.x, q.y, q.z, r, .1, r * rand(.8, 1)]); }
@@ -8793,13 +8793,13 @@ function buildRace(L, TH) {
   // trees on the banks, Battle for Middle-earth's or built; fallen ones across the road
   // (with Overlord's models here: its pines, every one of them, the built cones and the other trees giving way)
   const pines = propsOf(['ov_d0_pine', 'ov_d0_pinetaller', 'ov_d1_pine', 'ov_d1_pinetaller', 'ov_pine_tree_small']), trees = pines.length ? pines : propsOf(['ptree01', 'ptree02', 'sb_tree01', 'sb_tree03', 'ptelvnwood01']), wood = lam(0x5a3e24), leaf = lam(0x3a5a2a), list = [];
-  for (let k = 0; k < 260; k++) { const s = rand(-10, RACE_END + 20), side = k % 2 ? 1 : -1, x = side * rand(9, 38); if (Math.abs(s - RACE_FORD) < 10) continue; list.push([s, x]); }
+  for (let k = 0; k < 260; k++) { const s = rand(-10, RACE_END + 20), side = k % 2 ? 1 : -1, x = side * rand(9, 38); if (s > RACE_FORD - 10 && s < RACE_FORD + 42 && (s < RACE_FORD + 10 || Math.abs(x) < 26)) continue;   /* (the far bank kept open where the camera turns back on the Ford) */ list.push([s, x]); }
   list.forEach(([s, x], n) => { const y = at(s, x); if (trees.length && (pines.length || n % 2)) { propOne(trees[n % trees.length], s, x, y - .3, rand(0, TAU), rand(9, 15), 'h'); return; } const q = tw(s, x, y); part(GEO.cyl, wood, scene, q.x, q.y + 3, q.z, .45, 6, .45); part(GEO.cone, leaf, scene, q.x, q.y + 8, q.z, 3, 7, 3); });
   for (const [s, x0, x1] of L.layout.logs) { const w = x1 - x0, x = (x0 + x1) / 2, q = tw(s, x, at(s, x) + .4), m = part(GEO.cyl, wood, scene, q.x, q.y, q.z, .4, w + .6, .4); m.rotation.set(0, -trackAng(s), Math.PI / 2); m.updateMatrixWorld(); for (let k = 0; k < 3; k++) { const b = tw(s + rand(-.3, .3), x0 + rand(0, w), at(s, x) + .7); part(GEO.cyl, wood, scene, b.x, b.y, b.z, .08, 1.2, .08).rotation.set(rand(-1, 1), 0, rand(-1, 1)); } }
   // the woods closing in: great old trees leaning in from both banks, their boughs meeting over the road in long green tunnels, ferns and bracken on the banks
   { const bark = surf(TX.rrWood || TX.wood, { sky, color: 0x6a5440, rough: .95, bump: 3, tri: 2 }), leafT = TX.rrFern || null, leafM = ps1(new THREE.MeshLambertMaterial({ color: 0x3e6a2c, map: leafT, side: THREE.DoubleSide, alphaTest: leafT ? .4 : 0 })), leafD = ps1(new THREE.MeshLambertMaterial({ color: 0x2a4a22, side: THREE.DoubleSide }));
     const trunks = [], boughs = [], clumps = [], clumpsD = [], ferns = [], tunnel = s => Math.sin(s * .045) + Math.sin(s * .017 + 2) > .1;
-    for (let s = -6; s < RACE_END + 12; s += rand(5.5, 9)) { if (Math.abs(s - RACE_FORD) < 12) continue;
+    for (let s = -6; s < RACE_END + 12; s += rand(5.5, 9)) { if (s > RACE_FORD - 12 && s < RACE_FORD + 42) continue;
       for (const sd of [-1, 1]) { if (Math.random() < .25) continue; const x = sd * rand(7.5, 11), y = at(s, x) - .4, h = rand(10, 15), lean = rand(.12, .3), a = -trackAng(s);
         const top = tw(s + rand(-1, 1), x - sd * h * lean, y + h); const base = tw(s, x, y), mid = base.clone().lerp(top, .5), dir = top.clone().sub(base), L_ = dir.length(); dir.normalize();
         trunks.push([mid, L_, dir, rand(.55, .9)]);
@@ -12227,6 +12227,7 @@ function updateKH(dt) {
   if (KH.cut && state === 'play') bridgeCut(dt);
   const play = state === 'play', A = KH.atk, form = KH.form > 0;
   KH.mp = Math.min(KH.maxMp, KH.mp + dt * (form ? 6 : 2.5));
+  if (cheats.ammo) KH.mp = KH.maxMp;   // (unlimited magic: MP too, rockets being magic of a kind)
   for (const c in KH.cmdT) KH.cmdT[c] -= dt;
   for (const k of ['slowT', 'sightT', 'multiT', 'berserkT', 'reflectT']) KH[k] = Math.max(0, (KH[k] || 0) - dt);
   if (play) khTechs(dt); khSpiritUpdate(dt);   // (the techniques switched on, and the summoned spirit)
