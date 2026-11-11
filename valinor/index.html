@@ -1776,7 +1776,8 @@ const THEMES = {
       for (const a of [.95, 2.25, -2.2, 3.5]) { const q = tw(Math.cos(a) * 12, Math.sin(a) * 12, .7); part(new THREE.CylinderGeometry(.48, .55, 1.4 + (a > 0 ? .5 : 0), 10), stoneA, scene, q.x, q.y, q.z); }
       // dead, wind-bent trees clawing up through the ruin
       const bark = lam(0x4a4034), limb = (p, dir, len, th, d) => { const e = p.clone().addScaledVector(dir, len), m = part(new THREE.CylinderGeometry(th * .62, th, len, 6), bark, scene, (p.x + e.x) / 2, (p.y + e.y) / 2, (p.z + e.z) / 2); m.quaternion.setFromUnitVectors(UPV, dir); if (d <= 0) return; const n = d > 2 ? 2 : 3; for (let k = 0; k < n; k++) { const nd = dir.clone().add(new V3(rand(-.85, .85) + .28, rand(-.1, .55), rand(-.85, .85))).normalize(); limb(e, nd, len * rand(.58, .78), th * .62, d - 1); } };
-      for (const [a, r, h] of [[.98, 15.4, 3.6], [-1.42, 15.2, 4], [2.5, 15.6, 3.2], [-2.45, 15.4, 3.6], [1.62, 20.5, 3.8], [-.42, 21.5, 3.4]]) limb(tw(Math.cos(a) * r, Math.sin(a) * r, r < 18 ? .95 : 0), new V3(.18, 1, .08).normalize(), h, .36, 4);
+      const DEAD = propsOf(['ov_birch_dead', 'ov_birch_dead_02', 'ov_twistedtree_01']);   // (with Overlord's models here: its dead birches and a twisted tree in their places)
+      [[.98, 15.4, 3.6], [-1.42, 15.2, 4], [2.5, 15.6, 3.2], [-2.45, 15.4, 3.6], [1.62, 20.5, 3.8], [-.42, 21.5, 3.4]].forEach(([a, r, h], i) => { const s = Math.cos(a) * r, x = Math.sin(a) * r, y = r < 18 ? .95 : 0; if (DEAD.length && propOne(DEAD[i % DEAD.length], s, x, y - .2, rand(0, TAU), h * 2.4, 'h')) return; limb(tw(s, x, y), new V3(.18, 1, .08).normalize(), h, .36, 4); });
       // moss and long yellow grass in the joints and along the wall heads
       const moss = [], tuft = []; for (const [s, x, , h] of L.layout.stones) { if (Math.random() < .35) { const q = tw(s + rand(-.5, .5), x + rand(-.5, .5), h + rand(-.1, .25)); moss.push([q.x, q.y, q.z, rand(.45, .85), rand(.16, .34), rand(.45, .85)]); } if (Math.random() < .3) { const q = tw(s + rand(-1.4, 1.4), x + rand(-1.4, 1.4), .15); tuft.push([q.x, q.y + .35, q.z, rand(.05, .1), rand(.5, 1), rand(.05, .1), rand(0, 3)]); } }
       for (let k = 0; k < 420; k++) { const a = rand(0, TAU), r = rand(20, 25.6), q = tw(Math.cos(a) * r, Math.sin(a) * r, .2); tuft.push([q.x, q.y + .2, q.z, rand(.05, .1), rand(.4, .9), rand(.05, .1), rand(0, 3)]); } instanced(GEO.ico, lam(0x5a6a3a), moss); instanced(new THREE.ConeGeometry(1, 1, 3), lam(0x9a9a4a), tuft);
@@ -6058,6 +6059,7 @@ const LOCAL_ASSETS = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname
 // anims: which clip to use for an action, where the usual names below would pick the wrong one.
 // saberBone: the bone the lightsaber goes on in the Weathertop duel (its sword hand), and saberRot to turn the blade along it.
 const TROLL_ANIMS = { idle: /^idle_a/i, walk: /^(walk_a|run_a)/i, attack: /^attack_a/i, hit: /^hurt_a/i, die: /^die_/i };   // (their files also hold dismounting clips whose names would pass for attacks)
+const KH_ANIMS = { idle: /_IDLE$/, walk: /_RUN$|_WALK$/, attack: /_EX050$/, hit: /_DAMAGE_S_FRONT_HIGH$/, die: /_DAMAGE_BLOW_FRONT$/, jump: /_APPEAR$/ };
 const MODEL_SLOTS = {
   eagle: { height: 5.2, turn: -Math.PI / 2, anims: { fly: /^fly_a/i, idle: /^hvra/i, attack: /^attack_b/i, hit: /^hit/i } }, tentacle: { height: 15, fitMax: true, turn: -Math.PI / 2, hide: /BOX/i, anims: { idle: /^idle_a/i, attack: /^attack_a/i, hit: /^spna/i, die: /^dwna/i } },
   watcher: { height: 5, turn: -Math.PI / 2, hide: /SUPRTNTCL/i, anims: { idle: /^idle_a|^idla/i, attack: /eat/i, hit: /^idle_b|^idlb/i, die: /^dwn|^die/i, jump: /^sp/i } }, caldera: { height: 15, fitMax: true, turn: 0, cut: true, hide: /_\d$/, anims: { idle: /^idle_a|^idla/i, die: /^die/i, jump: /^sp/i } },   // (the Watcher's head in its pool, and the crater it bursts up into)
@@ -6076,6 +6078,10 @@ const MODEL_SLOTS = {
   urukp: { height: 3, turn: -Math.PI / 2, hide: /FORGED_BLADE/i }, urukx: { height: 2.1, turn: -Math.PI / 2, hide: /FIREAROWTIP/i }, fanatic: { height: 2.1, turn: -Math.PI / 2 }, overseer: { height: 2.8, turn: -Math.PI / 2, hide: /^BOX/i },   // (the Uruk-hai's pikemen, crossbowmen, fanatics and their overseer)
   dragon: { height: 7, turn: -Math.PI / 2, anims: { fly: /^fly_a/i, idle: /^idle_a/i, attack: /^attack_a/i, hit: /^hurt_a/i, die: /^die_k/i } },   // (Erebor: Smaug, in the shape of Rise of the Witch-king's dragon)
   floodhorse: { height: 4, turn: -Math.PI / 2, anims: { walk: /^run/i }, glow: .5 },   // (the Ford: the water horses of Battle for Middle-earth's flood)
+  // the Barrow Trial's foes, with Kingdom Hearts II here: the Heartless themselves, their own models and moves (APPEAR as they rise out of the dark)
+  khshadow: { fbx: 'M_EX020', height: 1.05, turn: 0, cut: true, kh: 'SHADOW', anims: KH_ANIMS }, khsoldier: { fbx: 'M_EX010', height: 1.75, turn: 0, cut: true, kh: 'SOLDIER', anims: KH_ANIMS },
+  khlargebody: { fbx: 'M_EX050', height: 2.9, turn: 0, cut: true, kh: 'LARGE BODY', anims: KH_ANIMS }, khrednoc: { fbx: 'M_EX130', height: 1.3, turn: 0, cut: true, kh: 'RED NOCTURNE', anims: KH_ANIMS },
+  khbluerhap: { fbx: 'M_EX110', height: 1.3, turn: 0, cut: true, kh: 'BLUE RHAPSODY', anims: KH_ANIMS },
   blackrider: { height: 3.1, turn: -Math.PI / 2, hide: /CINEMA|_NEW/i, anims: { walk: /^run_a/i } },   // (its cinematic duplicates hidden: it has one horse and one rider)   // (the race to the Ford: Rise of the Witch-king's Black Rider, on his horse)   // Mirkwood's spiders: Shelob again (src: whose model it is), smaller
 };
 // which animation plays for each action: the first clip whose name matches (case doesn't matter)
@@ -6174,6 +6180,7 @@ function updateSkins(dt) {
 function replaceTex(key, img) {
   const t = TX[key]; if (!t || !t.image || !t.image.getContext) return;
   const c = t.image; c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext('2d').drawImage(img, 0, 0);
+  if (TONE_TEX[key]) toneCanvas(c, ...TONE_TEX[key]);
   // a real picture is drawn smooth (and mipmapped), not as blocky pixels; the same goes for every copy of the texture
   const smooth = m => { m.magFilter = THREE.LinearFilter; m.minFilter = THREE.LinearMipmapLinearFilter; m.generateMipmaps = true; m.anisotropy = Math.min(8, MAX_ANI); m.needsUpdate = true; };
   for (const sc of [scene, mapScene]) sc.traverse(o => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) if (m.map && m.map.image === c) { smooth(m.map); if (TEX_COMP[key] && m.color && m.vertexColors) m.color.setRGB(...TEX_COMP[key]); } });
@@ -6182,6 +6189,19 @@ function replaceTex(key, img) {
 // a real picture in place of a built texture that the level tints by its corners (Hobbiton's golden-green): the material undoes the average tint,
 // so the picture keeps its own colour and only the light and dark of the hollows and tops stays
 const TEX_COMP = { lush: [1.5, 1.22, 2.5] };
+// Overlord's pictures are a 2007 game's: dull and dark beside Valinor's bright storybook colours. Each is redrawn brighter and more saturated
+// as it loads (saturation, then a lift of the darks), so the ground, houses and trees share Valinor's look
+const TONE_TEX = { lush: [1.45, .78], cobble: [1.35, .78] }, OV_TONE = [1.5, .74], TONED = new WeakSet();
+function toneCanvas(c, sat, gam) {
+  const x = c.getContext('2d'), d = x.getImageData(0, 0, c.width, c.height), p = d.data, lut = new Uint8ClampedArray(256);
+  for (let i = 0; i < 256; i++) lut[i] = 255 * Math.pow(i / 255, gam);
+  for (let i = 0; i < p.length; i += 4) { const l = .3 * p[i] + .59 * p[i + 1] + .11 * p[i + 2]; for (let k = 0; k < 3; k++) p[i + k] = lut[Math.max(0, Math.min(255, Math.round(l + (p[i + k] - l) * sat)))]; }
+  x.putImageData(d, 0, 0); return c;
+}
+function toneTex(tex, sat = OV_TONE[0], gam = OV_TONE[1]) {
+  if (!tex || TONED.has(tex) || !tex.image || !tex.image.width) return; TONED.add(tex);
+  try { const c = document.createElement('canvas'); c.width = tex.image.width; c.height = tex.image.height; c.getContext('2d').drawImage(tex.image, 0, 0); tex.image = toneCanvas(c, sat, gam); tex.needsUpdate = true; } catch (e) { }
+}
 const loadScript = src => new Promise((ok, no) => { const e = document.createElement('script'); e.src = src; e.onload = ok; e.onerror = no; document.head.appendChild(e); });
 const loadImage = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
 async function loadLocalAssets() {
@@ -6213,6 +6233,7 @@ async function loadLocalAssets() {
   // ?models=balrog,gandalf loads just those, for testing
   const slots = Object.keys(MODEL_SLOTS).filter(s => !MODEL_SLOTS[s].src && (!only || only.split(',').includes(s)));
   await Promise.all(slots.map(async slot => {
+    if (MODEL_SLOTS[slot].fbx) { const gl = await khModel(MODEL_SLOTS[slot].fbx); if (gl) { LOADED[slot] = gl; got.push(`models/kh/${MODEL_SLOTS[slot].fbx}.fbx (${gl.animations.length} moves)`); } return; }
     try { LOADED[slot] = await loader.loadAsync(`models/${slot}.glb`); got.push(`models/${slot}.glb (${LOADED[slot].animations.map(a => a.name).join(', ') || 'no animations'})`); }
     catch (e) { if (e instanceof Error) console.warn(`Valinor: models/${slot}.glb is there but would not load:`, e.message); }
   }));
@@ -6238,9 +6259,24 @@ const PROP_CUT = /tree|bush|grass|flower|fern|hedge|shrub|web|wood0|lothlorien|p
 const PROP_LIFT = [[/^riv/, .4, 0xfff2dc], [/^pt(elvn|lothl)/, .3, 0xfff0d0], [/slvrtree/, .45, 0xf4f6ff], [/^rb/, .35, 0xfff0d8], [/^predoras/, .25, 0xf0ece4], [/^nbhd|^eb_/, .35, 0xf0f2f6], [/^ov_(dwarfboulder|rock_)/, .35, 0xf2efe8]];   // (Edoras's timber and rocks are dark in their own light too)
 // which way each model faces, where it isn't the way the levels expect (doors towards +s)
 const PROP_TURN = {};
+// parts of a model left out: Overlord's well hangs its rope down a shaft deep below the ground, and would stand on the bucket
+const PROP_HIDE = { ov_waterwell: /rope/i, ov_halfling_house01_mesh: /_grass$|floor_tiles/i, ov_halfling_house02: /_grass$|floor_tiles/i, ov_halfling_house03: /_grass$|floor_tiles/i, ov_windmillchapel: /_grass$/i };   // (and the hobbit holes' turf caps, made to melt into Overlord's own hills: here they'd float as great green slabs)
 let GLTF = null;
 function gltfLoader() {
   return GLTF || (GLTF = (async () => { const base = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/'; await loadScript(base + 'loaders/GLTFLoader.js'); await loadScript(base + 'utils/SkeletonUtils.js'); return new THREE.GLTFLoader(); })());
+}
+// Kingdom Hearts II's Heartless, as OpenKH writes them (bfme\tools\Export-Heartless.ps1): an .fbx with its pictures beside it and every move
+// in it. Their run and attack moves carry the Heartless across the floor themselves; Valinor moves its foes, so that drift is taken out
+let FBXL = null;
+async function khModel(code) {
+  try {
+    if (!FBXL) FBXL = (async () => { await loadScript('https://cdn.jsdelivr.net/npm/fflate@0.6.9/umd/index.js'); await loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js'); return new THREE.FBXLoader(); })();
+    const g = await (await FBXL).loadAsync(`models/kh/${code}.fbx`); let root = null; g.traverse(o => { if (!root && o.isBone) root = o; });
+    for (const c of g.animations) for (const tr of c.tracks) if (root && tr.name === root.name + '.position') { const v = tr.values; for (let i = 0; i < v.length; i += 3) { v[i] = v[0]; v[i + 2] = v[2]; } }
+    // (the materials come through black: each is made again from its own picture, lit as Valinor's characters are)
+    g.traverse(o => { if (o.isMesh) { const N = o.geometry.attributes.normal; if (!N || !N.array.some(v => v !== 0)) o.geometry.computeVertexNormals(); const ms = [].concat(o.material).map(m => { if (m.map) m.map.encoding = THREE.sRGBEncoding; return new THREE.MeshLambertMaterial({ map: m.map || null, color: m.map ? 0xffffff : 0x888888, name: m.name, skinning: !!o.isSkinnedMesh }); }); o.material = Array.isArray(o.material) ? ms : ms[0]; } });
+    return { scene: g, animations: g.animations };
+  } catch (e) { return null; }
 }
 async function loadProps() {
   if (!LOCAL_ASSETS || new URLSearchParams(location.search).get('props') === 'none') return;   // ?props=none: the built shapes, for comparing
@@ -6256,12 +6292,13 @@ function propParts(name, gl) {
   gl.scene.traverse(o => {
     if (!o.isMesh || !o.visible) return;
     let g = o.geometry.clone(); if (o.isSkinnedMesh) skinBake(o, g); else g.applyMatrix4(o.matrixWorld); if (g.attributes.color) g.deleteAttribute('color');
-    if (/^ov_/.test(name) && /lambert\d*$|_black$/i.test(o.name) && ![].concat(o.material)[0].map) return;   // Overlord's untextured filler, sunk in the hill there
+    if (/^ov_/.test(name) && /lambert\d*$|_black$/i.test(o.name) && ![].concat(o.material)[0].map) return;
+    if (PROP_HIDE[name] && PROP_HIDE[name].test(o.name)) return;   // Overlord's untextured filler, sunk in the hill there
     const m0 = [].concat(o.material)[0], seeThru = /^ov_/.test(name) && (m0.transparent || m0.alphaTest > 0 || /fern|reed|cattail|grass|bush|boterbloem|sunflower|wheat|toadstool/.test(name));
     if (!g.attributes.normal) g.computeVertexNormals();   // (some come without, and would be unlit, black)
     if (seeThru && g.attributes.normal) { const N = g.attributes.normal; for (let i = 0; i < N.count; i++) { const v = new V3(N.getX(i) * .3, N.getY(i) * .3 + 1, N.getZ(i) * .3).normalize(); N.setXYZ(i, v.x, v.y, v.z); } }   // a plant's cards lit from the sky, not dark edge-on
     if (/^ov_/.test(name) && /particle|partytree_leaf/i.test(o.name)) { if (!leafM) { leafM = m0; leafG = g; } return; }   // where Overlord sprays the leaves from: its leaf picture, hung on the branches below
-    if (seeThru && [].concat(o.material).length < 2) { bothWays(g); geos.push(g); g.computeBoundingBox(); box.union(g.boundingBox); parts.push({ g, m: propMat(name, m0, 'plant') }); return; }
+    if (seeThru && [].concat(o.material).length < 2) { bothWays(g); geos.push(g); wood.push(g); g.computeBoundingBox(); box.union(g.boundingBox); parts.push({ g, m: propMat(name, m0, 'plant') }); return; }
     if (o.matrixWorld.determinant() < 0) { parts.mirrored = true; const ix = g.index; if (ix) for (let i = 0; i < ix.count; i += 3) { const a = ix.getX(i + 1); ix.setX(i + 1, ix.getX(i + 2)); ix.setX(i + 2, a); } }   // a mirrored part would be inside out
     g.computeBoundingBox(); box.union(g.boundingBox); geos.push(g); wood.push(g);
     const ms = [].concat(o.material);
@@ -6271,7 +6308,7 @@ function propParts(name, gl) {
   if (leafM && wood.length) {   // a tree's or bush's leaves: cards over its branches (the upper ones, on a tree)
     const pos = [], idx = []; for (const w of wood) { const P = w.attributes.position, o = pos.length / 3; for (let i = 0; i < P.count; i++) pos.push(P.getX(i), P.getY(i), P.getZ(i)); if (w.index) for (let i = 0; i < w.index.count; i++) idx.push(o + w.index.getX(i)); else for (let i = 0; i < P.count; i++) idx.push(o + i); }
     const src = new THREE.BufferGeometry(); src.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); src.setIndex(idx);
-    const g = leafCards(src, name, leafG); bothWays(g); geos.push(g); g.computeBoundingBox(); box.union(g.boundingBox); parts.push({ g, m: propMat(name, leafM, 'cards') });
+    const g = leafCards(src, name, leafG); bothWays(g); geos.push(g); g.computeBoundingBox(); box.union(g.boundingBox); parts.push({ g, m: propMat(name, leafM, 'cards'), leaf: true });
   }
   const c = box.getCenter(new V3()); for (const g of geos) g.translate(-c.x, -box.min.y, -c.z);
   return { parts, size: box.getSize(new V3()), mirrored: !!parts.mirrored };
@@ -6334,6 +6371,7 @@ function propTris(g) {
 }
 function propMat(name, m, plant) {   // plant: 'cards' (leaf cards) or 'plant', each face already there both ways
   const key = m.uuid + (plant || ''); if (PROP_MATS.has(key)) return PROP_MATS.get(key);
+  if (/^ov_/.test(name) && m.map) toneTex(m.map);
   const cut = !!plant || PROP_CUT.test(name) || (/^ov_/.test(name) && (m.transparent || m.alphaTest > 0)), flow = PROP_FLOW.test(name); if (m.map) m.map.encoding = THREE.sRGBEncoding;   /* (Overlord's: the converter marks the see-through ones) */
   const out = ps1(new THREE.MeshLambertMaterial({ map: m.map || null, color: m.map ? 0xffffff : m.color ? m.color.getHex() : 0xc8c8c8, side: plant ? THREE.FrontSide : cut || flow ? THREE.DoubleSide : THREE.FrontSide,
     alphaTest: cut ? .45 : 0, transparent: flow, opacity: flow ? .8 : 1, depthWrite: !flow }));
@@ -6343,6 +6381,30 @@ function propMat(name, m, plant) {   // plant: 'cards' (leaf cards) or 'plant', 
   PROP_MATS.set(key, out); return out;
 }
 const propsOf = list => list.filter(n => PROPS[n]);
+// a built tree's leafy clumps ([centre, radius] in the world) as clusters of crossed leaf cards in an Overlord tree's own leaf picture;
+// null without Overlord's models, and the clumps stay as they are
+function ovLeafClumps(list, tree = 'ov_d0_oak_a_green') {
+  const lp = PROPS[tree] && PROPS[tree].parts.find(p => p.leaf); if (!lp || !list.length) return null;
+  const pos = [], nor = [], uv = [], idx = [];
+  for (const [c, r] of list) for (let k = 0; k < 9; k++) {
+    const a = rand(0, TAU), d = Math.sqrt(Math.random()) * r * .8, p = new V3(c.x + Math.cos(a) * d, c.y + rand(-.45, .5) * r, c.z + Math.sin(a) * d), w = r * rand(.8, 1.15), yaw = rand(0, Math.PI);
+    for (let pl = 0; pl < 3; pl++) { const ang = yaw + pl * Math.PI / 2, rt = pl < 2 ? new V3(Math.cos(ang), 0, Math.sin(ang)) : new V3(Math.cos(yaw), 0, Math.sin(yaw)), up = pl < 2 ? UPV : new V3(-Math.sin(yaw), 0, Math.cos(yaw)), o = pos.length / 3;
+      for (const [x, y] of [[-1, 1], [1, 1], [1, -1], [-1, -1]]) { pos.push(p.x + (rt.x * x + up.x * y) * w / 2, p.y + (rt.y * x + up.y * y) * w / 2, p.z + (rt.z * x + up.z * y) * w / 2); nor.push(0, 1, 0); uv.push(x < 0 ? 0 : 1, y > 0 ? 0 : 1); }
+      idx.push(o, o + 2, o + 1, o, o + 3, o + 2, o, o + 1, o + 2, o, o + 2, o + 3); }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+  const m = new THREE.Mesh(g, lp.m); m.castShadow = true; scene.add(m); return m;
+}// a copy of a tree whose leaves are another colour (Rivendell's blossom, gold and sea-green): the leaf picture redrawn in that colour, light and shade kept
+function tintTex(tex, c) {
+  const im = tex.image, cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height; const x = cv.getContext('2d'); x.drawImage(im, 0, 0);
+  const d = x.getImageData(0, 0, cv.width, cv.height), p = d.data; for (let i = 0; i < p.length; i += 4) { const l = Math.min(1, (.3 * p[i] + .59 * p[i + 1] + .11 * p[i + 2]) / 255 * 1.9); p[i] = 255 * c.r * l; p[i + 1] = 255 * c.g * l; p[i + 2] = 255 * c.b * l; }
+  x.putImageData(d, 0, 0); const t = tex.clone(); t.image = cv; t.needsUpdate = true; return t;
+}
+function propTint(src, dst, hex) {
+  if (PROPS[dst]) return dst; const P_ = PROPS[src]; if (!P_) return null; const c = new THREE.Color(hex);
+  PROPS[dst] = { ...P_, parts: P_.parts.map(p => { if (!p.leaf || !p.m.map) return p; const m = p.m.clone(); m.map = m.emissiveMap = tintTex(p.m.map, c); m.color.setScalar(1.25); m.emissive.setScalar(.4); return { ...p, m }; }) };
+  return dst;
+}
 // how big a model is: its height, or (by 'w') the wider of its two sides
 const propNat = (P_, by) => by === 'h' ? P_.size.y : Math.max(P_.size.x, P_.size.z);
 // many copies of one model, at [x, y, z, size, turn] in the world (size in metres: its height, or by 'w' its width)
@@ -7504,7 +7566,7 @@ function shireLayout() {
   for (const sg of [-1, 1]) for (let a = .17; a < 1.2; a += .08) { const s = 36 + Math.cos(a) * 12, x = sg * Math.sin(a) * 12; blocks.push([s - .45, s + .45, x - .45, x + .45, yB + .35, 'wall', y0 - 2]); }
   for (let k = 0; k < 4; k++) blocks.push([46.2 + k * .6, 48.9, -1.7, 1.7, y0 + (k + 1) * .325, 'floor', y0 - 2]);
   // the Green Dragon's walls (facing south, the pond), its porch and brewhouse; the Party Tree, the tables, the bandstand, the tables outside the inn
-  blocks.push([INN[0], INN[0] + 8, INN[1] - 7.5, INN[1] + 7.5, yI + 9, 'wall', -10], [INN[0] - 3, INN[0], INN[1] - 2.8, INN[1] + 2.8, yI + 7, 'wall', -10], [INN[0] + 1, INN[0] + 7, INN[1] + 7.5, INN[1] + 13.5, yI + 7, 'wall', -10]);
+  blocks.push([INN[0], INN[0] + 8, INN[1] - 7.5, INN[1] + 7.5, yI + 9, 'wall', -10, 'inn'], [INN[0] - 3, INN[0], INN[1] - 2.8, INN[1] + 2.8, yI + 7, 'wall', -10, 'inn'], [INN[0] + 1, INN[0] + 7, INN[1] + 7.5, INN[1] + 13.5, yI + 7, 'wall', -10, 'inn']);
   const YP = plazas[2].y, tables = [[.5, -36], [-3.5, -36], [1, -47], [-3, -47], [25, -45]], stage = [9.2, -50.2], ale = [[8.5, 24], [8.5, 32], [5.8, 28]];
   blocks.push([PARTY[0] - 1.3, PARTY[0] + 1.3, PARTY[1] - 1.3, PARTY[1] + 1.3, YP + 12, 'wall', -10]);
   for (const [s, x] of tables) blocks.push([s - .55, s + .55, x - 4.5, x + 4.5, YP + .8, 'floor', YP - 1]);
@@ -7526,13 +7588,19 @@ function buildShire(L, TH) {
   //  the hillside round it, and it's solid. Where the doors are, the lane and the squares stay just as they are)
   const OV_HOMES = ['ov_halfling_house01_mesh', 'ov_halfling_house03', 'ov_halfling_house02'].filter(n => PROPS[n]), OVH = { h: 6.4, front: 1.2 };
   if (OV_HOMES.length) Y.homes.forEach((h, i) => {
-    const P_ = PROPS[OV_HOMES[i % OV_HOMES.length]], k = OVH.h / P_.size.y, W = P_.size.x * k, D = P_.size.z * k, cf = Math.cos(h.f), sf = Math.sin(h.f), M = 3.5, lo = h.y - .3;
+    const P_ = PROPS[OV_HOMES[i % OV_HOMES.length]], k = OVH.h / P_.size.y, W = P_.size.x * k, D = P_.size.z * k, cf = Math.cos(h.f), sf = Math.sin(h.f), M = 3.5, lo = h.y - .3, top = h.y - .35 + OVH.h * .86;
     for (let j = 0; j < T_.h; j++) for (let i2 = 0; i2 < T_.w; i2++) {
       const s = T_.cy - j, x = T_.cx - i2, v = (s - h.s) * cf + (x - h.x) * sf, u = -(s - h.s) * sf + (x - h.x) * cf;
-      const du = Math.max(0, Math.abs(u) - (W / 2 - 1.2)), dv = Math.max(0, v - OVH.front, OVH.front - 5 - v), d = Math.hypot(du, dv); if (d >= M) continue;
-      const w = 1 - d / M, e = w * w * (3 - 2 * w), q = j * T_.w + i2; if (T_.hs[q] > lo) T_.hs[q] = lerp(T_.hs[q], lo, e);
+      const q = j * T_.w + i2, sm = d => { const w = 1 - d / M; return w * w * (3 - 2 * w); };
+      // behind the facade the ground rises up under the turf roof, so the house is dug into its hill as Overlord sets it, not overhanging the slope
+      if (v < OVH.front - D * .5) { const du = Math.max(0, Math.abs(u) - (W / 2 - 1.6)), dv = Math.max(0, v - (OVH.front - D * .5 - M), OVH.front - D + 1.5 - v), d = Math.hypot(du, dv);
+        if (d < M && T_.hs[q] < top) T_.hs[q] = lerp(T_.hs[q], top, sm(d)); continue; }
+      // and in front of it the ground is let down level with the door
+      const du = Math.max(0, Math.abs(u) - (W / 2 - 1.2)), dv = Math.max(0, v - OVH.front), d = Math.hypot(du, dv); if (d >= M) continue;
+      if (T_.hs[q] > lo) T_.hs[q] = lerp(T_.hs[q], lo, sm(d));
     }
-    const cs = h.s + cf * (OVH.front - D / 2), cx = h.x + sf * (OVH.front - D / 2), r = Math.min(W, D) * .36; Y.blocks.push([cs - r, cs + r, cx - r, cx + r, h.y + 6, 'wall', -10]);
+    // solid along the facade only (the hill behind is the ground itself)
+    for (let u = -W / 2 + 1.2; u <= W / 2 - 1.2; u += 1.8) { const v = OVH.front - 1.8, cs = h.s + cf * v - sf * u, cx = h.x + sf * v + cf * u; Y.blocks.push([cs - 1.1, cs + 1.1, cx - 1.1, cx + 1.1, h.y + 4.5, 'wall', -10]); }
   });
   // (and Overlord's oaks, most in full green leaf and a few turning, where the built ones would stand)
   const OAKS = ['ov_d0_oak_a_green', 'ov_d0_oak_b_green', 'ov_d0_oak_a_green', 'ov_d0_oak_b_green', 'ov_d0_oak_a_yellow', 'ov_d0_oak_b_yellow'].filter(n => PROPS[n]);
@@ -7635,6 +7703,9 @@ function buildShire(L, TH) {
   { const I = Y.inn, g = new THREE.Group(); place(g, I.s, I.x, I.y, Math.PI); scene.add(g); g.updateMatrixWorld(true);
     // (with Overlord's models here: its own inn, the Spree's, stands where the built one would)
     const ovInn = propIn(g, 'ov_spree_inn', 1.5, 0, 1.2, 0, 15);
+    if (ovInn) {   // the built inn's walls, porch and brewhouse give way to one wall round Overlord's inn, as it stands
+      for (let k = Y.blocks.length - 1; k >= 0; k--) if (Y.blocks[k][7] === 'inn') Y.blocks.splice(k, 1);
+      const b = new THREE.Box3().setFromObject(ovInn.g), p = toTrack(b.min), q = toTrack(b.max); Y.blocks.push([Math.min(p.s, q.s) + 1, Math.max(p.s, q.s) - 1, Math.min(p.x, q.x) + 1, Math.max(p.x, q.x) - 1, I.y + 9, 'wall', -10]); }
     if (!ovInn) {
     part(GEO_BOX, stoneM, g, 0, 1.15, -4, 15, 2.3, 8); part(GEO_BOX, plasterM, g, 0, 3.2, -4, 15, 1.9, 8);
     part(gable(15, 8, 3.5), plasterM, g, 0, 4.15, -4); part(slopes(16.8, 10.2, 4.3), thatchM, g, 0, 3.75, -4);
@@ -7776,7 +7847,7 @@ function buildShire(L, TH) {
     // the mill's yard
     { const [s, x] = Y.mill; put('ov_haystack', s + 3, x - 6.5, 3, 'h', 1.6); put('ov_wheat_stack', s + 5.5, x - 4, 1.6); put('ov_cart_large_wheat', s - 1, x - 7, 2, 'h', 1.2); put('ov_sacks_stack', s + 1.5, x - 4.5, .7); put('ov_barrel', s + 2.6, x - 4.2, 1.1, 'h', .5); }
     // by the Green Dragon: the well, barrels, a cart of sacks and a flower stall
-    { const I = Y.inn; put('ov_waterwell', I.s - 9.5, I.x - 9, 4.2, 'h', 1.4); put('ov_cart_medium_sacks', I.s + 2, I.x - 11.5, 1.4, 'h', 1); for (const [ds, dx] of [[-1, 10.5], [-1.9, 11.2], [-.8, 11.8]]) put('ov_barrel', I.s + ds, I.x + dx, 1.1, 'h', .5); put('ov_market_stand_small', I.s - 9, I.x + 9, 3.2, 'h', 1.4); put('ov_flowerbasket', I.s - 7.5, I.x + 7, 1.4); }
+    { const I = Y.inn; put('ov_waterwell', I.s - 9.5, I.x - 9, 3.4, 'h', 1.2); put('ov_cart_medium_sacks', I.s + 2, I.x - 11.5, 1.4, 'h', 1); for (const [ds, dx] of [[-1, 10.5], [-1.9, 11.2], [-.8, 11.8]]) put('ov_barrel', I.s + ds, I.x + dx, 1.1, 'h', .5); put('ov_market_stand_small', I.s - 9, I.x + 9, 3.2, 'h', 1.4); put('ov_flowerbasket', I.s - 7.5, I.x + 7, 1.4); }
     // where the lane forks for the Green Dragon
     { const s = Y.spur[0][0] - 2.6, x = Y.spur[0][1] - 3.4; put('ov_roadsign_right', s, x, 1.6); }
     // the windmill on the far hill
@@ -8649,7 +8720,10 @@ function buildRivKH(L, TH) {
   for (const b of Y.bridges) { const n = Math.max(10, Math.round(b.L / 1.2)), pos = [], idx = [], nx_ = Math.cos(b.ang), ns_ = -Math.sin(b.ang); for (let k = 0; k <= n; k++) { const t = k / n, s = lerp(b.s0, b.s1, t), x = lerp(b.x0, b.x1, t), y = b.yAt(t), u = Math.abs(t - .5) * 2, low = y - .4 - .5 - u * u * Math.min(9, b.L * .22); for (const [w, yy] of [[-2.25, y - .05], [2.25, y - .05], [2.25, low + .55], [1.1, low], [-1.1, low], [-2.25, low + .55]]) { const q = tw(s + ns_ * w, x + nx_ * w, yy); pos.push(q.x, q.y, q.z); } if (k < n) { const a = k * 6, c = a + 6; for (let e = 0; e < 6; e++) { const e2 = (e + 1) % 6; idx.push(a + e, c + e, a + e2, a + e2, c + e, c + e2); } } } const gm = new THREE.BufferGeometry(); gm.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); const uvb = []; for (let i = 0; i < pos.length / 3; i++) uvb.push(pos[i * 3] * .25, pos[i * 3 + 2] * .25); gm.setAttribute('uv', new THREE.Float32BufferAttribute(uvb, 2)); gm.setIndex(idx); gm.computeVertexNormals(); const dm = new THREE.Mesh(gm, palebridge); dm.userData.keep = true; dm.frustumCulled = false; scene.add(dm); }
   // trees in blossom and gold on the peaks' grass, flowers, ferns on the rock
   const leafG = new THREE.IcosahedronGeometry(1, 1), lA = [], lB = [], lC = [], bark = lam(0x3a3238), blooms = [];
-  const elfTree = (s, x, sz) => { const y = at(s, x), q = tw(s, x, y), h = 3.6 * sz; part(new THREE.CylinderGeometry(.14 * sz, .3 * sz, h, 7), bark, scene, q.x, q.y + h / 2, q.z); for (let k = 0; k < 12; k++) { const a = rand(0, TAU), r = Math.sqrt(Math.random()) * 1.9 * sz, sc = rand(.55, 1) * sz; (k % 3 === 0 ? lA : k % 3 === 1 ? lB : lC).push([q.x + Math.cos(a) * r, q.y + h + rand(-.4, 1.4) * sz - r * .22, q.z + Math.sin(a) * r, sc, sc * .72, sc]); } };
+  // (with Overlord's models here: its birches, their leaves in the same blossom pink, gold and sea-green, where the built ones would stand)
+  const BIRCH = propsOf(['ov_birch1', 'ov_birch2', 'ov_birch3']), ELF_LEAF = [['_pink', 0xffb0d4], ['_gold', 0xffd860], ['_sea', 0x80d8b4]]; let nElf = 0;
+  const elfTree = (s, x, sz) => { if (BIRCH.length) { const [sfx, col] = ELF_LEAF[nElf % 3], b = BIRCH[(nElf++ / 3 | 0) % BIRCH.length]; if (propOne(propTint(b, b + sfx, col), s, x, at(s, x) - .2, rand(0, TAU), 6.2 * sz, 'h')) return; }
+    const y = at(s, x), q = tw(s, x, y), h = 3.6 * sz; part(new THREE.CylinderGeometry(.14 * sz, .3 * sz, h, 7), bark, scene, q.x, q.y + h / 2, q.z); for (let k = 0; k < 12; k++) { const a = rand(0, TAU), r = Math.sqrt(Math.random()) * 1.9 * sz, sc = rand(.55, 1) * sz; (k % 3 === 0 ? lA : k % 3 === 1 ? lB : lC).push([q.x + Math.cos(a) * r, q.y + h + rand(-.4, 1.4) * sz - r * .22, q.z + Math.sin(a) * r, sc, sc * .72, sc]); } };
   for (const [ps, px, r] of Y.peaks) for (let k = 0; k < Math.round(r * .75); k++) { const a = rand(0, TAU), d = rand(r * .45, r * .95), s = ps + Math.cos(a) * d, x = px + Math.sin(a) * d; if (Y.bridges.some(b => { const u = clamp(((s - b.s0) * (b.s1 - b.s0) + (x - b.x0) * (b.x1 - b.x0)) / (b.L * b.L), 0, 1); return Math.hypot(lerp(b.s0, b.s1, u) - s, lerp(b.x0, b.x1, u) - x) < 3.5; })) continue; if (Y.builds.some(b => Math.hypot(b.s - s, b.x - x) < (b.kind === 'house' ? 11 : 6.5))) continue; elfTree(s, x, rand(1, 1.7)); }
   { const lm = c => { const m = surf(TX.leaf, { sky, color: c, rough: 1, bump: 2, env: .05 }); return m; }; instanced(leafG, lm(0xd890b0), lA); instanced(leafG, lm(0xd0b060), lB); instanced(leafG, lm(0x5a8a78), lC); }
   { const tu = [], fl = {}; for (let k = 0; k < 1400; k++) { const [ps, px, r] = Y.peaks[k % Y.peaks.length], a = rand(0, TAU), d = Math.sqrt(Math.random()) * r, s = ps + Math.cos(a) * d, x = px + Math.sin(a) * d, q = tw(s, x, at(s, x)); if (k % 3 === 0) { const c = [0xffffff, 0xbfd8ff, 0xffd0e8, 0xfff0a0][k % 4]; (fl[c] = fl[c] || []).push([q.x, q.y + .24, q.z, .065, .065, .065]); } else tu.push([q.x, q.y + .14, q.z, rand(.03, .05), rand(.2, .36), rand(.03, .05), rand(0, 3)]); } instanced(new THREE.ConeGeometry(1, 1, 3), lam(0x6aa080), tu); for (const c in fl) instanced(new THREE.SphereGeometry(1, 6, 4), new THREE.MeshBasicMaterial({ color: +c }), fl[c]); }
@@ -8717,9 +8791,10 @@ function buildRace(L, TH) {
   const foam = new THREE.MeshBasicMaterial({ map: TX.falls, color: 0xf4faff, transparent: true, opacity: .9, side: THREE.DoubleSide, depthWrite: false });
   for (let k = 0; k < 8; k++) { const h = k === 3 ? 9 : 4 + k % 3 * 2, m = new THREE.Mesh(new THREE.PlaneGeometry(19, h), foam); m.position.set((3 - k) * 1.8, h / 2 - .5, 0); m.rotation.y = Math.PI / 2; fl.add(m); }
   // trees on the banks, Battle for Middle-earth's or built; fallen ones across the road
-  const trees = propsOf(['ptree01', 'ptree02', 'sb_tree01', 'sb_tree03', 'ptelvnwood01']), wood = lam(0x5a3e24), leaf = lam(0x3a5a2a), list = [];
+  // (with Overlord's models here: its pines, every one of them, the built cones and the other trees giving way)
+  const pines = propsOf(['ov_d0_pine', 'ov_d0_pinetaller', 'ov_d1_pine', 'ov_d1_pinetaller', 'ov_pine_tree_small']), trees = pines.length ? pines : propsOf(['ptree01', 'ptree02', 'sb_tree01', 'sb_tree03', 'ptelvnwood01']), wood = lam(0x5a3e24), leaf = lam(0x3a5a2a), list = [];
   for (let k = 0; k < 260; k++) { const s = rand(-10, RACE_END + 20), side = k % 2 ? 1 : -1, x = side * rand(9, 38); if (Math.abs(s - RACE_FORD) < 10) continue; list.push([s, x]); }
-  list.forEach(([s, x], n) => { const y = at(s, x); if (trees.length && n % 2) { propOne(trees[n % trees.length], s, x, y - .3, rand(0, TAU), rand(9, 15), 'h'); return; } const q = tw(s, x, y); part(GEO.cyl, wood, scene, q.x, q.y + 3, q.z, .45, 6, .45); part(GEO.cone, leaf, scene, q.x, q.y + 8, q.z, 3, 7, 3); });
+  list.forEach(([s, x], n) => { const y = at(s, x); if (trees.length && (pines.length || n % 2)) { propOne(trees[n % trees.length], s, x, y - .3, rand(0, TAU), rand(9, 15), 'h'); return; } const q = tw(s, x, y); part(GEO.cyl, wood, scene, q.x, q.y + 3, q.z, .45, 6, .45); part(GEO.cone, leaf, scene, q.x, q.y + 8, q.z, 3, 7, 3); });
   for (const [s, x0, x1] of L.layout.logs) { const w = x1 - x0, x = (x0 + x1) / 2, q = tw(s, x, at(s, x) + .4), m = part(GEO.cyl, wood, scene, q.x, q.y, q.z, .4, w + .6, .4); m.rotation.set(0, -trackAng(s), Math.PI / 2); m.updateMatrixWorld(); for (let k = 0; k < 3; k++) { const b = tw(s + rand(-.3, .3), x0 + rand(0, w), at(s, x) + .7); part(GEO.cyl, wood, scene, b.x, b.y, b.z, .08, 1.2, .08).rotation.set(rand(-1, 1), 0, rand(-1, 1)); } }
   // the woods closing in: great old trees leaning in from both banks, their boughs meeting over the road in long green tunnels, ferns and bracken on the banks
   { const bark = surf(TX.rrWood || TX.wood, { sky, color: 0x6a5440, rough: .95, bump: 3, tri: 2 }), leafT = TX.rrFern || null, leafM = ps1(new THREE.MeshLambertMaterial({ color: 0x3e6a2c, map: leafT, side: THREE.DoubleSide, alphaTest: leafT ? .4 : 0 })), leafD = ps1(new THREE.MeshLambertMaterial({ color: 0x2a4a22, side: THREE.DoubleSide }));
@@ -8734,7 +8809,8 @@ function buildRace(L, TH) {
     const cyl = new THREE.CylinderGeometry(.6, 1, 1, 7), Q = new THREE.Quaternion(), S3 = new V3(), stick = (list, mat) => { const im = new THREE.InstancedMesh(cyl, mat, list.length); list.forEach(([m, L_, d, r], i) => { Q.setFromUnitVectors(UPV, d); _m4.compose(m, Q, S3.set(r, L_, r)); im.setMatrixAt(i, _m4); }); scene.add(im); };
     stick(trunks, bark); stick(boughs.map(([a, b, r]) => [a.clone().lerp(b, .5), a.distanceTo(b), b.clone().sub(a).normalize(), r]), bark);
     const blob = new THREE.IcosahedronGeometry(1, 1), cl = (list, mat) => { const im = new THREE.InstancedMesh(blob, mat, list.length); list.forEach(([p, r], i) => { Q.setFromEuler(new THREE.Euler(rand(0, 3), rand(0, 3), 0)); _m4.compose(p, Q, S3.set(r, r * .6, r)); im.setMatrixAt(i, _m4); }); scene.add(im); };
-    cl(clumps, leafM); cl(clumpsD, leafD);
+    if (!ovLeafClumps([...clumps, ...clumpsD])) { cl(clumps, leafM); cl(clumpsD, leafD); }   // (Overlord's oak leaves, where it has them)
+    const ovF = propsOf(['ov_fern_dark_a', 'ov_fern_dark_b', 'ov_fern_dark_c', 'ov_fern_a', 'ov_fern_b']); if (ovF.length) { ovF.forEach((n, j) => propScatter(n, ferns.filter((p, i) => i % ovF.length === j).map(p => [p.x, p.y - .3, p.z, rand(1, 1.6), rand(0, TAU)]), 'h', true)); ferns.length = 0; }
     const fern = new THREE.PlaneGeometry(1.6, 1.1), fm = ps1(new THREE.MeshLambertMaterial({ map: TX.rrFern || null, color: TX.rrFern ? 0xb0d090 : 0x4a7a3a, side: THREE.DoubleSide, alphaTest: TX.rrFern ? .4 : 0 })), fi = new THREE.InstancedMesh(fern, fm, ferns.length * 3);
     ferns.forEach((p, i) => { for (let k = 0; k < 3; k++) { Q.setFromEuler(new THREE.Euler(rand(-.4, .4), k * 1.05 + rand(0, 1), 0)); _m4.compose(p, Q, S3.setScalar(rand(.8, 1.4))); fi.setMatrixAt(i * 3 + k, _m4); } }); scene.add(fi);
     TH.shafts = []; for (let s = 30; s < RACE_FORD - 20; s += 40) { const g = glowSprite(0xfff0c0, 14, .12); tw(s, rand(-3, 3), at(s, 0) + 7, g.position); g.scale.set(5, 16, 1); scene.add(g); }   // (light coming down through the leaves)
@@ -9202,6 +9278,7 @@ function makeShadeFoe(kind) {
   shadow.rotation.x = -Math.PI / 2; scene.add(shadow); scene.add(root);
   const mats = []; root.traverse(o => { if (o.isMesh && o !== M.pud) { o.material = o.material.clone(); if (!eyes.includes(o)) mats.push(o); } });
   const dizzy = glowSprite(0xffe060, 1, 0); dizzy.position.y = kind === 'g' ? 3.2 : 2.4; root.add(dizzy);
+  const ks = { z: 'khshadow', k: 'khsoldier', g: 'khlargebody', f: 'khrednoc', i: 'khbluerhap' }[kind]; if (ks && LOADED[ks]) { addSkin(M, ks, body, body); M.kh = MODEL_SLOTS[ks].kh; }   // (Kingdom Hearts II's own Heartless, where it's here)
   return Object.assign(M, { eyes, shadow, mats, dizzy, shieldM: null });
 }
 function shadeReset(u) { const m = u.m; m.body.visible = true; m.body.position.y = 0; m.body.scale.y = 1; if (m.pud) m.pud.material.opacity = 0; if (m.spin) m.spin.rotation.x = 0; u.sunk = false; u.warn = u.up = false; }
@@ -11995,12 +12072,12 @@ function spawnUruk(kind, pl, a, delay) {
   if (pl.ladders) a = pl.ladders[Math.random() * pl.ladders.length | 0] + rand(-.15, .15);   // up the ladders, over the parapet
   if (pl.inside) {   // (inside Orthanc: down off the stair above onto the platform)
     const aa = rand(0, TAU), rr = rand(1.5, ISEN.DISK - 1.2), K_ = UK_KINDS[kind];
-    const u = { m: makeUruk(kind), kind, lite: kind === 'o' || kind === 'w' || !!UK_KINDS[kind].lite, lurtz: kind === 'L', armor: !!K_.armor, hp: K_.hp, max: K_.hp, name: K_.name, r: K_.r, plaza: pl, stag: 0, dizzy: 0, flash: 0, h: aa + Math.PI, t: -delay, cd: rand(.6, 1.8), vs: 0, vx: 0, vy: 0, seed: rand(0, 6), state: 'spawn',
+    const um = makeUruk(kind), u = { m: um, kind, lite: kind === 'o' || kind === 'w' || !!UK_KINDS[kind].lite, lurtz: kind === 'L', armor: !!K_.armor, hp: K_.hp, max: K_.hp, name: K_.name, r: K_.r, plaza: pl, stag: 0, dizzy: 0, flash: 0, h: aa + Math.PI, t: -delay, cd: rand(.6, 1.8), vs: 0, vx: 0, vy: 0, seed: rand(0, 6), state: 'spawn',
       from: [Math.cos(aa) * (ISEN.IN1 + .3), Math.sin(aa) * (ISEN.IN1 + .3)], to: [Math.cos(aa) * rr, Math.sin(aa) * rr] };
     u.s = u.from[0]; u.x = u.from[1]; u.y0 = pl.y + 4; u.y = u.y0; u.m.root.visible = u.m.shadow.visible = false; URUKS.push(u); return u;
   }
   const R1 = pl.r + (pl.ladders ? 1.2 : 5);
-  const u = { m: makeUruk(kind), kind, lite: kind === 'o' || kind === 'w' || !!K.lite, lurtz: kind === 'L', armor: !!K.armor, hp: K.hp, max: K.hp, name: K.name, r: K.r, plaza: pl, stag: 0, dizzy: 0, flash: 0,
+  const um = makeUruk(kind), u = { m: um, kind, lite: kind === 'o' || kind === 'w' || !!K.lite, lurtz: kind === 'L', armor: !!K.armor, hp: K.hp, max: K.hp, name: um.kh || K.name, r: K.r, plaza: pl, stag: 0, dizzy: 0, flash: 0,
     h: a + Math.PI, t: -delay, cd: rand(.6, 1.8), vs: 0, vx: 0, vy: 0, seed: rand(0, 6), state: 'spawn',
     from: [pl.s + Math.cos(a) * R1, pl.x + Math.sin(a) * R1], to: [pl.s + Math.cos(a) * R2, pl.x + Math.sin(a) * R2] };
   u.s = u.from[0]; u.x = u.from[1]; u.y0 = pl.fromY ?? landAt(u.s, u.x); u.y = u.y0; u.m.root.visible = u.m.shadow.visible = false; URUKS.push(u); return u;
