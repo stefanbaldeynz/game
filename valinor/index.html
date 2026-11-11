@@ -6059,6 +6059,7 @@ const LOCAL_ASSETS = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname
 // anims: which clip to use for an action, where the usual names below would pick the wrong one.
 // saberBone: the bone the lightsaber goes on in the Weathertop duel (its sword hand), and saberRot to turn the blade along it.
 const TROLL_ANIMS = { idle: /^idle_a/i, walk: /^(walk_a|run_a)/i, attack: /^attack_a/i, hit: /^hurt_a/i, die: /^die_/i };   // (their files also hold dismounting clips whose names would pass for attacks)
+const KH_ANIMS = { idle: /_IDLE$/, walk: /_RUN$|_WALK$/, attack: /_EX050$/, hit: /_DAMAGE_S_FRONT_HIGH$/, die: /_DAMAGE_BLOW_FRONT$/, jump: /_APPEAR$/ };
 const MODEL_SLOTS = {
   eagle: { height: 5.2, turn: -Math.PI / 2, anims: { fly: /^fly_a/i, idle: /^hvra/i, attack: /^attack_b/i, hit: /^hit/i } }, tentacle: { height: 15, fitMax: true, turn: -Math.PI / 2, hide: /BOX/i, anims: { idle: /^idle_a/i, attack: /^attack_a/i, hit: /^spna/i, die: /^dwna/i } },
   watcher: { height: 5, turn: -Math.PI / 2, hide: /SUPRTNTCL/i, anims: { idle: /^idle_a|^idla/i, attack: /eat/i, hit: /^idle_b|^idlb/i, die: /^dwn|^die/i, jump: /^sp/i } }, caldera: { height: 15, fitMax: true, turn: 0, cut: true, hide: /_\d$/, anims: { idle: /^idle_a|^idla/i, die: /^die/i, jump: /^sp/i } },   // (the Watcher's head in its pool, and the crater it bursts up into)
@@ -6077,6 +6078,10 @@ const MODEL_SLOTS = {
   urukp: { height: 3, turn: -Math.PI / 2, hide: /FORGED_BLADE/i }, urukx: { height: 2.1, turn: -Math.PI / 2, hide: /FIREAROWTIP/i }, fanatic: { height: 2.1, turn: -Math.PI / 2 }, overseer: { height: 2.8, turn: -Math.PI / 2, hide: /^BOX/i },   // (the Uruk-hai's pikemen, crossbowmen, fanatics and their overseer)
   dragon: { height: 7, turn: -Math.PI / 2, anims: { fly: /^fly_a/i, idle: /^idle_a/i, attack: /^attack_a/i, hit: /^hurt_a/i, die: /^die_k/i } },   // (Erebor: Smaug, in the shape of Rise of the Witch-king's dragon)
   floodhorse: { height: 4, turn: -Math.PI / 2, anims: { walk: /^run/i }, glow: .5 },   // (the Ford: the water horses of Battle for Middle-earth's flood)
+  // the Barrow Trial's foes, with Kingdom Hearts II here: the Heartless themselves, their own models and moves (APPEAR as they rise out of the dark)
+  khshadow: { fbx: 'M_EX020', height: 1.05, turn: 0, cut: true, kh: 'SHADOW', anims: KH_ANIMS }, khsoldier: { fbx: 'M_EX010', height: 1.75, turn: 0, cut: true, kh: 'SOLDIER', anims: KH_ANIMS },
+  khlargebody: { fbx: 'M_EX050', height: 2.9, turn: 0, cut: true, kh: 'LARGE BODY', anims: KH_ANIMS }, khrednoc: { fbx: 'M_EX130', height: 1.3, turn: 0, cut: true, kh: 'RED NOCTURNE', anims: KH_ANIMS },
+  khbluerhap: { fbx: 'M_EX110', height: 1.3, turn: 0, cut: true, kh: 'BLUE RHAPSODY', anims: KH_ANIMS },
   blackrider: { height: 3.1, turn: -Math.PI / 2, hide: /CINEMA|_NEW/i, anims: { walk: /^run_a/i } },   // (its cinematic duplicates hidden: it has one horse and one rider)   // (the race to the Ford: Rise of the Witch-king's Black Rider, on his horse)   // Mirkwood's spiders: Shelob again (src: whose model it is), smaller
 };
 // which animation plays for each action: the first clip whose name matches (case doesn't matter)
@@ -6228,6 +6233,7 @@ async function loadLocalAssets() {
   // ?models=balrog,gandalf loads just those, for testing
   const slots = Object.keys(MODEL_SLOTS).filter(s => !MODEL_SLOTS[s].src && (!only || only.split(',').includes(s)));
   await Promise.all(slots.map(async slot => {
+    if (MODEL_SLOTS[slot].fbx) { const gl = await khModel(MODEL_SLOTS[slot].fbx); if (gl) { LOADED[slot] = gl; got.push(`models/kh/${MODEL_SLOTS[slot].fbx}.fbx (${gl.animations.length} moves)`); } return; }
     try { LOADED[slot] = await loader.loadAsync(`models/${slot}.glb`); got.push(`models/${slot}.glb (${LOADED[slot].animations.map(a => a.name).join(', ') || 'no animations'})`); }
     catch (e) { if (e instanceof Error) console.warn(`Valinor: models/${slot}.glb is there but would not load:`, e.message); }
   }));
@@ -6258,6 +6264,19 @@ const PROP_HIDE = { ov_waterwell: /rope/i, ov_halfling_house01_mesh: /_grass$|fl
 let GLTF = null;
 function gltfLoader() {
   return GLTF || (GLTF = (async () => { const base = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/'; await loadScript(base + 'loaders/GLTFLoader.js'); await loadScript(base + 'utils/SkeletonUtils.js'); return new THREE.GLTFLoader(); })());
+}
+// Kingdom Hearts II's Heartless, as OpenKH writes them (bfme\tools\Export-Heartless.ps1): an .fbx with its pictures beside it and every move
+// in it. Their run and attack moves carry the Heartless across the floor themselves; Valinor moves its foes, so that drift is taken out
+let FBXL = null;
+async function khModel(code) {
+  try {
+    if (!FBXL) FBXL = (async () => { await loadScript('https://cdn.jsdelivr.net/npm/fflate@0.6.9/umd/index.js'); await loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js'); return new THREE.FBXLoader(); })();
+    const g = await (await FBXL).loadAsync(`models/kh/${code}.fbx`); let root = null; g.traverse(o => { if (!root && o.isBone) root = o; });
+    for (const c of g.animations) for (const tr of c.tracks) if (root && tr.name === root.name + '.position') { const v = tr.values; for (let i = 0; i < v.length; i += 3) { v[i] = v[0]; v[i + 2] = v[2]; } }
+    // (the materials come through black: each is made again from its own picture, lit as Valinor's characters are)
+    g.traverse(o => { if (o.isMesh) { const N = o.geometry.attributes.normal; if (!N || !N.array.some(v => v !== 0)) o.geometry.computeVertexNormals(); const ms = [].concat(o.material).map(m => { if (m.map) m.map.encoding = THREE.sRGBEncoding; return new THREE.MeshLambertMaterial({ map: m.map || null, color: m.map ? 0xffffff : 0x888888, name: m.name, skinning: !!o.isSkinnedMesh }); }); o.material = Array.isArray(o.material) ? ms : ms[0]; } });
+    return { scene: g, animations: g.animations };
+  } catch (e) { return null; }
 }
 async function loadProps() {
   if (!LOCAL_ASSETS || new URLSearchParams(location.search).get('props') === 'none') return;   // ?props=none: the built shapes, for comparing
@@ -9259,6 +9278,7 @@ function makeShadeFoe(kind) {
   shadow.rotation.x = -Math.PI / 2; scene.add(shadow); scene.add(root);
   const mats = []; root.traverse(o => { if (o.isMesh && o !== M.pud) { o.material = o.material.clone(); if (!eyes.includes(o)) mats.push(o); } });
   const dizzy = glowSprite(0xffe060, 1, 0); dizzy.position.y = kind === 'g' ? 3.2 : 2.4; root.add(dizzy);
+  const ks = { z: 'khshadow', k: 'khsoldier', g: 'khlargebody', f: 'khrednoc', i: 'khbluerhap' }[kind]; if (ks && LOADED[ks]) { addSkin(M, ks, body, body); M.kh = MODEL_SLOTS[ks].kh; }   // (Kingdom Hearts II's own Heartless, where it's here)
   return Object.assign(M, { eyes, shadow, mats, dizzy, shieldM: null });
 }
 function shadeReset(u) { const m = u.m; m.body.visible = true; m.body.position.y = 0; m.body.scale.y = 1; if (m.pud) m.pud.material.opacity = 0; if (m.spin) m.spin.rotation.x = 0; u.sunk = false; u.warn = u.up = false; }
@@ -12052,12 +12072,12 @@ function spawnUruk(kind, pl, a, delay) {
   if (pl.ladders) a = pl.ladders[Math.random() * pl.ladders.length | 0] + rand(-.15, .15);   // up the ladders, over the parapet
   if (pl.inside) {   // (inside Orthanc: down off the stair above onto the platform)
     const aa = rand(0, TAU), rr = rand(1.5, ISEN.DISK - 1.2), K_ = UK_KINDS[kind];
-    const u = { m: makeUruk(kind), kind, lite: kind === 'o' || kind === 'w' || !!UK_KINDS[kind].lite, lurtz: kind === 'L', armor: !!K_.armor, hp: K_.hp, max: K_.hp, name: K_.name, r: K_.r, plaza: pl, stag: 0, dizzy: 0, flash: 0, h: aa + Math.PI, t: -delay, cd: rand(.6, 1.8), vs: 0, vx: 0, vy: 0, seed: rand(0, 6), state: 'spawn',
+    const um = makeUruk(kind), u = { m: um, kind, lite: kind === 'o' || kind === 'w' || !!UK_KINDS[kind].lite, lurtz: kind === 'L', armor: !!K_.armor, hp: K_.hp, max: K_.hp, name: K_.name, r: K_.r, plaza: pl, stag: 0, dizzy: 0, flash: 0, h: aa + Math.PI, t: -delay, cd: rand(.6, 1.8), vs: 0, vx: 0, vy: 0, seed: rand(0, 6), state: 'spawn',
       from: [Math.cos(aa) * (ISEN.IN1 + .3), Math.sin(aa) * (ISEN.IN1 + .3)], to: [Math.cos(aa) * rr, Math.sin(aa) * rr] };
     u.s = u.from[0]; u.x = u.from[1]; u.y0 = pl.y + 4; u.y = u.y0; u.m.root.visible = u.m.shadow.visible = false; URUKS.push(u); return u;
   }
   const R1 = pl.r + (pl.ladders ? 1.2 : 5);
-  const u = { m: makeUruk(kind), kind, lite: kind === 'o' || kind === 'w' || !!K.lite, lurtz: kind === 'L', armor: !!K.armor, hp: K.hp, max: K.hp, name: K.name, r: K.r, plaza: pl, stag: 0, dizzy: 0, flash: 0,
+  const um = makeUruk(kind), u = { m: um, kind, lite: kind === 'o' || kind === 'w' || !!K.lite, lurtz: kind === 'L', armor: !!K.armor, hp: K.hp, max: K.hp, name: um.kh || K.name, r: K.r, plaza: pl, stag: 0, dizzy: 0, flash: 0,
     h: a + Math.PI, t: -delay, cd: rand(.6, 1.8), vs: 0, vx: 0, vy: 0, seed: rand(0, 6), state: 'spawn',
     from: [pl.s + Math.cos(a) * R1, pl.x + Math.sin(a) * R1], to: [pl.s + Math.cos(a) * R2, pl.x + Math.sin(a) * R2] };
   u.s = u.from[0]; u.x = u.from[1]; u.y0 = pl.fromY ?? landAt(u.s, u.x); u.y = u.y0; u.m.root.visible = u.m.shadow.visible = false; URUKS.push(u); return u;
