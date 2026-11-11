@@ -6254,7 +6254,7 @@ const PROP_LIFT = [[/^riv/, .4, 0xfff2dc], [/^pt(elvn|lothl)/, .3, 0xfff0d0], [/
 // which way each model faces, where it isn't the way the levels expect (doors towards +s)
 const PROP_TURN = {};
 // parts of a model left out: Overlord's well hangs its rope down a shaft deep below the ground, and would stand on the bucket
-const PROP_HIDE = { ov_waterwell: /rope/i };
+const PROP_HIDE = { ov_waterwell: /rope/i, ov_halfling_house01_mesh: /_grass$|floor_tiles/i, ov_halfling_house02: /_grass$|floor_tiles/i, ov_halfling_house03: /_grass$|floor_tiles/i, ov_windmillchapel: /_grass$/i };   // (and the hobbit holes' turf caps, made to melt into Overlord's own hills: here they'd float as great green slabs)
 let GLTF = null;
 function gltfLoader() {
   return GLTF || (GLTF = (async () => { const base = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/'; await loadScript(base + 'loaders/GLTFLoader.js'); await loadScript(base + 'utils/SkeletonUtils.js'); return new THREE.GLTFLoader(); })());
