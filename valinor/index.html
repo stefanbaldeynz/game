@@ -211,7 +211,7 @@ body.touch #bossbar .bar{width:min(50vw,420px)}
 <div id="khcmd"></div>
 <div id="khpow"></div>
 <div id="khtarget"><span id="khTName">URUK-HAI</span><div class="bar"><i id="khTHP"></i></div><span id="khTPips"></span></div>
-<div id="khreact"><span id="khRName">TAKEDOWN</span><small class="kOnly">R</small></div>
+<div id="khreact"><span id="khRName">REPEL</span><small class="kOnly">R</small></div>
 <div id="mapUI">
   <div id="sign"><div class="rope l"></div><div class="rope r"></div><div class="plank"><b id="signName">MINAS TIRITH</b><i id="signSub"></i></div></div>
   <div id="mapLogo"><span>VALINOR</span><i>MIDDLE-EARTH</i></div>
@@ -2579,8 +2579,20 @@ const KH2_FOES = {
   'Leon': { slot: 'khleon', base: 'k', style: 'whirl', hp: 320, r: .6, speed: 4.6, dmg: 16 },
   'Yuffie': { slot: 'khyuffie', base: 'f', style: 'cast', spell: 'fire', hp: 220, r: .55, speed: 5.4, dmg: 12, want: 9 },
 };
+// --- Overlord's (2007) enemies, for the Overlord cup: their own models and moves (models/ov/<file>.glb, from bfme\tools\Convert-Overlord.ps1 chars).
+//     file: which model; h: how tall; anims: which of its moves plays for what (each name a regex, the start of Overlord's own move name); n: how
+//     many come in its seed. The fighting is the nearest of Valinor's styles for now
+const OV_IDLE = /^(fight_idle|Idle_PassiveCombat|idle)\b/i, OV_WALK = /^(run|Move_Run)( |$)/i, OV_HIT = /^(hit|HIT_Front)( |$)/i, OV_DIE = /^(die|Death_Fast)( |$)/i;
+const OV_FOES = {
+  'Halfling': { file: 'halfling_regular', h: 1.15, base: 'k', hp: 8, r: .4, speed: 4.4, dmg: 6, lite: true, tok: 3, n: 8, anims: { idle: OV_IDLE, walk: OV_WALK, attack: /^strike_(high|middle|low)( |$)/i, hit: OV_HIT, die: OV_DIE } },
+  'Armoured Halfling': { file: 'halfling_armor', h: 1.2, base: 'k', hp: 16, r: .42, speed: 4, dmg: 8, tok: 2, n: 6, anims: { idle: OV_IDLE, walk: OV_WALK, attack: /^Strike_Single_(HIGH|MID)( |$)/i, hit: OV_HIT, die: OV_DIE } },
+  'Halfling Spearman': { file: 'halfling_armor_nohair', h: 1.15, base: 'k', style: 'pike', want: 4.6, hp: 14, r: .42, speed: 3.8, dmg: 9, tok: 2, n: 6, anims: { idle: /^Idle_Spear_Combat( |$)/i, walk: /^Move_Run_Spear( |$)/i, attack: /^Strike_Spear_(HIGH|MID)( |$)/i, hit: OV_HIT, die: OV_DIE } },
+  'Halfling Cook': { file: 'halfling_cook11', h: 1.25, base: 'g', style: 'gut', hp: 40, r: .7, speed: 2.6, dmg: 12, armor: true, n: 3, anims: { idle: /^Cook_Fat_Idle( |$)/i, walk: /^Cook_Fat_Run( |$)/i, attack: /^Cook_Fat_(Strike|BellyNockback)( |$)/i, hit: /^Cook_Fat_Hit( |$)/i, die: /^Cook_Fat_Die( |$)/i } },
+};
+for (const n in OV_FOES) OV_FOES[n].slot = 'ov_' + OV_FOES[n].file;
+const CUP_FOES = { ...KH2_FOES, ...OV_FOES };
 // --- Kingdom Hearts' Olympus Coliseum cups, seed by seed as KH1 has them (9 first, 1 the champion). Valinor fights each seed with the foes Kingdom
-//     Hearts II also has (KH2_FOES); a seed none of whose foes are in KH2 is listed but can't be fought
+//     Hearts II also has (KH2_FOES); a seed none of whose foes are in KH2 is listed but can't be fought. Then the Overlord cup: one seed per foe, weakest first
 const KH_CUPS = [
   { name: 'PHIL CUP', seeds: [
     [9, 'Jungle Vice', 'Powerwild 4, Soldier 3'], [8, 'Monkey & Magic', 'Powerwild 1, Green Requiem 2, Red Nocturne 2, Yellow Opera 5'], [7, 'Big Feet', 'Hammerlegs 1, Powerwild 4'],
@@ -2610,8 +2622,9 @@ const KH_CUPS = [
     [9, 'Night Rave', 'Invisible 1, Darkball 3, Shadow 5'], [8, 'The Requiem', 'Angel Star 1, Wizard 2, Yellow Opera 2, Blue Rhapsody 2, Red Nocturne 2'], [7, 'Invisible Fear', 'Sneak Army 1, Invisible 3'],
     [6, 'Mad Mushroom', 'White Mushroom 3'], [5, 'Black Storm', 'Shadow 15, Darkball 11'], [4, 'Twin Mirage', 'Sneak Army 2'], [3, 'Shadow Troopers', 'Wyvern 9, Wizard 8, Defender 2'],
     [2, 'Final Battalion', 'Angel Star 9, Invisible 10, Darkball 10'], [1, 'Rock Titan', 'Rock Titan 1']] },
-].map(c => ({ ...c, seeds: c.seeds.map(([n, team, list]) => { const all = list.split(', ').map(e => { const m = e.match(/^(.*) (\d+)$/); return [m[1], +m[2]]; });
-  return { n, team, all, wave: all.filter(([k]) => KH2_FOES[k]).flatMap(([k, c]) => Array(c).fill(k)) }; }) }));
+  { name: 'OVERLORD CUP', game: 'OVERLORD', seeds: Object.entries(OV_FOES).map(([k, f], i, a) => [a.length - i, (f.n > 1 ? (/man$/.test(k) ? k.replace(/man$/, 'men') : k + 's') : k).toUpperCase(), `${k} ${f.n}`]) },
+].map(c => ({ game: 'KINGDOM HEARTS', ...c, seeds: c.seeds.map(([n, team, list]) => { const all = list.split(', ').map(e => { const m = e.match(/^(.*) (\d+)$/); return [m[1], +m[2]]; });
+  return { n, team, all, wave: all.filter(([k]) => CUP_FOES[k]).flatMap(([k, c]) => Array(c).fill(k)) }; }) }));
 const ARENA_TRIALS = [
   { name: 'THE ORC TRIAL', sub: 'ORCS AND ARCHERS · 5 ROUNDS', rounds: [['o', 'o', 'o'], ['o', 'o', 'M', 'o'], ['M', 'M', 'o', 'o', 'o'], ['Q', 'o', 'o', 'M'], ['R', 'o', 'o']] },
   { name: 'THE TRIAL OF ISENGARD', sub: 'URUK-HAI · 6 ROUNDS · LURTZ', rounds: [['u', 'u', 'o'], ['s', 'u', 'a'], ['p', 'p', 'u'], ['b', 'a', 'a', 'u'], ['j', 'j', 's', 'c'], ['L']] },
@@ -2783,7 +2796,7 @@ const LEVELS = [
   })),
   ...KH_CUPS.map((C, ci) => ({
     // Kingdom Hearts' Olympus Coliseum cups, in the same arena: choose a seed and fight on from it to the cup's champion (see openSeeds)
-    straight: true, roam: true, kh: true, camRing: 17, cup: ci, name: C.name, sub: `KINGDOM HEARTS · ${C.seeds.filter(s => s.wave.length).length} OF ${C.seeds.length} SEEDS`, loc: 'rohan', theme: 'arena', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 20000, CZ: 0, base: -4, wallH: 0, winTitle: C.name + ' WON!',
+    straight: true, roam: true, kh: true, camRing: 17, cup: ci, name: C.name, sub: `${C.game} · ${C.seeds.filter(s => s.wave.length).length} OF ${C.seeds.length} SEEDS`, loc: 'rohan', theme: 'arena', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 20000, CZ: 0, base: -4, wallH: 0, winTitle: C.name + ' WON!',
     ...cupLayout(ci),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { arenaContent(); },
@@ -5874,7 +5887,7 @@ let SEEDS = null;
 function openSeeds(li) {
   const C = KH_CUPS[LEVELS[li].cup]; SEEDS = { li, ci: LEVELS[li].cup, sel: Math.max(0, C.seeds.findIndex(s => s.wave.length)), back: CHAP ? CHAP.loc : 'rohan' }; CHAP = null;
   document.getElementById('chapName').textContent = C.name;
-  document.getElementById('chapMenu').innerHTML = `<div class="seeds">` + C.seeds.map((s, k) => `<div class="mi sd${s.wave.length ? '' : ' off'}" data-s="${k}"><b>${s.n}</b><span>${s.team}</span><i>${s.all.map(([e, c]) => KH2_FOES[e] ? `${e} ×${c}` : `<s>${e} ×${c}</s>`).join(' · ')}</i></div>`).join('') + `</div>`;
+  document.getElementById('chapMenu').innerHTML = `<div class="seeds">` + C.seeds.map((s, k) => `<div class="mi sd${s.wave.length ? '' : ' off'}" data-s="${k}"><b>${s.n}</b><span>${s.team}</span><i>${s.all.map(([e, c]) => CUP_FOES[e] ? `${e} ×${c}` : `<s>${e} ×${c}</s>`).join(' · ')}</i></div>`).join('') + `</div>`;
   showScreen('sChap'); seedSel(SEEDS.sel);
 }
 function seedSel(k) {
@@ -6182,6 +6195,8 @@ const MODEL_SLOTS = {
   khhades: { fbx: 'B_HE030', height: 2.8, turn: 0, cut: true, kh: 'HADES', anims: KH_ANIMS }, khhercules: { fbx: 'N_HE010_BTL', height: 2.2, turn: 0, cut: true, kh: 'HERCULES', anims: KH_ANIMS },
   khcloud: { fbx: 'N_HB550_BTL', height: 1.8, turn: 0, cut: true, kh: 'CLOUD', anims: KH_ANIMS }, khleon: { fbx: 'N_HB530_BTL', height: 1.85, turn: 0, cut: true, kh: 'LEON', anims: KH_ANIMS },
   khyuffie: { fbx: 'N_HB580_BTL', height: 1.6, turn: 0, cut: true, kh: 'YUFFIE', anims: KH_ANIMS },
+  // (and the Overlord cup's foes: Overlord's own models and moves, brightened like its scenery)
+  ...Object.fromEntries(Object.entries(OV_FOES).map(([n, f]) => [f.slot, { ov: f.file, height: f.h, turn: 0, cut: true, tone: true, kh: n.toUpperCase(), anims: f.anims }])),
   blackrider: { height: 3.1, turn: -Math.PI / 2, hide: /CINEMA|_NEW/i, anims: { walk: /^run_a/i } },   // (its cinematic duplicates hidden: it has one horse and one rider)   // (the race to the Ford: Rise of the Witch-king's Black Rider, on his horse)   // Mirkwood's spiders: Shelob again (src: whose model it is), smaller
 };
 // which animation plays for each action: the first clip whose name matches (case doesn't matter)
@@ -6333,7 +6348,7 @@ async function loadLocalAssets() {
   // ?models=balrog,gandalf loads just those, for testing
   const slots = Object.keys(MODEL_SLOTS).filter(s => !MODEL_SLOTS[s].src && (!only || only.split(',').includes(s)));
   await Promise.all(slots.map(async slot => {
-    if (MODEL_SLOTS[slot].fbx) return;   // (Kingdom Hearts II's, big: loaded only when a level wants them, see khNeed)
+    if (MODEL_SLOTS[slot].fbx || MODEL_SLOTS[slot].ov) return;   // (Kingdom Hearts II's and Overlord's, big: loaded only when a level wants them, see khNeed)
     try { LOADED[slot] = await loader.loadAsync(`models/${slot}.glb`); got.push(`models/${slot}.glb (${LOADED[slot].animations.map(a => a.name).join(', ') || 'no animations'})`); }
     catch (e) { if (e instanceof Error) console.warn(`Valinor: models/${slot}.glb is there but would not load:`, e.message); }
   }));
@@ -6372,8 +6387,19 @@ let FBXL = null;
 const KH_WANT = {};
 function khNeed(slots) {
   if (!LOCAL_ASSETS) return;
-  for (const s of new Set(slots)) { const cfg = MODEL_SLOTS[s]; if (!cfg || !cfg.fbx || LOADED[s] || KH_WANT[s]) continue;
+  for (const s of new Set(slots)) { const cfg = MODEL_SLOTS[s]; if (!cfg || !(cfg.fbx || cfg.ov) || LOADED[s] || KH_WANT[s]) continue;
+    if (cfg.ov) { KH_WANT[s] = ovModel(cfg.ov).then(gl => { if (!gl) return; LOADED[s] = gl; for (const K of SKINS) if (K.slot === s && !K.obj) attachSkin(K); }); continue; }
     KH_WANT[s] = khModel(cfg.fbx).then(gl => { if (!gl) return; LOADED[s] = gl; console.log(`Valinor: models/kh/${cfg.fbx}.fbx (${gl.animations.length} moves)`); for (const K of SKINS) if (K.slot === s && !K.obj) attachSkin(K); }); }
+}
+// an Overlord character (models/ov/<file>.glb): its pictures brightened to Valinor's colours, and the root's own drift taken out of its moves
+async function ovModel(file) {
+  try {
+    const gl = await (await gltfLoader()).loadAsync(`models/ov/${file}.glb`);
+    gl.scene.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if (m.map) toneTex(m.map); });
+    const roots = new Set(); gl.scene.traverse(o => { if (o.isBone && !(o.parent && o.parent.isBone)) roots.add(o.name); });
+    for (const a of gl.animations) { a.name = a.name.replace(/ \[[^\]]*\]$/, ''); for (const tr of a.tracks) { const m = tr.name.match(/^(.*)\.position$/); if (m && roots.has(m[1])) { const v = tr.values; for (let i = 3; i < v.length; i += 3) { v[i] = v[0]; v[i + 2] = v[2]; } } } }
+    console.log(`Valinor: models/ov/${file}.glb (${gl.animations.length} moves)`); return gl;
+  } catch (e) { if (e instanceof Error) console.warn(`Valinor: models/ov/${file}.glb would not load:`, e.message); return null; }
 }
 const KH_BASE_SLOT = { z: 'khshadow', k: 'khsoldier', g: 'khlargebody', f: 'khrednoc', i: 'khbluerhap' };
 const khSlotsOf = L => ((L.layout && L.layout.plazas) || []).flatMap(p => (p.waves || []).flat()).map(k => UK_KINDS[k] && UK_KINDS[k].slot || KH_BASE_SLOT[k]).filter(Boolean);async function khModel(code) {
@@ -11676,8 +11702,8 @@ function sarUpdate(b, dt) {
 //     In the air, an air combo: Gandalf hangs in the air while he strikes, and the last blow slams him down.
 //   - Guard (E / GUARD): blocks a blow from the front and knocks the attacker back; with the stick held it's a Dodge Roll.
 //   - Magic (fire button): Thunder, bolts on up to three enemies near you, for a quarter of the MP.
-//   - Reaction commands (R, or the green prompt), each when its moment comes: TAKEDOWN finishes a dizzy enemy and blasts
-//     those round it; REPEL swats a berserker's charge back into its friends; and the Balrog's own (see below).
+//   - Reaction commands (R, or the green prompt), each when its moment comes:
+//     REPEL swats a berserker's charge back into its friends; and the Balrog's own (see below).
 //   - Drive (Q / DRIVE): every blow fills the drive gauge; full, Gandalf becomes the White Wizard for a while: a combo of
 //     five, harder blows, and thunder on five foes.
 //   - HP, MP and drive bars, and KH II's command menu; beaten enemies drop green HP orbs, blue MP orbs and apples.
@@ -11728,7 +11754,7 @@ const UK_KINDS = {
   g: { hp: 55, r: 1.05, name: 'BARROW-GUT', speed: 2.4, dmg: 14, style: 'gut', want: 3, shade: true, armor: true, front: true },
   f: { hp: 10, r: .5, name: 'CORPSE-CANDLE', speed: 3.4, dmg: 8, style: 'cast', want: 8.5, shade: true, lite: true, hover: 1.1, spell: 'fire', tok: 2 },
   i: { hp: 10, r: .5, name: 'MARSH-LIGHT', speed: 3.4, dmg: 8, style: 'cast', want: 8.5, shade: true, lite: true, hover: 1.1, spell: 'ice', tok: 2 },
-  ...Object.fromEntries(Object.entries(KH2_FOES).map(([n, f]) => [n, { name: n.toUpperCase(), shade: true, want: 4.5, ...f }])),
+  ...Object.fromEntries(Object.entries(CUP_FOES).map(([n, f]) => [n, { name: n.toUpperCase(), shade: true, want: 4.5, ...f }])),
 };
 const khOn = () => !!(LV && (LV.kh || LV.khl));   // (the full Kingdom Hearts levels, or the old ones with its fighting)
 function setupKH() {
@@ -12386,14 +12412,14 @@ function updateKH(dt) {
   }
   for (const u of URUKS.slice()) ukUpdate(u, dt * (KH.slowT > 0 ? .3 : 1));   // (Force Speed and Slow Time)
   updateOrbs(dt); updateKHFx(dt);
-  // the reaction command: a dizzy one close by, a berserker charging at you, or the Balrog's moment
+  // the reaction command: a berserker charging at you, or a boss's moment
   KH.react = null;
   if (play && !KH.reacting) {
     let bd = 4.5;
     for (const u of URUKS) {
       if (!ukLive(u) || Math.abs(u.y - P.y) > 2.5) continue; const d = Math.hypot(u.s - P.s, u.x - P.x);
       if (u.boss) { const c = (u.reactFn || bossReact)(u, d); if (c) { KH.react = { u, cmd: c }; break; } continue; }
-      if (d < bd && (u.state === 'dizzy' || (u.state === 'atk' && u.atk === 'rush'))) { bd = d; KH.react = { u, cmd: u.state === 'dizzy' ? 'takedown' : 'repel' }; }
+      if (d < bd && u.state === 'atk' && u.atk === 'rush') { bd = d; KH.react = { u, cmd: 'repel' }; }   // (no takedown: it finished any dizzy foe in one blow)
     }
   }
   KH.targetT -= dt; if (KH.target && (!ukLive(KH.target) || KH.targetT <= 0)) KH.target = null;
