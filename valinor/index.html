@@ -91,6 +91,9 @@ body.touch #khcmd{display:none!important}
 .mi i{font:600 13px system-ui,sans-serif;font-style:normal;color:#cfc4ee}
 .mi.on{background:linear-gradient(90deg,rgba(255,170,30,.55),rgba(120,40,0,.55));transform:scale(1.04) rotate(-1deg)}
 .mi.on b{animation:bob 1s ease-in-out infinite}
+.seeds{display:grid;grid-template-columns:repeat(4,1fr);gap:5px 8px;width:min(94vw,1180px);max-height:64vh;overflow-y:auto;padding:4px 10px;position:relative;left:50%;transform:translateX(-50%)}
+.mi.sd{padding:4px 8px;margin:0;transform:none!important}.mi.sd span{font-size:.8em}.mi.sd b{min-width:2em}.mi.sd i{display:block;font-size:.72em;line-height:1.25;opacity:.85}.mi.sd s{opacity:.45}
+.mi.sd.off{opacity:.38;filter:grayscale(1)}
 #sTitle .press{margin-top:2.2vh;font-size:clamp(16px,2.6vw,28px)}
 #sTitle .ctl{margin-top:2vh;font-size:12px;padding:8px 14px;gap:3px 16px}
 #sTitle .ctl b{font-size:14px}
@@ -2554,6 +2557,61 @@ const USTAIR = { FLIGHTS: 6, STEPS: 30, RISE: 7, X: 18, LAND: 23 }, OSG = { TOP:
 const RACE_FORD = 520, RACE_END = 572;
 const ER = { WALK: 12, X0: -46, X1: 46, TOWERS: [-46, -23, 0, 23, 46], TOP: 20 };   // (Erebor's ramparts: the walk's height and ends, its towers, their tops)   // (the race to the Ford: where the river crosses the road, and where the road ends)
 const DOOM_R = 50, UNG_R = 50,   /* (Mount Doom long enough for its whole climb: its last gate stands on the top ledge, past the last flight) */ EAG_S1 = 760, EAG_END = 1560, EAG_V = 25;
+// --- Kingdom Hearts II's own foes, for the Colosseum's cups: each wears its model and moves from KH2 (bfme\tools\Export-Heartless.ps1) and fights in the
+//     nearest of Valinor's ways: base is the built body it falls back on (z shade, k helm, g gut, f/i candle), style how it attacks
+const KH2_FOES = {
+  'Shadow': { slot: 'khshadow', base: 'z', style: 'sink', hp: 9, r: .45, speed: 4.6, dmg: 7, lite: true, tok: 3 },
+  'Soldier': { slot: 'khsoldier', base: 'k', style: 'cart', hp: 18, r: .5, speed: 4.4, dmg: 10, tok: 2 },
+  'Large Body': { slot: 'khlargebody', base: 'g', style: 'gut', hp: 55, r: 1.05, speed: 2.4, dmg: 14, armor: true, front: true },
+  'Fat Bandit': { slot: 'khfatbandit', base: 'g', style: 'gut', hp: 60, r: 1.05, speed: 2.2, dmg: 15, armor: true, front: true },
+  'Red Nocturne': { slot: 'khrednoc', base: 'f', style: 'cast', spell: 'fire', hp: 10, r: .5, speed: 3.4, dmg: 8, lite: true, hover: 1.1, tok: 2, want: 8.5 },
+  'Blue Rhapsody': { slot: 'khbluerhap', base: 'i', style: 'cast', spell: 'ice', hp: 10, r: .5, speed: 3.4, dmg: 8, lite: true, hover: 1.1, tok: 2, want: 8.5 },
+  'Green Requiem': { slot: 'khgreenreq', base: 'i', style: 'cast', spell: 'ice', hp: 12, r: .5, speed: 3.4, dmg: 6, lite: true, hover: 1.1, tok: 2, want: 9 },
+  'Darkball': { slot: 'khdarkball', base: 'z', style: 'sink', hp: 24, r: .7, speed: 4.2, dmg: 12, tok: 2 },
+  'Wight Knight': { slot: 'khwight', base: 'k', style: 'pounce', hp: 18, r: .5, speed: 5, dmg: 10, tok: 2, want: 5 },
+  'Air Pirate': { slot: 'khairpirate', base: 'k', style: 'cart', hp: 20, r: .55, speed: 4, dmg: 10, hover: 1.4, tok: 2 },
+  'Wyvern': { slot: 'khwyvern', base: 'g', style: 'pounce', hp: 40, r: 1, speed: 4.2, dmg: 14, hover: 2.2, tok: 2, want: 6 },
+  'Behemoth': { slot: 'khbehemoth', base: 'g', style: 'gut', hp: 300, r: 2.2, speed: 2.4, dmg: 20, armor: true },
+  'Cerberus': { slot: 'khcerberus', base: 'g', style: 'gut', hp: 420, r: 2.4, speed: 3, dmg: 22 },
+  'Hades': { slot: 'khhades', base: 'f', style: 'cast', spell: 'fire', hp: 450, r: 1, speed: 3.6, dmg: 16, want: 9 },
+  'Hercules': { slot: 'khhercules', base: 'k', style: 'whirl', hp: 450, r: .8, speed: 4.4, dmg: 18 },
+  'Cloud': { slot: 'khcloud', base: 'k', style: 'cart', hp: 320, r: .6, speed: 5.2, dmg: 16 },
+  'Leon': { slot: 'khleon', base: 'k', style: 'whirl', hp: 320, r: .6, speed: 4.6, dmg: 16 },
+  'Yuffie': { slot: 'khyuffie', base: 'f', style: 'cast', spell: 'fire', hp: 220, r: .55, speed: 5.4, dmg: 12, want: 9 },
+};
+// --- Kingdom Hearts' Olympus Coliseum cups, seed by seed as KH1 has them (9 first, 1 the champion). Valinor fights each seed with the foes Kingdom
+//     Hearts II also has (KH2_FOES); a seed none of whose foes are in KH2 is listed but can't be fought
+const KH_CUPS = [
+  { name: 'PHIL CUP', seeds: [
+    [9, 'Jungle Vice', 'Powerwild 4, Soldier 3'], [8, 'Monkey & Magic', 'Powerwild 1, Green Requiem 2, Red Nocturne 2, Yellow Opera 5'], [7, 'Big Feet', 'Hammerlegs 1, Powerwild 4'],
+    [6, 'Magic Alert', 'Red Nocturne 5, Yellow Opera 5'], [5, 'Nightwalkers', 'Large Body 1, Powerwild 5'], [4, 'Hard Hitters', 'Gauntlets 1, Blue Rhapsody 3, Shadow 4'],
+    [3, 'Indomitable', 'Large Body 2, Green Requiem 6'], [2, 'Wild Corps', 'Gauntlets 1, Hammerlegs 1, Powerwild 4'], [1, 'Shadow Battalion', 'Armored Torso 1, Yellow Opera 4, Blue Rhapsody 4']] },
+  { name: 'PEGASUS CUP', seeds: [
+    [9, 'Ghost Bandits', 'Search Ghost 2, Bandit 1, Air Soldier 3'], [8, 'Marauders', 'Bandit 2, Barrel Spider 3, Shadow 4'], [7, 'Sluggers', 'Fat Bandit 1, Large Body 2, Pot Spider 1, Barrel Spider 1'],
+    [6, 'Pots & Bolts', 'Pot Spider 5, Yellow Opera 3, Green Requiem 2'], [5, 'The Big Combo', 'Fat Bandit 2, Search Ghost 4'], [4, 'Toadstool', 'Black Fungus 3'],
+    [3, 'Pots & Barrels', 'Pot Spider 5, Barrel Spider 5'], [2, 'Giant Impact', 'Fat Bandit 3, Large Body 2'], [1, 'Leon & Yuffie', 'Yuffie 1, Leon 1']] },
+  { name: 'HERCULES CUP', seeds: [
+    [9, 'Dusk Vanguard', 'Gargoyle 5, Shadow 3'], [8, 'Minions of Horror', 'Wight Knight 4, Air Pirate 1, Barrel Spider 2'], [7, 'Buccaneers', 'Battleship 1, Pirate 4'],
+    [6, 'Stray Phantoms', 'Gargoyle 4, Wight Knight 3'], [5, 'Mad Truffle', 'Rare Truffle 1'], [4, 'Cloud', 'Cloud 1'],
+    [3, 'Dark Squadron', 'Wight Knight 1, Gargoyle 2, Pirate 2, Air Pirate 2'], [2, 'Flying Pirates', 'Battleship 2, Pirate 2, Air Pirate 1'], [1, 'Hercules', 'Hercules 1']] },
+  { name: 'HADES CUP', seeds: [
+    [49, 'Shadow Brothers', 'Soldier 3, Shadow 7'], [48, 'Wild Dance', 'Wight Knight 3, Powerwild 4'], [47, 'Terrible Feet', 'Hammerlegs 1, Pirate 4, Shadow 2'], [46, 'Dirty Claws', 'Powerwild 1, Pot Spider 8'],
+    [45, 'Mad Truffle', 'Rare Truffle 1'], [44, 'Yuffie', 'Yuffie 1'], [43, 'Outlaws', 'Bandit 3, Pirate 4'], [42, 'Dark Garrison', 'Defender 1, Wight Knight 3, Soldier 3'],
+    [41, 'Bad Union', 'Bandit 1, Powerwild 2, Large Body 1, Fat Bandit 1, Soldier 1'], [40, 'Behemoth', 'Behemoth 1'], [39, 'Red Legion', 'Search Ghost 1, Red Nocturne 8'],
+    [38, 'Blue Legion', 'Blue Rhapsody 7, Gargoyle 2'], [37, 'Sorcerous Armor', 'Red Armor 1, Blue Rhapsody 2, Red Nocturne 2'], [36, 'Mad Fungus', 'Black Fungus 1, Green Requiem 4'],
+    [35, 'Spiders & Magic', 'Red Nocturne 3, Yellow Opera 3, Pot Spider 2'], [34, 'Optical Trick', 'Sneak Army 1, Blue Rhapsody 2, Green Requiem 4'],
+    [33, 'Magic Force', 'Wizard 1, Red Nocturne 2, Yellow Opera 4, Blue Rhapsody 2'], [32, 'Shadow Summoners', 'Wizard 3, Shadow 6'], [31, 'Mystic Mages', 'Angel Star 1, Wizard 4'],
+    [30, 'Cerberus', 'Cerberus 1'], [29, 'Sky Raiders', 'Air Soldier 4, Air Pirate 3'], [28, 'Spookies', 'Search Ghost 6'], [27, 'Terrible Fists', 'Gauntlets 1, Gargoyle 5'], [26, 'Shadow Storm', 'Shadow 21'],
+    [25, 'Avengers', 'Bandit 1, Wight Knight 1, Pirate 1, Soldier 1, Powerwild 1'], [24, 'Dark Knights', 'Opposite Armor 1, Darkball 6'], [23, 'Black Flap', 'Gargoyle 2, Air Soldier 3, Air Pirate 2'],
+    [22, 'Night Soarers', 'Wyvern 3, Search Ghost 2, Wight Knight 2'], [21, 'Air Corsairs', 'Battleship 1, Wyvern 2, Darkball 4'], [20, 'Cloud & Leon', 'Cloud 1, Leon 1'],
+    [19, 'The Large Trio', 'Large Body 3, Wight Knight 2'], [18, 'Blaze Bandits', 'Fat Bandit 3, Red Nocturne 4'], [17, 'False Angels', 'Angel Star 2, Wyvern 2, Large Body 2'], [16, 'Dark Storm', 'Darkball 21'],
+    [15, 'Air Brigade', 'Wyvern 1, Air Pirate 1, Air Soldier 1, Gargoyle 1, Search Ghost 1'], [14, 'Violent Bunch', 'Fat Bandit 2, Invisible 1, Wizard 2'],
+    [13, 'Heavy Warriors', 'Fat Bandit 2, Defender 1, Large Body 2'], [12, 'Interceptors', 'Defender 3'], [11, 'Elder Force', 'Invisible 3, Angel Star 2'], [10, 'Hades', 'Hades 1'],
+    [9, 'Night Rave', 'Invisible 1, Darkball 3, Shadow 5'], [8, 'The Requiem', 'Angel Star 1, Wizard 2, Yellow Opera 2, Blue Rhapsody 2, Red Nocturne 2'], [7, 'Invisible Fear', 'Sneak Army 1, Invisible 3'],
+    [6, 'Mad Mushroom', 'White Mushroom 3'], [5, 'Black Storm', 'Shadow 15, Darkball 11'], [4, 'Twin Mirage', 'Sneak Army 2'], [3, 'Shadow Troopers', 'Wyvern 9, Wizard 8, Defender 2'],
+    [2, 'Final Battalion', 'Angel Star 9, Invisible 10, Darkball 10'], [1, 'Rock Titan', 'Rock Titan 1']] },
+].map(c => ({ ...c, seeds: c.seeds.map(([n, team, list]) => { const all = list.split(', ').map(e => { const m = e.match(/^(.*) (\d+)$/); return [m[1], +m[2]]; });
+  return { n, team, all, wave: all.filter(([k]) => KH2_FOES[k]).flatMap(([k, c]) => Array(c).fill(k)) }; }) }));
 const ARENA_TRIALS = [
   { name: 'THE ORC TRIAL', sub: 'ORCS AND ARCHERS · 5 ROUNDS', rounds: [['o', 'o', 'o'], ['o', 'o', 'M', 'o'], ['M', 'M', 'o', 'o', 'o'], ['Q', 'o', 'o', 'M'], ['R', 'o', 'o']] },
   { name: 'THE TRIAL OF ISENGARD', sub: 'URUK-HAI · 6 ROUNDS · LURTZ', rounds: [['u', 'u', 'o'], ['s', 'u', 'a'], ['p', 'p', 'u'], ['b', 'a', 'a', 'u'], ['j', 'j', 's', 'c'], ['L']] },
@@ -2720,6 +2778,13 @@ const LEVELS = [
     // the Colosseum of Rohan, where Edoras stood: pick a trial and fight it round by round (see the Colosseum)
     straight: true, roam: true, kh: true, camRing: 17, name: T.name, sub: T.sub, loc: 'rohan', theme: 'arena', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 20000, CZ: 0, base: -4, wallH: 0, winTitle: T.name.replace('THE ', '') + ' WON!',
     ...arenaLayout(k),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { arenaContent(); },
+  })),
+  ...KH_CUPS.map((C, ci) => ({
+    // Kingdom Hearts' Olympus Coliseum cups, in the same arena: choose a seed and fight on from it to the cup's champion (see openSeeds)
+    straight: true, roam: true, kh: true, camRing: 17, cup: ci, name: C.name, sub: `KINGDOM HEARTS · ${C.seeds.filter(s => s.wave.length).length} OF ${C.seeds.length} SEEDS`, loc: 'rohan', theme: 'arena', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 20000, CZ: 0, base: -4, wallH: 0, winTitle: C.name + ' WON!',
+    ...cupLayout(ci),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { arenaContent(); },
   })),
@@ -2918,6 +2983,7 @@ function loadLevel(li) {
   START_S = LV.roam ? LV.start[0] : LV.loop ? 0 : 1.2; END_S = LV.loop || LV.roam ? 1e9 : CIRC - 16;
   ORC_PAL = THEMES[LV.theme || 'mt'].orc; applyEnv(THEMES[LV.theme || 'mt'].env);
   buildRing(LV, false);
+  khNeed(khSlotsOf(LV));   // (the Kingdom Hearts foes' own models, if this level has any)
   LV.content();
   torches = LV.torches;
   balrogs = LV.balrogs.map((d, i) => ({ def: d, m: BALROG_POOL[i], s: d.r0, y: -40, state: 'hidden', t: 0, atk: null, atkT: 2, seqI: 0, hits: 0, stun: 0, done: false, ct: 0, hand: 0, hp: d.hp || 0, won: false }));
@@ -3012,6 +3078,7 @@ addEventListener('blur', () => { for (const k in keys) keys[k] = false; touchRes
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play' && !location.search.includes('sim=')) pause(true); });
 function onKey(code) {
   if (KH_PMENU.open) { khPowersKey(code); return; }   // (the powers menu has the keys while it's open)
+  if (SEEDS && state === 'map') { if (!/^Key[MGZX]$/.test(code)) { seedKey(code); return; } }   // (a Kingdom Hearts cup's seeds)
   if (CHAP && state === 'map') { if (!/^Key[MGZX]$/.test(code)) { chapKey(code); return; } }   // (and a level menu)
   if (code === 'Tab' && state === 'play' && khOn()) { khPowersMenu(true); return; }
   if (code === 'KeyU' && state === 'play' && LV && LV.bow) { BOW.aim = !BOW.aim; BOW.cx = 0; BOW.cy = .3; S.click(); return; }
@@ -5799,9 +5866,34 @@ function chapKey(code) {
   if (code === 'Escape' || code === 'Backspace' || code === 'KeyB') { CHAP = null; showScreen(null); S.click(); return; }
   if (code === 'ArrowUp' || code === 'KeyW') chapSel(CHAP.sel - 1); else if (code === 'ArrowDown' || code === 'KeyS') chapSel(CHAP.sel + 1);
   else if (/^(Digit|Numpad)[1-9]$/.test(code) && +code.slice(-1) <= CHAP.ls.length) { chapSel(+code.slice(-1) - 1); chapKey('Enter'); }
-  else if (code === 'Enter' || code === 'Space') { const li = CHAP.ls[CHAP.sel]; CHAP = null; showScreen(null); startGame(li); }
+  else if (code === 'Enter' || code === 'Space') { const li = CHAP.ls[CHAP.sel]; if (LEVELS[li].cup !== undefined) { openSeeds(li); return; } CHAP = null; showScreen(null); startGame(li); }
 }
-document.getElementById('sChap').addEventListener('mouseover', e => { const mi = e.target.closest('.mi'); if (mi && CHAP) chapSel(+mi.dataset.c); });
+// a Kingdom Hearts cup's seeds, to start from any of them: arrows (or the mouse) to choose, Enter to fight, Esc back to the cups. A seed shows its team and
+// all its KH1 foes; those Kingdom Hearts II doesn't have are struck through, and a seed with none of its foes in KH2 can't be chosen
+let SEEDS = null;
+function openSeeds(li) {
+  const C = KH_CUPS[LEVELS[li].cup]; SEEDS = { li, ci: LEVELS[li].cup, sel: Math.max(0, C.seeds.findIndex(s => s.wave.length)), back: CHAP ? CHAP.loc : 'rohan' }; CHAP = null;
+  document.getElementById('chapName').textContent = C.name;
+  document.getElementById('chapMenu').innerHTML = `<div class="seeds">` + C.seeds.map((s, k) => `<div class="mi sd${s.wave.length ? '' : ' off'}" data-s="${k}"><b>${s.n}</b><span>${s.team}</span><i>${s.all.map(([e, c]) => KH2_FOES[e] ? `${e} ×${c}` : `<s>${e} ×${c}</s>`).join(' · ')}</i></div>`).join('') + `</div>`;
+  showScreen('sChap'); seedSel(SEEDS.sel);
+}
+function seedSel(k) {
+  const C = KH_CUPS[SEEDS.ci], n = C.seeds.length; k = (k + n) % n; SEEDS.sel = k;
+  document.querySelectorAll('#chapMenu .sd').forEach((m, i) => m.classList.toggle('on', i === k)); const on = document.querySelector('#chapMenu .sd.on'); if (on) on.scrollIntoView({ block: 'nearest' });
+}
+function seedKey(code) {
+  const C = KH_CUPS[SEEDS.ci], cols = 4;
+  if (code === 'Escape' || code === 'Backspace' || code === 'KeyB') { const b = SEEDS.back; SEEDS = null; openChap(b); S.click(); return; }
+  if (code === 'ArrowUp' || code === 'KeyW') seedSel(SEEDS.sel - cols); else if (code === 'ArrowDown' || code === 'KeyS') seedSel(SEEDS.sel + cols);
+  else if (code === 'ArrowLeft' || code === 'KeyA') seedSel(SEEDS.sel - 1); else if (code === 'ArrowRight' || code === 'KeyD') seedSel(SEEDS.sel + 1);
+  else if (code === 'Enter' || code === 'Space') {
+    const s = C.seeds[SEEDS.sel]; if (!s.wave.length) { S.click(); return; }
+    const from = C.seeds.slice(0, SEEDS.sel).filter(q => q.wave.length).length, L = LEVELS[SEEDS.li]; Object.assign(L, cupLayout(SEEDS.ci, from));
+    const li = SEEDS.li; SEEDS = null; showScreen(null); startGame(li);
+  }
+}
+document.getElementById('sChap').addEventListener('click', e => { const sd = e.target.closest('.sd'); if (sd && SEEDS) { seedSel(+sd.dataset.s); seedKey('Enter'); } });
+document.getElementById('sChap').addEventListener('mouseover', e => { const mi = e.target.closest('.mi'); if (mi && CHAP) chapSel(+mi.dataset.c); else if (mi && SEEDS && mi.dataset.s) seedSel(+mi.dataset.s); });
 function mapSelect() {
   if (tok.near < 0) { S.click(); return; }
   const n = NODES[tok.near];
@@ -6059,7 +6151,7 @@ const LOCAL_ASSETS = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname
 // anims: which clip to use for an action, where the usual names below would pick the wrong one.
 // saberBone: the bone the lightsaber goes on in the Weathertop duel (its sword hand), and saberRot to turn the blade along it.
 const TROLL_ANIMS = { idle: /^idle_a/i, walk: /^(walk_a|run_a)/i, attack: /^attack_a/i, hit: /^hurt_a/i, die: /^die_/i };   // (their files also hold dismounting clips whose names would pass for attacks)
-const KH_ANIMS = { idle: /_IDLE$/, walk: /_RUN$|_WALK$/, attack: /_EX050$/, hit: /_DAMAGE_S_FRONT_HIGH$/, die: /_DAMAGE_BLOW_FRONT$/, jump: /_APPEAR$/ };
+const KH_ANIMS = { idle: /_IDLE$/, walk: /_RUN$|_WALK$/, attack: /_EX05\d$|_EX1\d\d$|_ATTACK/, hit: /_DAMAGE_S_FRONT_HIGH$/, die: /_DAMAGE_BLOW_FRONT$/, jump: /_APPEAR$/ };
 const MODEL_SLOTS = {
   eagle: { height: 5.2, turn: -Math.PI / 2, anims: { fly: /^fly_a/i, idle: /^hvra/i, attack: /^attack_b/i, hit: /^hit/i } }, tentacle: { height: 15, fitMax: true, turn: -Math.PI / 2, hide: /BOX/i, anims: { idle: /^idle_a/i, attack: /^attack_a/i, hit: /^spna/i, die: /^dwna/i } },
   watcher: { height: 5, turn: -Math.PI / 2, hide: /SUPRTNTCL/i, anims: { idle: /^idle_a|^idla/i, attack: /eat/i, hit: /^idle_b|^idlb/i, die: /^dwn|^die/i, jump: /^sp/i } }, caldera: { height: 15, fitMax: true, turn: 0, cut: true, hide: /_\d$/, anims: { idle: /^idle_a|^idla/i, die: /^die/i, jump: /^sp/i } },   // (the Watcher's head in its pool, and the crater it bursts up into)
@@ -6082,6 +6174,14 @@ const MODEL_SLOTS = {
   khshadow: { fbx: 'M_EX020', height: 1.05, turn: 0, cut: true, kh: 'SHADOW', anims: KH_ANIMS }, khsoldier: { fbx: 'M_EX010', height: 1.75, turn: 0, cut: true, kh: 'SOLDIER', anims: KH_ANIMS },
   khlargebody: { fbx: 'M_EX050', height: 2.9, turn: 0, cut: true, kh: 'LARGE BODY', anims: KH_ANIMS }, khrednoc: { fbx: 'M_EX130', height: 1.3, turn: 0, cut: true, kh: 'RED NOCTURNE', anims: KH_ANIMS },
   khbluerhap: { fbx: 'M_EX110', height: 1.3, turn: 0, cut: true, kh: 'BLUE RHAPSODY', anims: KH_ANIMS },
+  // (and the Colosseum cups' KH2 foes)
+  khfatbandit: { fbx: 'M_EX060', height: 2.9, turn: 0, cut: true, kh: 'FAT BANDIT', anims: KH_ANIMS }, khgreenreq: { fbx: 'M_EX120', height: 1.3, turn: 0, cut: true, kh: 'GREEN REQUIEM', anims: KH_ANIMS },
+  khdarkball: { fbx: 'M_EX510', height: 1.7, turn: 0, cut: true, kh: 'DARKBALL', anims: KH_ANIMS }, khwight: { fbx: 'M_EX200', height: 2.2, turn: 0, cut: true, kh: 'WIGHT KNIGHT', anims: KH_ANIMS },
+  khairpirate: { fbx: 'M_EX780', height: 2, turn: 0, cut: true, kh: 'AIR PIRATE', anims: KH_ANIMS }, khwyvern: { fbx: 'M_EX320_NPC', height: 3.2, turn: 0, cut: true, kh: 'WYVERN', anims: KH_ANIMS },
+  khbehemoth: { fbx: 'M_EX310_NPC', height: 7, turn: 0, cut: true, kh: 'BEHEMOTH', anims: KH_ANIMS }, khcerberus: { fbx: 'B_HE020', height: 6, turn: 0, cut: true, kh: 'CERBERUS', anims: KH_ANIMS },
+  khhades: { fbx: 'B_HE030', height: 2.8, turn: 0, cut: true, kh: 'HADES', anims: KH_ANIMS }, khhercules: { fbx: 'N_HE010_BTL', height: 2.2, turn: 0, cut: true, kh: 'HERCULES', anims: KH_ANIMS },
+  khcloud: { fbx: 'N_HB550_BTL', height: 1.8, turn: 0, cut: true, kh: 'CLOUD', anims: KH_ANIMS }, khleon: { fbx: 'N_HB530_BTL', height: 1.85, turn: 0, cut: true, kh: 'LEON', anims: KH_ANIMS },
+  khyuffie: { fbx: 'N_HB580_BTL', height: 1.6, turn: 0, cut: true, kh: 'YUFFIE', anims: KH_ANIMS },
   blackrider: { height: 3.1, turn: -Math.PI / 2, hide: /CINEMA|_NEW/i, anims: { walk: /^run_a/i } },   // (its cinematic duplicates hidden: it has one horse and one rider)   // (the race to the Ford: Rise of the Witch-king's Black Rider, on his horse)   // Mirkwood's spiders: Shelob again (src: whose model it is), smaller
 };
 // which animation plays for each action: the first clip whose name matches (case doesn't matter)
@@ -6233,7 +6333,7 @@ async function loadLocalAssets() {
   // ?models=balrog,gandalf loads just those, for testing
   const slots = Object.keys(MODEL_SLOTS).filter(s => !MODEL_SLOTS[s].src && (!only || only.split(',').includes(s)));
   await Promise.all(slots.map(async slot => {
-    if (MODEL_SLOTS[slot].fbx) { const gl = await khModel(MODEL_SLOTS[slot].fbx); if (gl) { LOADED[slot] = gl; got.push(`models/kh/${MODEL_SLOTS[slot].fbx}.fbx (${gl.animations.length} moves)`); } return; }
+    if (MODEL_SLOTS[slot].fbx) return;   // (Kingdom Hearts II's, big: loaded only when a level wants them, see khNeed)
     try { LOADED[slot] = await loader.loadAsync(`models/${slot}.glb`); got.push(`models/${slot}.glb (${LOADED[slot].animations.map(a => a.name).join(', ') || 'no animations'})`); }
     catch (e) { if (e instanceof Error) console.warn(`Valinor: models/${slot}.glb is there but would not load:`, e.message); }
   }));
@@ -6268,7 +6368,15 @@ function gltfLoader() {
 // Kingdom Hearts II's Heartless, as OpenKH writes them (bfme\tools\Export-Heartless.ps1): an .fbx with its pictures beside it and every move
 // in it. Their run and attack moves carry the Heartless across the floor themselves; Valinor moves its foes, so that drift is taken out
 let FBXL = null;
-async function khModel(code) {
+// the Kingdom Hearts models a level's foes wear, fetched as it starts (they're large); each foe already made puts its model on as it arrives
+const KH_WANT = {};
+function khNeed(slots) {
+  if (!LOCAL_ASSETS) return;
+  for (const s of new Set(slots)) { const cfg = MODEL_SLOTS[s]; if (!cfg || !cfg.fbx || LOADED[s] || KH_WANT[s]) continue;
+    KH_WANT[s] = khModel(cfg.fbx).then(gl => { if (!gl) return; LOADED[s] = gl; console.log(`Valinor: models/kh/${cfg.fbx}.fbx (${gl.animations.length} moves)`); for (const K of SKINS) if (K.slot === s && !K.obj) attachSkin(K); }); }
+}
+const KH_BASE_SLOT = { z: 'khshadow', k: 'khsoldier', g: 'khlargebody', f: 'khrednoc', i: 'khbluerhap' };
+const khSlotsOf = L => ((L.layout && L.layout.plazas) || []).flatMap(p => (p.waves || []).flat()).map(k => UK_KINDS[k] && UK_KINDS[k].slot || KH_BASE_SLOT[k]).filter(Boolean);async function khModel(code) {
   try {
     if (!FBXL) FBXL = (async () => { await loadScript('https://cdn.jsdelivr.net/npm/fflate@0.6.9/umd/index.js'); await loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js'); return new THREE.FBXLoader(); })();
     const g = await (await FBXL).loadAsync(`models/kh/${code}.fbx`); let root = null; g.traverse(o => { if (!root && o.isBone) root = o; });
@@ -8533,8 +8641,13 @@ function updatePrimeval(dt) {
 }
 // --- the Colosseum of Rohan: a round arena of pale stone under banners, its stands packed and roaring. Choose a trial from the list, then fight it round by round. A place to try
 //     out any foe in the game, and any new one: a trial is just a list of rounds, each a list of foe kinds (see UK_KINDS and the bosses in spawnUruk)
-function arenaLayout(k) {
-  const T = ARENA_TRIALS[k], names = T.rounds.map((_, i) => i ? `ROUND ${i + 1} OF ${T.rounds.length}` + (i === T.rounds.length - 1 ? ': THE CHAMPION!' : '') : '');
+// a Kingdom Hearts cup from one seed on: its rounds are the seeds still to fight, as in the Coliseum, each announced by its number and team
+function cupLayout(ci, from = 0) {
+  const C = KH_CUPS[ci], ss = C.seeds.filter(s => s.wave.length).slice(from), L = arenaLayout(-1, { name: C.name, rounds: ss.map(s => s.wave) });
+  L.layout.plazas[0].names = ss.map(s => `SEED ${s.n}: ${s.team.toUpperCase()}`); L.layout.plazas[0].title = L.layout.plazas[0].names[0]; return L;
+}
+function arenaLayout(k, T0) {
+  const T = T0 || ARENA_TRIALS[k], names = T.rounds.map((_, i) => i ? `ROUND ${i + 1} OF ${T.rounds.length}` + (i === T.rounds.length - 1 ? ': THE CHAMPION!' : '') : '');
   const blocks = []; for (let k = 0; k < 96; k++) { const a = k / 96 * TAU, s = Math.cos(a) * 23, x = Math.sin(a) * 23; blocks.push([s - .9, s + .9, x - .9, x + .9, 3, 'wall', -2]); }   // (the wall round the floor)
   return { field: [-26, 26, -26, 26], start: [-15, 0], layout: { blocks, arena: true, plazas: [{ s: 0, x: 0, y: 0, r: 19, waves: T.rounds, names, title: T.name + ' · ROUND 1', boss: true, last: true, breach: [0, 0], bossTo: [8, 0], bossHp: 700, noAdds: true }] } };
 }
@@ -9223,7 +9336,7 @@ THEMES.hoard = natTheme({
 //     CORPSE-CANDLE and MARSH-LIGHT: hooded spirits drifting off the ground, a dead flame overhead; fire that follows you, or a fan of ice shards.
 //                 Guard as one reaches you and it flies back at its caster
 function makeShadeFoe(kind) {
-  const K = UK_KINDS[kind], root = new THREE.Group(), body = new THREE.Group(); root.add(body);
+  const K = UK_KINDS[kind], own = kind; kind = K.base || kind; const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
   const head = new THREE.Group(), armR = new THREE.Group(), armL = new THREE.Group(), legs = [], M = { root, body, head, armR, armL, legs, shade: true };
   let eyes = [];
   const leg = (par, sx, y, w, h, mat, foot) => { const g = new THREE.Group(); g.position.set(sx, y, 0); par.add(g); part(GEO.cylT, mat, g, 0, 0, 0, w, h, w); if (foot) part(GEO_BOX, foot, g, 0, -h, .06, w * 1.6, .14, w * 2.4); legs.push(g); return g; };
@@ -9278,7 +9391,8 @@ function makeShadeFoe(kind) {
   shadow.rotation.x = -Math.PI / 2; scene.add(shadow); scene.add(root);
   const mats = []; root.traverse(o => { if (o.isMesh && o !== M.pud) { o.material = o.material.clone(); if (!eyes.includes(o)) mats.push(o); } });
   const dizzy = glowSprite(0xffe060, 1, 0); dizzy.position.y = kind === 'g' ? 3.2 : 2.4; root.add(dizzy);
-  const ks = { z: 'khshadow', k: 'khsoldier', g: 'khlargebody', f: 'khrednoc', i: 'khbluerhap' }[kind]; if (ks && LOADED[ks]) { addSkin(M, ks, body, body); M.kh = MODEL_SLOTS[ks].kh; }   // (Kingdom Hearts II's own Heartless, where it's here)
+  if (K.hover) M.hover = K.hover;
+  const ks = K.slot || { z: 'khshadow', k: 'khsoldier', g: 'khlargebody', f: 'khrednoc', i: 'khbluerhap' }[own]; if (ks && (LOADED[ks] || KH_WANT[ks])) { addSkin(M, ks, body, body); M.kh = MODEL_SLOTS[ks].kh; }   // (Kingdom Hearts II's own Heartless, where it's here)
   return Object.assign(M, { eyes, shadow, mats, dizzy, shieldM: null });
 }
 function shadeReset(u) { const m = u.m; m.body.visible = true; m.body.position.y = 0; m.body.scale.y = 1; if (m.pud) m.pud.material.opacity = 0; if (m.spin) m.spin.rotation.x = 0; u.sunk = false; u.warn = u.up = false; }
@@ -9302,6 +9416,7 @@ function shadeSpell(u, K, i) {
     return g.position.y > -.5;
   });
 }
+const SHADE_ATKS = new Set(['sink', 'cart', 'belly', 'flop', 'cast']);
 function shadeAtk(u, K, dt, d, ds, dx, dy, end) {
   const m = u.m, toP = Math.atan2(dx, ds);
   switch (u.atk) {
@@ -9489,7 +9604,7 @@ function ukBolt(u, K) {   // a crossbow bolt: it flies where Gandalf stood; guar
 }
 function ukStyleAtk(u, K, dt, d, ds, dx, dy) {
   const toP = Math.atan2(dx, ds), m = u.m, end = (cdk = 1) => { u.lockH = undefined; u.state = 'recover'; u.t = 0; u.cd = rand(1.2, 2.6) * cdk; m.body.rotation.y = 0; if (m.shade) shadeReset(u); };
-  if (K.shade) return shadeAtk(u, K, dt, d, ds, dx, dy, end);
+  if (K.shade && SHADE_ATKS.has(u.atk)) return shadeAtk(u, K, dt, d, ds, dx, dy, end);   // (a Heartless may pounce or whirl as the Uruk-hai do: see KH2_FOES)
   switch (u.atk) {
     case 'thrust': { const k = Math.min(1, u.t / .28); const ns = lerp(u.from[0], u.to[0], k) - u.s, nx = lerp(u.from[1], u.to[1], k) - u.x; ukMove(u, ns, nx); if (!u.hits && d < 2.6 && dy < 1.6 && Math.abs(angDiff(toP, u.h)) < .6) { u.hits = 1; khHurt(K.dmg, u, { kb: 10 }); } if (u.t > .9) end(); return { walk: 2, arm: .9 }; }
     case 'shoot': if (!u.hits) { u.hits = 1; ukBolt(u, K); } if (u.t > .25) end(); return { arm: -1.4 };
@@ -11613,6 +11728,7 @@ const UK_KINDS = {
   g: { hp: 55, r: 1.05, name: 'BARROW-GUT', speed: 2.4, dmg: 14, style: 'gut', want: 3, shade: true, armor: true, front: true },
   f: { hp: 10, r: .5, name: 'CORPSE-CANDLE', speed: 3.4, dmg: 8, style: 'cast', want: 8.5, shade: true, lite: true, hover: 1.1, spell: 'fire', tok: 2 },
   i: { hp: 10, r: .5, name: 'MARSH-LIGHT', speed: 3.4, dmg: 8, style: 'cast', want: 8.5, shade: true, lite: true, hover: 1.1, spell: 'ice', tok: 2 },
+  ...Object.fromEntries(Object.entries(KH2_FOES).map(([n, f]) => [n, { name: n.toUpperCase(), shade: true, want: 4.5, ...f }])),
 };
 const khOn = () => !!(LV && (LV.kh || LV.khl));   // (the full Kingdom Hearts levels, or the old ones with its fighting)
 function setupKH() {
@@ -12376,6 +12492,7 @@ showScreen(null); syncPauseBtns();
   const q = new URLSearchParams(location.search), li = /^\d+$/.test(q.get('play') || '') ? Number(q.get('play')) : (LEVELS.findIndex(L => L.loc === q.get('play')) + 1 || LEVELS.findIndex(L => q.get('play') && (L.name || '').replace(/ /g, '').includes(q.get('play').toUpperCase())) + 1) - 1;   // or ?play=2 for the third level in the list
   if (q.get('look')) setLook(q.get('look') === 'retro');   // ?look=retro or ?look=hd
   if (q.get('mapat')) backToMap(q.get('mapat'));
+  if (q.get('cup')) { backToMap('rohan'); openSeeds(LEVELS.findIndex(L => L.cup === +q.get('cup'))); if (q.get('seed')) { const k = KH_CUPS[+q.get('cup')].seeds.findIndex(s => s.n === +q.get('seed')); if (k >= 0) { seedSel(k); seedKey('Enter'); } } }   // ?cup=3: the Hades Cup's seeds; &seed=30: straight into seed 30 (testing)
   if (q.get('chap')) { backToMap(q.get('chap')); openChap(q.get('chap')); }   // ?chap=moria: that place's level menu (testing)   // ?mapat=helm: the map, with Gandalf at that place (testing)
   if (q.get('mappick')) setTimeout(() => { const [px, py] = q.get('mappick').split(',').map(Number), rc = new THREE.Raycaster(); rc.setFromCamera(new THREE.Vector2(px / innerWidth * 2 - 1, 1 - py / innerHeight * 2), mapCam); const h = rc.intersectObjects(mapScene.children, true)[0]; console.log('mappick', h ? h.point.toArray().map(v => v.toFixed(2)).join(',') : 'none', NODES.map(nd => nd.loc + ':' + (() => { const v = new V3(nd.x, 0, nd.z).project(mapCam); return Math.round((v.x + 1) / 2 * innerWidth) + '/' + Math.round((1 - v.y) / 2 * innerHeight); })()).join(' ')); }, 9000);   // ?mappick=x,y: where on the board that screen point is (testing)
   if (q.get('soramotion')) { const ids = q.get('soramotion').split(',').map(Number), fr = +(q.get('soraf') ?? .5); const go = async () => { if (!LOADED.gandalf || !hob.skin || !hob.skin.obj) { setTimeout(go, 200); return; } await loadSora(ids); const K = hob.skin, clip = LOADED.gandalf.animations.find(a => a.name === 'kh' + ids[0]); if (!clip) { console.log('soramotion: no clip'); return; } K.mixer.stopAllAction(); const act = K.mixer.clipAction(clip); act.play(); act.paused = true; act.time = clip.duration * fr; K.mixer.update(0); K.holdT = 1e9; console.log('soramotion', ids[0], clip.duration.toFixed(2) + 's', clip.tracks.length + ' tracks'); const cv = q.get('soracam') === 'front' ? [3.2, .6] : [.4, 3.2]; DEBUG_CAM = { p: tw(P.s + cv[0], P.x + cv[1], P.y + 1.3), l: tw(P.s, P.x, P.y + .9) }; }; setTimeout(go, 500); }   // &soramotion=604&soraf=.4: one of Sora's moves on Gandalf, held still at that point (testing)
