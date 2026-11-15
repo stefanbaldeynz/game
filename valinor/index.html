@@ -94,6 +94,9 @@ body.touch #khcmd{display:none!important}
 .seeds{display:grid;grid-template-columns:repeat(4,1fr);gap:5px 8px;width:min(94vw,1180px);max-height:64vh;overflow-y:auto;padding:4px 10px;position:relative;left:50%;transform:translateX(-50%)}
 .mi.sd{padding:4px 8px;margin:0;transform:none!important}.mi.sd span{font-size:.8em}.mi.sd b{min-width:2em}.mi.sd i{display:block;font-size:.72em;line-height:1.25;opacity:.85}.mi.sd s{opacity:.45}
 .mi.sd.off{opacity:.38;filter:grayscale(1)}
+  /* a place with many levels (the Colosseum): two columns, scrolling if they still don't fit, so a laptop screen shows them all */
+  #chapMenu.long{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;width:min(1100px,94vw);max-height:calc(100vh - 150px);overflow-y:auto;padding:6px 12px;align-content:start}
+  #chapMenu.long .mi{padding:.2em .6em}#chapMenu.long .mi.on{transform:scale(1.02)}#chapMenu.long .mi b{font-size:clamp(20px,3.6vh,34px)}#chapMenu.long .mi span{font-size:clamp(15px,2.6vh,24px)}#chapMenu.long .mi i{font-size:11px}
 #sTitle .press{margin-top:2.2vh;font-size:clamp(16px,2.6vw,28px)}
 #sTitle .ctl{margin-top:2vh;font-size:12px;padding:8px 14px;gap:3px 16px}
 #sTitle .ctl b{font-size:14px}
@@ -5871,13 +5874,16 @@ let CHAP = null;
 function openChap(loc) {
   const ls = LEVELS.map((L, i) => [L, i]).filter(([L]) => L.loc === loc); CHAP = { loc, ls: ls.map(([, i]) => i), sel: 0 }; tok.dest = null;
   document.getElementById('chapName').textContent = (NODES.find(n => n.loc === loc) || {}).name || '';
+  document.getElementById('chapMenu').classList.toggle('long', ls.length > 6); document.getElementById('chapMenu').scrollTop = 0;
   document.getElementById('chapMenu').innerHTML = ls.map(([L], k) => `<div class="mi${k ? '' : ' on'}" data-c="${k}"><b>${k + 1}</b><span>${L.name}</span><i>${(CHAP_DESC[loc] || [])[k] || L.sub}</i></div>`).join('');
   showScreen('sChap');
 }
-function chapSel(k) { CHAP.sel = (k + CHAP.ls.length) % CHAP.ls.length; document.querySelectorAll('#chapMenu .mi').forEach((m, i) => m.classList.toggle('on', i === CHAP.sel)); }
+function chapSel(k) { CHAP.sel = (k + CHAP.ls.length) % CHAP.ls.length; document.querySelectorAll('#chapMenu .mi').forEach((m, i) => m.classList.toggle('on', i === CHAP.sel)); const on = document.querySelector('#chapMenu .mi.on'); if (on) on.scrollIntoView({ block: 'nearest' }); }
 function chapKey(code) {
   if (code === 'Escape' || code === 'Backspace' || code === 'KeyB') { CHAP = null; showScreen(null); S.click(); return; }
-  if (code === 'ArrowUp' || code === 'KeyW') chapSel(CHAP.sel - 1); else if (code === 'ArrowDown' || code === 'KeyS') chapSel(CHAP.sel + 1);
+  const cols = document.getElementById('chapMenu').classList.contains('long') ? 2 : 1;   // (in two columns: up and down a row, left and right along it)
+  if (code === 'ArrowUp' || code === 'KeyW') chapSel(CHAP.sel - cols); else if (code === 'ArrowDown' || code === 'KeyS') chapSel(CHAP.sel + cols);
+  else if (cols > 1 && (code === 'ArrowLeft' || code === 'KeyA')) chapSel(CHAP.sel - 1); else if (cols > 1 && (code === 'ArrowRight' || code === 'KeyD')) chapSel(CHAP.sel + 1);
   else if (/^(Digit|Numpad)[1-9]$/.test(code) && +code.slice(-1) <= CHAP.ls.length) { chapSel(+code.slice(-1) - 1); chapKey('Enter'); }
   else if (code === 'Enter' || code === 'Space') { const li = CHAP.ls[CHAP.sel]; if (LEVELS[li].cup !== undefined) { openSeeds(li); return; } CHAP = null; showScreen(null); startGame(li); }
 }
