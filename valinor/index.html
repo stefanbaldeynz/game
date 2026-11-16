@@ -2582,17 +2582,70 @@ const KH2_FOES = {
   'Leon': { slot: 'khleon', base: 'k', style: 'whirl', hp: 320, r: .6, speed: 4.6, dmg: 16 },
   'Yuffie': { slot: 'khyuffie', base: 'f', style: 'cast', spell: 'fire', hp: 220, r: .55, speed: 5.4, dmg: 12, want: 9 },
 };
-// --- Overlord's (2007) enemies, for the Overlord cup: their own models and moves (models/ov/<file>.glb, from bfme\tools\Convert-Overlord.ps1 chars).
-//     file: which model; h: how tall; anims: which of its moves plays for what (each name a regex, the start of Overlord's own move name); n: how
-//     many come in its seed. The fighting is the nearest of Valinor's styles for now
-const OV_IDLE = /^(fight_idle|Idle_PassiveCombat|idle)\b/i, OV_WALK = /^(run|Move_Run)( |$)/i, OV_HIT = /^(hit|HIT_Front)( |$)/i, OV_DIE = /^(die|Death_Fast)( |$)/i;
+// --- Overlord's (2007) enemies and creatures, for the Overlord cups: their own models and moves (models/ov/<file>.glb, from bfme\tools\Convert-Overlord.ps1 chars).
+//     file: which model; sc: its size (Overlord's own units are kept, so each stands as big beside the others as it did in Overlord); A(idle, run, attack, hit, death):
+//     which of its own moves plays for what; n: how many come in its seed; cup: 1 for the bosses' cup. The fighting is the nearest of Valinor's styles for now
+const OV_RX = s => new RegExp('^(' + s + ')$', 'i'), OV_A = (idle, walk, attack, hit, die) => ({ idle: OV_RX(idle), walk: OV_RX(walk), attack: OV_RX(attack), hit: OV_RX(hit), die: OV_RX(die) });
+const OV_HUMAN = OV_A('Idle_PassiveCombat', 'Move_Run_withweapon', 'Strike_Single_HIGH|Strike_Single_MID', 'HIT_Front', 'Death_Fast');   // (every humanoid has Overlord's shared moves too)
 const OV_FOES = {
-  'Halfling': { file: 'halfling_regular', h: 1.15, base: 'k', hp: 8, r: .4, speed: 4.4, dmg: 6, lite: true, tok: 3, n: 8, anims: { idle: OV_IDLE, walk: OV_WALK, attack: /^strike_(high|middle|low)( |$)/i, hit: OV_HIT, die: OV_DIE } },
-  'Armoured Halfling': { file: 'halfling_armor', h: 1.2, base: 'k', hp: 16, r: .42, speed: 4, dmg: 8, tok: 2, n: 6, anims: { idle: OV_IDLE, walk: OV_WALK, attack: /^Strike_Single_(HIGH|MID)( |$)/i, hit: OV_HIT, die: OV_DIE } },
-  'Halfling Spearman': { file: 'halfling_armor_nohair', h: 1.15, base: 'k', style: 'pike', want: 4.6, hp: 14, r: .42, speed: 3.8, dmg: 9, tok: 2, n: 6, anims: { idle: /^Idle_Spear_Combat( |$)/i, walk: /^Move_Run_Spear( |$)/i, attack: /^Strike_Spear_(HIGH|MID)( |$)/i, hit: OV_HIT, die: OV_DIE } },
-  'Halfling Cook': { file: 'halfling_cook11', h: 1.25, base: 'g', style: 'gut', hp: 40, r: .7, speed: 2.6, dmg: 12, armor: true, n: 3, anims: { idle: /^Cook_Fat_Idle( |$)/i, walk: /^Cook_Fat_Run( |$)/i, attack: /^Cook_Fat_(Strike|BellyNockback)( |$)/i, hit: /^Cook_Fat_Hit( |$)/i, die: /^Cook_Fat_Die( |$)/i } },
+  // the creatures of the fields, the woods and the swamps
+  'Ram': { file: 'sheep_ram', base: 'k', style: 'cart', hp: 7, r: .5, speed: 4.6, dmg: 6, tok: 3, n: 6, anims: OV_A('idle_look', 'move_run', 'attack_charge', 'hitpose', 'Die') },
+  'Rat': { file: 'rat', base: 'k', hp: 5, r: .4, speed: 5.2, dmg: 5, lite: true, tok: 3, n: 8, anims: OV_A('Rat_idle', 'Rat_Run', 'Bite_High|Bite', 'Rat_shock', 'Rat_die1') },
+  'Beetle': { file: 'green_beetle', base: 'k', hp: 10, r: .6, speed: 4, dmg: 7, tok: 3, n: 6, anims: OV_A('Idle_15fps', 'Run', 'Bite_atack_02', 'Hitframe', 'New_Death_02') },
+  'Fire Beetle': { file: 'fire_beetle', base: 'k', style: 'cast', spell: 'fire', want: 6, hp: 12, r: .6, speed: 3.6, dmg: 8, tok: 2, n: 5, anims: OV_A('Idle_15fps', 'Run', 'Flame_attack08', 'Hitframe', 'New_Death_02') },
+  'Bobo Bird': { file: 'bobobird', base: 'k', hp: 9, r: .5, speed: 4.8, dmg: 6, tok: 3, n: 6, anims: OV_A('Idle_Basic', 'Move_Run', 'Strike_MID|Strike_HIGH', 'HITpose', 'Death') },
+  'Toad': { file: 'toad11', base: 'k', style: 'pounce', want: 6, hp: 14, r: .7, speed: 3.6, dmg: 9, tok: 2, n: 4, anims: OV_A('Idle', 'Run', 'Tongue', 'Hit', 'Die') },
+  'Wisp': { file: 'whisp11', base: 'i', style: 'cast', spell: 'ice', want: 8.5, hover: 1.4, hp: 8, r: .4, speed: 4, dmg: 6, lite: true, tok: 2, n: 5, anims: OV_A('whisp_fly', 'whisp_fly', 'whisp_fly', 'whisp_fly', 'whisp_fly') },
+  'Baby Slug': { file: 'slug_baby', base: 'k', hp: 10, r: .6, speed: 2.8, dmg: 6, tok: 3, n: 6, anims: OV_A('slog_idle_standard|idle_look', 'slog_walk', 'slog_punch', 'slog_hit_pose', 'slog_die') },
+  'Slug': { file: 'slog_normal', base: 'g', style: 'gut', hp: 45, r: 1.4, speed: 2.2, dmg: 12, armor: true, n: 3, anims: OV_A('slog_idle_standard', 'slog_walk', 'slog_punch', 'slog_hit_pose', 'slog_die') },
+  'Pumpkin': { file: 'pumpkin', base: 'k', hp: 10, r: .5, speed: 4.2, dmg: 7, tok: 3, n: 6, anims: OV_A('idle', 'run', 'strike01|strike02', 'hit', 'death') },
+  'Rolling Beast': { file: 'rolling_beast_lod_0', base: 'g', style: 'cart', hp: 40, r: 1, speed: 3.4, dmg: 12, armor: true, front: true, n: 3, anims: OV_A('idle_combat', 'walk', 'Charge_roll', 'hitpose', 'die') },
+  'Unicorn': { file: 'bloody_unicorn_lod_0', base: 'g', style: 'cart', hp: 40, r: 1, speed: 5, dmg: 13, n: 3, anims: OV_A('Idle_Combat', 'N_move_run', 'Move_Charge', 'N_get_hit_backwards', 'N_death_sideways') },
+  // the Shire's halflings
+  'Halfling': { file: 'halfling_regular', base: 'k', hp: 8, r: .4, speed: 4.4, dmg: 6, lite: true, tok: 3, n: 8, anims: OV_A('fight_idle', 'run', 'strike_high|strike_middle', 'hit', 'die') },
+  'Armoured Halfling': { file: 'halfling_armor', base: 'k', hp: 16, r: .42, speed: 4, dmg: 8, tok: 2, n: 6, anims: OV_A('Idle_PassiveCombat', 'Move_Run_withweapon', 'Strike_Single_HIGH|Strike_Single_MID', 'HIT_Front', 'Death_Fast') },
+  'Halfling Spearman': { file: 'halfling_armor_nohair', base: 'k', style: 'pike', want: 4.6, hp: 14, r: .42, speed: 3.8, dmg: 9, tok: 2, n: 6, anims: OV_A('Idle_Spear_Combat', 'Move_Run_Spear', 'Strike_Spear_HIGH|Strike_Spear_MID', 'HIT_Front', 'Death_Fast') },
+  'Halfling Cook': { file: 'halfling_cook11', base: 'g', style: 'gut', hp: 40, r: .7, speed: 2.6, dmg: 12, armor: true, n: 3, anims: OV_A('Cook_Fat_Idle', 'Cook_Fat_Run', 'Cook_Fat_Strike|Cook_Fat_BellyNockback', 'Cook_Fat_Hit', 'Cook_Fat_Die') },
+  // the towns and the dead
+  'Peasant': { file: 'peasanta', base: 'k', hp: 8, r: .45, speed: 4, dmg: 5, lite: true, tok: 3, n: 8, anims: OV_HUMAN },
+  'Townsman': { file: 'towns_folk_a', base: 'k', hp: 10, r: .45, speed: 4, dmg: 6, tok: 3, n: 6, anims: OV_A('idle attack|Idle', 'Run', 'StrikeHigh2|StrikeMid', 'HitFront', 'DeathForward') },
+  'Zombie': { file: 'old_rig_zombie_a', base: 'k', hp: 14, r: .45, speed: 2.4, dmg: 8, tok: 3, n: 8, anims: OV_A('Idle_Basic', 'Move_Walk_Wobbly', 'Strike_Punch_HIGH|Strike_Punch_MID', 'HIT_Front', 'Death_Fast') },
+  'Scarecrow': { file: 'scarecrow', base: 'k', hp: 20, r: .5, speed: 3.6, dmg: 9, tok: 2, n: 4, anims: OV_A('idle', 'run', 'Strike_Single_HIGH|Strike_Single_MID', 'hitfrontward', 'deathforward') },
+  // the dwarves, the elves and the raiders
+  'Dwarf': { file: 'dwarf', base: 'k', hp: 20, r: .5, speed: 3.6, dmg: 9, tok: 2, n: 6, anims: OV_A('idle02', 'DwarfRun', 'Strike_A|Strike_B', 'Hit', 'Die') },
+  'Dwarf Crossbowman': { file: 'dwarf_crossbow', base: 'k', style: 'shoot', want: 10, hp: 14, r: .5, speed: 3.6, dmg: 8, n: 5, anims: OV_A('Idle_Crossbow', 'Run_Crossbow', 'Crossbowshot', 'Hit', 'Die') },
+  'Dwarf Flamer': { file: 'flamer_a', base: 'g', style: 'cast', spell: 'fire', want: 6, hp: 30, r: 1, speed: 2.8, dmg: 10, armor: true, n: 3, anims: OV_A('Idle_Flametrower', 'flame_run', 'flame_attack', 'Hit', 'Die_Tank') },
+  'Elf': { file: 'ghostelf', base: 'f', style: 'cast', spell: 'ice', want: 8.5, hp: 16, r: .45, speed: 4.2, dmg: 8, tok: 2, n: 5, anims: OV_A('Idle_Combat', 'Move_Run_withweapon', 'Strike_Magic', 'GetHit_Backward', 'Death') },
+  'Raider': { file: 'raider', base: 'k', hp: 18, r: .5, speed: 4.6, dmg: 9, tok: 2, n: 6, anims: OV_A('Idle_Attack', 'Run', 'Strike_High|Strike_Mid', 'HitFront', 'DeathBackward') },
+  'Raider Bomber': { file: 'raider_bombtrower', base: 'k', style: 'shoot', want: 11, hp: 14, r: .5, speed: 4.4, dmg: 9, n: 5, anims: OV_A('Idle_Attack', 'Run', 'Bomb_Trow', 'HitFront', 'DeathBackward') },
+  // the Skull Tribe, the Red Cloaks and the paladins
+  'Skull Tribe Stag': { file: 'stag1', base: 'k', hp: 20, r: .55, speed: 4, dmg: 10, tok: 2, n: 5, anims: OV_A('Idle_Deer', 'Run_Deer', 'Stike_Deer', 'Deer_Hit', 'Die_Deer') },
+  'Skull Tribe Rat': { file: 'rat1', base: 'k', style: 'shoot', want: 10, hp: 16, r: .55, speed: 4, dmg: 8, n: 5, anims: OV_A('Idle_rat', 'Run_Rat', 'Shoot_Rat', 'Rat_Hit', 'Die_Rat_04') },
+  'Skull Tribe Boar': { file: 'boar_1', base: 'k', style: 'cart', hp: 22, r: .6, speed: 4, dmg: 11, tok: 2, n: 5, anims: OV_A('Idle_Boar', 'Run_Boar', 'Strike_Boar', 'Boar_Hit', 'Die_Boar') },
+  'Red Cloak': { file: 'priest_red', base: 'f', style: 'cast', spell: 'fire', want: 8.5, hp: 16, r: .45, speed: 3.8, dmg: 9, tok: 2, n: 5, anims: OV_A('combat_idle2', 'Run', 'strike_A_1', 'Paladin_Hit', 'death_backwards') },
+  'Red Priestess': { file: 'red_priest_female', base: 'f', style: 'cast', spell: 'fire', want: 8.5, hp: 16, r: .45, speed: 4, dmg: 9, tok: 2, n: 5, anims: OV_A('combat_idle2', 'Female_Red_Priest_run', 'strike_A_1', 'Paladin_Hit', 'death_backwards') },
+  'White Priest': { file: 'white_priest', base: 'i', style: 'cast', spell: 'ice', want: 8.5, hp: 18, r: .45, speed: 3.6, dmg: 9, tok: 2, n: 4, anims: OV_A('combat_idle2', 'Run', 'strike_A_1', 'Hit', 'death_backwards') },
+  'Paladin': { file: 'paladin', base: 'k', style: 'cart', hp: 34, r: .6, speed: 3.6, dmg: 12, armor: true, n: 4, anims: OV_A('Paladin_Idle', 'Paladin_Run', 'Paladin_Charge_Run|Paladin_strike', 'Paladin_Hit', 'Paladin_Dead') },
+  // the trolls and the fallen
+  'Forest Troll': { file: 'forest_troll1', base: 'g', style: 'gut', hp: 70, r: 1.3, speed: 2.8, dmg: 14, armor: true, n: 2, anims: OV_A('Idle_basic', 'Move_Run_withweapon|Move_Walk', 'strike_mid_L|strike_low_R', 'HitPose', 'DeathLong') },
+  'Chain Troll': { file: 'chain_troll', base: 'g', style: 'gut', hp: 80, r: 1.4, speed: 2.6, dmg: 15, armor: true, n: 2, anims: OV_A('Idle_basic', 'Move_Run_withweapon|Move_Walk', 'skill_shockwave|strike_mid_L', 'HitPose', 'DeathLong') },
+  'Fallen Knight': { file: 'fallen_kinight', base: 'k', style: 'whirl', want: 3.4, hp: 70, r: .7, speed: 3.4, dmg: 14, armor: true, n: 2, anims: OV_A('IdleAttack', 'Run', 'SlashHigh|SlashMid', 'HitBack', 'DeathForward') },
+  'Succubus': { file: 'succubus', base: 'k', style: 'pounce', want: 6, hp: 50, r: .6, speed: 4.4, dmg: 12, n: 2, anims: OV_A('Idle_Combat', 'Move_Walk', 'Strike_WingBeat|Strike_SpinKick', 'GetHit_Backward', 'Death_Backward') },
+  // the bosses, one to a seed
+  'Dwarf King': { cup: 1, file: 'dwarf_king', base: 'k', style: 'whirl', want: 3.4, hp: 220, r: .7, speed: 3.4, dmg: 15, armor: true, n: 1, anims: OV_A('King_Idle', 'DwarfRun', 'King_strike', 'Hit', 'King_dead') },
+  'Melvin Underbelly': { cup: 1, file: 'halfling_boss', base: 'g', style: 'cart', hp: 260, r: 1.5, speed: 3, dmg: 16, n: 1, anims: OV_A('Idle_04', 'Walk_01', 'Roll_in|strike_single', 'Hitpose', 'Drop_Dead') },
+  'Kahn': { cup: 1, file: 'warrior2', base: 'k', style: 'whirl', want: 3.6, hp: 320, r: .8, speed: 3.6, dmg: 18, armor: true, n: 1, anims: OV_A('Idle', 'Walk2', 'StrikeHigh_360|Strike_high', 'Hit', 'deathForward') },
+  'Rock Giant': { cup: 1, file: 'rock_giant_lod_1', base: 'g', style: 'gut', hp: 380, r: 2.2, speed: 2.6, dmg: 20, armor: true, n: 1, anims: OV_A('idle_fists|idle', 'walk', 'smash|punch', 'Hurt', 'N_Death') },
+  'Water Serpent': { cup: 1, file: 'water_serpent_mesh_lod_01', base: 'g', style: 'cast', spell: 'ice', want: 9, hp: 360, r: 2.4, speed: 2.6, dmg: 16, n: 1, anims: OV_A('Idle_Combat', 'Move_Walk', 'Strike_Poison_OnGround|Strike_Snap_Near_OnGround', 'GetHit_High', 'Death_OnGround') },
+  'Sand Worm': { cup: 1, file: 'sandworm', sc: .5, base: 'z', style: 'sink', hp: 340, r: 2.4, speed: 3.4, dmg: 18, n: 1, anims: OV_A('Idle_Combat', 'Idle_Combat', 'Strike_Near_High|Strike_Near_Low', 'Hurt', 'Death') },
+  'Overseer': { cup: 1, file: 'overseer_eye51', base: 'f', style: 'cast', spell: 'fire', want: 9, hover: 1.5, hp: 300, r: 1.6, speed: 3, dmg: 15, n: 1, anims: OV_A('Overseer_BasicIdle', 'Fly2', 'Overseer_AttackAnim', 'Hit_anim2', 'Overseer_Dead3') },
+  'War Machine': { cup: 1, file: 'dwarf_machine', sc: .8, base: 'g', style: 'cart', hp: 400, r: 2.4, speed: 3.2, dmg: 20, armor: true, front: true, n: 1, anims: OV_A('Move', 'Move', 'Charge_attack', 'Hit_animatie', 'Panic') },
+  'Succubus Queen': { cup: 1, file: 'succubus', sc: 1.6, base: 'k', style: 'pounce', want: 6, hp: 300, r: 1, speed: 4.4, dmg: 16, n: 1, anims: OV_A('Idle_Combat', 'Move_Walk', 'Strike_WingBeat_Both|Strike_SpinKick', 'GetHit_Backward', 'Death_Backward') },
+  'The Wizard': { cup: 1, file: 'wizard', base: 'f', style: 'cast', spell: 'fire', want: 9, hp: 420, r: 1, speed: 3.4, dmg: 18, n: 1, anims: OV_A('Wizard_Idle_Basic', 'Wizard_Foot_Walk', 'Wizard_Strike|Wizard_Shockwave', 'Wizard_Hit', 'Wizard_Death') },
+  'The Reaper': { cup: 1, file: 'reaper', base: 'g', style: 'whirl', want: 4, hp: 420, r: 1.6, speed: 3.4, dmg: 18, n: 1, anims: OV_A('idle01|idle_attack_N', 'run', 'strike_high|strike_mid', 'hit', 'death') },
+  'The Forgotten God': { cup: 1, file: 'forgotten_god', sc: .35, base: 'g', style: 'gut', want: 7, hp: 600, r: 4, speed: .8, dmg: 22, armor: true, n: 1, anims: OV_A('Idle2', 'Idle2', 'Strike_Left5|Strike_Right', 'Rock_Hit', 'Forgotten_Dead') },
 };
-for (const n in OV_FOES) OV_FOES[n].slot = 'ov_' + OV_FOES[n].file;
+for (const n in OV_FOES) { const f = OV_FOES[n]; f.slot = 'ov_' + f.file + (f.sc ? '_' + f.sc : ''); if (f.cup === 1 || f.r >= 1.2) f.heavy = true; }
 const CUP_FOES = { ...KH2_FOES, ...OV_FOES };
 // --- Kingdom Hearts' Olympus Coliseum cups, seed by seed as KH1 has them (9 first, 1 the champion). Valinor fights each seed with the foes Kingdom
 //     Hearts II also has (KH2_FOES); a seed none of whose foes are in KH2 is listed but can't be fought. Then the Overlord cup: one seed per foe, weakest first
@@ -2625,7 +2678,7 @@ const KH_CUPS = [
     [9, 'Night Rave', 'Invisible 1, Darkball 3, Shadow 5'], [8, 'The Requiem', 'Angel Star 1, Wizard 2, Yellow Opera 2, Blue Rhapsody 2, Red Nocturne 2'], [7, 'Invisible Fear', 'Sneak Army 1, Invisible 3'],
     [6, 'Mad Mushroom', 'White Mushroom 3'], [5, 'Black Storm', 'Shadow 15, Darkball 11'], [4, 'Twin Mirage', 'Sneak Army 2'], [3, 'Shadow Troopers', 'Wyvern 9, Wizard 8, Defender 2'],
     [2, 'Final Battalion', 'Angel Star 9, Invisible 10, Darkball 10'], [1, 'Rock Titan', 'Rock Titan 1']] },
-  { name: 'OVERLORD CUP', game: 'OVERLORD', seeds: Object.entries(OV_FOES).map(([k, f], i, a) => [a.length - i, (f.n > 1 ? (/man$/.test(k) ? k.replace(/man$/, 'men') : k + 's') : k).toUpperCase(), `${k} ${f.n}`]) },
+  ...[['OVERLORD CUP', 0], ['OVERLORD BOSSES', 1]].map(([name, c]) => ({ name, game: 'OVERLORD', seeds: Object.entries(OV_FOES).filter(([, f]) => (f.cup || 0) === c).map(([k, f], i, a) => [a.length - i, (f.n > 1 ? (/man$/.test(k) ? k.replace(/man$/, 'men') : k + 's') : k).toUpperCase(), `${k} ${f.n}`]) })),
 ].map(c => ({ game: 'KINGDOM HEARTS', ...c, seeds: c.seeds.map(([n, team, list]) => { const all = list.split(', ').map(e => { const m = e.match(/^(.*) (\d+)$/); return [m[1], +m[2]]; });
   return { n, team, all, wave: all.filter(([k]) => CUP_FOES[k]).flatMap(([k, c]) => Array(c).fill(k)) }; }) }));
 const ARENA_TRIALS = [
@@ -6202,7 +6255,7 @@ const MODEL_SLOTS = {
   khcloud: { fbx: 'N_HB550_BTL', height: 1.8, turn: 0, cut: true, kh: 'CLOUD', anims: KH_ANIMS }, khleon: { fbx: 'N_HB530_BTL', height: 1.85, turn: 0, cut: true, kh: 'LEON', anims: KH_ANIMS },
   khyuffie: { fbx: 'N_HB580_BTL', height: 1.6, turn: 0, cut: true, kh: 'YUFFIE', anims: KH_ANIMS },
   // (and the Overlord cup's foes: Overlord's own models and moves, brightened like its scenery)
-  ...Object.fromEntries(Object.entries(OV_FOES).map(([n, f]) => [f.slot, { ov: f.file, height: f.h, turn: 0, cut: true, tone: true, kh: n.toUpperCase(), anims: f.anims }])),
+  ...Object.fromEntries(Object.entries(OV_FOES).map(([n, f]) => [f.slot, { ov: f.file, scale: 1.05 * (f.sc || 1), turn: 0, cut: true, tone: true, kh: n.toUpperCase(), anims: f.anims }])),
   blackrider: { height: 3.1, turn: -Math.PI / 2, hide: /CINEMA|_NEW/i, anims: { walk: /^run_a/i } },   // (its cinematic duplicates hidden: it has one horse and one rider)   // (the race to the Ford: Rise of the Witch-king's Black Rider, on his horse)   // Mirkwood's spiders: Shelob again (src: whose model it is), smaller
 };
 // which animation plays for each action: the first clip whose name matches (case doesn't matter)
@@ -6235,9 +6288,9 @@ function attachSkin(K) {
   // measured by its body alone: a big glow card round a staff mustn't shrink the wizard
   const box = new THREE.Box3(); obj.updateMatrixWorld(true); obj.traverse(o => { if (o.isMesh && !isFx(o) && !(cfg.hide && cfg.hide.test(o.name))) box.union(new THREE.Box3().setFromObject(o)); });
   if (box.isEmpty()) box.setFromObject(obj);
-  const size = box.getSize(new V3()), sc = cfg.height / Math.max(.01, cfg.fitMax ? Math.max(size.x, size.y, size.z) : size.y);
+  const size = box.getSize(new V3()), sc = cfg.scale || cfg.height / Math.max(.01, cfg.fitMax ? Math.max(size.x, size.y, size.z) : size.y);   // (scale: a game's own units, kept, as Overlord's: each beside the others as big as the game made it)
   const pivot = new THREE.Group(); pivot.add(obj); obj.scale.setScalar(sc);
-  const c = box.getCenter(new V3()); if (cfg.fitMax) obj.position.set(0, 0, 0); else obj.position.set(-c.x * sc, -box.min.y * sc, -c.z * sc); pivot.rotation.y = cfg.turn || 0; pivot.position.y = -(cfg.sink || 0) * cfg.height;
+  const c = box.getCenter(new V3()); if (cfg.fitMax || cfg.scale) obj.position.set(0, 0, 0); else obj.position.set(-c.x * sc, -box.min.y * sc, -c.z * sc); pivot.rotation.y = cfg.turn || 0; pivot.position.y = -(cfg.sink || 0) * (cfg.height || 0);
   obj.traverse(o => {
     if (!o.isMesh) return; if (cfg.hide && cfg.hide.test(o.name)) { o.visible = false; return; }
     o.frustumCulled = false; o.userData.cast = true;   // its size is in the model's own units, so don't judge it by that
@@ -9463,7 +9516,7 @@ function shadeAtk(u, K, dt, d, ds, dx, dy, end) {
       pud.material.opacity = Math.max(0, pud.material.opacity - dt * 3); if (u.t > 1.9) end(.8); return { arm: -2.6 };
     }
     case 'cart': {   // a wheel of iron rolling along the red line, blade out
-      const s0 = u.s, x0 = u.x; ukMove(u, u.cv[0] * dt, u.cv[1] * dt); m.spin.rotation.x += dt * 15;
+      const s0 = u.s, x0 = u.x; ukMove(u, u.cv[0] * dt, u.cv[1] * dt); if (m.spin) m.spin.rotation.x += dt * 15;   // (the empty helm's wheel; an Overlord charger keeps its own run)
       if (!u.hits && d < 1.4 + u.r && dy < 1.6) { u.hits = 1; khHurt(K.dmg, u, { kb: 10 }); }
       if (Math.random() < .4) sparks(tw(u.s, u.x, .2), 2, 3, [.8, .9, 1], [.4, .6, 1]);
       if (u.t > .8 || (u.t > .1 && Math.hypot(u.s - s0, u.x - x0) < .005)) end(); return { arm: 1.4 };
@@ -12135,9 +12188,11 @@ function khHit(u, dmg, fin, air, again) {
   KH.hitstop = fin ? .09 : .045; cam.shake = Math.max(cam.shake, fin ? .35 : .15);
   sparks(tw(u.s, u.x, u.y + 1.2), fin ? 22 : 10, fin ? 7 : 4, [1, 1, 1], [.7, .85, 1]); S.saberHit();
   const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx) || 1, ns = ds / d, nx = dx / d;
-  if (u.hp <= 0) { Object.assign(u, { state: 'launch', t: 0, vs: ns * 9, vx: nx * 9, vy: 9, dead: true }); gs.kills++; KH.drive = Math.min(100, KH.drive + (KH.form > 0 ? 0 : 6)); return; }
+  const hv = UK_KINDS[u.kind].heavy;   // (a giant isn't thrown about: it staggers, and when it dies it topples where it stands)
+  if (u.hp <= 0) { Object.assign(u, hv ? { state: 'launch', t: 0, vs: ns, vx: nx, vy: 2, dead: true } : { state: 'launch', t: 0, vs: ns * 9, vx: nx * 9, vy: 9, dead: true }); gs.kills++; KH.drive = Math.min(100, KH.drive + (KH.form > 0 ? 0 : 6)); return; }
   if (fin || air || !(u.armor && (u.state === 'atk' || u.state === 'wind'))) {
-    if (fin || air) Object.assign(u, { state: 'launch', t: 0, vs: ns * (fin ? 8 : 1.5), vx: nx * (fin ? 8 : 1.5), vy: fin ? 8 : 6 });
+    if (hv) Object.assign(u, { state: 'flinch', t: 0, vs: ns * (fin ? 2 : 1), vx: nx * (fin ? 2 : 1) });
+    else if (fin || air) Object.assign(u, { state: 'launch', t: 0, vs: ns * (fin ? 8 : 1.5), vx: nx * (fin ? 8 : 1.5), vy: fin ? 8 : 6 });
     else Object.assign(u, { state: 'flinch', t: 0, vs: ns * 4, vx: nx * 4 });
   }
   if (u.stag >= 100) { u.stag = 0; u.dizzy = u.kind === 'L' ? 2.5 : 3.5; }   // dizzy once it's back on its feet
@@ -12522,6 +12577,7 @@ showScreen(null); syncPauseBtns();
 // ?play=shire (or riv, moria, rohan, mt, ungol, mordor, doom, weather) opens a place straight away, for testing
 {
   const q = new URLSearchParams(location.search), li = /^\d+$/.test(q.get('play') || '') ? Number(q.get('play')) : (LEVELS.findIndex(L => L.loc === q.get('play')) + 1 || LEVELS.findIndex(L => q.get('play') && (L.name || '').replace(/ /g, '').includes(q.get('play').toUpperCase())) + 1) - 1;   // or ?play=2 for the third level in the list
+  if (q.get('from') && LEVELS[li] && LEVELS[li].cup !== undefined) Object.assign(LEVELS[li], cupLayout(LEVELS[li].cup, +q.get('from')));   // (&from=3 with a cup: start at its fourth seed, for testing)
   if (q.get('look')) setLook(q.get('look') === 'retro');   // ?look=retro or ?look=hd
   if (q.get('mapat')) backToMap(q.get('mapat'));
   if (q.get('cup')) { backToMap('rohan'); openSeeds(LEVELS.findIndex(L => L.cup === +q.get('cup'))); if (q.get('seed')) { const k = KH_CUPS[+q.get('cup')].seeds.findIndex(s => s.n === +q.get('seed')); if (k >= 0) { seedSel(k); seedKey('Enter'); } } }   // ?cup=3: the Hades Cup's seeds; &seed=30: straight into seed 30 (testing)
@@ -12560,7 +12616,7 @@ showScreen(null); syncPauseBtns();
     if (q.get('pick')) setTimeout(() => { const [px, py] = q.get('pick').split(',').map(Number), rc = new THREE.Raycaster(); rc.setFromCamera(new THREE.Vector2(px, py), camera); if (LV && LV.layout && LV.layout.ramps) console.log('autorun ramps ' + JSON.stringify(LV.layout.ramps.map(r => [r.sb, r.xb, r.sa, r.xa, r.ya].map(v => +v.toFixed(1))))); console.log('autorun skin ' + URUKS.filter(u => u.boss).map(u => { const O = u.m.skin && u.m.skin.obj; if (!O) return u.state + ':noobj'; const bx = new THREE.Box3().setFromObject(O); return u.state + ':' + u.m.skin.cur + ' root ' + u.m.root.visible + ' ' + u.m.root.position.toArray().map(v => v.toFixed(0)) + ' scale ' + O.scale.x.toFixed(3) + ' box ' + bx.min.toArray().map(v => v.toFixed(1)) + ' .. ' + bx.max.toArray().map(v => v.toFixed(1)); }).join(' | ') + ' hob ' + hob.root.visible + ' ' + hob.root.position.toArray().map(v => v.toFixed(1)) + ' P ' + P.y.toFixed(1)); console.log('autorun pick ' + rc.intersectObjects(scene.children, true).slice(0, 5).map(h => [h.object.type, h.distance.toFixed(1), h.object.name, h.object.material && h.object.material.type, h.object.material && h.object.material.color && h.object.material.color.getHexString(), h.object.parent && h.object.parent.type, h.object.parent && h.object.parent.parent && h.object.parent.parent.type].join(':')).join(' | ')); }, 15000);   // &pick=x,y (-1..1): what's on the screen there (testing)
     if (q.get('cam')) { const [s, x, y, ls, lx, ly] = q.get('cam').split(',').map(Number); DEBUG_CAM = { p: tw(s, x, y), l: tw(ls, lx, ly) }; }   // &cam=s,x,y,ls,lx,ly: a fixed camera in the level
     if (q.get('peek') && balrogs[0]) { const r = balrogs[0].m.root, [x, y, z] = q.get('peek').split(',').map(Number); r.updateMatrixWorld(true); DEBUG_CAM = { p: r.localToWorld(new V3(x, y, z)), l: r.localToWorld(new V3(0, 5, 0)) }; }   // &peek=8,7,12 looks at the Balrog from there
-    }; q.get("waitmodels") ? whenModels(runTests) : runTests();   // (&waitmodels=1: the rest only once your own models are in)
+    }; q.get("waitmodels") ? whenModels(() => Promise.all(Object.values(KH_WANT)).then(runTests)) : runTests();   // (&waitmodels=1: the rest only once your own models are in)
   }
 }
 requestAnimationFrame(frame);

@@ -88,3 +88,19 @@ In Edoras and Helm's Deep, Gandalf fights with Sora's own moves from Kingdom Hea
 ```
 
 Kingdom Hearts belongs to Square Enix and Disney: like everything here, keep it for playing at home.
+
+## The Colosseum's cups: `kh/` and `ov/`
+
+The Colosseum's Kingdom Hearts cups (Phil, Pegasus, Hercules and Hades) use Kingdom Hearts II's own Heartless, bosses and fighters from `kh/`. Make them with OpenKH (no Blender needed):
+
+```powershell
+pwsh C:\Users\Stefan\bfme\tools\Export-Heartless.ps1
+```
+
+The Overlord Cup (its enemies and creatures) and Overlord Bosses use Overlord's own characters, with every move, from `ov/`. Make them with Blender and the Overlord ripper, then copy the models the cups use (`OV_FOES` in `index.html` lists them) from `C:\Users\Stefan\bfme\overlord\out\chars\<pack>\` into `ov/`:
+
+```powershell
+& C:\Users\Stefan\bfme\tools\Convert-Overlord.ps1 chars
+```
+
+These models are big, so the game only fetches them when a cup starts. A foe whose model isn't here fights in Valinor's own stand-in shape. Overlord belongs to Codemasters and Triumph Studios: keep it at home too.
