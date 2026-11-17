@@ -95,6 +95,7 @@ body.touch #khcmd{display:none!important}
 .mi.sd{padding:4px 8px;margin:0;transform:none!important}.mi.sd span{font-size:.8em}.mi.sd b{min-width:2em}.mi.sd i{display:block;font-size:.72em;line-height:1.25;opacity:.85}.mi.sd s{opacity:.45}
 .mi.sd.off{opacity:.38;filter:grayscale(1)}
   /* a place with many levels (the Colosseum): two columns, scrolling if they still don't fit, so a laptop screen shows them all */
+  body.mapshot #mapUI,body.mapshot #ov,body.mapshot #hud{display:none!important}
   #chapMenu.long{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;width:min(1100px,94vw);max-height:calc(100vh - 150px);overflow-y:auto;padding:6px 12px;align-content:start}
   #chapMenu.long .mi{padding:.2em .6em}#chapMenu.long .mi.on{transform:scale(1.02)}#chapMenu.long .mi b{font-size:clamp(20px,3.6vh,34px)}#chapMenu.long .mi span{font-size:clamp(15px,2.6vh,24px)}#chapMenu.long .mi i{font-size:11px}
 #sTitle .press{margin-top:2.2vh;font-size:clamp(16px,2.6vw,28px)}
@@ -5800,7 +5801,7 @@ function belFit() {
   return { s, x0: cx - 2.5 * s, z0: shire.z, luin: false };
 }
 // your own picture of Beleriand (models/beleriand.jpg or .png), if you've made one: it's laid over the same frame as the guide (see ?belguide=1)
-let BEL_IMG = null;
+let BEL_IMG = null; const MAPSHOT = !!new URLSearchParams(location.search).get('mapshot');
 // the board's own ground pictures cut into little squares and sorted by what they show (grass, forest, rock, snow), to paint Beleriand in the board's look
 function belPools() {
   if (BOARD.pools !== undefined) return BOARD.pools; const P = { plain: [], forest: [], rock: [], snow: [] }, c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
@@ -6225,6 +6226,10 @@ function updateMap(dt) {
   if (mc.snap) { mc.p.copy(_b); mc.l.copy(_c); mc.snap = false; }
   const k = 1 - Math.exp(-6 * dt); mc.p.lerp(_b, k); mc.l.lerp(_c, k);
   mapCam.position.copy(mc.p); mapCam.lookAt(mc.l);
+  if (MAPSHOT && BOARD) {   // (?mapshot=1: the whole map from straight above, Beleriand and all, for a picture of it)
+    const x0 = BELG ? Math.min(BOARD.ex0, BELG.x0 - 590 * BELG.s) : BOARD.ex0, x1 = BOARD.ex1, z0 = BOARD.ez0, z1 = BOARD.ez1, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, f = 12, half = Math.max((x1 - x0) / 2 / mapCam.aspect, (z1 - z0) / 2), h = half / Math.tan(f / 2 * Math.PI / 180);
+    mapCam.fov = f; mapCam.near = h * .7; mapCam.far = h * 1.3; mapCam.updateProjectionMatrix(); mapCam.position.set(cx, h, cz + .001); mapCam.up.set(0, 0, -1); mapCam.lookAt(cx, 0, cz); mapScene.fog.near = 1e5; mapScene.fog.far = 1e6; tok.g.visible = false; document.body.classList.add('mapshot');
+  }
   const on = state === 'map' && mc.zoom < .25;
   if (on !== mapUIOn) { mapUIOn = on; mapUI.classList.toggle('on', on); }
 }
