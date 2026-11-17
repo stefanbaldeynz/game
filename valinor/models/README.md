@@ -105,4 +105,8 @@ The Overlord list uses Overlord's own characters, with every move, from `ov/`. M
 & C:\Users\Stefan\bfme\tools\Convert-Overlord.ps1 chars
 ```
 
-These models are big, so the game only fetches them when a cup starts. A foe whose model isn't here fights in Valinor's own stand-in shape. Overlord belongs to Codemasters and Triumph Studios: keep it at home too.
+## Beleriand on the map: `beleriand.jpg`
+
+West of Ered Luin the map goes on into Beleriand. With the War of the Ring board in, it's painted from the board's own ground pictures. To use your own painting instead, start from `beleriand-guide.jpg` (open the game with `?belguide=1` to see it again): it is Beleriand's exact frame, 1680 × 1320, with Middle-earth's land shaded grey where it covers it. Paint over it keeping everything where it is, and save it here as `beleriand.jpg` (or `.png`). Only the land is used: the coastline, rivers and names come from the picture, and the hills from the game.
+
+These Colosseum models are big, so the game only fetches them when a cup starts. A foe whose model isn't here fights in Valinor's own stand-in shape. Overlord belongs to Codemasters and Triumph Studios: keep it at home too.

@@ -248,7 +248,7 @@ body.touch #bossbar .bar{width:min(50vw,420px)}
     <div class="press kOnly" style="animation:none">ENTER — RESUME</div>
     <div class="tbtns"><div data-key="Enter">RESUME</div><div data-key="KeyR">RESTART</div><div data-key="KeyQ">QUIT</div><div data-key="KeyM" id="tMute">MUSIC ON</div><div data-key="KeyG" id="tLook">LOOK: HD</div></div>
     <div class="tbtns"><div data-key="KeyZ" id="tGod">INVINCIBLE: OFF</div><div data-key="KeyX" id="tAmmo">UNLIMITED MAGIC: OFF</div><div data-key="KeyH" id="tHero">PLAY AS SORA</div></div>
-    <div class="ctl kOnly"><b>R</b><span>Restart from the beginning</span><b>Q</b><span>Quit to the Minas Tirith menu</span><b>M</b><span>Mute music</span><b>G</b><span>HD or retro PS1 look</span><b>Z / X</b><span>Invincible / unlimited magic</span><b>H</b><span>Play as Sora or Gandalf (starts again)</span></div>
+    <div class="ctl kOnly"><b>R</b><span>Restart from the beginning</span><b>Q</b><span>Quit to the Minas Tirith menu</span><b>M</b><span>Mute music</span><b>G</b><span>HD or retro PS1 look</span><b>Z / X</b><span>Invincible / unlimited magic</span><b>H</b><span>Play as Sora or Gandalf</span></div>
   </div>
   <div class="scr" id="sOver">
     <span class="big">GAME OVER</span>
@@ -2983,9 +2983,9 @@ let state = 'title', T = 0;
 const gs = { apples: 0, lives: 10, rockets: 8, crates: 0, crateTotal: 0, phial: 0, superT: 0, kills: 0, time: 0, appleTotal: 0, cp: { s: 1.2, x: 0, y: 0, t: 0, deaths: 0 } };
 const RUN = 7.6, ACC = 60, AIR = 34, GRAV = 36, JUMP_V = 12.6, PR = .36, PH = 1.35, RIDE_V = 9.6;
 // who you play: Gandalf, or Sora from Kingdom Hearts II (his own model, Keyblade and moves, from models/kh: only on your own computer). Chosen with H on the
-// map or in the pause menu (the game starts again with him), or ?hero=sora. Sora runs faster and jumps higher than Gandalf, his second jump is KH II's
+// map or in the pause menu (straight away, wherever you are), or ?hero=sora. Sora runs faster and jumps higher than Gandalf, his second jump is KH II's
 // Aerial Dodge, and holding jump as he falls after it, he glides (KH II's Glide)
-const HERO = (() => { const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname); let h = new URLSearchParams(location.search).get('hero'); if (!h) try { h = localStorage.getItem('valinorHero'); } catch (e) { } return local && h === 'sora' ? 'sora' : 'gandalf'; })();
+let HERO = (() => { const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname); let h = new URLSearchParams(location.search).get('hero'); if (!h) try { h = localStorage.getItem('valinorHero'); } catch (e) { } return local && h === 'sora' ? 'sora' : 'gandalf'; })();
 const SORA_RUN = 1.22, SORA_JUMP = 1.12, SORA_GLIDE = { fall: 2.4, speed: 1.55 };
 const P = { s: 1.2, x: 0, y: 0, vs: 0, vx: 0, vy: 0, ground: true, heading: 0, spinT: 0, spinCD: 0, coyote: 0, jumpBuf: 0, jumpHeld: false, standOn: null, invT: 0, fireCD: 0, fireAnim: 0, airT: 0, dbl: false, flip: 0, safe: null };
 const cam = { yaw: 0, mode: 0, m: 0, gy: 0, shake: 0, s: 0, x: 0, y: 3, ls: 0, lx: 0, ly: 1, snap: true, wp: new V3(), wl: new V3() };
@@ -3123,7 +3123,7 @@ addEventListener('blur', () => { for (const k in keys) keys[k] = false; touchRes
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play' && !location.search.includes('sim=')) pause(true); });
 function onKey(code) {
   if (KH_PMENU.open) { khPowersKey(code); return; }   // (the powers menu has the keys while it's open)
-  if (code === 'KeyH' && state !== 'play' && LOCAL_ASSETS) { const h = HERO === 'sora' ? 'gandalf' : 'sora'; try { localStorage.setItem('valinorHero', h); } catch (e) { } const u = new URL(location.href); u.searchParams.delete('hero'); location.href = u.toString(); return; }   // (Gandalf or Sora: the game starts again with the other)
+  if (code === 'KeyH' && state !== 'play' && LOCAL_ASSETS) { setHero(HERO === 'sora' ? 'gandalf' : 'sora'); return; }   // (Gandalf or Sora, there and then)
   if (SEEDS && state === 'map') { if (!/^Key[MGZX]$/.test(code)) { seedKey(code); return; } }   // (a Kingdom Hearts cup's seeds)
   if (CHAP && state === 'map') { if (!/^Key[MGZX]$/.test(code)) { chapKey(code); return; } }   // (and a level menu)
   if (code === 'Tab' && state === 'play' && khOn()) { khPowersMenu(true); return; }
@@ -5722,7 +5722,7 @@ const BEL = {
     { p: [[268, 254], [282, 252], [300, 262], [302, 282], [288, 293], [270, 290], [262, 274], [268, 254]], h: 3.2, w: 7 },   // the Encircling Mountains round Gondolin
     { p: [[300, 262], [360, 270], [424, 264]], h: 1.6, w: 26 },   // the highlands of Dorthonion
     { p: [[310, 316], [360, 322], [412, 318]], h: 2.4, w: 8 },   // Ered Gorgoroth
-    { p: [[600, 70], [586, 160], [580, 250], [590, 330], [600, 420], [614, 500], [628, 575]], h: 4.4, w: 18 },   // Ered Luin, the Blue Mountains
+    { p: [[600, 70], [586, 160], [580, 250], [590, 330], [600, 420], [614, 500], [628, 575]], h: 4.4, w: 18, luin: true },   // Ered Luin, the Blue Mountains (the board has its own)
     { p: [[230, 430], [290, 440], [350, 446]], h: 1.2, w: 6 },   // Andram, the Long Wall
     { p: [[456, 280], [466, 286]], h: 2, w: 9 },   // Himring
     { p: [[440, 468], [450, 474]], h: 1.6, w: 9 },   // Amon Ereb
@@ -5754,7 +5754,7 @@ const BEL = {
   places: [['Angband', 420, 140], ['Gondolin', 285, 272], ['Tol Sirion', 258, 250], ['Nargothrond', 205, 395], ['Menegroth', 382, 372], ['Himring', 462, 282], ['Vinyamar', 40, 336], ['Brithombar', 74, 410],
     ['Eglarest', 136, 408], ['Havens of Sirion', 212, 525], ['Belegost', 584, 330], ['Nogrod', 602, 440], ['Amon Rûdh', 240, 402], ['Amon Ereb', 446, 470], ['Ivrin', 190, 308]],
   names: [['BELERIAND', 360, 440, 34, -.18], ['HITHLUM', 150, 200, 22, 0], ['DORIATH', 372, 360, 20, 0], ['DORTHONION', 362, 268, 15, 0], ['ANFAUGLITH', 440, 232, 14, 0], ['OSSIRIAND', 560, 420, 15, -1.45],
-    ['TAUR-IM-DUINATH', 395, 530, 14, 0], ['WEST BELERIAND', 160, 452, 12, -.5], ['EAST BELERIAND', 490, 350, 12, 0], ['NEVRAST', 70, 300, 12, 0], ['FALAS', 92, 392, 12, 0], ['ERED LUIN', 606, 230, 12, -1.5],
+    ['TAUR-IM-DUINATH', 395, 530, 14, 0], ['WEST BELERIAND', 245, 422, 10, 0], ['EAST BELERIAND', 490, 350, 12, 0], ['NEVRAST', 70, 300, 12, 0], ['FALAS', 92, 392, 12, 0], ['ERED LUIN', 606, 230, 12, -1.5],
     ['DOR DAIDELOS', 110, 82, 14, 0], ['THANGORODRIM', 366, 165, 13, 0], ['DOR-LÓMIN', 175, 262, 10, 0], ['ESTOLAD', 500, 300, 10, 0], ['ARVERNIEN', 225, 480, 10, -1.2], ['ANDRAM', 300, 432, 9, .1]],
   sea: [['B E L E G A E R', -120, 500, 0], ['BAY OF BALAR', 150, 610, 0]],
 };
@@ -5767,68 +5767,129 @@ function belH(x, z) {
   const [px, py] = belAt(x, z), sea = BELG ? BELG.sea : 0; if (!belIn(px, py)) return sea + .06;   // (flat out to sea: the picture cuts the coast, so no wall shows)
   const u = BELG ? BELG.s / .09 : 1;   // (heights to the map's own scale)
   let h = sea + .06 + .1 * u * (1 + Math.sin(px * .05 + py * .03) * Math.sin(py * .07 - px * .02));
-  for (const m of BEL.ranges) { const d = polyDist(px, py, m.p), w = m.w * 1.7; if (d < w) { const k = 1 - d / w; h += m.h * .55 * u * k * k * (3 - 2 * k) * (.85 + .15 * Math.sin(px * .4 + py * .3)); } }
+  for (const m of (BELG && BELG.ranges) || BEL.ranges) { const d = polyDist(px, py, m.p), w = m.w * 1.7; if (d < w) { const k = 1 - d / w; h += m.h * .55 * u * k * k * (3 - 2 * k) * (.85 + .15 * Math.sin(px * .4 + py * .3)); } }
   for (const [tx, ty] of BEL.thango) { const d = Math.hypot(px - tx, py - ty); if (d < 26) h += 3.6 * u * (1 - d / 26) ** 1.5; }
   for (const [lx, ly, r] of BEL.lakes) if (Math.hypot(px - lx, py - ly) < r) h = Math.min(h, sea + .05);
-  return h;
+  return sea + .06 + (h - sea - .06) * smooth(clamp((py - 66) / 30, 0, 1));   // (down to nothing at the north edge, where the map ends)
 }
 const meLand = (x, z) => BOARD ? boardLand(x, z) : coastAt(x, z) > 0;
 const belLand = (x, z) => { if (!BELG || meLand(x, z)) return false; const [px, py] = belAt(x, z); return belIn(px, py) && !BEL.lakes.some(([lx, ly, r]) => Math.hypot(px - lx, py - ly) < r); };
-function buildBeleriand() {
+// where Beleriand goes. On your War of the Ring board, its own westernmost range is Ered Luin: the reference map's Ered Luin (590 across, 100 to 470 down)
+// is laid along it, which sets Beleriand's size too. On the little diorama: by the Shire and Rivendell, Ered Luin along its west coast
+function belFit() {
+  const shire = NODES.find(n => n.loc === 'shire'), riv = NODES.find(n => n.loc === 'riv');
+  if (BOARD) {
+    const B = BOARD, rows = [];
+    for (let j = 0; j < B.H; j++) {
+      const z = B.z0 + j * B.step; let i0 = -1; for (let i = 0; i < B.W; i++) if (boardLand(B.x0 + i * B.step, z)) { i0 = i; break; } if (i0 < 0) continue;
+      let bi = i0, bh = -1; for (let i = i0; i < Math.min(B.W, i0 + Math.round(22 / B.step)); i++) if (B.h[j * B.W + i] > bh) { bh = B.h[j * B.W + i]; bi = i; }
+      if (bh > B.sea + 1.1 && z > shire.z - 40 && z < shire.z + 40) rows.push([z, B.x0 + bi * B.step]);
+    }
+    // the longest unbroken run of ridge rows near the Shire's latitude
+    let best = [], run = []; for (const r of rows) { if (run.length && r[0] - run[run.length - 1][0] > 2.5) run = []; run.push(r); if (run.length > best.length) best = run.slice(); }
+    // the size: the reference map laid onto the board by six places on both (one scale, no turning), so Beleriand is as big beside Middle-earth as there
+    const REF = { shire: [842, 384], weather: [955, 388], riv: [1165, 358], isen: [1118, 645], mt: [1395, 828], erebor: [1462, 295] }, prs = Object.entries(REF).map(([l, p]) => [p, NODES.find(n => n.loc === l)]).filter(q => q[1]);
+    const ma = [0, 1].map(k => prs.reduce((a, q) => a + q[0][k], 0) / prs.length), mb = [prs.reduce((a, q) => a + q[1].x, 0) / prs.length, prs.reduce((a, q) => a + q[1].z, 0) / prs.length];
+    let num = 0, den = 0; for (const [a, n] of prs) { num += (a[0] - ma[0]) * (n.x - mb[0]) + (a[1] - ma[1]) * (n.z - mb[1]); den += (a[0] - ma[0]) ** 2 + (a[1] - ma[1]) ** 2; }
+    const s = num / den, z0 = mb[1] + (370 - ma[1]) * s;
+    // and Ered Luin (590 across on the reference) on the board's own westernmost range
+    if (best.length > 10) { const xs = best.map(r => r[1]).sort((a, b) => a - b); return { s, x0: xs[xs.length >> 1], z0, luin: true }; }
+    return { s, x0: mb[0] + (590 - ma[0]) * s, z0, luin: true };
+  }
+  const s = Math.hypot(riv.x - shire.x, riv.z - shire.z) / 333; let cx = shire.x; while (cx > shire.x - 80 && meLand(cx, shire.z)) cx -= .25;
+  return { s, x0: cx - 2.5 * s, z0: shire.z, luin: false };
+}
+// your own picture of Beleriand (models/beleriand.jpg or .png), if you've made one: it's laid over the same frame as the guide (see ?belguide=1)
+let BEL_IMG = null;
+// the board's own ground pictures cut into little squares and sorted by what they show (grass, forest, rock, snow), to paint Beleriand in the board's look
+function belPools() {
+  if (BOARD.pools !== undefined) return BOARD.pools; const P = { plain: [], forest: [], rock: [], snow: [] }, c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+  for (const img of BOARD.tiles || []) {
+    try { g.clearRect(0, 0, 256, 256); g.drawImage(img, 0, 0, 256, 256); const D = g.getImageData(0, 0, 256, 256).data;
+      for (let v = 0; v < 256; v += 16) for (let u = 0; u < 256; u += 16) {
+        let r = 0, gg = 0, b = 0; for (let y = v; y < v + 16; y += 2) for (let x = u; x < u + 16; x += 2) { const i = (y * 256 + x) * 4; r += D[i]; gg += D[i + 1]; b += D[i + 2]; } r /= 64; gg /= 64; b /= 64;
+        const lum = (r + gg + b) / 3, sat = Math.max(r, gg, b) - Math.min(r, gg, b), k = b > r + 22 && b > gg ? null : lum > 150 && sat < 45 ? 'snow' : sat < 28 && lum > 70 ? 'rock' : gg >= r + 6 && gg >= b + 6 && gg > 42 && lum > 26 && lum < 70 ? 'forest' : gg >= b && lum >= 62 && lum < 140 && sat > 14 ? 'plain' : null;
+        if (k && P[k].length < 400) P[k].push([img, u / 256, v / 256]);
+      } } catch (e) { }
+  }
+  return BOARD.pools = Object.values(P).every(a => a.length > 4) ? P : null;
+}
+function buildBeleriand(guide) {
   if (BELG) { mapScene.remove(BELG.g); BELG.g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } }); BELG = null; }
-  const shire = NODES.find(n => n.loc === 'shire'), riv = NODES.find(n => n.loc === 'riv'), s = Math.hypot(riv.x - shire.x, riv.z - shire.z) / 333;
-  let cx = shire.x; while (cx > shire.x - 80 && meLand(cx, shire.z)) cx -= .25;   // (Middle-earth's west coast, level with the Shire)
-  BELG = { s, x0: cx - 2.5 * s, z0: shire.z, sea: BOARD ? BOARD.sea : 0, g: new THREE.Group() };
-  // the map itself, painted at two canvas pixels to the reference's one, from 0,40 to 660,700
+  BELG = { ...belFit(), sea: BOARD ? BOARD.sea : 0, g: new THREE.Group() }; const s = BELG.s, ranges = BEL.ranges.filter(m => !(BELG.luin && m.luin));
+  const pools = !guide && BOARD && !BEL_IMG && belPools(), boardLook = !!pools;
+  // the map itself, painted at two canvas pixels to the reference's one, over 0,40 to 840,700
   const PX0 = 0, PY0 = 40, PW = 840, PH = 660, K = 2, c = document.createElement('canvas'); c.width = PW * K; c.height = PH * K; const g = c.getContext('2d');
   g.setTransform(K, 0, 0, K, -PX0 * K, -PY0 * K);
   const path = P => { g.beginPath(); P.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); };
   const rnd = (() => { let q = 7; return () => (q = (q * 16807) % 2147483647) / 2147483647; })();
-  // parchment land, darker towards the coasts, with a fine speckle
-  for (const P of [BEL.coast, ...BEL.isles]) { path(P); g.closePath(); g.fillStyle = '#cfc58c'; g.fill(); g.lineWidth = 6; g.strokeStyle = 'rgba(150,140,70,.35)'; g.stroke(); g.lineWidth = 1.2; g.strokeStyle = '#4a5a2a'; g.stroke(); }
-  for (let i = 0; i < 9000; i++) { const x = rnd() * PW, y = PY0 + rnd() * PH; g.fillStyle = rnd() < .5 ? 'rgba(120,110,40,.12)' : 'rgba(255,250,200,.18)'; g.fillRect(x, y, 1.2, 1.2); }
-  // the Iron Mountains' cold north
-  { const gr = g.createLinearGradient(0, 66, 0, 120); gr.addColorStop(0, 'rgba(225,232,220,.9)'); gr.addColorStop(1, 'rgba(225,232,220,0)'); g.fillStyle = gr; g.fillRect(0, 60, 660, 60); }
-  // the woods: deep green, stippled, with a darker rim
-  for (const P of BEL.woods) {
-    path(P); g.closePath(); g.fillStyle = '#3f7636'; g.fill(); g.save(); g.clip();
-    for (let i = 0; i < 600; i++) { const x = rnd() * 660, y = PY0 + rnd() * 660; if (!polyIn(x, y, P)) continue; g.fillStyle = rnd() < .55 ? '#2e6428' : '#6aa850'; g.beginPath(); g.arc(x, y, .8 + rnd() * 1.4, 0, TAU); g.fill(); }
-    g.restore(); path(P); g.closePath(); g.lineWidth = 1; g.strokeStyle = '#2a4a20'; g.stroke();
+  const lands = [BEL.coast, ...BEL.isles], landPath = () => { g.beginPath(); for (const P of lands) { P.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); } };
+  // the shallows round the coast (as the board has them), then the land
+  landPath(); g.lineJoin = 'round'; g.lineWidth = boardLook ? 9 : 6; g.strokeStyle = boardLook ? '#4a8ab0' : 'rgba(150,140,70,.35)'; g.stroke(); if (boardLook) { g.lineWidth = 4; g.strokeStyle = '#7ab4c8'; g.stroke(); }
+  landPath(); g.fillStyle = boardLook ? '#4a6a32' : '#cfc58c'; g.fill();
+  const what = (px, py) => {   // (grass, forest, rock or snow, here)
+    let m = 0; for (const r of ranges) { const d = polyDist(px, py, r.p); if (d < r.w * 1.5) m = Math.max(m, (1 - d / (r.w * 1.5)) * r.h / 3); }
+    for (const [tx, ty] of BEL.thango) { const d = Math.hypot(px - tx, py - ty); if (d < 30) m = Math.max(m, 1.6 * (1 - d / 30)); }
+    return m > .8 ? 'snow' : m > .35 ? 'rock' : BEL.woods.some(P => polyIn(px, py, P)) ? 'forest' : 'plain';
+  };
+  if (BEL_IMG && !guide) { g.save(); landPath(); g.clip(); g.drawImage(BEL_IMG, PX0, PY0, PW, PH); g.restore(); }
+  else if (boardLook) {
+    // the board's own ground: soft squares of it laid edge over edge, each of the kind its spot wants
+    const S = 34, tmp = document.createElement('canvas'); tmp.width = tmp.height = S * K; const q = tmp.getContext('2d'), mask = q.createRadialGradient(S * K / 2, S * K / 2, S * K * .2, S * K / 2, S * K / 2, S * K / 2); mask.addColorStop(0, '#000'); mask.addColorStop(1, 'rgba(0,0,0,0)');
+    g.save(); landPath(); g.clip();
+    for (let y = PY0 - 10; y < PY0 + PH + 10; y += S * .45) for (let x = PX0 - 10; x < PX0 + PW + 10; x += S * .45) {
+      const px = x + (rnd() - .5) * 8, py = y + (rnd() - .5) * 8; if (!belIn(px, py) && !lands.some(P => polyDist(px, py, P.concat([P[0]])) < S)) continue;
+      const pool = pools[what(px, py)], [img, u, v] = pool[rnd() * pool.length | 0], sw = img.width / 16, sh = img.height / 16;
+      q.globalCompositeOperation = 'source-over'; q.clearRect(0, 0, S * K, S * K); q.drawImage(img, u * img.width, v * img.height, sw, sh, 0, 0, S * K, S * K); q.globalCompositeOperation = 'destination-in'; q.fillStyle = mask; q.fillRect(0, 0, S * K, S * K);
+      g.drawImage(tmp, px - S / 2, py - S / 2, S, S);
+    }
+    g.restore();
+  } else {
+    for (let i = 0; i < 9000; i++) { const x = PX0 + rnd() * PW, y = PY0 + rnd() * PH; g.fillStyle = rnd() < .5 ? 'rgba(120,110,40,.12)' : 'rgba(255,250,200,.18)'; g.fillRect(x, y, 1.2, 1.2); }
+    { const gr = g.createLinearGradient(0, 66, 0, 120); gr.addColorStop(0, 'rgba(225,232,220,.9)'); gr.addColorStop(1, 'rgba(225,232,220,0)'); g.fillStyle = gr; g.fillRect(0, 60, 840, 60); }
+    for (const P of BEL.woods) {
+      path(P); g.closePath(); g.fillStyle = '#3f7636'; g.fill(); g.save(); g.clip();
+      for (let i = 0; i < 600; i++) { const x = rnd() * 840, y = PY0 + rnd() * 660; if (!polyIn(x, y, P)) continue; g.fillStyle = rnd() < .55 ? '#2e6428' : '#6aa850'; g.beginPath(); g.arc(x, y, .8 + rnd() * 1.4, 0, TAU); g.fill(); }
+      g.restore(); path(P); g.closePath(); g.lineWidth = 1; g.strokeStyle = '#2a4a20'; g.stroke();
+    }
+    const peak = (x, y, w, h) => { g.beginPath(); g.moveTo(x - w, y); g.lineTo(x, y - h); g.lineTo(x + w, y); g.closePath(); g.fillStyle = '#a89470'; g.fill(); g.beginPath(); g.moveTo(x, y - h); g.lineTo(x + w, y); g.lineTo(x + w * .2, y); g.closePath(); g.fillStyle = '#6a5640'; g.fill(); };
+    for (const m of ranges) for (let i = 0; i < m.p.length - 1; i++) { const [ax, ay] = m.p[i], [bx, by] = m.p[i + 1], L = Math.hypot(bx - ax, by - ay); for (let d = 0; d < L; d += 5) { const t = d / L; peak(ax + (bx - ax) * t + (rnd() - .5) * m.w * .9, ay + (by - ay) * t + (rnd() - .5) * m.w * .9, 2.5 + m.h * .8, 3 + m.h * 1.6); } }
+    for (const [x, y] of BEL.thango) { g.fillStyle = '#2a2224'; peak(x, y + 8, 12, 26); }
   }
-  // rivers, lakes, and the fire running down from Thangorodrim
+  // rivers, lakes, and the fire running down from Thangorodrim (over whichever ground)
   g.lineCap = g.lineJoin = 'round';
-  for (const R of BEL.rivers) { path(R); g.lineWidth = 1.6; g.strokeStyle = '#3a6ab8'; g.stroke(); }
-  for (const [x, y, r] of BEL.lakes) { g.beginPath(); g.arc(x, y, r, 0, TAU); g.fillStyle = '#3a6ab8'; g.fill(); g.lineWidth = .8; g.strokeStyle = '#24467e'; g.stroke(); }
-  for (const R of BEL.lava) { path(R); g.lineWidth = 2.4; g.strokeStyle = '#f0a020'; g.stroke(); g.lineWidth = .8; g.strokeStyle = '#ffe070'; g.stroke(); }
-  // the mountains: rows of little hatched peaks along each range, lit from the west
-  const peak = (x, y, w, h) => { g.beginPath(); g.moveTo(x - w, y); g.lineTo(x, y - h); g.lineTo(x + w, y); g.closePath(); g.fillStyle = '#a89470'; g.fill(); g.beginPath(); g.moveTo(x, y - h); g.lineTo(x + w, y); g.lineTo(x + w * .2, y); g.closePath(); g.fillStyle = '#6a5640'; g.fill();
-    g.lineWidth = .5; g.strokeStyle = '#4a3a2a'; g.beginPath(); g.moveTo(x - w, y); g.lineTo(x, y - h); g.lineTo(x + w, y); g.stroke(); };
-  for (const m of BEL.ranges) for (let i = 0; i < m.p.length - 1; i++) { const [ax, ay] = m.p[i], [bx, by] = m.p[i + 1], L = Math.hypot(bx - ax, by - ay); for (let d = 0; d < L; d += 5) { const t = d / L, ox = (rnd() - .5) * m.w * .9, oy = (rnd() - .5) * m.w * .9; peak(ax + (bx - ax) * t + ox, ay + (by - ay) * t + oy, 2.5 + m.h * .8, 3 + m.h * 1.6); } }
-  for (const [x, y] of BEL.thango) { g.fillStyle = '#2a2224'; peak(x, y + 8, 12, 26); }
-  // the names, as the old maps letter them
-  g.textAlign = 'center'; g.textBaseline = 'middle';
-  for (const [t, x, y, sz, rot] of BEL.names) { g.save(); g.translate(x, y); g.rotate(rot); g.font = `bold ${sz}px Georgia, 'Times New Roman', serif`; g.lineWidth = 3; g.strokeStyle = 'rgba(240,232,180,.7)'; const sp = t.split('').join(sz > 16 ? String.fromCharCode(8202, 8202) : String.fromCharCode(8202)); g.strokeText(sp, 0, 0); g.fillStyle = '#20301a'; g.fillText(sp, 0, 0); g.restore(); }
-  for (const [t, x, y] of BEL.places) { g.beginPath(); g.arc(x, y, 1.6, 0, TAU); g.fillStyle = '#20301a'; g.fill(); g.font = `italic 7px Georgia, serif`; g.lineWidth = 2; g.strokeStyle = 'rgba(240,232,180,.7)'; g.strokeText(t, x, y + 7); g.fillStyle = '#20301a'; g.fillText(t, x, y + 7); }
+  if (!BEL_IMG || guide) {
+    for (const R of BEL.rivers) { path(R); g.lineWidth = boardLook ? 2.2 : 1.6; g.strokeStyle = boardLook ? 'rgba(20,50,80,.6)' : '#3a6ab8'; g.stroke(); if (boardLook) { g.lineWidth = 1.1; g.strokeStyle = '#6ab0d8'; g.stroke(); } }
+    for (const [x, y, r] of BEL.lakes) { g.beginPath(); g.arc(x, y, r, 0, TAU); g.fillStyle = boardLook ? '#2a5a90' : '#3a6ab8'; g.fill(); g.lineWidth = 1; g.strokeStyle = boardLook ? '#8ac0d8' : '#24467e'; g.stroke(); }
+    for (const R of BEL.lava) { path(R); g.lineWidth = 2.4; g.strokeStyle = '#f0a020'; g.stroke(); g.lineWidth = .8; g.strokeStyle = '#ffe070'; g.stroke(); }
+    // the names: dark lettering, as the board's own region names are
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (const [t, x, y, sz, rot] of BEL.names) { if (BELG.luin && t === 'ERED LUIN') continue; g.save(); g.translate(x, y); g.rotate(rot); g.font = `bold ${sz}px Georgia, 'Times New Roman', serif`; const sp = t.split('').join(sz > 16 ? String.fromCharCode(8202, 8202) : String.fromCharCode(8202));
+      g.lineWidth = boardLook ? 2.5 : 3; g.strokeStyle = boardLook ? 'rgba(230,220,180,.45)' : 'rgba(240,232,180,.7)'; g.strokeText(sp, 0, 0); g.fillStyle = boardLook ? 'rgba(14,16,10,.85)' : '#20301a'; g.fillText(sp, 0, 0); g.restore(); }
+    for (const [t, x, y] of BEL.places) { g.beginPath(); g.arc(x, y, 1.6, 0, TAU); g.fillStyle = boardLook ? '#f0e0a0' : '#20301a'; g.fill(); g.font = `italic 7px Georgia, serif`; g.lineWidth = 2; g.strokeStyle = boardLook ? 'rgba(10,10,6,.7)' : 'rgba(240,232,180,.7)'; g.strokeText(t, x, y + 7); g.fillStyle = boardLook ? '#f4ecc8' : '#20301a'; g.fillText(t, x, y + 7); }
+  }
+  // ?belguide=1: the frame as it is, on screen, to repaint (see BEL_IMG), with Middle-earth's land shaded where it covers Beleriand
+  if (guide) { const id = g.getImageData(0, 0, c.width, c.height), D = id.data; for (let j = 0; j < c.height; j++) for (let i = 0; i < c.width; i++) { const px = PX0 + i / K, py = PY0 + j / K, x = BELG.x0 + (px - 590) * s, z = BELG.z0 + (py - 370) * s, o = (j * c.width + i) * 4; if (meLand(x, z)) { D[o] = D[o] * .4 + 60; D[o + 1] = D[o + 1] * .4 + 60; D[o + 2] = D[o + 2] * .4 + 60; D[o + 3] = 255; } else if (D[o + 3] < 128) { D[o] = 30; D[o + 1] = 60; D[o + 2] = 120; D[o + 3] = 255; } } g.putImageData(id, 0, 0);
+    c.style.cssText = 'position:fixed;left:0;top:0;z-index:99;width:' + c.width + 'px;height:' + c.height + 'px'; document.body.appendChild(c); return; }
   // only where Middle-earth has sea: where its own land is, it shows through
   { const id = g.getImageData(0, 0, c.width, c.height), D = id.data;
-    for (let j = 0; j < c.height; j += 2) for (let i = 0; i < c.width; i += 2) { const px = PX0 + i / K, py = PY0 + j / K, x = BELG.x0 + (px - 590) * s, z = BELG.z0 + (py - 370) * s; if (meLand(x, z) || !belIn(px, py)) for (const [a, b] of [[0, 0], [1, 0], [0, 1], [1, 1]]) D[((j + b) * c.width + i + a) * 4 + 3] = 0; }
+    for (let j = 0; j < c.height; j += 2) for (let i = 0; i < c.width; i += 2) { const px = PX0 + i / K, py = PY0 + j / K, x = BELG.x0 + (px - 590) * s, z = BELG.z0 + (py - 370) * s; if (meLand(x, z)) for (const [a, b] of [[0, 0], [1, 0], [0, 1], [1, 1]]) D[((j + b) * c.width + i + a) * 4 + 3] = 0; }
     g.putImageData(id, 0, 0); }
   const tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = Math.min(8, MAX_ANI);
   // the ground, raised into its mountains
-  const wx0 = BELG.x0 + (PX0 - 590) * s, wz0 = BELG.z0 + (PY0 - 370) * s, W = PW * s, H = PH * s, geo = new THREE.PlaneGeometry(W, H, 165, 165); geo.rotateX(-Math.PI / 2); geo.translate(wx0 + W / 2, 0, wz0 + H / 2);
+  BELG.ranges = ranges;
+  const wx0 = BELG.x0 + (PX0 - 590) * s, wz0 = BELG.z0 + (PY0 - 370) * s, W = PW * s, H = PH * s, geo = new THREE.PlaneGeometry(W, H, 210, 165); geo.rotateX(-Math.PI / 2); geo.translate(wx0 + W / 2, 0, wz0 + H / 2);
   const P_ = geo.attributes.position; for (let i = 0; i < P_.count; i++) P_.setY(i, belH(P_.getX(i), P_.getZ(i))); geo.computeVertexNormals();
-  const land = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex, alphaTest: .5, side: THREE.DoubleSide, color: 0xd4ccb4 })); BELG.g.add(land);
-  // the woods' trees, and the smoke and fire of Thangorodrim
+  const land = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex, alphaTest: .5, side: THREE.DoubleSide, color: boardLook || BEL_IMG ? 0xffffff : 0xd4ccb4 })); BELG.g.add(land);
+  // (on the parchment, the woods' trees)
   const trees = [], m4 = new THREE.Matrix4();
-  for (const P of BEL.woods) { const xs = P.map(p => p[0]), ys = P.map(p => p[1]); for (let i = 0; i < 70; i++) { const px = lerp(Math.min(...xs), Math.max(...xs), rnd()), py = lerp(Math.min(...ys), Math.max(...ys), rnd()); if (!polyIn(px, py, P)) continue; const x = BELG.x0 + (px - 590) * s, z = BELG.z0 + (py - 370) * s; if (!belLand(x, z)) continue; const k = (.5 + rnd() * .5) * s / .09; trees.push(m4.clone().makeScale(k, k, k).setPosition(x, belH(x, z) + .55 * k, z)); } }
+  if (!boardLook && !BEL_IMG) for (const P of BEL.woods) { const xs = P.map(p => p[0]), ys = P.map(p => p[1]); for (let i = 0; i < 70; i++) { const px = lerp(Math.min(...xs), Math.max(...xs), rnd()), py = lerp(Math.min(...ys), Math.max(...ys), rnd()); if (!polyIn(px, py, P)) continue; const x = BELG.x0 + (px - 590) * s, z = BELG.z0 + (py - 370) * s; if (!belLand(x, z)) continue; const k = (.5 + rnd() * .5) * s / .09; trees.push(m4.clone().makeScale(k, k, k).setPosition(x, belH(x, z) + .55 * k, z)); } }
   if (trees.length) { const im = new THREE.InstancedMesh(new THREE.ConeGeometry(.45, 1.3, 6), lam(0x2e6a2c), trees.length); trees.forEach((m, i) => im.setMatrixAt(i, m)); BELG.g.add(im); }
-  for (const [px, py] of BEL.thango) { const x = BELG.x0 + (px - 590) * s, z = BELG.z0 + (py - 370) * s, gl = glowSprite(0xff6a10, 4, .7); gl.position.set(x, belH(x, z) + .6, z); BELG.g.add(gl); }
+  for (const [px, py] of BEL.thango) { const x = BELG.x0 + (px - 590) * s, z = BELG.z0 + (py - 370) * s, gl = glowSprite(0xff6a10, 4 * s / .09, .7); gl.position.set(x, belH(x, z) + .6, z); BELG.g.add(gl); }
   // the sea's names, out on the water
   for (const [t, px, py, rot] of BEL.sea) { const cv = document.createElement('canvas'); cv.width = 512; cv.height = 64; const q = cv.getContext('2d'); q.font = `italic bold ${t.length > 14 ? 40 : 32}px Georgia, serif`; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillStyle = 'rgba(200,220,255,.75)'; q.fillText(t, 256, 32);
     const tx = new THREE.CanvasTexture(cv), pl = new THREE.Mesh(new THREE.PlaneGeometry(cv.width / 512 * 260 * s, 32 * s), new THREE.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false })); pl.rotation.set(-Math.PI / 2, 0, rot); pl.position.set(BELG.x0 + (px - 590) * s, BELG.sea + .05, BELG.z0 + (py - 370) * s); BELG.g.add(pl); }
   mapScene.add(BELG.g);
-  if (new URLSearchParams(location.search).get('dbg')) { let lo = 1e9, hi = -1e9; if (BOARD) for (const v of BOARD.h) if (v > -99) { lo = Math.min(lo, v); hi = Math.max(hi, v); } console.log('BEL s ' + s.toFixed(4) + ' x0 ' + BELG.x0.toFixed(1) + ' sea ' + BELG.sea.toFixed(2) + ' board h ' + lo.toFixed(2) + '..' + hi.toFixed(2) + ' k ' + (BOARD ? BOARD.k.toFixed(4) : '-')); }
-  if (BOARD) EDGE.value.x = -1e4;   // (the board no longer fades to sea along its west edge: Beleriand is there)
 }
 const groundY = (x, z) => BELG && belLand(x, z) ? belH(x, z) : BOARD ? boardY(x, z) : Math.max(landH(x, z), .12);
 
@@ -6251,7 +6312,8 @@ function useBoard(gl, regions) {
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) { let n = 0; for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) n += wetc[clamp(j + b, 0, H - 1) * W + clamp(i + a, 0, W - 1)]; land[j * W + i] = h[j * W + i] > -99 && n < 6 ? 1 : 0; }
   let ci0 = W, ci1 = 0, cj0 = H, cj1 = 0; for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) if (h[j * W + i] > -99) { ci0 = Math.min(ci0, i); ci1 = Math.max(ci1, i); cj0 = Math.min(cj0, j); cj1 = Math.max(cj1, j); }   // where the tiles are (other pieces reach further)
   for (let i = 0; i < h.length; i++) if (h[i] < sea) h[i] = sea;
-  BOARD = { x0: box.min.x, z0: box.min.z, step, W, H, h, land, k, sea, ex0: box.min.x + ci0 * step, ex1: box.min.x + ci1 * step, ez0: box.min.z + cj0 * step, ez1: box.min.z + cj1 * step };
+  const tiles = new Set(); obj.traverse(o => { if (o.isMesh && BOARD_GROUND.test(o.name)) { const m = [].concat(o.material)[0]; if (m.map && m.map.image) tiles.add(m.map.image); } });
+  BOARD = { x0: box.min.x, z0: box.min.z, step, W, H, h, land, k, sea, tiles: [...tiles], ex0: box.min.x + ci0 * step, ex1: box.min.x + ci1 * step, ez0: box.min.z + cj0 * step, ez1: box.min.z + cj1 * step };
   if (new URLSearchParams(location.search).get('mask')) { const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'), id = g.createImageData(W, H); for (let i = 0; i < land.length; i++) { const q = h[i] > -99 ? (land[i] ? 255 : 60) : 0; id.data.set([q, q, wetc[i] ? 255 : q, 255], i * 4); } g.putImageData(id, 0, 0); c.style.cssText = 'position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:99;image-rendering:pixelated'; document.body.appendChild(c); }   // &mask=1 shows where Gandalf may walk
   // a sea the colour of the board's own, right out to the edges and just under the board, so nothing beyond it shows
   const far = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), ps1(new THREE.MeshBasicMaterial({ color: 0x14295a }))); far.rotation.x = -Math.PI / 2; far.position.y = low - .1; mapScene.add(far);
@@ -6399,7 +6461,7 @@ function addSkin(M, slot, attachTo, hideRoot, keep = [], top) { M.skin = { slot,
 function attachSkin(K) {
   const gl = LOADED[K.slot], cfg = MODEL_SLOTS[K.slot]; if (!gl || K.obj) return;
   const kept = new Set(); for (const k of K.keep) if (k) k.traverse(o => kept.add(o));
-  for (const r of [].concat(K.hideRoot)) r.traverse(o => { if ((o.isMesh || o.isSprite) && !kept.has(o)) o.visible = false; });
+  K.hid = []; for (const r of [].concat(K.hideRoot)) r.traverse(o => { if ((o.isMesh || o.isSprite) && !kept.has(o) && o.visible) { o.visible = false; K.hid.push(o); } });   // (hid: put back if the model comes off again)
   const obj = THREE.SkeletonUtils ? THREE.SkeletonUtils.clone(gl.scene) : gl.scene.clone(true);
   // measured by its body alone: a big glow card round a staff mustn't shrink the wizard
   const box = new THREE.Box3(); obj.updateMatrixWorld(true); obj.traverse(o => { if (o.isMesh && !isFx(o) && !(cfg.hide && cfg.hide.test(o.name))) box.union(new THREE.Box3().setFromObject(o)); });
@@ -6497,6 +6559,7 @@ const loadImage = src => new Promise((ok, no) => { const i = new Image(); i.onlo
 async function loadLocalAssets() {
   if (!LOCAL_ASSETS) return;   // the public site never asks for them
   if (HERO === 'sora') khNeed(['sora', 'keyblade']);   // (playing Sora: his model and Keyblade first)
+  for (const ext of ['jpg', 'png']) { try { BEL_IMG = await loadImage(`models/beleriand.${ext}`); buildBeleriand(); got.push(`models/beleriand.${ext} (Beleriand)`); break; } catch (e) { } }   // (your own picture of Beleriand)
   const got = [], only = new URLSearchParams(location.search).get('models');
   // the War of the Ring board goes first: while it loads the little diorama stays hidden, so the map doesn't change under you
   const boardOn = (!only || only.split(',').includes('livingmap')) && (await fetch('models/livingmap.glb', { method: 'HEAD' }).catch(() => ({ ok: false }))).ok;
@@ -12457,6 +12520,18 @@ function soraBlade() {
   const grip = root ? new V3().setFromMatrixPosition(root.matrixWorld) : new V3(), hp = new V3().setFromMatrixPosition(Hb);
   Hb.clone().invert().multiply(new THREE.Matrix4().makeTranslation(hp.x - grip.x, hp.y - grip.y, hp.z - grip.z)).decompose(kb.position, kb.quaternion, kb.scale); hand.add(kb); K.blade = kb;
 }
+// change who you play there and then: the one model comes off, the other goes on (Sora's fetched the first time: a moment)
+function setHero(h) {
+  if (h === HERO || !LOCAL_ASSETS) return; try { localStorage.setItem('valinorHero', h); } catch (e) { }
+  if (h === 'sora' && !(LOADED.sora && LOADED.keyblade)) { banner('SORA IS ON HIS WAY...', 3); khNeed(['sora', 'keyblade']); Promise.all([KH_WANT.sora, KH_WANT.keyblade]).then(() => { if (LOADED.sora) setHero('sora'); else banner('SORA ISN\'T IN MODELS/KH', 2); }); return; }
+  khWhite(false);
+  for (const K of [hob.skinG || hob.skin, hob.skinW]) { if (!K) continue; if (K.obj && K.obj.parent) K.obj.parent.remove(K.obj); for (const o of K.hid || []) o.visible = true; const i = SKINS.indexOf(K); if (i >= 0) SKINS.splice(i, 1); }
+  hob.skin = hob.skinG = hob.skinW = null; HERO = h;
+  addSkin(hob, h, hob.body, hob.body, h === 'sora' ? [] : [hob.staff]);
+  if (KH.sword) KH.sword.g.visible = khOn() && h !== 'sora';
+  if (h === 'gandalf') { if (SORA.list && KH_SORA_IDS.every(i => SORA.clips[i])) soraActs(); else if (khOn()) loadSora(KH_SORA_IDS).then(ok => { if (ok) { soraActs(); if (hob.skin) hob.skin.cur = ''; } }); }
+  syncPauseBtns(); banner(h === 'sora' ? 'SORA' : 'GANDALF', 1.2); S.click();
+}
 function khAfterSkins() {
   soraBlade();
   const kh = khOn();
@@ -12936,6 +13011,8 @@ showScreen(null); syncPauseBtns();
 // ?play=shire (or riv, moria, rohan, mt, ungol, mordor, doom, weather) opens a place straight away, for testing
 {
   const q = new URLSearchParams(location.search), li = /^\d+$/.test(q.get('play') || '') ? Number(q.get('play')) : (LEVELS.findIndex(L => L.loc === q.get('play')) + 1 || LEVELS.findIndex(L => q.get('play') && (L.name || '').replace(/ /g, '').includes(q.get('play').toUpperCase())) + 1) - 1;   // or ?play=2 for the third level in the list
+  if (q.get('swaphero')) setTimeout(() => setHero(HERO === 'sora' ? 'gandalf' : 'sora'), +q.get('swaphero') * 1000);   // (testing: change hero after that many seconds)
+  if (q.get('belguide')) { const w = setInterval(() => { if (BOARD || MODELS_DONE && !MAP_LOADING) { clearInterval(w); buildBeleriand(true); } }, 300); }   // (?belguide=1: Beleriand's frame, to repaint as models/beleriand.jpg)
   if (q.get('from') && LEVELS[li] && LEVELS[li].cup !== undefined) Object.assign(LEVELS[li], cupLayout(LEVELS[li].cup, +q.get('from')));   // (&from=3 with a cup: start at its fourth seed, for testing)
   if (q.get('look')) setLook(q.get('look') === 'retro');   // ?look=retro or ?look=hd
   if (q.get('mapat')) backToMap(q.get('mapat'));
