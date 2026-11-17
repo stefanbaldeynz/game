@@ -91,13 +91,15 @@ Kingdom Hearts belongs to Square Enix and Disney: like everything here, keep it 
 
 ## The Colosseum's cups: `kh/` and `ov/`
 
-The Colosseum's Kingdom Hearts cups (Phil, Pegasus, Hercules and Hades) use Kingdom Hearts II's own Heartless, bosses and fighters from `kh/`. Make them with OpenKH (no Blender needed):
+The Colosseum has two lists: **Kingdom Hearts II** and **Overlord**, each a round for every kind of foe (choose the round to start from). Kingdom Hearts II's Heartless, Nobodies and the Coliseum's champions come from `kh/`, each with its own model and every move. Make them with OpenKH (no Blender needed):
 
 ```powershell
 pwsh C:\Users\Stefan\bfme\tools\Export-Heartless.ps1
 ```
 
-The Overlord Cup (its enemies and creatures) and Overlord Bosses use Overlord's own characters, with every move, from `ov/`. Make them with Blender and the Overlord ripper, then copy the models the cups use (`OV_FOES` in `index.html` lists them) from `C:\Users\Stefan\bfme\overlord\out\chars\<pack>\` into `ov/`:
+The same script makes **Sora** (`P_EX100.fbx`) and his Kingdom Key (`W_EX010_10.fbx`). With them in `kh/`, press **H** on the map or in the pause menu to play as Sora instead of Gandalf (the game starts again with him). His model is big (about 140 MB), so the first load takes a while.
+
+The Overlord list uses Overlord's own characters, with every move, from `ov/`. Make them with Blender and the Overlord ripper, then copy the models the cups use (`OV_FOES` in `index.html` lists them) from `C:\Users\Stefan\bfme\overlord\out\chars\<pack>\` into `ov/`:
 
 ```powershell
 & C:\Users\Stefan\bfme\tools\Convert-Overlord.ps1 chars

@@ -219,7 +219,7 @@ body.touch #bossbar .bar{width:min(50vw,420px)}
   <div id="sign"><div class="rope l"></div><div class="rope r"></div><div class="plank"><b id="signName">MINAS TIRITH</b><i id="signSub"></i></div></div>
   <div id="mapLogo"><span>VALINOR</span><i>MIDDLE-EARTH</i></div>
   <div id="mapGo" data-key="Enter">ENTER</div>
-  <div id="mapPrompt"><span class="kOnly">ARROWS / WASD TO WALK &nbsp;·&nbsp; CLICK TO GO THERE &nbsp;·&nbsp; ENTER TO PLAY</span><span class="tOnly">TAP OR HOLD WHERE TO GO</span></div>
+  <div id="mapPrompt"><span class="kOnly">ARROWS / WASD TO WALK &nbsp;·&nbsp; CLICK TO GO THERE &nbsp;·&nbsp; ENTER TO PLAY<span id="heroKey"> &nbsp;·&nbsp; H: PLAY AS SORA</span></span><span class="tOnly">TAP OR HOLD WHERE TO GO</span></div>
 </div>
 <div id="ov" class="dim">
   <div class="scr" id="sChap"><div class="back" data-key="Escape">◀ MAP<small class="kOnly">ESC</small></div><div class="logo"><span class="big" id="chapName">MORIA</span><span class="sub">VALINOR</span></div><div class="menu" id="chapMenu"></div><div class="press kOnly">↑ ↓ CHOOSE &nbsp;·&nbsp; ENTER TO START</div><div class="press tOnly">TAP A LEVEL TO START</div></div>
@@ -247,8 +247,8 @@ body.touch #bossbar .bar{width:min(50vw,420px)}
     <span class="big">PAUSED</span>
     <div class="press kOnly" style="animation:none">ENTER — RESUME</div>
     <div class="tbtns"><div data-key="Enter">RESUME</div><div data-key="KeyR">RESTART</div><div data-key="KeyQ">QUIT</div><div data-key="KeyM" id="tMute">MUSIC ON</div><div data-key="KeyG" id="tLook">LOOK: HD</div></div>
-    <div class="tbtns"><div data-key="KeyZ" id="tGod">INVINCIBLE: OFF</div><div data-key="KeyX" id="tAmmo">UNLIMITED MAGIC: OFF</div></div>
-    <div class="ctl kOnly"><b>R</b><span>Restart from the beginning</span><b>Q</b><span>Quit to the Minas Tirith menu</span><b>M</b><span>Mute music</span><b>G</b><span>HD or retro PS1 look</span><b>Z / X</b><span>Invincible / unlimited magic</span></div>
+    <div class="tbtns"><div data-key="KeyZ" id="tGod">INVINCIBLE: OFF</div><div data-key="KeyX" id="tAmmo">UNLIMITED MAGIC: OFF</div><div data-key="KeyH" id="tHero">PLAY AS SORA</div></div>
+    <div class="ctl kOnly"><b>R</b><span>Restart from the beginning</span><b>Q</b><span>Quit to the Minas Tirith menu</span><b>M</b><span>Mute music</span><b>G</b><span>HD or retro PS1 look</span><b>Z / X</b><span>Invincible / unlimited magic</span><b>H</b><span>Play as Sora or Gandalf (starts again)</span></div>
   </div>
   <div class="scr" id="sOver">
     <span class="big">GAME OVER</span>
@@ -2052,7 +2052,7 @@ function makeGandalf() {
   scene.add(root);
   const meshes = []; root.traverse(o => { if (o.isMesh && o !== swirl && !eyes.includes(o) && !pupils.includes(o)) { o.userData.mat = o.material; meshes.push(o); } });
   const M = { root, body, legL, legR, armL, armR, head, cloak, eyes, pupils, swirl, shadow, meshes, staff, tip, tipGlow, ph: 0, blink: 2 };
-  addSkin(M, 'gandalf', body, body, [staff]); return M;
+  addSkin(M, HERO, body, body, HERO === 'sora' ? [] : [staff]); return M;   // (Sora: his own model in Gandalf's place, staff and all)
 }
 // Shadowfax, lord of all horses: no saddle, no bridle
 function makeHorse() {
@@ -2560,127 +2560,98 @@ const USTAIR = { FLIGHTS: 6, STEPS: 30, RISE: 7, X: 18, LAND: 23 }, OSG = { TOP:
 const RACE_FORD = 520, RACE_END = 572;
 const ER = { WALK: 12, X0: -46, X1: 46, TOWERS: [-46, -23, 0, 23, 46], TOP: 20 };   // (Erebor's ramparts: the walk's height and ends, its towers, their tops)   // (the race to the Ford: where the river crosses the road, and where the road ends)
 const DOOM_R = 50, UNG_R = 50,   /* (Mount Doom long enough for its whole climb: its last gate stands on the top ledge, past the last flight) */ EAG_S1 = 760, EAG_END = 1560, EAG_V = 25;
-// --- Kingdom Hearts II's own foes, for the Colosseum's cups: each wears its model and moves from KH2 (bfme\tools\Export-Heartless.ps1) and fights in the
-//     nearest of Valinor's ways: base is the built body it falls back on (z shade, k helm, g gut, f/i candle), style how it attacks
+// --- the Colosseum's foes: one round for each kind of foe in Kingdom Hearts II and in Overlord (2007), to try each one's fighting. Each wears its own model and
+//     moves from its own game (KH2: bfme\tools\Export-Heartless.ps1, into models/kh; Overlord: Convert-Overlord.ps1 chars, into models/ov) and fights with its
+//     own attacks: FM(kind, nearest, furthest, wind-up, its animation(s), the rest) is one attack (the kinds are in FOE_MOVES): used from that range, set for the
+//     wind-up (marked on the ground in red) before it strikes. The animation: 'EX050+EX051+EX052' plays those in turn (KH2's attacks are numbered, a wind-up,
+//     the blow and the recovery), 'Strike_A|Strike_B' one or the other. base is the built body a foe falls back on while its model isn't here (z shade,
+//     k helm, g gut, f/i candle); n how many come in its round; rv its revenge value: that many blows in quick succession and it shrugs off the next and
+//     strikes back, as in KH2; boss: a champion, which staggers rather than flies
+const FM = (k, lo, hi, w, clip, o = {}) => ({ k, at: [lo, hi], w, clip, ...o });
 const KH2_FOES = {
-  'Shadow': { slot: 'khshadow', base: 'z', style: 'sink', hp: 9, r: .45, speed: 4.6, dmg: 7, lite: true, tok: 3 },
-  'Soldier': { slot: 'khsoldier', base: 'k', style: 'cart', hp: 18, r: .5, speed: 4.4, dmg: 10, tok: 2 },
-  'Large Body': { slot: 'khlargebody', base: 'g', style: 'gut', hp: 55, r: 1.05, speed: 2.4, dmg: 14, armor: true, front: true },
-  'Fat Bandit': { slot: 'khfatbandit', base: 'g', style: 'gut', hp: 60, r: 1.05, speed: 2.2, dmg: 15, armor: true, front: true },
-  'Red Nocturne': { slot: 'khrednoc', base: 'f', style: 'cast', spell: 'fire', hp: 10, r: .5, speed: 3.4, dmg: 8, lite: true, hover: 1.1, tok: 2, want: 8.5 },
-  'Blue Rhapsody': { slot: 'khbluerhap', base: 'i', style: 'cast', spell: 'ice', hp: 10, r: .5, speed: 3.4, dmg: 8, lite: true, hover: 1.1, tok: 2, want: 8.5 },
-  'Green Requiem': { slot: 'khgreenreq', base: 'i', style: 'cast', spell: 'ice', hp: 12, r: .5, speed: 3.4, dmg: 6, lite: true, hover: 1.1, tok: 2, want: 9 },
-  'Darkball': { slot: 'khdarkball', base: 'z', style: 'sink', hp: 24, r: .7, speed: 4.2, dmg: 12, tok: 2 },
-  'Wight Knight': { slot: 'khwight', base: 'k', style: 'pounce', hp: 18, r: .5, speed: 5, dmg: 10, tok: 2, want: 5 },
-  'Air Pirate': { slot: 'khairpirate', base: 'k', style: 'cart', hp: 20, r: .55, speed: 4, dmg: 10, hover: 1.4, tok: 2 },
-  'Wyvern': { slot: 'khwyvern', base: 'g', style: 'pounce', hp: 40, r: 1, speed: 4.2, dmg: 14, hover: 2.2, tok: 2, want: 6 },
-  'Behemoth': { slot: 'khbehemoth', base: 'g', style: 'gut', hp: 300, r: 2.2, speed: 2.4, dmg: 20, armor: true },
-  'Cerberus': { slot: 'khcerberus', base: 'g', style: 'gut', hp: 420, r: 2.4, speed: 3, dmg: 22 },
-  'Hades': { slot: 'khhades', base: 'f', style: 'cast', spell: 'fire', hp: 450, r: 1, speed: 3.6, dmg: 16, want: 9 },
-  'Hercules': { slot: 'khhercules', base: 'k', style: 'whirl', hp: 450, r: .8, speed: 4.4, dmg: 18 },
-  'Cloud': { slot: 'khcloud', base: 'k', style: 'cart', hp: 320, r: .6, speed: 5.2, dmg: 16 },
-  'Leon': { slot: 'khleon', base: 'k', style: 'whirl', hp: 320, r: .6, speed: 4.6, dmg: 16 },
-  'Yuffie': { slot: 'khyuffie', base: 'f', style: 'cast', spell: 'fire', hp: 220, r: .55, speed: 5.4, dmg: 12, want: 9 },
+  // the Heartless
+  'Shadow': { slot: 'khshadow', base: 'z', hp: 10, r: .45, speed: 4.8, dmg: 7, lite: true, n: 5, want: 2.4, rv: 4, mv: [FM('swipe', 0, 3, .35, 'EX050+EX051+EX052', { step: 6, hits: [.22] }), FM('sink', 3, 12, .3, 'EX010+EX011')] },
+  'Soldier': { slot: 'khsoldier', base: 'k', hp: 22, r: .5, speed: 4.6, dmg: 9, n: 4, want: 3, mv: [FM('swipe', 0, 2.8, .4, 'EX000+EX001+EX002', { hits: [.15, .42], step: 3 }), FM('dash', 4, 10, .5, 'EX003+EX004', { len: 9, sp: 15 }), FM('whirl', 0, 5, .55, 'EX050+EX051+EX052+EX053', { dur: 1.2, rad: 2.6 })] },
+  'Large Body': { slot: 'khlargebody', base: 'g', hp: 70, r: 1.05, speed: 2.6, dmg: 13, armor: true, front: true, n: 2, want: 3, rv: 2, mv: [FM('swipe', 0, 3.6, .5, 'EX050+EX051', { reach: 3.4, arc: -.3, hits: [.2], step: 8 }), FM('leap', 4, 11, .55, 'EX052+EX053+EX054', { rad: 3, h: 4.5, dizzy: 2.2 }), FM('dash', 5, 14, .7, 'EX082+EX083+EX084', { len: 13, sp: 11, steer: 1.4 })] },
+  'Red Nocturne': { slot: 'khrednoc', base: 'f', hp: 12, r: .5, speed: 3.8, dmg: 8, lite: true, hover: 1.1, n: 4, want: 8, mv: [FM('shoot', 5, 16, .55, 'EX050+EX051+EX052', { shot: 'fire' }), FM('dash', 0, 5, .4, 'EX053+EX054+EX055', { len: 6, sp: 12 })] },
+  'Darkball': { slot: 'khdarkball', base: 'z', hp: 28, r: .7, speed: 4.4, dmg: 12, hover: .8, n: 3, want: 4, mv: [FM('dash', 0, 9, .5, 'EX050+EX051+EX052+EX053', { len: 9, sp: 14 }), FM('blink', 7, 18, .25, 'EX000+EX001', { hitClip: 'EX050+EX051', reach: 2.6 })] },
+  'Wight Knight': { slot: 'khwight', base: 'k', hp: 22, r: .5, speed: 5, dmg: 10, n: 4, want: 3.5, mv: [FM('leap', 3, 10, .45, 'EX050+EX051+EX052', { rad: 2.4, h: 5 }), FM('whirl', 0, 4, .5, 'EX053+EX054+EX055', { dur: 1, rad: 2.4 }), FM('swipe', 0, 2.6, .35, 'EX056+EX057', { hits: [.12, .34] }), FM('dash', 4, 11, .5, 'EX081+EX082', { len: 10, sp: 15 })] },
+  'Air Pirate': { slot: 'khairpirate', base: 'k', hp: 24, r: .55, speed: 4.4, dmg: 10, hover: 1.6, n: 3, want: 6, mv: [FM('dive', 3, 13, .6, 'EX050+EX051+EX052', { len: 11, sp: 14 })] },
+  'Luna Bandit': { slot: 'khluna', base: 'k', hp: 26, r: .6, speed: 4.6, dmg: 10, n: 3, want: 3, mv: [FM('swipe', 0, 3, .4, 'EX000+EX001', { hits: [.15, .35], step: 3 }), FM('whirl', 0, 6, .6, 'EX050+EX051+EX052', { dur: 1.6, rad: 2.6, sp: 5 }), FM('dash', 4, 11, .5, 'EX053+EX054+EX055', { len: 10, sp: 15 })] },
+  'Hook Bat': { slot: 'khhookbat', base: 'k', hp: 14, r: .5, speed: 5, dmg: 8, lite: true, hover: 2, n: 4, want: 5, mv: [FM('dive', 2, 12, .5, 'EX050+EX051+EX052+EX053', { len: 10, sp: 15 })] },
+  'Bookmaster': { slot: 'khbook', base: 'f', hp: 34, r: .7, speed: 3.6, dmg: 10, hover: .6, n: 2, want: 8, mv: [FM('shoot', 4, 16, .6, 'EX050+EX051', { shot: 'orb', n: 3 }), FM('blink', 0, 4, .3, 'EX052+EX053', { away: true })] },
+  'Minute Bomb': { slot: 'khbomb', base: 'k', hp: 12, r: .5, speed: 5.2, dmg: 14, lite: true, n: 4, want: 1.5, rv: 9, mv: [FM('blast', 0, 2.6, .9, 'EX050+EX051+EX052', { rad: 3 }), FM('dash', 3, 10, .4, 'EX053+EX054+EX055', { len: 8, sp: 12 })] },
+  'Creeper Plant': { slot: 'khplant', base: 'f', hp: 30, r: .7, speed: 0, dmg: 9, n: 3, want: 7, root: true, mv: [FM('shoot', 3, 16, .6, 'EX050+EX051', { shot: 'seed', n: 3 }), FM('swipe', 0, 3.2, .4, 'EX081', { reach: 3.2, arc: -.9, hits: [.2] })] },
+  'Lance Soldier': { slot: 'khlance', base: 'k', hp: 30, r: .55, speed: 4.4, dmg: 11, n: 3, want: 4, mv: [FM('dash', 3, 10, .55, 'EX050+EX051+EX052', { len: 8, sp: 16 }), FM('whirl', 0, 4, .5, 'EX000+EX001', { dur: 1.1, rad: 3 }), FM('swipe', 0, 4, .4, 'EX053', { reach: 4, arc: .7, hits: [.2] })] },
+  'Bulky Vendor': { slot: 'khvendor', base: 'g', hp: 40, r: .8, speed: 4, dmg: 6, n: 1, want: 7, mv: [FM('leap', 2, 9, .5, 'EX006+EX007', { rad: 2.4, h: 3 })] },
+  // the Nobodies
+  'Dusk': { slot: 'khdusk', base: 'z', hp: 16, r: .5, speed: 4.8, dmg: 8, lite: true, n: 4, want: 3, mv: [FM('dash', 2, 9, .45, 'EX081+EX082+EX083', { len: 8, sp: 14, spin: true }), FM('swipe', 0, 3.2, .35, 'EX050', { reach: 3, hits: [.18] }), FM('whirl', 0, 4, .45, 'EX084+EX085', { dur: 1, rad: 2.4 })] },
+  'Samurai': { slot: 'khsamurai', base: 'k', hp: 34, r: .55, speed: 4.6, dmg: 12, n: 2, want: 4, mv: [FM('dash', 3, 11, .6, 'EX050+EX051+EX052', { len: 10, sp: 20 }), FM('swipe', 0, 3, .4, 'EX053+EX054+EX055', { hits: [.15, .35, .55], step: 3 }), FM('blink', 8, 18, .3, 'EX010+EX011+EX012', { hitClip: 'EX080+EX081+EX082' })] },
+  'Sniper': { slot: 'khsniper', base: 'k', hp: 26, r: .55, speed: 4, dmg: 10, n: 3, want: 10, mv: [FM('shoot', 5, 20, .6, 'EX004', { shot: 'bolt', n: 3, gap: .18 }), FM('blink', 0, 4, .25, 'EX081', { away: true }), FM('swipe', 0, 2.6, .35, 'EX051+EX052', { hits: [.2] })] },
+  'Dancer': { slot: 'khdancer', base: 'k', hp: 28, r: .55, speed: 5, dmg: 10, n: 3, want: 3.5, mv: [FM('swipe', 0, 3, .35, 'EX051+EX052+EX053', { hits: [.15, .4], step: 5 }), FM('whirl', 0, 5, .5, 'EX054+EX055', { dur: 1.4, rad: 2.6, sp: 5 }), FM('leap', 3, 9, .45, 'EX056+EX057', { rad: 2.2, h: 4 }), FM('blink', 8, 18, .3, 'EX010+EX011', { hitClip: 'EX051+EX052' })] },
+  'Berserker': { slot: 'khberserker', base: 'g', hp: 60, r: .8, speed: 3.8, dmg: 15, armor: true, n: 2, want: 3.5, rv: 2, mv: [FM('swipe', 0, 3.6, .55, 'EX050+EX051', { reach: 3.6, hits: [.3] }), FM('slam', 0, 5, .7, 'EX052+EX053', { wave: true, rad: 7 })] },
+  'Gambler': { slot: 'khgambler', base: 'f', hp: 34, r: .55, speed: 4, dmg: 11, n: 2, want: 7, mv: [FM('shoot', 4, 16, .55, 'EX050+EX051+EX052', { shot: 'card', n: 4, gap: .12 }), FM('whirl', 0, 5, .5, 'EX001+EX002+EX003', { dur: 1.2, rad: 2.8 }), FM('blink', 0, 3, .25, 'EX080+EX081', { away: true })] },
+  'Sorcerer': { slot: 'khsorcerer', base: 'f', hp: 50, r: .7, speed: 3.6, dmg: 12, hover: .8, n: 2, want: 6, rv: 2, mv: [FM('blink', 6, 18, .3, 'EX000+EX001', { hitClip: 'EX002', reach: 3.4 }), FM('slam', 0, 5, .55, 'EX003+EX004', { rad: 4.5 }), FM('shoot', 4, 15, .6, 'EX005+EX006', { shot: 'orb', n: 4, gap: .1 })] },
+  // the champions of the Olympus Coliseum
+  'Cerberus': { slot: 'khcerberus', base: 'g', hp: 420, r: 2.4, speed: 3.2, dmg: 18, boss: true, rv: 2, mv: [FM('breath', 0, 7, .7, 'EX050+EX051+EX052', { reach: 7, dur: 1.6, el: 'fire' }), FM('swipe', 0, 4.4, .5, 'EX000+EX001', { reach: 4.6, hits: [.25] }), FM('leap', 5, 14, .6, 'EX020+EX021', { rad: 4, h: 6 }), FM('rain', 6, 20, .6, 'EX040+EX041', { n: 5, el: 'fire' }), FM('slam', 0, 6, .7, 'EX070+EX071+EX072', { wave: true, rad: 9 })] },
+  'Hades': { slot: 'khhades', base: 'f', hp: 450, r: 1, speed: 3.8, dmg: 16, boss: true, want: 6, rv: 2, mv: [FM('shoot', 4, 18, .5, 'EX050+EX051+EX052', { shot: 'fire', n: 3, gap: .25 }), FM('breath', 0, 6, .6, 'EX053+EX054+EX055', { reach: 6, dur: 1.4, el: 'fire' }), FM('rain', 5, 18, .6, 'EX040+EX041+EX042', { n: 6, el: 'fire' }), FM('dash', 3, 14, .55, 'EX000+EX001+EX002', { len: 13, sp: 17, el: 'fire' }), FM('slam', 0, 5, .6, 'EX080+EX081+EX082', { wave: true, rad: 8 })] },
+  'Hercules': { slot: 'khhercules', base: 'k', hp: 450, r: .8, speed: 4.6, dmg: 18, boss: true, want: 3, rv: 2, mv: [FM('swipe', 0, 3, .4, 'EX050+EX051+EX052', { hits: [.15, .4, .65], step: 4 }), FM('dash', 4, 12, .5, 'EX053+EX054', { len: 11, sp: 18 }), FM('slam', 0, 5, .6, 'EX055+EX056+EX057', { wave: true, rad: 8 }), FM('leap', 4, 12, .5, 'EX006+EX007+EX008', { rad: 3.4, h: 7 })] },
+  'Cloud': { slot: 'khcloud', base: 'k', hp: 340, r: .6, speed: 5.4, dmg: 16, boss: true, want: 3, rv: 3, mv: [FM('swipe', 0, 3.2, .35, 'EX050+EX051+EX052', { reach: 3, hits: [.12, .35, .6], step: 5 }), FM('dash', 3, 13, .45, 'EX053+EX054', { len: 12, sp: 22 }), FM('leap', 3, 10, .45, 'EX055+EX056+EX057', { rad: 2.8, h: 7 }), FM('blink', 8, 20, .25, 'EX010+EX011', { hitClip: 'EX050+EX051', reach: 3 })] },
+  'Leon': { slot: 'khleon', base: 'k', hp: 340, r: .6, speed: 4.8, dmg: 16, boss: true, want: 3, rv: 3, mv: [FM('swipe', 0, 3.2, .4, 'EX050+EX051+EX052', { reach: 3.2, hits: [.15, .4], step: 4 }), FM('shoot', 5, 16, .55, 'EX040+EX041', { shot: 'orb', n: 1, el: 'fire' }), FM('dash', 3, 12, .5, 'EX081', { len: 11, sp: 18 })] },
+  'Yuffie': { slot: 'khyuffie', base: 'f', hp: 240, r: .55, speed: 5.6, dmg: 12, boss: true, want: 8, rv: 3, mv: [FM('shoot', 4, 18, .45, 'EX050+EX051', { shot: 'star', n: 2, gap: .3 }), FM('blink', 0, 5, .25, 'EX010+EX011+EX012', { away: true, hitClip: 'EX050+EX051' }), FM('rain', 6, 18, .6, 'EX040', { n: 5, el: 'star' })] },
 };
-// --- Overlord's (2007) enemies and creatures, for the Overlord cups: their own models and moves (models/ov/<file>.glb, from bfme\tools\Convert-Overlord.ps1 chars).
-//     file: which model; sc: its size (Overlord's own units are kept, so each stands as big beside the others as it did in Overlord); A(idle, run, attack, hit, death):
-//     which of its own moves plays for what; n: how many come in its seed; cup: 1 for the bosses' cup. The fighting is the nearest of Valinor's styles for now
-const OV_RX = s => new RegExp('^(' + s + ')$', 'i'), OV_A = (idle, walk, attack, hit, die) => ({ idle: OV_RX(idle), walk: OV_RX(walk), attack: OV_RX(attack), hit: OV_RX(hit), die: OV_RX(die) });
-const OV_HUMAN = OV_A('Idle_PassiveCombat', 'Move_Run_withweapon', 'Strike_Single_HIGH|Strike_Single_MID', 'HIT_Front', 'Death_Fast');   // (every humanoid has Overlord's shared moves too)
+// --- Overlord's (2007): file, its model; sc, its size (Overlord's own units are kept, so each stands beside the others as big as it was in Overlord);
+//     anims: OV_A(idle, run, hit, death), which of its own moves plays for what. Its attacks name its own moves
+const OV_RX = s => new RegExp('^(' + s + ')$', 'i'), OV_A = (idle, walk, hit, die) => ({ idle: OV_RX(idle), walk: OV_RX(walk), attack: OV_RX('NONE'), hit: OV_RX(hit), die: OV_RX(die) });
+const OV_STRIKE = 'Strike_Single_HIGH|Strike_Single_MID|Strike_Single_LOW';   // (every humanoid has Overlord's shared moves too)
 const OV_FOES = {
   // the creatures of the fields, the woods and the swamps
-  'Ram': { file: 'sheep_ram', base: 'k', style: 'cart', hp: 7, r: .5, speed: 4.6, dmg: 6, tok: 3, n: 6, anims: OV_A('idle_look', 'move_run', 'attack_charge', 'hitpose', 'Die') },
-  'Rat': { file: 'rat', base: 'k', hp: 5, r: .4, speed: 5.2, dmg: 5, lite: true, tok: 3, n: 8, anims: OV_A('Rat_idle', 'Rat_Run', 'Bite_High|Bite', 'Rat_shock', 'Rat_die1') },
-  'Beetle': { file: 'green_beetle', base: 'k', hp: 10, r: .6, speed: 4, dmg: 7, tok: 3, n: 6, anims: OV_A('Idle_15fps', 'Run', 'Bite_atack_02', 'Hitframe', 'New_Death_02') },
-  'Fire Beetle': { file: 'fire_beetle', base: 'k', style: 'cast', spell: 'fire', want: 6, hp: 12, r: .6, speed: 3.6, dmg: 8, tok: 2, n: 5, anims: OV_A('Idle_15fps', 'Run', 'Flame_attack08', 'Hitframe', 'New_Death_02') },
-  'Bobo Bird': { file: 'bobobird', base: 'k', hp: 9, r: .5, speed: 4.8, dmg: 6, tok: 3, n: 6, anims: OV_A('Idle_Basic', 'Move_Run', 'Strike_MID|Strike_HIGH', 'HITpose', 'Death') },
-  'Toad': { file: 'toad11', base: 'k', style: 'pounce', want: 6, hp: 14, r: .7, speed: 3.6, dmg: 9, tok: 2, n: 4, anims: OV_A('Idle', 'Run', 'Tongue', 'Hit', 'Die') },
-  'Wisp': { file: 'whisp11', base: 'i', style: 'cast', spell: 'ice', want: 8.5, hover: 1.4, hp: 8, r: .4, speed: 4, dmg: 6, lite: true, tok: 2, n: 5, anims: OV_A('whisp_fly', 'whisp_fly', 'whisp_fly', 'whisp_fly', 'whisp_fly') },
-  'Baby Slug': { file: 'slug_baby', base: 'k', hp: 10, r: .6, speed: 2.8, dmg: 6, tok: 3, n: 6, anims: OV_A('slog_idle_standard|idle_look', 'slog_walk', 'slog_punch', 'slog_hit_pose', 'slog_die') },
-  'Slug': { file: 'slog_normal', base: 'g', style: 'gut', hp: 45, r: 1.4, speed: 2.2, dmg: 12, armor: true, n: 3, anims: OV_A('slog_idle_standard', 'slog_walk', 'slog_punch', 'slog_hit_pose', 'slog_die') },
-  'Pumpkin': { file: 'pumpkin', base: 'k', hp: 10, r: .5, speed: 4.2, dmg: 7, tok: 3, n: 6, anims: OV_A('idle', 'run', 'strike01|strike02', 'hit', 'death') },
-  'Rolling Beast': { file: 'rolling_beast_lod_0', base: 'g', style: 'cart', hp: 40, r: 1, speed: 3.4, dmg: 12, armor: true, front: true, n: 3, anims: OV_A('idle_combat', 'walk', 'Charge_roll', 'hitpose', 'die') },
-  'Unicorn': { file: 'bloody_unicorn_lod_0', base: 'g', style: 'cart', hp: 40, r: 1, speed: 5, dmg: 13, n: 3, anims: OV_A('Idle_Combat', 'N_move_run', 'Move_Charge', 'N_get_hit_backwards', 'N_death_sideways') },
-  // the Shire's halflings
-  'Halfling': { file: 'halfling_regular', base: 'k', hp: 8, r: .4, speed: 4.4, dmg: 6, lite: true, tok: 3, n: 8, anims: OV_A('fight_idle', 'run', 'strike_high|strike_middle', 'hit', 'die') },
-  'Armoured Halfling': { file: 'halfling_armor', base: 'k', hp: 16, r: .42, speed: 4, dmg: 8, tok: 2, n: 6, anims: OV_A('Idle_PassiveCombat', 'Move_Run_withweapon', 'Strike_Single_HIGH|Strike_Single_MID', 'HIT_Front', 'Death_Fast') },
-  'Halfling Spearman': { file: 'halfling_armor_nohair', base: 'k', style: 'pike', want: 4.6, hp: 14, r: .42, speed: 3.8, dmg: 9, tok: 2, n: 6, anims: OV_A('Idle_Spear_Combat', 'Move_Run_Spear', 'Strike_Spear_HIGH|Strike_Spear_MID', 'HIT_Front', 'Death_Fast') },
-  'Halfling Cook': { file: 'halfling_cook11', base: 'g', style: 'gut', hp: 40, r: .7, speed: 2.6, dmg: 12, armor: true, n: 3, anims: OV_A('Cook_Fat_Idle', 'Cook_Fat_Run', 'Cook_Fat_Strike|Cook_Fat_BellyNockback', 'Cook_Fat_Hit', 'Cook_Fat_Die') },
-  // the towns and the dead
-  'Peasant': { file: 'peasanta', base: 'k', hp: 8, r: .45, speed: 4, dmg: 5, lite: true, tok: 3, n: 8, anims: OV_HUMAN },
-  'Townsman': { file: 'towns_folk_a', base: 'k', hp: 10, r: .45, speed: 4, dmg: 6, tok: 3, n: 6, anims: OV_A('idle attack|Idle', 'Run', 'StrikeHigh2|StrikeMid', 'HitFront', 'DeathForward') },
-  'Zombie': { file: 'old_rig_zombie_a', base: 'k', hp: 14, r: .45, speed: 2.4, dmg: 8, tok: 3, n: 8, anims: OV_A('Idle_Basic', 'Move_Walk_Wobbly', 'Strike_Punch_HIGH|Strike_Punch_MID', 'HIT_Front', 'Death_Fast') },
-  'Scarecrow': { file: 'scarecrow', base: 'k', hp: 20, r: .5, speed: 3.6, dmg: 9, tok: 2, n: 4, anims: OV_A('idle', 'run', 'Strike_Single_HIGH|Strike_Single_MID', 'hitfrontward', 'deathforward') },
-  // the dwarves, the elves and the raiders
-  'Dwarf': { file: 'dwarf', base: 'k', hp: 20, r: .5, speed: 3.6, dmg: 9, tok: 2, n: 6, anims: OV_A('idle02', 'DwarfRun', 'Strike_A|Strike_B', 'Hit', 'Die') },
-  'Dwarf Crossbowman': { file: 'dwarf_crossbow', base: 'k', style: 'shoot', want: 10, hp: 14, r: .5, speed: 3.6, dmg: 8, n: 5, anims: OV_A('Idle_Crossbow', 'Run_Crossbow', 'Crossbowshot', 'Hit', 'Die') },
-  'Dwarf Flamer': { file: 'flamer_a', base: 'g', style: 'cast', spell: 'fire', want: 6, hp: 30, r: 1, speed: 2.8, dmg: 10, armor: true, n: 3, anims: OV_A('Idle_Flametrower', 'flame_run', 'flame_attack', 'Hit', 'Die_Tank') },
-  'Elf': { file: 'ghostelf', base: 'f', style: 'cast', spell: 'ice', want: 8.5, hp: 16, r: .45, speed: 4.2, dmg: 8, tok: 2, n: 5, anims: OV_A('Idle_Combat', 'Move_Run_withweapon', 'Strike_Magic', 'GetHit_Backward', 'Death') },
-  'Raider': { file: 'raider', base: 'k', hp: 18, r: .5, speed: 4.6, dmg: 9, tok: 2, n: 6, anims: OV_A('Idle_Attack', 'Run', 'Strike_High|Strike_Mid', 'HitFront', 'DeathBackward') },
-  'Raider Bomber': { file: 'raider_bombtrower', base: 'k', style: 'shoot', want: 11, hp: 14, r: .5, speed: 4.4, dmg: 9, n: 5, anims: OV_A('Idle_Attack', 'Run', 'Bomb_Trow', 'HitFront', 'DeathBackward') },
-  // the Skull Tribe, the Red Cloaks and the paladins
-  'Skull Tribe Stag': { file: 'stag1', base: 'k', hp: 20, r: .55, speed: 4, dmg: 10, tok: 2, n: 5, anims: OV_A('Idle_Deer', 'Run_Deer', 'Stike_Deer', 'Deer_Hit', 'Die_Deer') },
-  'Skull Tribe Rat': { file: 'rat1', base: 'k', style: 'shoot', want: 10, hp: 16, r: .55, speed: 4, dmg: 8, n: 5, anims: OV_A('Idle_rat', 'Run_Rat', 'Shoot_Rat', 'Rat_Hit', 'Die_Rat_04') },
-  'Skull Tribe Boar': { file: 'boar_1', base: 'k', style: 'cart', hp: 22, r: .6, speed: 4, dmg: 11, tok: 2, n: 5, anims: OV_A('Idle_Boar', 'Run_Boar', 'Strike_Boar', 'Boar_Hit', 'Die_Boar') },
-  'Red Cloak': { file: 'priest_red', base: 'f', style: 'cast', spell: 'fire', want: 8.5, hp: 16, r: .45, speed: 3.8, dmg: 9, tok: 2, n: 5, anims: OV_A('combat_idle2', 'Run', 'strike_A_1', 'Paladin_Hit', 'death_backwards') },
-  'Red Priestess': { file: 'red_priest_female', base: 'f', style: 'cast', spell: 'fire', want: 8.5, hp: 16, r: .45, speed: 4, dmg: 9, tok: 2, n: 5, anims: OV_A('combat_idle2', 'Female_Red_Priest_run', 'strike_A_1', 'Paladin_Hit', 'death_backwards') },
-  'White Priest': { file: 'white_priest', base: 'i', style: 'cast', spell: 'ice', want: 8.5, hp: 18, r: .45, speed: 3.6, dmg: 9, tok: 2, n: 4, anims: OV_A('combat_idle2', 'Run', 'strike_A_1', 'Hit', 'death_backwards') },
-  'Paladin': { file: 'paladin', base: 'k', style: 'cart', hp: 34, r: .6, speed: 3.6, dmg: 12, armor: true, n: 4, anims: OV_A('Paladin_Idle', 'Paladin_Run', 'Paladin_Charge_Run|Paladin_strike', 'Paladin_Hit', 'Paladin_Dead') },
-  // the trolls and the fallen
-  'Forest Troll': { file: 'forest_troll1', base: 'g', style: 'gut', hp: 70, r: 1.3, speed: 2.8, dmg: 14, armor: true, n: 2, anims: OV_A('Idle_basic', 'Move_Run_withweapon|Move_Walk', 'strike_mid_L|strike_low_R', 'HitPose', 'DeathLong') },
-  'Chain Troll': { file: 'chain_troll', base: 'g', style: 'gut', hp: 80, r: 1.4, speed: 2.6, dmg: 15, armor: true, n: 2, anims: OV_A('Idle_basic', 'Move_Run_withweapon|Move_Walk', 'skill_shockwave|strike_mid_L', 'HitPose', 'DeathLong') },
-  'Fallen Knight': { file: 'fallen_kinight', base: 'k', style: 'whirl', want: 3.4, hp: 70, r: .7, speed: 3.4, dmg: 14, armor: true, n: 2, anims: OV_A('IdleAttack', 'Run', 'SlashHigh|SlashMid', 'HitBack', 'DeathForward') },
-  'Succubus': { file: 'succubus', base: 'k', style: 'pounce', want: 6, hp: 50, r: .6, speed: 4.4, dmg: 12, n: 2, anims: OV_A('Idle_Combat', 'Move_Walk', 'Strike_WingBeat|Strike_SpinKick', 'GetHit_Backward', 'Death_Backward') },
-  // the bosses, one to a seed
-  'Dwarf King': { cup: 1, file: 'dwarf_king', base: 'k', style: 'whirl', want: 3.4, hp: 220, r: .7, speed: 3.4, dmg: 15, armor: true, n: 1, anims: OV_A('King_Idle', 'DwarfRun', 'King_strike', 'Hit', 'King_dead') },
-  'Melvin Underbelly': { cup: 1, file: 'halfling_boss', base: 'g', style: 'cart', hp: 260, r: 1.5, speed: 3, dmg: 16, n: 1, anims: OV_A('Idle_04', 'Walk_01', 'Roll_in|strike_single', 'Hitpose', 'Drop_Dead') },
-  'Kahn': { cup: 1, file: 'warrior2', base: 'k', style: 'whirl', want: 3.6, hp: 320, r: .8, speed: 3.6, dmg: 18, armor: true, n: 1, anims: OV_A('Idle', 'Walk2', 'StrikeHigh_360|Strike_high', 'Hit', 'deathForward') },
-  'Rock Giant': { cup: 1, file: 'rock_giant_lod_1', base: 'g', style: 'gut', hp: 380, r: 2.2, speed: 2.6, dmg: 20, armor: true, n: 1, anims: OV_A('idle_fists|idle', 'walk', 'smash|punch', 'Hurt', 'N_Death') },
-  'Water Serpent': { cup: 1, file: 'water_serpent_mesh_lod_01', base: 'g', style: 'cast', spell: 'ice', want: 9, hp: 360, r: 2.4, speed: 2.6, dmg: 16, n: 1, anims: OV_A('Idle_Combat', 'Move_Walk', 'Strike_Poison_OnGround|Strike_Snap_Near_OnGround', 'GetHit_High', 'Death_OnGround') },
-  'Sand Worm': { cup: 1, file: 'sandworm', sc: .5, base: 'z', style: 'sink', hp: 340, r: 2.4, speed: 3.4, dmg: 18, n: 1, anims: OV_A('Idle_Combat', 'Idle_Combat', 'Strike_Near_High|Strike_Near_Low', 'Hurt', 'Death') },
-  'Overseer': { cup: 1, file: 'overseer_eye51', base: 'f', style: 'cast', spell: 'fire', want: 9, hover: 1.5, hp: 300, r: 1.6, speed: 3, dmg: 15, n: 1, anims: OV_A('Overseer_BasicIdle', 'Fly2', 'Overseer_AttackAnim', 'Hit_anim2', 'Overseer_Dead3') },
-  'War Machine': { cup: 1, file: 'dwarf_machine', sc: .8, base: 'g', style: 'cart', hp: 400, r: 2.4, speed: 3.2, dmg: 20, armor: true, front: true, n: 1, anims: OV_A('Move', 'Move', 'Charge_attack', 'Hit_animatie', 'Panic') },
-  'Succubus Queen': { cup: 1, file: 'succubus', sc: 1.6, base: 'k', style: 'pounce', want: 6, hp: 300, r: 1, speed: 4.4, dmg: 16, n: 1, anims: OV_A('Idle_Combat', 'Move_Walk', 'Strike_WingBeat_Both|Strike_SpinKick', 'GetHit_Backward', 'Death_Backward') },
-  'The Wizard': { cup: 1, file: 'wizard', base: 'f', style: 'cast', spell: 'fire', want: 9, hp: 420, r: 1, speed: 3.4, dmg: 18, n: 1, anims: OV_A('Wizard_Idle_Basic', 'Wizard_Foot_Walk', 'Wizard_Strike|Wizard_Shockwave', 'Wizard_Hit', 'Wizard_Death') },
-  'The Reaper': { cup: 1, file: 'reaper', base: 'g', style: 'whirl', want: 4, hp: 420, r: 1.6, speed: 3.4, dmg: 18, n: 1, anims: OV_A('idle01|idle_attack_N', 'run', 'strike_high|strike_mid', 'hit', 'death') },
-  'The Forgotten God': { cup: 1, file: 'forgotten_god', sc: .35, base: 'g', style: 'gut', want: 7, hp: 600, r: 4, speed: .8, dmg: 22, armor: true, n: 1, anims: OV_A('Idle2', 'Idle2', 'Strike_Left5|Strike_Right', 'Rock_Hit', 'Forgotten_Dead') },
+  'Ram': { file: 'sheep_ram', base: 'k', hp: 10, r: .5, speed: 4.6, dmg: 6, n: 4, want: 4, anims: OV_A('idle_look', 'move_run', 'hitpose', 'Die'), mv: [FM('dash', 3, 11, .6, 'attack_charge', { len: 10, sp: 13 }), FM('swipe', 0, 2.4, .35, 'attack_high|attack_low', { hits: [.25] })] },
+  'Rat': { file: 'rat', base: 'k', hp: 6, r: .4, speed: 5.4, dmg: 5, lite: true, n: 6, want: 2, anims: OV_A('Rat_idle', 'Rat_Run', 'Rat_shock', 'Rat_die1'), mv: [FM('swipe', 0, 2, .25, 'Bite|Bite_High', { hits: [.15], step: 5 }), FM('leap', 2.5, 6, .35, 'Bite_High', { rad: 1.6, h: 2 })] },
+  'Beetle': { file: 'green_beetle', base: 'k', hp: 14, r: .6, speed: 4, dmg: 7, n: 4, want: 3, anims: OV_A('Idle_15fps', 'Run', 'Hitframe', 'New_Death_02'), mv: [FM('swipe', 0, 2.4, .4, 'Bite_atack_02', { hits: [.25] }), FM('breath', 0, 5, .6, 'Flame_attack08', { reach: 5, dur: 1.2, el: 'fire' })] },
+  'Bobo Bird': { file: 'bobobird', base: 'k', hp: 10, r: .5, speed: 4.8, dmg: 6, n: 4, want: 3, anims: OV_A('Idle_Basic', 'Move_Run', 'HITpose', 'Death'), mv: [FM('swipe', 0, 2.4, .3, 'Strike_HIGH|Strike_MID|Strike_LOW', { hits: [.2] }), FM('leap', 3, 9, .45, 'Move_JumpToFly1', { rad: 2, h: 4 })] },
+  'Toad': { file: 'toad11', base: 'k', hp: 16, r: .7, speed: 3.6, dmg: 9, n: 3, want: 4, anims: OV_A('Idle', 'Run', 'Hit', 'Die'), mv: [FM('leap', 3, 10, .4, 'Jump_Start+Jump_Fly+Jump_land', { rad: 2.4, h: 5 }), FM('swipe', 0, 4.5, .4, 'Tongue', { reach: 4.5, arc: .8, hits: [.25] })] },
+  'Wisp': { file: 'whisp11', base: 'i', hover: 1.4, hp: 9, r: .4, speed: 4, dmg: 6, lite: true, n: 4, want: 8, anims: OV_A('whisp_fly', 'whisp_fly', 'whisp_fly', 'whisp_fly'), mv: [FM('shoot', 4, 15, .5, 'whisp_fly', { shot: 'ice', n: 3 }), FM('dash', 0, 6, .4, 'whisp_fly', { len: 7, sp: 12 })] },
+  'Slug': { file: 'slog_normal', base: 'g', hp: 50, r: 1.4, speed: 2.2, dmg: 12, armor: true, n: 2, want: 4, anims: OV_A('slog_idle_standard', 'slog_walk', 'slog_hit_pose', 'slog_die'), mv: [FM('swipe', 0, 3.2, .5, 'slog_punch', { reach: 3.2, hits: [.3] }), FM('shoot', 4, 12, .6, 'slog_punch', { shot: 'bomb', el: 'poison' })] },
+  'Pumpkin': { file: 'pumpkin', base: 'k', hp: 12, r: .5, speed: 4.2, dmg: 7, n: 4, want: 3, anims: OV_A('idle', 'run', 'hit', 'death'), mv: [FM('swipe', 0, 2.4, .3, 'strike01|strike02', { hits: [.22] }), FM('leap', 3, 8, .4, 'idleattack', { rad: 2, h: 3.5 })] },
+  'Rolling Beast': { file: 'rolling_beast_lod_0', base: 'g', hp: 45, r: 1, speed: 3.4, dmg: 12, armor: true, front: true, n: 2, want: 6, anims: OV_A('idle_combat', 'walk', 'hitpose', 'die'), mv: [FM('dash', 4, 16, .8, 'Charge_startup_straigth_v02+roll_move+Charge_roll_out_normal', { len: 16, sp: 15, steer: 1.5 }), FM('swipe', 0, 3, .45, 'attack_bite|attack_slash', { reach: 2.8, hits: [.25] })] },
+  'Unicorn': { file: 'bloody_unicorn_lod_0', base: 'g', hp: 45, r: 1, speed: 5, dmg: 13, n: 2, want: 5, anims: OV_A('Idle_Combat', 'N_move_run', 'N_get_hit_backwards', 'N_death_sideways'), mv: [FM('dash', 4, 14, .6, 'Move_Charge', { len: 13, sp: 16 }), FM('swipe', 0, 3, .45, 'N_strike_back_kick|N_strike_doube_kick|N_strike_toss_L|N_strike_toss_R', { reach: 3, hits: [.25] })] },
+  // the folk of the Shire and the towns, and the dead
+  'Halfling': { file: 'halfling_regular', base: 'k', hp: 9, r: .4, speed: 4.4, dmg: 6, lite: true, n: 6, want: 3, anims: OV_A('fight_idle', 'run', 'hit', 'die'), mv: [FM('swipe', 0, 2.2, .3, 'strike_high|strike_middle|strike_low', { hits: [.2] }), FM('shoot', 5, 13, .5, 'trower_trow', { shot: 'bomb', rad: 1.6 })] },
+  'Peasant': { file: 'peasanta', base: 'k', hp: 10, r: .45, speed: 4.2, dmg: 6, lite: true, n: 5, want: 3, anims: OV_A('Idle_PassiveCombat', 'Move_Run_withweapon', 'HIT_Front', 'Death_Fast'), mv: [FM('swipe', 0, 2.4, .35, OV_STRIKE, { hits: [.22] }), FM('dash', 2.5, 6, .4, 'Strike_Single_Stab', { len: 4, sp: 10 })] },
+  'Zombie': { file: 'old_rig_zombie_a', base: 'k', hp: 16, r: .45, speed: 2.6, dmg: 8, n: 5, want: 1.8, rv: 6, anims: OV_A('Idle_Basic', 'Move_Walk_Wobbly', 'HIT_Front', 'Death_Fast'), mv: [FM('swipe', 0, 2.4, .45, 'Strike_Punch_HIGH|Strike_Punch_MID|Strike_Punch_LOW', { hits: [.28] })] },
+  'Scarecrow': { file: 'scarecrow', base: 'k', hp: 22, r: .5, speed: 3.8, dmg: 9, n: 3, want: 3, anims: OV_A('idle', 'run', 'hitfrontward', 'deathforward'), mv: [FM('swipe', 0, 2.6, .35, OV_STRIKE, { hits: [.22] }), FM('whirl', 0, 4, .5, 'Strike_Slave_Strike_HIGH2+Strike_Slave_Strike_MID2', { dur: 1, rad: 2.4 })] },
+  // the dwarves, the elves, the raiders and the Skull Tribe
+  'Dwarf': { file: 'dwarf', base: 'k', hp: 24, r: .5, speed: 3.6, dmg: 9, n: 4, want: 4, anims: OV_A('idle02', 'DwarfRun', 'Hit', 'Die'), mv: [FM('swipe', 0, 2.6, .4, 'Strike_A|Strike_B', { hits: [.25] }), FM('shoot', 7, 16, .6, 'Strike_Crossbow', { shot: 'bolt' }), FM('breath', 0, 5.5, .6, 'flame_attack_Start+flame_attack_Loop+flame_attack_End', { reach: 5.5, dur: 1.4, el: 'fire' }), FM('shoot', 4, 12, .6, 'Trow', { shot: 'bomb' })] },
+  'Elf': { file: 'ghostelf', base: 'f', hp: 18, r: .45, speed: 4.2, dmg: 8, n: 3, want: 8, anims: OV_A('Idle_Combat', 'Move_Run_withweapon', 'GetHit_Backward', 'Death'), mv: [FM('shoot', 5, 16, .6, 'Strike_Magic', { shot: 'ice', n: 3 }), FM('swipe', 0, 2.6, .35, 'Strike_High_Left|Strike_Medium_Right', { hits: [.2] }), FM('blink', 9, 20, .3, 'Strike_Magic', { hitClip: 'Strike_High_Left' })] },
+  'Raider': { file: 'raider', base: 'k', hp: 20, r: .5, speed: 4.6, dmg: 9, n: 4, want: 4, anims: OV_A('Idle_Attack', 'Run', 'HitFront', 'DeathBackward'), mv: [FM('swipe', 0, 2.6, .35, 'Strike_High|Strike_Mid|Strike_Low', { hits: [.22] }), FM('shoot', 5, 13, .55, 'Bomb_Trow', { shot: 'bomb' }), FM('leap', 3, 8, .4, 'JumpUp+JumpIdle+jumpDown', { rad: 2, h: 4 })] },
+  'Skull Tribe': { file: 'boar_1', base: 'k', hp: 24, r: .6, speed: 4, dmg: 11, n: 3, want: 4, anims: OV_A('Idle_Boar', 'Run_Boar', 'Boar_Hit', 'Die_Boar'), mv: [FM('swipe', 0, 2.6, .4, 'Strike_Boar', { hits: [.25] }), FM('slam', 0, 4, .6, 'Shockwave_Deer', { wave: true, rad: 6 }), FM('shoot', 6, 14, .6, 'Shoot_Rat', { shot: 'bolt' })] },
+  // the Red Cloaks and the paladins of the Empire
+  'Red Cloak': { file: 'priest_red', base: 'f', hp: 20, r: .45, speed: 3.8, dmg: 9, n: 3, want: 8, anims: OV_A('combat_idle2', 'Run', 'Paladin_Hit', 'death_backwards'), mv: [FM('shoot', 5, 16, .6, 'strike_A_1', { shot: 'fire', n: 2, gap: .3 }), FM('slam', 0, 4, .6, 'shockwave5', { wave: true, rad: 7 }), FM('dash', 4, 12, .6, 'charge_start+charge+charge_stop', { len: 11, sp: 13 })] },
+  'Paladin': { file: 'paladin', base: 'k', hp: 40, r: .6, speed: 3.6, dmg: 12, armor: true, n: 2, want: 3, rv: 2, anims: OV_A('Paladin_Idle', 'Paladin_Run', 'Paladin_Hit', 'Paladin_Dead'), mv: [FM('swipe', 0, 2.8, .45, 'Paladin_strike|strike_A_1', { hits: [.25] }), FM('dash', 4, 13, .6, 'Paladin_Charge_Start+Paladin_Charge_Run+Paladin_Charge_Stop', { len: 12, sp: 14 }), FM('slam', 0, 4, .6, 'shockwave5', { wave: true, rad: 7, el: 'light' })] },
+  // the trolls, the fallen and the succubi
+  'Troll': { file: 'forest_troll1', base: 'g', hp: 80, r: 1.3, speed: 2.8, dmg: 14, armor: true, n: 1, want: 3, rv: 2, anims: OV_A('Idle_basic', 'Move_Run_withweapon|Move_Walk', 'HitPose', 'DeathLong'), mv: [FM('swipe', 0, 3.6, .55, 'strike_mid_L|strike_low_R|strike_low_L', { reach: 3.6, hits: [.3] }), FM('slam', 0, 6, .8, 'skill_shockwave', { wave: true, rad: 8 })] },
+  'Fallen Knight': { file: 'fallen_kinight', base: 'k', hp: 80, r: .7, speed: 3.4, dmg: 14, armor: true, n: 1, want: 3, rv: 2, anims: OV_A('IdleAttack', 'Run', 'HitBack', 'DeathForward'), mv: [FM('swipe', 0, 3, .45, 'SlashHigh+SlashMid+SlashLow', { hits: [.2, .5, .8], step: 3 }), FM('whirl', 0, 4, .6, 'IdleAttack', { dur: 1.3, rad: 3 }), FM('shoot', 5, 12, .5, 'Taunt_Spit', { shot: 'bomb', el: 'poison' })] },
+  'Succubus': { file: 'succubus', base: 'k', hp: 55, r: .6, speed: 4.6, dmg: 12, n: 2, want: 4, anims: OV_A('Idle_Combat', 'Move_Walk', 'GetHit_Backward', 'Death_Backward'), mv: [FM('swipe', 0, 2.8, .35, 'Strike_WingBeat|Strike_SpinKick', { hits: [.22] }), FM('dive', 4, 12, .55, 'Idle_Dive+Strike_WingBeat_Both', { len: 10, sp: 14 }), FM('shoot', 6, 15, .6, 'Shootup', { shot: 'fire', n: 2, gap: .3 })] },
+  // the champions
+  'Dwarf King': { file: 'dwarf_king', base: 'k', hp: 260, r: .7, speed: 3.6, dmg: 15, boss: true, want: 3.5, rv: 3, anims: OV_A('King_Idle', 'DwarfRun', 'Hit', 'King_dead'), mv: [FM('swipe', 0, 3, .45, 'King_strike|Warrior_BIG_Strike', { reach: 3, hits: [.3] }), FM('breath', 0, 6, .6, 'flame_attack_Start+flame_attack_Loop+flame_attack_End', { reach: 6, dur: 1.6, el: 'fire' }), FM('shoot', 5, 14, .6, 'Trow', { shot: 'bomb', n: 2, gap: .35 }), FM('slam', 0, 4, .6, 'Warrior_Strike_03', { wave: true, rad: 7 })] },
+  'Melvin Underbelly': { file: 'halfling_boss', base: 'g', hp: 280, r: 1.5, speed: 3, dmg: 16, boss: true, want: 4, rv: 2, anims: OV_A('Idle_04', 'Walk_01', 'Hitpose', 'Drop_Dead'), mv: [FM('dash', 4, 16, .8, 'Roll_in_Startup+Roll_in+Roll_out_2', { len: 16, sp: 15, steer: 1.4 }), FM('swipe', 0, 3.4, .5, 'strike_single|strike_doubel', { reach: 3.4, hits: [.3] }), FM('slam', 0, 5, .6, 'shock', { wave: true, rad: 7 })] },
+  'Kahn': { file: 'warrior2', base: 'k', hp: 340, r: .8, speed: 3.8, dmg: 18, boss: true, want: 3.4, rv: 3, anims: OV_A('Idle', 'Walk2', 'Hit', 'deathForward'), mv: [FM('swipe', 0, 3.2, .45, 'Strike_high|Strike_low|Strike_Vertical', { reach: 3.2, hits: [.28] }), FM('whirl', 0, 4.5, .6, 'StrikeHigh_360|StrikeLow_360', { dur: 1.2, rad: 3.4 }), FM('slam', 0, 5, .7, 'Shockwave', { wave: true, rad: 8 })] },
+  'Rock Giant': { file: 'rock_giant_lod_1', base: 'g', hp: 400, r: 2.2, speed: 2.6, dmg: 20, boss: true, want: 4, rv: 2, anims: OV_A('idle_fists|idle', 'walk', 'Hurt', 'N_Death'), mv: [FM('swipe', 0, 4.6, .6, 'punch|smash', { reach: 4.6, hits: [.35] }), FM('slam', 0, 7, .8, 'N_smash', { wave: true, rad: 10 }), FM('shoot', 6, 18, .7, 'N_Throw_close', { shot: 'rock' })] },
+  'Water Serpent': { file: 'water_serpent_mesh_lod_01', base: 'g', hp: 380, r: 2.4, speed: 2.6, dmg: 16, boss: true, want: 5, rv: 2, anims: OV_A('Idle_Combat', 'Move_Walk', 'GetHit_High', 'Death_OnGround'), mv: [FM('swipe', 0, 5, .5, 'Strike_Snap_Near_OnGround|Strike_Snap_Near_High_OnGround', { reach: 5, arc: .6, hits: [.3] }), FM('swipe', 4, 9, .6, 'Strike_Snap_Far_OnGround|Strike_Snap_Far_High_OnGround', { reach: 9, arc: .85, hits: [.35] }), FM('breath', 0, 8, .6, 'Strike_Poison_OnGround', { reach: 8, dur: 1.4, el: 'poison' }), FM('slam', 0, 6, .6, 'Strike_Tail_Sweep_OnGround', { rad: 6 })] },
+  'Sand Worm': { file: 'sandworm', sc: .5, base: 'z', hp: 360, r: 2.4, speed: 3.4, dmg: 18, boss: true, want: 5, rv: 2, anims: OV_A('Idle_Combat', 'Idle_Combat', 'Hurt', 'Death'), mv: [FM('sink', 6, 20, .4, 'Strike_Near_Low', { rad: 3.4 }), FM('swipe', 0, 6, .55, 'Strike_Near_High|Strike_Near_Low', { reach: 6, hits: [.35] }), FM('shoot', 6, 16, .6, 'Strike_Far_High|Strike_Far_Low', { shot: 'rock' })] },
+  'Overseer': { file: 'overseer_eye51', base: 'f', hover: 1.5, hp: 320, r: 1.6, speed: 3, dmg: 15, boss: true, want: 8, rv: 3, anims: OV_A('Overseer_BasicIdle', 'Fly2', 'Hit_anim2', 'Overseer_Dead3'), mv: [FM('shoot', 4, 18, .55, 'Overseer_AttackAnim', { shot: 'fire', n: 3, gap: .2 }), FM('rain', 5, 18, .6, 'Summon', { n: 5, el: 'fire' }), FM('dash', 0, 6, .5, 'Overseer_AttackAnim', { len: 8, sp: 12 })] },
+  'War Machine': { file: 'dwarf_machine', sc: .8, base: 'g', hp: 420, r: 2.4, speed: 3.2, dmg: 20, armor: true, front: true, boss: true, want: 6, rv: 2, anims: OV_A('Move', 'Move', 'Hit_animatie', 'Panic'), mv: [FM('dash', 4, 18, .8, 'Charge_start+Charge_attack+Charge_slowdown', { len: 16, sp: 14, steer: 1 }), FM('breath', 0, 7, .7, 'Flamer_In+Flamer_attack+Flamer_Out', { reach: 7, dur: 1.8, el: 'fire' })] },
+  'The Wizard': { file: 'wizard', base: 'f', hp: 440, r: 1, speed: 3.6, dmg: 18, boss: true, want: 7, rv: 3, anims: OV_A('Wizard_Idle_Basic', 'Wizard_Foot_Walk', 'Wizard_Hit', 'Wizard_Death'), mv: [FM('shoot', 4, 18, .5, 'Wizard_Strike', { shot: 'fire', n: 3, gap: .2 }), FM('slam', 0, 5, .6, 'Wizard_Shockwave', { wave: true, rad: 9 }), FM('whirl', 0, 6, .6, 'Wizard_Whirlwind_Start+Wizard_Whirlwind_Idle+Wizard_Whirlwind_End', { dur: 2, rad: 3.6, sp: 4.5 }), FM('rain', 6, 20, .7, 'Wizard_Awaiting_FinalStrike', { n: 6, el: 'thunder' })] },
+  'The Reaper': { file: 'reaper', base: 'g', hp: 440, r: 1.6, speed: 3.6, dmg: 18, boss: true, want: 4, rv: 3, anims: OV_A('idle01|idle_attack_N', 'run', 'hit', 'death'), mv: [FM('swipe', 0, 4.2, .5, 'strike_high|strike_mid|strikelow', { reach: 4.2, arc: -.2, hits: [.3] }), FM('rain', 5, 18, .6, 'summon', { n: 5, el: 'dark' }), FM('blink', 7, 20, .3, 'idle_attack_N', { hitClip: 'strike_high', reach: 4 })] },
+  'The Forgotten God': { file: 'forgotten_god', sc: .35, base: 'g', hp: 650, r: 4, speed: .8, dmg: 22, armor: true, boss: true, want: 7, rv: 2, anims: OV_A('Idle2', 'Idle2', 'Rock_Hit', 'Forgotten_Dead'), mv: [FM('swipe', 0, 9, .7, 'Strike_Left5|Strike_Right', { reach: 9, arc: -.4, hits: [.4] }), FM('slam', 0, 12, .9, 'Shockwave_start+Shockwave_end', { wave: true, rad: 13 }), FM('rain', 6, 24, .7, 'Forgotten_Dead_Flame', { n: 7, el: 'fire' })] },
 };
-for (const n in OV_FOES) { const f = OV_FOES[n]; f.slot = 'ov_' + f.file + (f.sc ? '_' + f.sc : ''); if (f.cup === 1 || f.r >= 1.2) f.heavy = true; }
+for (const n in OV_FOES) { const f = OV_FOES[n]; f.slot = 'ov_' + f.file + (f.sc ? '_' + f.sc : ''); }
 const CUP_FOES = { ...KH2_FOES, ...OV_FOES };
-// --- Kingdom Hearts' Olympus Coliseum cups, seed by seed as KH1 has them (9 first, 1 the champion). Valinor fights each seed with the foes Kingdom
-//     Hearts II also has (KH2_FOES); a seed none of whose foes are in KH2 is listed but can't be fought. Then the Overlord cup: one seed per foe, weakest first
-const KH_CUPS = [
-  { name: 'PHIL CUP', seeds: [
-    [9, 'Jungle Vice', 'Powerwild 4, Soldier 3'], [8, 'Monkey & Magic', 'Powerwild 1, Green Requiem 2, Red Nocturne 2, Yellow Opera 5'], [7, 'Big Feet', 'Hammerlegs 1, Powerwild 4'],
-    [6, 'Magic Alert', 'Red Nocturne 5, Yellow Opera 5'], [5, 'Nightwalkers', 'Large Body 1, Powerwild 5'], [4, 'Hard Hitters', 'Gauntlets 1, Blue Rhapsody 3, Shadow 4'],
-    [3, 'Indomitable', 'Large Body 2, Green Requiem 6'], [2, 'Wild Corps', 'Gauntlets 1, Hammerlegs 1, Powerwild 4'], [1, 'Shadow Battalion', 'Armored Torso 1, Yellow Opera 4, Blue Rhapsody 4']] },
-  { name: 'PEGASUS CUP', seeds: [
-    [9, 'Ghost Bandits', 'Search Ghost 2, Bandit 1, Air Soldier 3'], [8, 'Marauders', 'Bandit 2, Barrel Spider 3, Shadow 4'], [7, 'Sluggers', 'Fat Bandit 1, Large Body 2, Pot Spider 1, Barrel Spider 1'],
-    [6, 'Pots & Bolts', 'Pot Spider 5, Yellow Opera 3, Green Requiem 2'], [5, 'The Big Combo', 'Fat Bandit 2, Search Ghost 4'], [4, 'Toadstool', 'Black Fungus 3'],
-    [3, 'Pots & Barrels', 'Pot Spider 5, Barrel Spider 5'], [2, 'Giant Impact', 'Fat Bandit 3, Large Body 2'], [1, 'Leon & Yuffie', 'Yuffie 1, Leon 1']] },
-  { name: 'HERCULES CUP', seeds: [
-    [9, 'Dusk Vanguard', 'Gargoyle 5, Shadow 3'], [8, 'Minions of Horror', 'Wight Knight 4, Air Pirate 1, Barrel Spider 2'], [7, 'Buccaneers', 'Battleship 1, Pirate 4'],
-    [6, 'Stray Phantoms', 'Gargoyle 4, Wight Knight 3'], [5, 'Mad Truffle', 'Rare Truffle 1'], [4, 'Cloud', 'Cloud 1'],
-    [3, 'Dark Squadron', 'Wight Knight 1, Gargoyle 2, Pirate 2, Air Pirate 2'], [2, 'Flying Pirates', 'Battleship 2, Pirate 2, Air Pirate 1'], [1, 'Hercules', 'Hercules 1']] },
-  { name: 'HADES CUP', seeds: [
-    [49, 'Shadow Brothers', 'Soldier 3, Shadow 7'], [48, 'Wild Dance', 'Wight Knight 3, Powerwild 4'], [47, 'Terrible Feet', 'Hammerlegs 1, Pirate 4, Shadow 2'], [46, 'Dirty Claws', 'Powerwild 1, Pot Spider 8'],
-    [45, 'Mad Truffle', 'Rare Truffle 1'], [44, 'Yuffie', 'Yuffie 1'], [43, 'Outlaws', 'Bandit 3, Pirate 4'], [42, 'Dark Garrison', 'Defender 1, Wight Knight 3, Soldier 3'],
-    [41, 'Bad Union', 'Bandit 1, Powerwild 2, Large Body 1, Fat Bandit 1, Soldier 1'], [40, 'Behemoth', 'Behemoth 1'], [39, 'Red Legion', 'Search Ghost 1, Red Nocturne 8'],
-    [38, 'Blue Legion', 'Blue Rhapsody 7, Gargoyle 2'], [37, 'Sorcerous Armor', 'Red Armor 1, Blue Rhapsody 2, Red Nocturne 2'], [36, 'Mad Fungus', 'Black Fungus 1, Green Requiem 4'],
-    [35, 'Spiders & Magic', 'Red Nocturne 3, Yellow Opera 3, Pot Spider 2'], [34, 'Optical Trick', 'Sneak Army 1, Blue Rhapsody 2, Green Requiem 4'],
-    [33, 'Magic Force', 'Wizard 1, Red Nocturne 2, Yellow Opera 4, Blue Rhapsody 2'], [32, 'Shadow Summoners', 'Wizard 3, Shadow 6'], [31, 'Mystic Mages', 'Angel Star 1, Wizard 4'],
-    [30, 'Cerberus', 'Cerberus 1'], [29, 'Sky Raiders', 'Air Soldier 4, Air Pirate 3'], [28, 'Spookies', 'Search Ghost 6'], [27, 'Terrible Fists', 'Gauntlets 1, Gargoyle 5'], [26, 'Shadow Storm', 'Shadow 21'],
-    [25, 'Avengers', 'Bandit 1, Wight Knight 1, Pirate 1, Soldier 1, Powerwild 1'], [24, 'Dark Knights', 'Opposite Armor 1, Darkball 6'], [23, 'Black Flap', 'Gargoyle 2, Air Soldier 3, Air Pirate 2'],
-    [22, 'Night Soarers', 'Wyvern 3, Search Ghost 2, Wight Knight 2'], [21, 'Air Corsairs', 'Battleship 1, Wyvern 2, Darkball 4'], [20, 'Cloud & Leon', 'Cloud 1, Leon 1'],
-    [19, 'The Large Trio', 'Large Body 3, Wight Knight 2'], [18, 'Blaze Bandits', 'Fat Bandit 3, Red Nocturne 4'], [17, 'False Angels', 'Angel Star 2, Wyvern 2, Large Body 2'], [16, 'Dark Storm', 'Darkball 21'],
-    [15, 'Air Brigade', 'Wyvern 1, Air Pirate 1, Air Soldier 1, Gargoyle 1, Search Ghost 1'], [14, 'Violent Bunch', 'Fat Bandit 2, Invisible 1, Wizard 2'],
-    [13, 'Heavy Warriors', 'Fat Bandit 2, Defender 1, Large Body 2'], [12, 'Interceptors', 'Defender 3'], [11, 'Elder Force', 'Invisible 3, Angel Star 2'], [10, 'Hades', 'Hades 1'],
-    [9, 'Night Rave', 'Invisible 1, Darkball 3, Shadow 5'], [8, 'The Requiem', 'Angel Star 1, Wizard 2, Yellow Opera 2, Blue Rhapsody 2, Red Nocturne 2'], [7, 'Invisible Fear', 'Sneak Army 1, Invisible 3'],
-    [6, 'Mad Mushroom', 'White Mushroom 3'], [5, 'Black Storm', 'Shadow 15, Darkball 11'], [4, 'Twin Mirage', 'Sneak Army 2'], [3, 'Shadow Troopers', 'Wyvern 9, Wizard 8, Defender 2'],
-    [2, 'Final Battalion', 'Angel Star 9, Invisible 10, Darkball 10'], [1, 'Rock Titan', 'Rock Titan 1']] },
-  ...[['OVERLORD CUP', 0], ['OVERLORD BOSSES', 1]].map(([name, c]) => ({ name, game: 'OVERLORD', seeds: Object.entries(OV_FOES).filter(([, f]) => (f.cup || 0) === c).map(([k, f], i, a) => [a.length - i, (f.n > 1 ? (/man$/.test(k) ? k.replace(/man$/, 'men') : k + 's') : k).toUpperCase(), `${k} ${f.n}`]) })),
-].map(c => ({ game: 'KINGDOM HEARTS', ...c, seeds: c.seeds.map(([n, team, list]) => { const all = list.split(', ').map(e => { const m = e.match(/^(.*) (\d+)$/); return [m[1], +m[2]]; });
-  return { n, team, all, wave: all.filter(([k]) => CUP_FOES[k]).flatMap(([k, c]) => Array(c).fill(k)) }; }) }));
+for (const n in CUP_FOES) { const f = CUP_FOES[n]; f.n = f.n || 1; if (f.boss || f.r >= 1.2) f.heavy = true; if (f.boss) f.armor = true; }
+// --- the Colosseum's two rolls: a round for each kind of foe, in the order above; choose where to start (see openSeeds)
+const KH_CUPS = [['KINGDOM HEARTS II', 'KINGDOM HEARTS', KH2_FOES], ['OVERLORD', 'OVERLORD', OV_FOES]].map(([name, game, F]) => ({ name, game,
+  seeds: Object.entries(F).map(([k, f], i) => ({ n: i + 1, team: (f.boss ? 'CHAMPION: ' : '') + k.toUpperCase(), all: [[k, f.n]], wave: Array(f.n).fill(k) })) }));
 const ARENA_TRIALS = [
   { name: 'THE ORC TRIAL', sub: 'ORCS AND ARCHERS · 5 ROUNDS', rounds: [['o', 'o', 'o'], ['o', 'o', 'M', 'o'], ['M', 'M', 'o', 'o', 'o'], ['Q', 'o', 'o', 'M'], ['R', 'o', 'o']] },
   { name: 'THE TRIAL OF ISENGARD', sub: 'URUK-HAI · 6 ROUNDS · LURTZ', rounds: [['u', 'u', 'o'], ['s', 'u', 'a'], ['p', 'p', 'u'], ['b', 'a', 'a', 'u'], ['j', 'j', 's', 'c'], ['L']] },
@@ -2852,7 +2823,7 @@ const LEVELS = [
   })),
   ...KH_CUPS.map((C, ci) => ({
     // Kingdom Hearts' Olympus Coliseum cups, in the same arena: choose a seed and fight on from it to the cup's champion (see openSeeds)
-    straight: true, roam: true, kh: true, camRing: 17, cup: ci, name: C.name, sub: `${C.game} · ${C.seeds.filter(s => s.wave.length).length} OF ${C.seeds.length} SEEDS`, loc: 'rohan', theme: 'arena', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 20000, CZ: 0, base: -4, wallH: 0, winTitle: C.name + ' WON!',
+    straight: true, roam: true, kh: true, camRing: 17, cup: ci, name: C.name, sub: `${C.game} · A ROUND FOR EACH OF ITS ${C.seeds.length} KINDS OF FOE`, loc: 'rohan', theme: 'arena', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 20000, CZ: 0, base: -4, wallH: 0, winTitle: C.name + ' WON!',
     ...cupLayout(ci),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { arenaContent(); },
@@ -3011,6 +2982,11 @@ const debMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(.34, .07, .14), ps
 let state = 'title', T = 0;
 const gs = { apples: 0, lives: 10, rockets: 8, crates: 0, crateTotal: 0, phial: 0, superT: 0, kills: 0, time: 0, appleTotal: 0, cp: { s: 1.2, x: 0, y: 0, t: 0, deaths: 0 } };
 const RUN = 7.6, ACC = 60, AIR = 34, GRAV = 36, JUMP_V = 12.6, PR = .36, PH = 1.35, RIDE_V = 9.6;
+// who you play: Gandalf, or Sora from Kingdom Hearts II (his own model, Keyblade and moves, from models/kh: only on your own computer). Chosen with H on the
+// map or in the pause menu (the game starts again with him), or ?hero=sora. Sora runs faster and jumps higher than Gandalf, his second jump is KH II's
+// Aerial Dodge, and holding jump as he falls after it, he glides (KH II's Glide)
+const HERO = (() => { const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname); let h = new URLSearchParams(location.search).get('hero'); if (!h) try { h = localStorage.getItem('valinorHero'); } catch (e) { } return local && h === 'sora' ? 'sora' : 'gandalf'; })();
+const SORA_RUN = 1.22, SORA_JUMP = 1.12, SORA_GLIDE = { fall: 2.4, speed: 1.55 };
 const P = { s: 1.2, x: 0, y: 0, vs: 0, vx: 0, vy: 0, ground: true, heading: 0, spinT: 0, spinCD: 0, coyote: 0, jumpBuf: 0, jumpHeld: false, standOn: null, invT: 0, fireCD: 0, fireAnim: 0, airT: 0, dbl: false, flip: 0, safe: null };
 const cam = { yaw: 0, mode: 0, m: 0, gy: 0, shake: 0, s: 0, x: 0, y: 3, ls: 0, lx: 0, ly: 1, snap: true, wp: new V3(), wl: new V3() };
 let hob, horse, dragons = [], balrogs = [], fireballs = [], patches = [], arrows = [], rockets = [], bolts = [];
@@ -3147,6 +3123,7 @@ addEventListener('blur', () => { for (const k in keys) keys[k] = false; touchRes
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play' && !location.search.includes('sim=')) pause(true); });
 function onKey(code) {
   if (KH_PMENU.open) { khPowersKey(code); return; }   // (the powers menu has the keys while it's open)
+  if (code === 'KeyH' && state !== 'play' && LOCAL_ASSETS) { const h = HERO === 'sora' ? 'gandalf' : 'sora'; try { localStorage.setItem('valinorHero', h); } catch (e) { } const u = new URL(location.href); u.searchParams.delete('hero'); location.href = u.toString(); return; }   // (Gandalf or Sora: the game starts again with the other)
   if (SEEDS && state === 'map') { if (!/^Key[MGZX]$/.test(code)) { seedKey(code); return; } }   // (a Kingdom Hearts cup's seeds)
   if (CHAP && state === 'map') { if (!/^Key[MGZX]$/.test(code)) { chapKey(code); return; } }   // (and a level menu)
   if (code === 'Tab' && state === 'play' && khOn()) { khPowersMenu(true); return; }
@@ -3184,7 +3161,10 @@ function syncPauseBtns() {
   set('tLook', 'LOOK: ' + (RETRO ? 'RETRO' : 'HD'), false);
   set('tGod', 'INVINCIBLE: ' + (cheats.god ? 'ON' : 'OFF'), cheats.god);
   set('tAmmo', 'UNLIMITED MAGIC: ' + (cheats.ammo ? 'ON' : 'OFF'), cheats.ammo);
+  set('tHero', HERO === 'sora' ? 'PLAY AS GANDALF' : 'PLAY AS SORA', false); document.getElementById('tHero').style.display = LOCAL_ASSETS ? '' : 'none';   // (Sora is only on your own computer)
+  document.getElementById('heroKey').textContent = LOCAL_ASSETS ? '\u00a0 · \u00a0H: PLAY AS ' + (HERO === 'sora' ? 'GANDALF' : 'SORA') : '';
 }
+setTimeout(syncPauseBtns);   // (the hero's buttons, once LOCAL_ASSETS is known)
 // level select on the title screen
 let menuSel = 0;
 const menuItems = [...document.querySelectorAll('#menu .mi')];
@@ -3352,15 +3332,15 @@ function updatePlayer(dt) {
     if (!(LV.race && RACE.cut)) P.heading = damp(P.heading, Math.atan2(P.vx, Math.max(4, P.vs)) * .8, 10, dt);
   } else {
     if (P.launchT > 0 && !P.ground) P.launchT -= dt;   // thrown by a web spring: the throw carries him, whatever the stick says
-    else { P.launchT = 0; P.vs = approach(P.vs, iz * RUN, acc * dt); P.vx = approach(P.vx, ix * RUN, acc * dt); }
+    else { P.launchT = 0; const run = RUN * (HERO === 'sora' ? (P.glide ? SORA_RUN * SORA_GLIDE.speed : SORA_RUN) : 1); P.vs = approach(P.vs, iz * run, acc * dt); P.vx = approach(P.vx, ix * run, acc * dt); }
     if (len > .1) { const th = Math.atan2(ix, iz); P.heading += angDiff(P.heading, th) * (1 - Math.exp(-16 * dt)); }
   }
   if (inp.jumpP) P.jumpBuf = .14; else P.jumpBuf -= dt;
   P.coyote = P.ground ? .1 : P.coyote - dt;
-  if (P.jumpBuf > 0 && P.coyote > 0) { P.vy = JUMP_V; P.ground = false; P.coyote = 0; P.jumpBuf = 0; P.jumpHeld = true; S.jump(); dustAt(P.s, P.x, P.y, 5); }
+  if (P.jumpBuf > 0 && P.coyote > 0) { P.vy = JUMP_V * (HERO === 'sora' ? SORA_JUMP : 1); P.ground = false; P.coyote = 0; P.jumpBuf = 0; P.jumpHeld = true; S.jump(); dustAt(P.s, P.x, P.y, 5); }
   else if (inp.jumpP && !P.ground && !P.dbl && P.airT > .06) {
     // double jump: a second boost in mid-air with a twirl and a puff of dust
-    P.vy = JUMP_V * .9; P.dbl = true; P.jumpHeld = true; P.jumpBuf = 0; P.flip = .4; S.dbl();
+    P.vy = JUMP_V * .9 * (HERO === 'sora' ? SORA_JUMP : 1); P.dbl = true; P.jumpHeld = true; P.jumpBuf = 0; P.flip = .4; S.dbl();
     dustAt(P.s, P.x, P.y, 8); sparks(tw(P.s, P.x, P.y + .3), 10, 3, [1, 1, 1], [.8, .9, 1], .12);
   }
   P.flip -= dt;
@@ -3374,6 +3354,8 @@ function updatePlayer(dt) {
   if (!LV.duel && !khOn() && inp.fireP && P.fireCD <= 0) fireRocket();
   if (khOn()) khMove(dt);
   P.vy = Math.max(P.vy - GRAV * dt * (khOn() && KH.hover > 0 ? .12 : 1), -32);
+  P.glide = HERO === 'sora' && !P.ground && P.dbl && inp.jump && P.vy < 0 && !(khOn() && KH.atk) && !LV.ride;   // (Sora's Glide: after the Aerial Dodge, hold jump as he falls)
+  if (P.glide) P.vy = Math.max(P.vy, -SORA_GLIDE.fall);
   // in the courtyard the ring is small, so a step along it has to be scaled to its radius here
   moveH('s', P.vs * dt * (LV.arena ? R / Math.max(2, R - P.x) : 1)); moveH('x', P.vx * dt);
   const wasGround = P.ground, fallV = P.vy;
@@ -5723,7 +5705,132 @@ function landH(x, z) {
 }
 // with your own War of the Ring board (see useBoard), the ground and the land are the board's
 let BOARD = null;
-const groundY = (x, z) => BOARD ? boardY(x, z) : Math.max(landH(x, z), .12);
+// --- Beleriand, west over the Blue Mountains: the drowned lands of the First Age, drawn as old maps of Arda draw them (parchment plains, stippled green woods,
+//     hatched mountains, blue rivers and lettered names), joined onto Middle-earth along Ered Luin. Laid out in the reference map's own pixels (x east,
+//     y south, the Shire at 830,370 and Imladris at 1163,357 on it), and fitted onto whichever map is in (the little diorama or your War of the Ring board):
+//     the same size against the Shire and Rivendell as there, Ered Luin along Middle-earth's west coast. It only fills in where Middle-earth has sea, so
+//     the coasts meet. Gandalf may walk all over it; there are no levels there yet
+const BEL = {
+  coast: [[40, 70], [36, 140], [30, 200], [55, 240], [40, 262], [55, 298], [96, 306], [62, 318], [38, 334], [55, 362], [44, 392], [72, 412], [112, 420], [140, 410], [168, 436], [204, 470], [210, 520], [216, 560], [224, 610], [232, 650],
+    [300, 656], [420, 642], [520, 632], [600, 622], [660, 610], [740, 600], [840, 590], [840, 70]],   // (east of Ered Luin it runs on under Middle-earth, filling only its sea)
+  isles: [[[160, 560], [194, 548], [206, 574], [176, 592]]],   // (Balar)
+  ranges: [
+    { p: [[30, 135], [120, 120], [220, 110], [330, 105], [440, 95], [560, 85], [640, 80]], h: 3.6, w: 20 },   // Ered Engrin, the Iron Mountains
+    { p: [[55, 180], [62, 230], [50, 265]], h: 2.4, w: 11 },   // Ered Lómin
+    { p: [[105, 165], [116, 214], [100, 254]], h: 2.6, w: 12 },   // the Mountains of Mithrim
+    { p: [[90, 250], [130, 276], [176, 296], [222, 300], [256, 284]], h: 3, w: 14 },   // Ered Wethrin, the Mountains of Shadow
+    { p: [[268, 254], [282, 252], [300, 262], [302, 282], [288, 293], [270, 290], [262, 274], [268, 254]], h: 3.2, w: 7 },   // the Encircling Mountains round Gondolin
+    { p: [[300, 262], [360, 270], [424, 264]], h: 1.6, w: 26 },   // the highlands of Dorthonion
+    { p: [[310, 316], [360, 322], [412, 318]], h: 2.4, w: 8 },   // Ered Gorgoroth
+    { p: [[600, 70], [586, 160], [580, 250], [590, 330], [600, 420], [614, 500], [628, 575]], h: 4.4, w: 18 },   // Ered Luin, the Blue Mountains
+    { p: [[230, 430], [290, 440], [350, 446]], h: 1.2, w: 6 },   // Andram, the Long Wall
+    { p: [[456, 280], [466, 286]], h: 2, w: 9 },   // Himring
+    { p: [[440, 468], [450, 474]], h: 1.6, w: 9 },   // Amon Ereb
+  ],
+  thango: [[345, 195], [370, 184], [395, 200]],   // Thangorodrim's three peaks, over Angband
+  woods: [
+    [[320, 335], [375, 328], [430, 340], [440, 375], [415, 400], [360, 405], [320, 390], [310, 360]],   // Doriath
+    [[435, 396], [470, 390], [480, 410], [450, 422]],   // Nan Elmoth
+    [[240, 320], [275, 315], [285, 346], [250, 356]],   // Brethil
+    [[295, 255], [360, 250], [425, 258], [430, 285], [370, 296], [300, 290]],   // Dorthonion
+    [[300, 470], [370, 460], [470, 470], [500, 520], [480, 580], [400, 600], [320, 590], [290, 540]],   // Taur-im-Duinath
+    [[470, 592], [560, 582], [634, 576], [636, 600], [560, 614], [480, 612]],   // Dor Firn-i-Guinar
+    [[48, 330], [72, 324], [78, 346], [56, 352]],   // Nevrast's woods
+    [[180, 330], [205, 326], [212, 348], [186, 354]],   // Talath Dirnen
+  ],
+  rivers: [
+    [[258, 245], [262, 270], [270, 310], [275, 350], [285, 390], [282, 430], [270, 470], [245, 505], [220, 532]],   // Sirion
+    [[185, 320], [195, 360], [200, 400], [215, 440], [240, 470], [262, 478]],   // Narog
+    [[215, 300], [240, 330], [268, 345]],   // Teiglin
+    [[380, 300], [375, 340], [360, 380], [330, 405], [290, 415]],   // Esgalduin
+    [[440, 300], [445, 340], [430, 390], [390, 410]],   // Aros
+    [[470, 290], [465, 340], [455, 400], [420, 440], [370, 450], [300, 455], [284, 450]],   // Celon
+    [[520, 210], [540, 260], [545, 330], [540, 400], [520, 470], [500, 540], [490, 600], [482, 642]],   // Gelion
+    [[588, 300], [545, 320]], [[594, 370], [545, 380]], [[600, 420], [540, 432]], [[606, 470], [528, 482]], [[615, 520], [512, 522]],   // the six rivers of Ossiriand
+    [[120, 360], [112, 412]], [[160, 350], [140, 410]],   // Brithon, Nenning
+  ],
+  lava: [[[360, 200], [332, 230], [310, 262]], [[380, 205], [396, 240], [422, 252]], [[370, 200], [372, 242]]],
+  lakes: [[150, 230, 9], [190, 316, 4], [570, 250, 5], [300, 420, 6]],   // Mithrim, Ivrin, Helevorn, Aelin-uial
+  places: [['Angband', 420, 140], ['Gondolin', 285, 272], ['Tol Sirion', 258, 250], ['Nargothrond', 205, 395], ['Menegroth', 382, 372], ['Himring', 462, 282], ['Vinyamar', 40, 336], ['Brithombar', 74, 410],
+    ['Eglarest', 136, 408], ['Havens of Sirion', 212, 525], ['Belegost', 584, 330], ['Nogrod', 602, 440], ['Amon Rûdh', 240, 402], ['Amon Ereb', 446, 470], ['Ivrin', 190, 308]],
+  names: [['BELERIAND', 360, 440, 34, -.18], ['HITHLUM', 150, 200, 22, 0], ['DORIATH', 372, 360, 20, 0], ['DORTHONION', 362, 268, 15, 0], ['ANFAUGLITH', 440, 232, 14, 0], ['OSSIRIAND', 560, 420, 15, -1.45],
+    ['TAUR-IM-DUINATH', 395, 530, 14, 0], ['WEST BELERIAND', 160, 452, 12, -.5], ['EAST BELERIAND', 490, 350, 12, 0], ['NEVRAST', 70, 300, 12, 0], ['FALAS', 92, 392, 12, 0], ['ERED LUIN', 606, 230, 12, -1.5],
+    ['DOR DAIDELOS', 110, 82, 14, 0], ['THANGORODRIM', 366, 165, 13, 0], ['DOR-LÓMIN', 175, 262, 10, 0], ['ESTOLAD', 500, 300, 10, 0], ['ARVERNIEN', 225, 480, 10, -1.2], ['ANDRAM', 300, 432, 9, .1]],
+  sea: [['B E L E G A E R', -120, 500, 0], ['BAY OF BALAR', 150, 610, 0]],
+};
+function polyIn(px, py, P) { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, yi] = P[i], [xj, yj] = P[j]; if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) c = !c; } return c; }
+// built once the map is ready, and again if your War of the Ring board comes in (it moves the Shire and Rivendell)
+let BELG = null;
+const belAt = (x, z) => BELG ? [(x - BELG.x0) / BELG.s + 590, (z - BELG.z0) / BELG.s + 370] : [0, 0];   // the world to the reference map's pixels
+const belIn = (px, py) => py > 66 && (polyIn(px, py, BEL.coast) || BEL.isles.some(P => polyIn(px, py, P)));
+function belH(x, z) {
+  const [px, py] = belAt(x, z), sea = BELG ? BELG.sea : 0; if (!belIn(px, py)) return sea + .06;   // (flat out to sea: the picture cuts the coast, so no wall shows)
+  const u = BELG ? BELG.s / .09 : 1;   // (heights to the map's own scale)
+  let h = sea + .06 + .1 * u * (1 + Math.sin(px * .05 + py * .03) * Math.sin(py * .07 - px * .02));
+  for (const m of BEL.ranges) { const d = polyDist(px, py, m.p), w = m.w * 1.7; if (d < w) { const k = 1 - d / w; h += m.h * .55 * u * k * k * (3 - 2 * k) * (.85 + .15 * Math.sin(px * .4 + py * .3)); } }
+  for (const [tx, ty] of BEL.thango) { const d = Math.hypot(px - tx, py - ty); if (d < 26) h += 3.6 * u * (1 - d / 26) ** 1.5; }
+  for (const [lx, ly, r] of BEL.lakes) if (Math.hypot(px - lx, py - ly) < r) h = Math.min(h, sea + .05);
+  return h;
+}
+const meLand = (x, z) => BOARD ? boardLand(x, z) : coastAt(x, z) > 0;
+const belLand = (x, z) => { if (!BELG || meLand(x, z)) return false; const [px, py] = belAt(x, z); return belIn(px, py) && !BEL.lakes.some(([lx, ly, r]) => Math.hypot(px - lx, py - ly) < r); };
+function buildBeleriand() {
+  if (BELG) { mapScene.remove(BELG.g); BELG.g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } }); BELG = null; }
+  const shire = NODES.find(n => n.loc === 'shire'), riv = NODES.find(n => n.loc === 'riv'), s = Math.hypot(riv.x - shire.x, riv.z - shire.z) / 333;
+  let cx = shire.x; while (cx > shire.x - 80 && meLand(cx, shire.z)) cx -= .25;   // (Middle-earth's west coast, level with the Shire)
+  BELG = { s, x0: cx - 2.5 * s, z0: shire.z, sea: BOARD ? BOARD.sea : 0, g: new THREE.Group() };
+  // the map itself, painted at two canvas pixels to the reference's one, from 0,40 to 660,700
+  const PX0 = 0, PY0 = 40, PW = 840, PH = 660, K = 2, c = document.createElement('canvas'); c.width = PW * K; c.height = PH * K; const g = c.getContext('2d');
+  g.setTransform(K, 0, 0, K, -PX0 * K, -PY0 * K);
+  const path = P => { g.beginPath(); P.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); };
+  const rnd = (() => { let q = 7; return () => (q = (q * 16807) % 2147483647) / 2147483647; })();
+  // parchment land, darker towards the coasts, with a fine speckle
+  for (const P of [BEL.coast, ...BEL.isles]) { path(P); g.closePath(); g.fillStyle = '#cfc58c'; g.fill(); g.lineWidth = 6; g.strokeStyle = 'rgba(150,140,70,.35)'; g.stroke(); g.lineWidth = 1.2; g.strokeStyle = '#4a5a2a'; g.stroke(); }
+  for (let i = 0; i < 9000; i++) { const x = rnd() * PW, y = PY0 + rnd() * PH; g.fillStyle = rnd() < .5 ? 'rgba(120,110,40,.12)' : 'rgba(255,250,200,.18)'; g.fillRect(x, y, 1.2, 1.2); }
+  // the Iron Mountains' cold north
+  { const gr = g.createLinearGradient(0, 66, 0, 120); gr.addColorStop(0, 'rgba(225,232,220,.9)'); gr.addColorStop(1, 'rgba(225,232,220,0)'); g.fillStyle = gr; g.fillRect(0, 60, 660, 60); }
+  // the woods: deep green, stippled, with a darker rim
+  for (const P of BEL.woods) {
+    path(P); g.closePath(); g.fillStyle = '#3f7636'; g.fill(); g.save(); g.clip();
+    for (let i = 0; i < 600; i++) { const x = rnd() * 660, y = PY0 + rnd() * 660; if (!polyIn(x, y, P)) continue; g.fillStyle = rnd() < .55 ? '#2e6428' : '#6aa850'; g.beginPath(); g.arc(x, y, .8 + rnd() * 1.4, 0, TAU); g.fill(); }
+    g.restore(); path(P); g.closePath(); g.lineWidth = 1; g.strokeStyle = '#2a4a20'; g.stroke();
+  }
+  // rivers, lakes, and the fire running down from Thangorodrim
+  g.lineCap = g.lineJoin = 'round';
+  for (const R of BEL.rivers) { path(R); g.lineWidth = 1.6; g.strokeStyle = '#3a6ab8'; g.stroke(); }
+  for (const [x, y, r] of BEL.lakes) { g.beginPath(); g.arc(x, y, r, 0, TAU); g.fillStyle = '#3a6ab8'; g.fill(); g.lineWidth = .8; g.strokeStyle = '#24467e'; g.stroke(); }
+  for (const R of BEL.lava) { path(R); g.lineWidth = 2.4; g.strokeStyle = '#f0a020'; g.stroke(); g.lineWidth = .8; g.strokeStyle = '#ffe070'; g.stroke(); }
+  // the mountains: rows of little hatched peaks along each range, lit from the west
+  const peak = (x, y, w, h) => { g.beginPath(); g.moveTo(x - w, y); g.lineTo(x, y - h); g.lineTo(x + w, y); g.closePath(); g.fillStyle = '#a89470'; g.fill(); g.beginPath(); g.moveTo(x, y - h); g.lineTo(x + w, y); g.lineTo(x + w * .2, y); g.closePath(); g.fillStyle = '#6a5640'; g.fill();
+    g.lineWidth = .5; g.strokeStyle = '#4a3a2a'; g.beginPath(); g.moveTo(x - w, y); g.lineTo(x, y - h); g.lineTo(x + w, y); g.stroke(); };
+  for (const m of BEL.ranges) for (let i = 0; i < m.p.length - 1; i++) { const [ax, ay] = m.p[i], [bx, by] = m.p[i + 1], L = Math.hypot(bx - ax, by - ay); for (let d = 0; d < L; d += 5) { const t = d / L, ox = (rnd() - .5) * m.w * .9, oy = (rnd() - .5) * m.w * .9; peak(ax + (bx - ax) * t + ox, ay + (by - ay) * t + oy, 2.5 + m.h * .8, 3 + m.h * 1.6); } }
+  for (const [x, y] of BEL.thango) { g.fillStyle = '#2a2224'; peak(x, y + 8, 12, 26); }
+  // the names, as the old maps letter them
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const [t, x, y, sz, rot] of BEL.names) { g.save(); g.translate(x, y); g.rotate(rot); g.font = `bold ${sz}px Georgia, 'Times New Roman', serif`; g.lineWidth = 3; g.strokeStyle = 'rgba(240,232,180,.7)'; const sp = t.split('').join(sz > 16 ? String.fromCharCode(8202, 8202) : String.fromCharCode(8202)); g.strokeText(sp, 0, 0); g.fillStyle = '#20301a'; g.fillText(sp, 0, 0); g.restore(); }
+  for (const [t, x, y] of BEL.places) { g.beginPath(); g.arc(x, y, 1.6, 0, TAU); g.fillStyle = '#20301a'; g.fill(); g.font = `italic 7px Georgia, serif`; g.lineWidth = 2; g.strokeStyle = 'rgba(240,232,180,.7)'; g.strokeText(t, x, y + 7); g.fillStyle = '#20301a'; g.fillText(t, x, y + 7); }
+  // only where Middle-earth has sea: where its own land is, it shows through
+  { const id = g.getImageData(0, 0, c.width, c.height), D = id.data;
+    for (let j = 0; j < c.height; j += 2) for (let i = 0; i < c.width; i += 2) { const px = PX0 + i / K, py = PY0 + j / K, x = BELG.x0 + (px - 590) * s, z = BELG.z0 + (py - 370) * s; if (meLand(x, z) || !belIn(px, py)) for (const [a, b] of [[0, 0], [1, 0], [0, 1], [1, 1]]) D[((j + b) * c.width + i + a) * 4 + 3] = 0; }
+    g.putImageData(id, 0, 0); }
+  const tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = Math.min(8, MAX_ANI);
+  // the ground, raised into its mountains
+  const wx0 = BELG.x0 + (PX0 - 590) * s, wz0 = BELG.z0 + (PY0 - 370) * s, W = PW * s, H = PH * s, geo = new THREE.PlaneGeometry(W, H, 165, 165); geo.rotateX(-Math.PI / 2); geo.translate(wx0 + W / 2, 0, wz0 + H / 2);
+  const P_ = geo.attributes.position; for (let i = 0; i < P_.count; i++) P_.setY(i, belH(P_.getX(i), P_.getZ(i))); geo.computeVertexNormals();
+  const land = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex, alphaTest: .5, side: THREE.DoubleSide, color: 0xd4ccb4 })); BELG.g.add(land);
+  // the woods' trees, and the smoke and fire of Thangorodrim
+  const trees = [], m4 = new THREE.Matrix4();
+  for (const P of BEL.woods) { const xs = P.map(p => p[0]), ys = P.map(p => p[1]); for (let i = 0; i < 70; i++) { const px = lerp(Math.min(...xs), Math.max(...xs), rnd()), py = lerp(Math.min(...ys), Math.max(...ys), rnd()); if (!polyIn(px, py, P)) continue; const x = BELG.x0 + (px - 590) * s, z = BELG.z0 + (py - 370) * s; if (!belLand(x, z)) continue; const k = (.5 + rnd() * .5) * s / .09; trees.push(m4.clone().makeScale(k, k, k).setPosition(x, belH(x, z) + .55 * k, z)); } }
+  if (trees.length) { const im = new THREE.InstancedMesh(new THREE.ConeGeometry(.45, 1.3, 6), lam(0x2e6a2c), trees.length); trees.forEach((m, i) => im.setMatrixAt(i, m)); BELG.g.add(im); }
+  for (const [px, py] of BEL.thango) { const x = BELG.x0 + (px - 590) * s, z = BELG.z0 + (py - 370) * s, gl = glowSprite(0xff6a10, 4, .7); gl.position.set(x, belH(x, z) + .6, z); BELG.g.add(gl); }
+  // the sea's names, out on the water
+  for (const [t, px, py, rot] of BEL.sea) { const cv = document.createElement('canvas'); cv.width = 512; cv.height = 64; const q = cv.getContext('2d'); q.font = `italic bold ${t.length > 14 ? 40 : 32}px Georgia, serif`; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillStyle = 'rgba(200,220,255,.75)'; q.fillText(t, 256, 32);
+    const tx = new THREE.CanvasTexture(cv), pl = new THREE.Mesh(new THREE.PlaneGeometry(cv.width / 512 * 260 * s, 32 * s), new THREE.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false })); pl.rotation.set(-Math.PI / 2, 0, rot); pl.position.set(BELG.x0 + (px - 590) * s, BELG.sea + .05, BELG.z0 + (py - 370) * s); BELG.g.add(pl); }
+  mapScene.add(BELG.g);
+  if (new URLSearchParams(location.search).get('dbg')) { let lo = 1e9, hi = -1e9; if (BOARD) for (const v of BOARD.h) if (v > -99) { lo = Math.min(lo, v); hi = Math.max(hi, v); } console.log('BEL s ' + s.toFixed(4) + ' x0 ' + BELG.x0.toFixed(1) + ' sea ' + BELG.sea.toFixed(2) + ' board h ' + lo.toFixed(2) + '..' + hi.toFixed(2) + ' k ' + (BOARD ? BOARD.k.toFixed(4) : '-')); }
+  if (BOARD) EDGE.value.x = -1e4;   // (the board no longer fades to sea along its west edge: Beleriand is there)
+}
+const groundY = (x, z) => BELG && belLand(x, z) ? belH(x, z) : BOARD ? boardY(x, z) : Math.max(landH(x, z), .12);
 
 // --- land: one low-poly sheet, coloured by region and height ---
 {
@@ -5912,6 +6019,8 @@ const tok = { g: new THREE.Group(), p: new V3(NODES[4].x, 0, NODES[4].z + 2), de
   g.scale.setScalar(1.35); mapScene.add(g);
 }
 
+buildBeleriand();
+
 // --- map state, controls and camera ---
 const mc = { zoom: 0, zt: 0, p: new V3(), l: new V3(), snap: true };
 const mapUI = document.getElementById('mapUI'), signEl = document.getElementById('sign');
@@ -5920,7 +6029,7 @@ let signShown = null, mapUIOn = null;
 // Walk up to a place and its sign comes up; Enter (or the ENTER button, or tapping the place) goes in.
 const NEAR_R = 2.4;
 function nodeNear() { let best = -1, bd = NEAR_R; NODES.forEach((n, i) => { const d = Math.hypot(tok.p.x - n.x, tok.p.z - n.z); if (d < bd) { bd = d; best = i; } }); return best; }
-const onLand = (x, z) => BOARD ? boardLand(x, z) : coastAt(x, z) > .8;
+const onLand = (x, z) => (BOARD ? boardLand(x, z) : coastAt(x, z) > .8) || belLand(x, z);   // (Beleriand too)
 // a place with several levels opens its own menu to choose from (Moria; Minas Tirith flies down into the city instead)
 const CHAP_DESC = { ungol: ['The pass: run from Shelob', 'The stairs: the long climb up the cliff'], helm: ['Down through the Hornburg to the Balrog', 'The Deeping Wall blows: hold the breach'], erebor: ['The ramparts: sword for the orcs, bow and sight (U) for Smaug on the wing', 'The treasure hall: Smaug in his hoard'], doom: ['The way up through the fire to the Crack', 'Fly out of the burning Mountain on Thorondor'], riv: ['Find the Fellowship on the moonlit peaks', 'Race the Nine to the Ford of Bruinen'], moria: ['Before the Doors of Durin: the Watcher in the Water', 'The dwarf-halls, to the doors of the bridge', 'Goblins and a cave troll at the tomb of Balin', 'Through the great halls of Dwarrowdelf to the Bridge and the Balrog', 'Fall with the Balrog into the deep'] };
 let CHAP = null;
@@ -6006,7 +6115,7 @@ function mapClick(cx, cy, held) {
 function updateMap(dt) {
   TX.sea.offset.x += dt * .012; TX.sea.offset.y += dt * .005;
   for (const f of mapFx.fires) { const k = 1 + Math.sin(T * 9 + f.ph) * .15; f.sp.scale.set(f.s * k, f.s * (2 - k), 1); }
-  for (const c of mapFx.clouds) { c.position.x += dt * .8; if (c.position.x > 100) c.position.x = -90; }
+  for (const c of mapFx.clouds) { c.position.x += dt * .8; if (c.position.x > 100) c.position.x = -170; }
   if (BOARD || MAP_LOADING) mapFx.mt.visible = false;   // (on the War of the Ring board, its own Minas Tirith: the little model city stays hidden)
   mapFx.eye.material.opacity = .85 + Math.sin(T * 3) * .15; mapFx.doom.material.opacity = .7 + Math.sin(T * 2.3) * .2;
   for (const n of NODES) if (n.lock) n.lock.position.y += Math.sin(T * 2.5 + n.x) * .004;
@@ -6142,7 +6251,7 @@ function useBoard(gl, regions) {
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) { let n = 0; for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) n += wetc[clamp(j + b, 0, H - 1) * W + clamp(i + a, 0, W - 1)]; land[j * W + i] = h[j * W + i] > -99 && n < 6 ? 1 : 0; }
   let ci0 = W, ci1 = 0, cj0 = H, cj1 = 0; for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) if (h[j * W + i] > -99) { ci0 = Math.min(ci0, i); ci1 = Math.max(ci1, i); cj0 = Math.min(cj0, j); cj1 = Math.max(cj1, j); }   // where the tiles are (other pieces reach further)
   for (let i = 0; i < h.length; i++) if (h[i] < sea) h[i] = sea;
-  BOARD = { x0: box.min.x, z0: box.min.z, step, W, H, h, land, k, ex0: box.min.x + ci0 * step, ex1: box.min.x + ci1 * step, ez0: box.min.z + cj0 * step, ez1: box.min.z + cj1 * step };
+  BOARD = { x0: box.min.x, z0: box.min.z, step, W, H, h, land, k, sea, ex0: box.min.x + ci0 * step, ex1: box.min.x + ci1 * step, ez0: box.min.z + cj0 * step, ez1: box.min.z + cj1 * step };
   if (new URLSearchParams(location.search).get('mask')) { const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'), id = g.createImageData(W, H); for (let i = 0; i < land.length; i++) { const q = h[i] > -99 ? (land[i] ? 255 : 60) : 0; id.data.set([q, q, wetc[i] ? 255 : q, 255], i * 4); } g.putImageData(id, 0, 0); c.style.cssText = 'position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:99;image-rendering:pixelated'; document.body.appendChild(c); }   // &mask=1 shows where Gandalf may walk
   // a sea the colour of the board's own, right out to the edges and just under the board, so nothing beyond it shows
   const far = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), ps1(new THREE.MeshBasicMaterial({ color: 0x14295a }))); far.rotation.x = -Math.PI / 2; far.position.y = low - .1; mapScene.add(far);
@@ -6155,6 +6264,7 @@ function useBoard(gl, regions) {
   const mtn = NODES.find(n => n.loc === 'mt'); MT.set(mtn.x - 5.2, groundY(mtn.x, mtn.z), mtn.z); mapFx.mt.position.copy(MT);
   tok.p.set(mtn.x, 0, mtn.z + 2); mc.snap = true;
   const tq = new URLSearchParams(location.search).get('tok'); if (tq) { const n = NODES.find(n => n.loc === tq), [x, z] = n ? [n.x, n.z] : tq.split(',').map(Number); tok.p.set(x, 0, z); }   // ?tok=shire (or x,z) puts Gandalf there, for testing
+  buildBeleriand();   // (fitted again, onto the board)
   console.log(`Valinor: the War of the Ring board, ${Math.round(bb.max.x - bb.min.x)} x ${Math.round(bb.max.z - bb.min.z)} board units, axes ${opt.join(',')}, ${bestIn}/${all.length} regions on it, scale ${k.toFixed(4)}`);
 }
 
@@ -6175,7 +6285,7 @@ function step(dt, noRender) {
     }
     updateDragons(dt); updateApples(); updatePhial(dt); updateLightning(dt); updateAmbient(dt); updateTree(dt);
     fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt); poseDuelGandalf(dt);
-    skinPlay(hob, state === 'dying' ? 'die' : LV && LV.fall && state === 'play' ? 'jump' : !P.ground && P.airT > .1 ? 'jump' : P.spinT > 0 || (LV && LV.duel && duel.atk) ? 'attack' : Math.hypot(P.vs, P.vx) > 1 ? 'walk' : 'idle');
+    skinPlay(hob, state === 'dying' ? 'die' : LV && LV.fall && state === 'play' ? 'jump' : !P.ground && P.glide ? 'fly' : !P.ground && P.airT > .1 ? 'jump' : P.spinT > 0 || (LV && LV.duel && duel.atk) ? 'attack' : Math.hypot(P.vs, P.vx) > 1 ? 'walk' : 'idle');
     updateSkins(dt); khAfterSkins(); if (LV && LV.fall && KH.boss && KH.boss.state !== 'die') fallBones(KH.boss);
   }
   updateCamera(state === 'paused' ? 0 : dt); if (DEBUG_CAM) { camera.position.copy(DEBUG_CAM.p); camera.lookAt(DEBUG_CAM.l); }
@@ -6254,6 +6364,12 @@ const MODEL_SLOTS = {
   khhades: { fbx: 'B_HE030', height: 2.8, turn: 0, cut: true, kh: 'HADES', anims: KH_ANIMS }, khhercules: { fbx: 'N_HE010_BTL', height: 2.2, turn: 0, cut: true, kh: 'HERCULES', anims: KH_ANIMS },
   khcloud: { fbx: 'N_HB550_BTL', height: 1.8, turn: 0, cut: true, kh: 'CLOUD', anims: KH_ANIMS }, khleon: { fbx: 'N_HB530_BTL', height: 1.85, turn: 0, cut: true, kh: 'LEON', anims: KH_ANIMS },
   khyuffie: { fbx: 'N_HB580_BTL', height: 1.6, turn: 0, cut: true, kh: 'YUFFIE', anims: KH_ANIMS },
+  // Sora, when you play him (P_EX100: his own model and every move of his; his moves are numbered as KH_SORA has them), and his Kingdom Key
+  sora: { fbx: 'P_EX100', height: 1.5, turn: 0, cut: true, anims: { idle: /^000_IDLE_0$/, walk: /^008_RUN_0$/, jump: /^014_JUMP_2$/, fly: /^018_FALL_2$/, hit: /^042_DAMAGE_S_FRONT_HIGH_2$/, die: /^066_DAMAGE_BLOW_FRONT_2$/, attack: /^604_EX000_0$/ } },
+  keyblade: { fbx: 'W_EX010_10', height: 1, turn: 0, cut: true },
+  ...Object.fromEntries([['khluna', 'M_EX570', 2.2, 'LUNA BANDIT'], ['khhookbat', 'M_EX520', 1.5, 'HOOK BAT'], ['khbook', 'M_EX530', 2.2, 'BOOKMASTER'], ['khbomb', 'M_EX660', 1.2, 'MINUTE BOMB'], ['khplant', 'M_EX750', 2.4, 'CREEPER PLANT'],
+    ['khlance', 'M_EX760', 2.4, 'LANCE SOLDIER'], ['khvendor', 'M_EX590', 1.8, 'BULKY VENDOR'], ['khdusk', 'M_EX880', 1.9, 'DUSK'], ['khsamurai', 'M_EX890', 2.2, 'SAMURAI'], ['khsniper', 'M_EX920', 2.2, 'SNIPER'],
+    ['khdancer', 'M_EX930', 2, 'DANCER'], ['khberserker', 'M_EX940', 2.7, 'BERSERKER'], ['khgambler', 'M_EX950', 2, 'GAMBLER'], ['khsorcerer', 'M_EX960', 2.6, 'SORCERER']].map(([s, fbx, height, kh]) => [s, { fbx, height, turn: 0, cut: true, kh, anims: KH_ANIMS }])),
   // (and the Overlord cup's foes: Overlord's own models and moves, brightened like its scenery)
   ...Object.fromEntries(Object.entries(OV_FOES).map(([n, f]) => [f.slot, { ov: f.file, scale: 1.05 * (f.sc || 1), turn: 0, cut: true, tone: true, kh: n.toUpperCase(), anims: f.anims }])),
   blackrider: { height: 3.1, turn: -Math.PI / 2, hide: /CINEMA|_NEW/i, anims: { walk: /^run_a/i } },   // (its cinematic duplicates hidden: it has one horse and one rider)   // (the race to the Ford: Rise of the Witch-king's Black Rider, on his horse)   // Mirkwood's spiders: Shelob again (src: whose model it is), smaller
@@ -6380,6 +6496,7 @@ const loadScript = src => new Promise((ok, no) => { const e = document.createEle
 const loadImage = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
 async function loadLocalAssets() {
   if (!LOCAL_ASSETS) return;   // the public site never asks for them
+  if (HERO === 'sora') khNeed(['sora', 'keyblade']);   // (playing Sora: his model and Keyblade first)
   const got = [], only = new URLSearchParams(location.search).get('models');
   // the War of the Ring board goes first: while it loads the little diorama stays hidden, so the map doesn't change under you
   const boardOn = (!only || only.split(',').includes('livingmap')) && (await fetch('models/livingmap.glb', { method: 'HEAD' }).catch(() => ({ ok: false }))).ok;
@@ -6443,12 +6560,22 @@ function gltfLoader() {
 // in it. Their run and attack moves carry the Heartless across the floor themselves; Valinor moves its foes, so that drift is taken out
 let FBXL = null;
 // the Kingdom Hearts models a level's foes wear, fetched as it starts (they're large); each foe already made puts its model on as it arrives
-const KH_WANT = {};
+const KH_WANT = {}, KH_DONE = {}; let SIMMING = false;
+// a Colosseum round waits for its foes' models (fetched between rounds, not in the middle of a fight, where reading one would make the game stutter); the
+// rounds before's are let go, as there are dozens of them and each is big
+function khRoundReady(p, w) {
+  if (!LV || LV.cup === undefined || !LOCAL_ASSETS || SIMMING) return true;   // (a test run can't wait: its foes fight in their built bodies)
+  const sl = [...new Set(w.map(k => UK_KINDS[k] && UK_KINDS[k].slot).filter(Boolean))];
+  if (p.loadFor !== p.wave) { p.loadFor = p.wave; p.loadT = 0; const cup = new Set(Object.values(CUP_FOES).map(f => f.slot));
+    for (const s of Object.keys(LOADED)) if (cup.has(s) && !sl.includes(s) && !URUKS.some(u => u.m.skin && u.m.skin.slot === s)) { delete LOADED[s]; delete KH_WANT[s]; delete KH_DONE[s]; }
+    khNeed(sl); }
+  p.loadT += 1 / 60; return sl.every(s => !KH_WANT[s] || KH_DONE[s]) || p.loadT > 25;
+}
 function khNeed(slots) {
   if (!LOCAL_ASSETS) return;
   for (const s of new Set(slots)) { const cfg = MODEL_SLOTS[s]; if (!cfg || !(cfg.fbx || cfg.ov) || LOADED[s] || KH_WANT[s]) continue;
-    if (cfg.ov) { KH_WANT[s] = ovModel(cfg.ov).then(gl => { if (!gl) return; LOADED[s] = gl; for (const K of SKINS) if (K.slot === s && !K.obj) attachSkin(K); }); continue; }
-    KH_WANT[s] = khModel(cfg.fbx).then(gl => { if (!gl) return; LOADED[s] = gl; console.log(`Valinor: models/kh/${cfg.fbx}.fbx (${gl.animations.length} moves)`); for (const K of SKINS) if (K.slot === s && !K.obj) attachSkin(K); }); }
+    if (cfg.ov) { KH_WANT[s] = ovModel(cfg.ov).then(gl => { KH_DONE[s] = true; if (!gl) return; LOADED[s] = gl; for (const K of SKINS) if (K.slot === s && !K.obj) attachSkin(K); }); continue; }
+    KH_WANT[s] = khModel(cfg.fbx).then(gl => { KH_DONE[s] = true; if (!gl) return; LOADED[s] = gl; console.log(`Valinor: models/kh/${cfg.fbx}.fbx (${gl.animations.length} moves)`); for (const K of SKINS) if (K.slot === s && !K.obj) attachSkin(K); }); }
 }
 // an Overlord character (models/ov/<file>.glb): its pictures brightened to Valinor's colours, and the root's own drift taken out of its moves
 async function ovModel(file) {
@@ -6461,7 +6588,7 @@ async function ovModel(file) {
   } catch (e) { if (e instanceof Error) console.warn(`Valinor: models/ov/${file}.glb would not load:`, e.message); return null; }
 }
 const KH_BASE_SLOT = { z: 'khshadow', k: 'khsoldier', g: 'khlargebody', f: 'khrednoc', i: 'khbluerhap' };
-const khSlotsOf = L => ((L.layout && L.layout.plazas) || []).flatMap(p => (p.waves || []).flat()).map(k => UK_KINDS[k] && UK_KINDS[k].slot || KH_BASE_SLOT[k]).filter(Boolean);async function khModel(code) {
+const khSlotsOf = L => ((L.layout && L.layout.plazas) || []).flatMap(p => (p.waves || []).slice(0, L.cup !== undefined ? 1 : 99).flat()).map(k => UK_KINDS[k] && UK_KINDS[k].slot || KH_BASE_SLOT[k]).filter(Boolean);async function khModel(code) {
   try {
     if (!FBXL) FBXL = (async () => { await loadScript('https://cdn.jsdelivr.net/npm/fflate@0.6.9/umd/index.js'); await loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js'); return new THREE.FBXLoader(); })();
     const g = await (await FBXL).loadAsync(`models/kh/${code}.fbx`); let root = null; g.traverse(o => { if (!root && o.isBone) root = o; });
@@ -9477,7 +9604,7 @@ function makeShadeFoe(kind) {
   const mats = []; root.traverse(o => { if (o.isMesh && o !== M.pud) { o.material = o.material.clone(); if (!eyes.includes(o)) mats.push(o); } });
   const dizzy = glowSprite(0xffe060, 1, 0); dizzy.position.y = kind === 'g' ? 3.2 : 2.4; root.add(dizzy);
   if (K.hover) M.hover = K.hover;
-  const ks = K.slot || { z: 'khshadow', k: 'khsoldier', g: 'khlargebody', f: 'khrednoc', i: 'khbluerhap' }[own]; if (ks && (LOADED[ks] || KH_WANT[ks])) { addSkin(M, ks, body, body); M.kh = MODEL_SLOTS[ks].kh; }   // (Kingdom Hearts II's own Heartless, where it's here)
+  const ks = K.slot || { z: 'khshadow', k: 'khsoldier', g: 'khlargebody', f: 'khrednoc', i: 'khbluerhap' }[own]; if (ks && (LOADED[ks] || KH_WANT[ks])) { addSkin(M, ks, body, body); M.skin.temp = true; M.kh = MODEL_SLOTS[ks].kh; }   // (Kingdom Hearts II's own Heartless, where it's here)
   return Object.assign(M, { eyes, shadow, mats, dizzy, shieldM: null });
 }
 function shadeReset(u) { const m = u.m; m.body.visible = true; m.body.position.y = 0; m.body.scale.y = 1; if (m.pud) m.pud.material.opacity = 0; if (m.spin) m.spin.rotation.x = 0; u.sunk = false; u.warn = u.up = false; }
@@ -9697,6 +9824,213 @@ function ukStyleAtk(u, K, dt, d, ds, dx, dy) {
     case 'whirl': { m.body.rotation.y += dt * 17; ukMove(u, ds / d * 2.6 * dt, dx / d * 2.6 * dt); u.tick = (u.tick || 0) - dt; if (u.tick <= 0) { u.tick = .32; S.saberSwing(); sparks(tw(u.s, u.x, u.y + 1.3), 6, 5, [1, .9, .6], [.8, .4, .1]); if (d < 3.5 && dy < 1.6) khHurt(K.dmg * .7, u, { kb: 8 }); } if (u.t > 1.6) { end(); u.state = 'dizzy'; u.dizzy = 1.8; u.t = 0; } return { walk: 1, arm: 1.2 }; }
   }
   end(); return {};
+}
+// --- the Colosseum foes' own attacks (each kind's mv in KH2_FOES and OV_FOES). A foe in reach of one of its attacks sets itself for it (its wind-up: the
+//     ground it will strike is marked in red, so watch and get out of it, or guard what can be guarded), then strikes, then recovers a moment and comes again.
+//     Once it's attacking, a blow won't stop it: hit it before, or roll clear. Each kind: dur (how long the blow lasts), mark (the red warning), aim (where
+//     it's going, as it sets itself), go (as it strikes), run (each moment of the blow: true when it's done); track: it keeps turning after you as it sets itself
+const FOE_EL = { fire: [[1, .9, .5], [1, .3, .1], 0xff8a30], ice: [[.9, 1, 1], [.4, .7, 1], 0x9ad8ff], poison: [[.8, 1, .5], [.3, .8, .1], 0x8aff40], light: [[1, 1, .9], [1, .9, .5], 0xfff0b0],
+  thunder: [[.85, .9, 1], [.4, .5, 1], 0xbfd0ff], dark: [[.75, .5, 1], [.3, .05, .5], 0xa050ff], star: [[1, 1, .9], [1, .8, .3], 0xffe080] };
+const foeHurt = (u, K, mv, o = {}, k = 1) => khHurt(K.dmg * (mv.dmg || 1) * k, u, o);
+const foeOwn = u => !!(u.m.skin && u.m.skin.obj);   // (wearing its own model: its animations show the move, so the built body isn't spun about)
+const foeAt = (s, x) => { const [S0, S1, X0, X1] = LV.field; return [clamp(s, S0 + 2, S1 - 2), clamp(x, X0 + 2, X1 - 2)]; };
+const FOE_MOVES = {
+  swipe: {   // a cut, a bite, a punch, a kick: a step in, and whatever's in front of it is struck (hits: when each blow of a combo lands)
+    dur: mv => (mv.hits || [.2]).slice(-1)[0] + .4,
+    mark(u, mv) { const w = Math.acos(clamp(mv.arc ?? .3, -1, 1)); return warnMesh(u.s, u.x, .3, mv.reach || u.r + 1.8, u.h - w, u.h + w); },
+    run(u, K, mv, c, dt) {
+      const R = mv.reach || u.r + 1.8, hs = mv.hits || [.2];
+      if (u.t < .25 && c.d > R * .5) ukMove(u, Math.cos(u.h) * (mv.step ?? 3) * dt, Math.sin(u.h) * (mv.step ?? 3) * dt);
+      for (let i = 0; i < hs.length; i++) if (u.t >= hs[i] && u.hits <= i) { u.hits = i + 1; S.saberSwing(); if (c.d < R + .4 && c.dy < 1.8 && (c.ds * Math.cos(u.h) + c.dx * Math.sin(u.h)) / c.d > (mv.arc ?? .3) - .15) foeHurt(u, K, mv, { kb: 7 }); }
+      return u.t > hs[hs.length - 1] + .4;
+    } },
+  dash: {   // a charge along the red line (steer: it bends after you as it goes, and a wall it runs into leaves it dazed)
+    dur: mv => (mv.len || 9) / (mv.sp || 13) + .2,
+    mark: (u, mv) => warnMesh(u.s, u.x, .3, (mv.len || 9) + 1, u.h - .14, u.h + .14),
+    go(u, mv) { u.cv = [Math.cos(u.h) * (mv.sp || 13), Math.sin(u.h) * (mv.sp || 13)]; },
+    run(u, K, mv, c, dt) {
+      const sp = mv.sp || 13, T_ = (mv.len || 9) / sp;
+      if (mv.steer) { const a = Math.atan2(u.cv[1], u.cv[0]), na = a + clamp(angDiff(a, c.toP), -mv.steer * dt, mv.steer * dt); u.cv = [Math.cos(na) * sp, Math.sin(na) * sp]; u.h = na; }
+      const s0 = u.s, x0 = u.x; ukMove(u, u.cv[0] * dt, u.cv[1] * dt);
+      if (mv.spin && !foeOwn(u)) u.m.body.rotation.y += dt * 15;
+      const E = mv.el && FOE_EL[mv.el]; if (E && Math.random() < .7) fx.spawn(...tw(u.s, u.x, u.y + 1).toArray(), rand(-1, 1), rand(1, 2), rand(-1, 1), .4, .6, .1, E[0], E[1]); else if (Math.random() < .25) puff(tw(u.s, u.x, u.y + .1), 1, .5);
+      if (!u.hits && c.d < 1.2 + u.r && c.dy < 1.8) { u.hits = 1; foeHurt(u, K, mv, { kb: 10 }); }
+      if (u.t > .12 && Math.hypot(u.s - s0, u.x - x0) < sp * dt * .3) { if (mv.steer) { u.dz = 2; S.smash(); cam.shake = Math.max(cam.shake, .3); dustAt(u.s, u.x, u.y, 10); } return true; }   // (into the wall)
+      return u.t > T_;
+    } },
+  leap: {   // up and down onto the red circle where you stood
+    dur: () => 1.05, keep: true,
+    aim(u) { u.from = [u.s, u.x]; u.to = [P.s, P.x]; u.y0 = u.y; },
+    mark: (u, mv) => warnMesh(u.to[0], u.to[1], 0, mv.rad || 2.5),
+    run(u, K, mv, c, dt) {
+      const k = Math.min(1, u.t / .7); u.s = lerp(u.from[0], u.to[0], k); u.x = lerp(u.from[1], u.to[1], k); u.y = lerp(u.y0, khLand(u.s, u.x, u.y0 + .5), k) + Math.sin(k * Math.PI) * (mv.h || 5); u.air = k < 1;
+      if (!foeOwn(u)) u.m.body.rotation.x = k < 1 ? k * TAU : 0;
+      if (k >= 1 && !u.hits) { u.hits = 1; dustAt(u.s, u.x, u.y, 12); S.stomp(); cam.shake = Math.max(cam.shake, .3); if (Math.hypot(P.s - u.s, P.x - u.x) < (mv.rad || 2.5) && P.y - u.y < 1.4) foeHurt(u, K, mv, { unblock: true, kb: 9 }); if (mv.dizzy) u.dz = mv.dizzy; }
+      return u.t > 1.05;
+    } },
+  whirl: {   // a spin of blades, claws or fists, edging after you
+    dur: mv => mv.dur || 1.2,
+    mark: (u, mv) => warnMesh(u.s, u.x, 0, mv.rad || 2.6),
+    run(u, K, mv, c, dt) {
+      if (!foeOwn(u)) u.m.body.rotation.y += dt * 17;
+      if (c.d > .5) ukMove(u, c.ds / c.d * (mv.sp || 2.6) * dt, c.dx / c.d * (mv.sp || 2.6) * dt);
+      u.tick = (u.tick || 0) - dt; if (u.tick <= 0) { u.tick = .3; S.saberSwing(); sparks(tw(u.s, u.x, u.y + 1.2), 6, 5, [1, .9, .6], [.8, .4, .1]); if (c.d < (mv.rad || 2.6) + .3 && c.dy < 1.8) foeHurt(u, K, mv, { kb: 8 }, .6); }
+      return u.t > (mv.dur || 1.2);
+    } },
+  sink: {   // down into the ground, across under everything, and up under you
+    dur: () => 1.9, noAnim: true, track: true,
+    run(u, K, mv, c, dt) {
+      const b = u.m.body, pud = u.m.pud;
+      if (u.t < .35) { const k = u.t / .35; b.position.y = -k * 1.2 * Math.max(1, u.r); if (pud) pud.material.opacity = k * .85; if (u.t > .2) u.sunk = true; return false; }
+      if (u.t < 1.5) {
+        b.visible = false; u.sunk = true; if (pud) pud.material.opacity = .85;
+        if (u.t < 1.05 && c.d > .5) { const sp = Math.max(7, c.d / .7); ukMove(u, c.ds / c.d * Math.min(c.d, sp * dt), c.dx / c.d * Math.min(c.d, sp * dt)); if (Math.random() < .6) smoke.spawn(...tw(u.s, u.x, u.y + .15).toArray(), 0, .4, 0, .5, .4 * Math.max(1, u.r), .9, [.05, .05, .1], [.1, .1, .16], 0, .3); }
+        if (u.t >= 1.05 && !u.warn) { u.warn = true; khFx(warnMesh(u.s, u.x, 0, mv.rad || 1.9), f => { warnPulse(f); return f.t < .45; }); }
+        return false;
+      }
+      if (!u.up) { u.up = true; u.sunk = false; b.visible = true; b.position.y = 0; S.whoosh(); puff(tw(u.s, u.x, u.y + .2), 6, .8 * Math.max(1, u.r), [.05, .05, .1]); foeAnim(u, mv.clip, .7); if (c.d < (mv.rad || 1.9) && c.dy < 1.8) foeHurt(u, K, mv, { kb: 8, unblock: true }); }
+      if (pud) pud.material.opacity = Math.max(0, pud.material.opacity - dt * 3);
+      return u.t > 1.9;
+    } },
+  shoot: {   // fire that follows you, ice in a fan, bolts, cards, stars, seeds, dark orbs; or a bomb or a rock thrown onto a red circle. Guard as one reaches you
+    //          and it flies back at its thrower (not a bomb)
+    dur: mv => .4 + ((mv.n || 1) - 1) * (mv.gap || .15) + .3, track: true,
+    run(u, K, mv, c, dt) {
+      const n = mv.n || 1, gap = mv.gap || .15; u.h += angDiff(u.h, c.toP) * Math.min(1, dt * 8);
+      while (u.hits < n && u.t >= .1 + u.hits * gap) { foeShot(u, K, mv, u.hits); u.hits++; }
+      return u.t > .4 + (n - 1) * gap + .3;
+    } },
+  slam: {   // a blow on the ground: all round it (rad), or a shockwave rolling out that you have to jump (wave)
+    dur: () => .8, track: true,
+    mark: (u, mv) => warnMesh(u.s, u.x, 0, mv.wave ? Math.max(2, u.r + 1) : mv.rad || 4),
+    run(u, K, mv, c) {
+      if (!u.hits && u.t > .12) { u.hits = 1; S.stomp(); cam.shake = Math.max(cam.shake, .35); dustAt(u.s, u.x, u.y, 16);
+        if (mv.wave) bossWave(u, u.s, u.x, mv.rad || 8, 9, K.dmg * (mv.dmg || 1)); else if (c.d < (mv.rad || 4) && P.y - u.y < 1.2) foeHurt(u, K, mv, { unblock: true, kb: 10 }); }
+      return u.t > .8;
+    } },
+  breath: {   // fire, ice or poison breathed out over the red fan in front, sweeping slowly after you
+    dur: mv => mv.dur || 1.4,
+    mark: (u, mv) => warnMesh(u.s, u.x, .4, mv.reach || 5, u.h - .45, u.h + .45),
+    run(u, K, mv, c, dt) {
+      const R = mv.reach || 5, E = FOE_EL[mv.el || 'fire'], y = u.y + (u.m.hover || 0) + Math.min(2, .7 + u.r * .6); u.h += clamp(angDiff(u.h, c.toP), -.5 * dt, .5 * dt);
+      const p0 = tw(u.s + Math.cos(u.h) * u.r, u.x + Math.sin(u.h) * u.r, y);
+      for (let k = 0; k < 4; k++) { const a = u.h + rand(-.4, .4), q = tw(u.s + Math.cos(a) * R, u.x + Math.sin(a) * R, y - .6).sub(p0).multiplyScalar(1 / .5); fx.spawn(p0.x, p0.y, p0.z, q.x, q.y, q.z, .5, .3, 1.4, E[0], E[1]); }
+      u.tick = (u.tick || 0) - dt;
+      if (u.tick <= 0) { u.tick = .25; if (c.d < R + .3 && c.dy < 2 && (c.ds * Math.cos(u.h) + c.dx * Math.sin(u.h)) / c.d > .85) foeHurt(u, K, mv, { kb: 6 }, .5); }
+      return u.t > (mv.dur || 1.4);
+    } },
+  rain: {   // meteors, lightning, holy or dark light or stars, down on red circles round you, one after another
+    dur: () => .9, track: true,
+    run(u, K, mv) { if (!u.hits) { u.hits = 1; const n = mv.n || 5; for (let i = 0; i < n; i++) { const a = rand(0, TAU), r = i ? rand(1.6, 5.5) : 0; foeStrike(u, K, mv, P.s + Math.cos(a) * r, P.x + Math.sin(a) * r, .75 + i * .16); } } return u.t > .9; } },
+  dive: {   // a flier swoops down along the red line and up again
+    dur: mv => (mv.len || 10) / (mv.sp || 14) + .2,
+    mark: (u, mv) => warnMesh(u.s, u.x, .3, (mv.len || 10) + 1, u.h - .14, u.h + .14),
+    go(u, mv) { u.cv = [Math.cos(u.h) * (mv.sp || 14), Math.sin(u.h) * (mv.sp || 14)]; },
+    run(u, K, mv, c, dt) {
+      const T_ = (mv.len || 10) / (mv.sp || 14), k = Math.min(1, u.t / T_); u.dip = Math.sin(k * Math.PI); ukMove(u, u.cv[0] * dt, u.cv[1] * dt);
+      if (!u.hits && c.d < 1.2 + u.r && c.dy < 2.2 && u.dip > .4) { u.hits = 1; foeHurt(u, K, mv, { kb: 9 }); }
+      if (u.t > T_) { u.dip = 0; return true; } return false;
+    } },
+  blink: {   // gone in a puff, and there again behind you, striking; or (away) off out of reach
+    dur: () => .95, noAnim: true,
+    run(u, K, mv, c) {
+      if (u.t < .2) { if (!u.gone2) { u.gone2 = true; puff(tw(u.s, u.x, u.y + 1), 8, 1, [.2, .1, .3]); S.whoosh(); u.m.root.visible = u.m.shadow.visible = false; } return false; }
+      if (!u.there) {
+        u.there = true; const a = mv.away ? Math.atan2(-c.dx, -c.ds) + rand(-.7, .7) : P.heading + Math.PI + rand(-.5, .5), r = mv.away ? rand(8, 11) : 1.4 + u.r;
+        [u.s, u.x] = foeAt(P.s + Math.cos(a) * r, P.x + Math.sin(a) * r); u.y = khLand(u.s, u.x, u.y);
+        u.h = Math.atan2(P.x - u.x, P.s - u.s); u.m.root.visible = u.m.shadow.visible = true; puff(tw(u.s, u.x, u.y + 1), 8, 1, [.2, .1, .3]);
+        if (mv.away) return true; foeAnim(u, mv.hitClip || mv.clip, .7); khFx(warnMesh(u.s, u.x, .3, mv.reach || u.r + 2, u.h - 1, u.h + 1), f => { warnPulse(f); return f.t < .3; });
+      }
+      const ds = P.s - u.s, dx = P.x - u.x, d = Math.hypot(ds, dx) || .01;
+      if (u.t > .5 && !u.hits) { u.hits = 1; S.saberSwing(); if (d < (mv.reach || u.r + 2) + .4 && c.dy < 1.8 && (ds * Math.cos(u.h) + dx * Math.sin(u.h)) / d > -.2) foeHurt(u, K, mv, { kb: 8 }); }
+      return u.t > .95;
+    } },
+  blast: {   // it swells, flashes, and goes off: everything near is caught, itself too
+    dur: () => .1, track: true,
+    mark: (u, mv) => warnMesh(u.s, u.x, 0, mv.rad || 3),
+    run(u, K, mv) {
+      const p = tw(u.s, u.x, u.y + .8), R = mv.rad || 3; bblast(p, R * 1.5); sparks(p, 40, 12, [1, .95, .6], [1, .4, .1], .3); puff(p, 12, 2); S.smash(); cam.shake = Math.max(cam.shake, .5); flashV = Math.max(flashV, .3);
+      if (Math.hypot(P.s - u.s, P.x - u.x) < R && Math.abs(P.y - u.y) < 2.5) foeHurt(u, K, mv, { kb: 12, unblock: true });
+      for (const o of URUKS) if (o !== u && ukLive(o) && !o.boss && o.state !== 'spawn' && Math.hypot(o.s - u.s, o.x - u.x) < R) khHit(o, 12, true);
+      gs.kills++; Object.assign(u, { hp: 0, dead: true, state: 'die', t: .6 }); u.m.root.visible = false; return false;
+    } },
+};
+// one shot: fire seeks you out; ice comes three in a fan; bolts, cards, stars and seeds fly straight and fast; a dark orb slow and big; a bomb or rock is thrown
+// onto a red circle where you stood and bursts there. Guarding as a shot (not a bomb) reaches you sends it back at whoever threw it
+function foeShot(u, K, mv, i) {
+  const t = mv.shot || 'fire', E = FOE_EL[mv.el || { ice: 'ice', orb: 'dark', star: 'star', card: 'light', seed: 'poison', bolt: 'light' }[t] || 'fire'];
+  const p = tw(u.s + Math.cos(u.h) * u.r * .6, u.x + Math.sin(u.h) * u.r * .6, u.y + (u.m.hover || 0) + Math.min(2.4, .9 + u.r * .7));
+  if (t === 'bomb' || t === 'rock') {
+    const rock = t === 'rock', R = mv.rad || (rock ? 3 : 2.2), T0 = rock ? 1.1 : .9, ts = P.s, tx = P.x, ty = landAt(ts, tx), end = tw(ts, tx, ty + .3);
+    const ball = rock ? new THREE.Mesh(new THREE.IcosahedronGeometry(.9, 0), lam(0x8a8078)) : glowSprite(E[2], 1.1, 1); ball.position.copy(p); S.whoosh();
+    khFx(warnMesh(ts, tx, 0, R), f => { warnPulse(f); return f.t < T0; });
+    khFx(ball, f => {
+      const k = Math.min(1, f.t / T0); ball.position.lerpVectors(p, end, k); ball.position.y += Math.sin(k * Math.PI) * (rock ? 5 : 3.5); if (rock) ball.rotation.x += .2; else if (Math.random() < .6) fx.spawn(ball.position.x, ball.position.y, ball.position.z, 0, 0, 0, .3, .3, .05, E[0], E[1]);
+      if (k < 1) return true;
+      if (mv.el === 'poison') { for (let q = 0; q < 30; q++) fx.spawn(end.x + rand(-R, R) * .6, end.y + rand(0, .5), end.z + rand(-R, R) * .6, 0, rand(.5, 1.5), 0, rand(.6, 1.2), .5, 1.2, E[0], E[1]); S.whoosh(); } else { bblast(end, R * 1.3); S.smash(); }
+      puff(end, rock ? 10 : 5, rock ? 2 : 1.2); cam.shake = Math.max(cam.shake, rock ? .4 : .2);
+      if (Math.hypot(P.s - ts, P.x - tx) < R && P.y - ty < 2) foeHurt(u, K, mv, { unblock: true, kb: 9 }); return false;
+    });
+    return;
+  }
+  const n = mv.n || 1, v = tw(P.s, P.x, P.y + 1).sub(p).normalize();
+  if (t === 'ice' || t === 'card' || t === 'seed') v.applyAxisAngle(UPV, (i - (n - 1) / 2) * (t === 'ice' ? .22 : .14));
+  const sp = { fire: 7.5, orb: 7, ice: 15, bolt: 21, card: 16, star: 16, seed: 13 }[t] || 12; v.multiplyScalar(sp);
+  const g = new THREE.Group(); g.position.copy(p); g.add(glowSprite(E[2], t === 'orb' ? 2.4 : t === 'fire' ? 1.6 : 1, .95));
+  if (t === 'bolt') part(GEO.cyl, lam(0x3a2a1a), g, 0, 0, 0, .04, .9, .04).rotation.x = Math.PI / 2; else if (t !== 'fire' && t !== 'orb') part(GEO.cone, bas(t === 'ice' ? 0xdff4ff : t === 'seed' ? 0x6a9a2a : 0xfff4d0), g, 0, 0, 0, .1, .7, .1).rotation.x = Math.PI / 2;
+  let back = false; S.whoosh();
+  khFx(g, (f, dt) => {
+    if (f.t > 3.4) return false;
+    if (t === 'fire' && !back) { const want = tw(P.s, P.x, P.y + 1).sub(g.position).normalize().multiplyScalar(sp); v.lerp(want, Math.min(1, dt * 1.3)); }
+    g.position.addScaledVector(v, dt); g.lookAt(_a.copy(g.position).add(v)); if (t === 'star') g.rotation.z += dt * 20;
+    if (Math.random() < .5) fx.spawn(g.position.x, g.position.y, g.position.z, 0, 0, 0, .3, t === 'orb' ? .5 : .25, .03, E[0], E[1]);
+    if (back) { if (ukLive(u) && g.position.distanceTo(tw(u.s, u.x, u.y + 1.2 + (u.m.hover || 0))) < 1 + u.r * .6) { khHit(u, Math.max(10, K.dmg * 1.5), true); return false; } return true; }
+    if (g.position.distanceTo(tw(P.s, P.x, P.y + 1)) < (t === 'orb' ? 1.2 : .9)) {
+      if (KH.guardT > 0) { back = true; v.copy(tw(u.s, u.x, u.y + 1.2 + (u.m.hover || 0)).sub(g.position)).normalize().multiplyScalar(24); S.clash(); sparks(g.position, 16, 6, [1, 1, 1], [.7, .85, 1]); return true; }
+      foeHurt(u, K, mv, { kb: 5 }); sparks(g.position, 14, 5, E[0], E[1]); return false;
+    }
+    return g.position.y > -1;
+  });
+}
+// one strike from above onto a red circle, after a beat: a meteor, lightning, a pillar of light or dark, falling stars
+function foeStrike(u, K, mv, s, x, delay) {
+  [s, x] = foeAt(s, x); const y = landAt(s, x), E = FOE_EL[mv.el || 'fire'], R = mv.rad || 1.7, top = tw(s, x, y + 14), bot = tw(s, x, y + .3);
+  const ball = mv.el === 'fire' ? glowSprite(0xff8a20, 2.2, 1) : null; if (ball) { ball.position.copy(top); scene.add(ball); }
+  khFx(warnMesh(s, x, 0, R), f => {
+    warnPulse(f); const k = f.t / delay; if (ball && k > .55) { ball.position.lerpVectors(top, bot, (k - .55) / .45); if (Math.random() < .8) bfire(ball.position, 1, -.5); }
+    if (k < 1) return true;
+    if (ball) { scene.remove(ball); bblast(bot, R * 1.8); } else if (mv.el === 'thunder') { zapFlash(bot, 2.6); khArc(() => top, () => bot, .3); } else { const pil = new THREE.Mesh(new THREE.CylinderGeometry(R * .6, R * .6, 16, 12, 1, true), new THREE.MeshBasicMaterial({ color: E[2], transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })); pil.position.copy(tw(s, x, y + 8)); khFx(pil, g => { pil.material.opacity = .8 * (1 - g.t / .5); return g.t < .5; }); }
+    sparks(bot, 18, 7, E[0], E[1]); S.stomp(); cam.shake = Math.max(cam.shake, .2);
+    if (Math.hypot(P.s - s, P.x - x) < R && P.y - y < 2.5) foeHurt(u, K, mv, { unblock: true, kb: 7 }); return false;
+  });
+}
+// a foe's own animation for a move: 'EX050+EX051' plays those in turn, 'A|B' one or the other; fitted into dur seconds
+function foeAnim(u, spec, dur) {
+  const K = u.m.skin, all = K && K.mixer && LOADED[K.slot] && LOADED[K.slot].animations; if (!all || !spec) return;
+  const alts = spec.split('|'), pick = alts[Math.random() * alts.length | 0].split('+');
+  const find = n => all.find(a => a.name === n) || all.find(a => a.name.endsWith('_' + n)) || all.find(a => a.name.toLowerCase() === n.toLowerCase());
+  const cl = pick.map(find).filter(Boolean); if (!cl.length) return;
+  const k = dur ? dur / cl.reduce((s, c) => s + c.duration, 0) : 1; u.q = cl.map(c => [c.name, Math.max(.05, c.duration * k)]); foeAnimNext(u);
+}
+function foeAnimNext(u) { const n = u.q && u.q.shift(); if (n) skinClip(u.m, n[0], n[1]); }
+// where Gandalf is from a foe
+const foeC = u => { const ds = P.s - u.s, dx = P.x - u.x, d = Math.hypot(ds, dx) || .01; return { ds, dx, d, toP: Math.atan2(dx, ds), dy: Math.abs(P.y - u.y) }; };
+// choose an attack it's in reach of (and a turn to use it: no more than three come at you at once, four of the little ones; a champion any time)
+function foeChoose(u, K, c) {
+  const ok = K.mv.filter(m => c.d >= m.at[0] && c.d <= m.at[1]); if (!ok.length) { u.cd = .15; return; }
+  if (!K.boss && khTokens() >= (u.lite ? 4 : 3)) { u.cd = .25; return; }
+  foeStart(u, K, ok[Math.random() * ok.length | 0], c);
+}
+function foeStart(u, K, mv, c, fast) {
+  const F = FOE_MOVES[mv.k]; Object.assign(u, { state: 'wind', atk: 'mv', mv, t: 0, windT: mv.w * (fast ? .3 : 1) * (K.boss ? .85 : 1), h: c.toP, lockH: F.track ? undefined : c.toP, hits: 0, there: false, gone2: false, up: false, warn: false, air: false, dip: 0, tick: 0, dz: 0 });
+  if (F.aim) F.aim(u, mv, c);
+  const mm = F.mark && F.mark(u, mv, c); if (mm) khFx(mm, f => { warnPulse(f); return ukLive(u) && u.mv === mv && (u.state === 'wind' || (F.keep && u.state === 'atk')); });
+  if (!F.noAnim) foeAnim(u, mv.clip, u.windT + F.dur(mv)); else foeAnim(u, mv.clip, u.windT);
+  S.orcGrunt();
+}
+function foeEnd(u, K) {
+  const mv = u.mv; Object.assign(u, { lockH: undefined, state: u.dz ? 'dizzy' : 'recover', t: 0, dizzy: u.dz || 0, cd: rand(.35, 1.1) * (mv.cd || 1) * (K.boss ? .7 : 1), air: false, dip: 0, sunk: false, q: null });
+  u.m.body.rotation.y = 0; u.m.body.rotation.x = 0; u.m.root.visible = u.m.shadow.visible = true; if (u.m.shade) shadeReset(u);
 }
 // --- Helm's Deep's second level: on the Deeping Wall in the rain, the Uruk-hai massed below. A berserker runs in with a torch: the wall goes up, Gandalf comes
 //     down in the rubble, and then it's wave after wave through the breach, each kind wanting something different.
@@ -10754,7 +11088,9 @@ function soraClip(gl, mot, name) {
 const KH_SORA = { ground: [604, 608, 612, 616, 620], air: [644, 648, 652, 656, 656], guard: 164, roll: 724, thunder: 248, fire: 224, cure: 260, idle: 0, walk: 8, jump: 14, hit: 42 };
 const KH_SORA_IDS = [...new Set(Object.values(KH_SORA).flat())];
 // the clip for one of Sora's moves, if it's been fitted onto Gandalf (or the fallback)
-const khc = (id, fb) => SORA.clips[id] ? 'kh' + id : fb;
+const khc = (id, fb) => HERO === 'sora' ? soraOwn(id) || fb : SORA.clips[id] ? 'kh' + id : fb;
+// (playing Sora: his own clip for that move, named by its number in his move set)
+const soraOwn = id => { id = { 656: 652 }[id] || id; const a = LOADED.sora && LOADED.sora.animations.find(c => c.name.startsWith(id + '_')); return a && a.name; };   // (656, his air finisher, comes out of the export empty: the blow before it again)
 // in the Kingdom Hearts levels Gandalf stands, runs, jumps and flinches as Sora does
 function soraActs() {
   for (const K of [hob.skinG || hob.skin, hob.skinW]) {
@@ -11821,7 +12157,7 @@ function setupKH() {
   const on = khOn(); document.body.classList.toggle('kh', on); khWhite(false);
   if (KH.spirit) { scene.remove(KH.spirit.sp); KH.spirit = null; } if (KH.ghost) KH.ghost.visible = false; if (KH.shieldFx) KH.shieldFx.material.opacity = 0;
   if (!KH.sword) { KH.sword = makeSaber(0xcfe6ff); KH.sword.g.position.set(0, -.42, .04); hob.armR.add(KH.sword.g); KH.ring = glowSprite(0x9ad8ff, 3, 0); hob.root.add(KH.ring); KH.ring.position.y = 1; }
-  KH.sword.g.visible = on;
+  KH.sword.g.visible = on && HERO !== 'sora';   // (Sora has his Keyblade)
   for (const u of URUKS.slice()) khRemove(u); for (const o of ORBS) scene.remove(o.sp); ORBS.length = 0; khClearFx();
   if (KH.theoden) KH.theoden.m.root.visible = KH.theoden.m.shadow.visible = false;
   if (!on) return;
@@ -11829,7 +12165,7 @@ function setupKH() {
   document.getElementById('tSpin').firstChild.textContent = 'ATTACK'; document.getElementById('tFire').firstChild.textContent = 'MAGIC'; document.getElementById('tRk').style.display = 'none';
   if (!KH.theoden) KH.theoden = { m: makeHero('theoden') };
   for (const p of (LV.layout && LV.layout.plazas) || []) { p.done = false; p.wave = -1; p.waveT = 0; p.near = false; if (p.hordeOf) { p.horde = p.hordeOf; p.hLeft = undefined; } }
-  if (!SORA.list || KH_SORA_IDS.some(i => !SORA.clips[i])) loadSora(KH_SORA_IDS).then(ok => { if (ok) { soraActs(); if (hob.skin) hob.skin.cur = ''; } });   // (Sora's moves for Gandalf, when they're here)
+  if (HERO !== 'sora' && (!SORA.list || KH_SORA_IDS.some(i => !SORA.clips[i]))) loadSora(KH_SORA_IDS).then(ok => { if (ok) { soraActs(); if (hob.skin) hob.skin.cur = ''; } });   // (Sora's moves for Gandalf, when they're here)
   KH.plaza = null; KH.drive = 0; KH.items = { potion: 4, ether: 2 }; KH.cur = 0; KH.sub = null; KH.spell = 'thunder'; resetKH(true);
 }
 function resetKH(fresh) {
@@ -11887,7 +12223,7 @@ function khAttack() {
   else KH.combo = fin ? 0 : n + 1;
   KH.comboT = 1; khFlash('A');
   if (LV.khl) { P.spinT = A.dur + .05; P.spinId = (P.spinId || 0) + 1; }
-  skinClip(hob, khc(KH_SORA[air ? 'air' : 'ground'][Math.min(n, 4)], KH_CLIPS[Math.min(n, 4)]), A.dur * (SORA.clips[KH_SORA.ground[0]] ? 2.2 : 1.15)); S.saberSwing();   // (Sora's own swing, the follow-through too)
+  skinClip(hob, khc(KH_SORA[air ? 'air' : 'ground'][Math.min(n, 4)], KH_CLIPS[Math.min(n, 4)]), A.dur * (HERO === 'sora' || SORA.clips[KH_SORA.ground[0]] ? 2.2 : 1.15)); S.saberSwing();   // (Sora's own swing, the follow-through too)
 }
 function khGuard(dodge) {   // (dodge: Space always rolls, the way you're pushing or else straight back)
   if (KH.atk || KH.rollT > 0 || KH.guardCD > 0) return;
@@ -12110,7 +12446,19 @@ function khDrive() {
 }
 // after the animations each frame: in the Kingdom Hearts levels Gandalf's staff is folded away to nothing (just the
 // lightsaber), and the White Wizard glows softly
+// Sora's Kingdom Key, in his right hand (bone 178 of his skeleton, the one with the fingers): the Keyblade comes out of Kingdom Hearts II placed below that hand
+// as he stands at rest, so it hangs from the hand with the hand's rest pose taken out, its grip at the hand
+function soraBlade() {
+  const K = hob.skin; if (HERO !== 'sora' || !K || !K.obj || K.blade || !LOADED.keyblade || !LOADED.sora || !THREE.SkeletonUtils) return;
+  const handOf = r => { let h = null; r.traverse(o => { if (o.isBone && o.name === 'Bone0178' && (!h || o.children.length > h.children.length)) h = o; }); return h; };
+  const rest = LOADED.sora.scene; rest.updateMatrixWorld(true); const h0 = handOf(rest), hand = handOf(K.obj); K.blade = true; if (!h0 || !hand) return;
+  const Hb = h0.matrixWorld.clone(), kb = THREE.SkeletonUtils.clone(LOADED.keyblade.scene); let root = null;
+  kb.traverse(o => { if (!root && o.isBone) root = o; if (o.isMesh) { o.frustumCulled = false; o.userData.cast = true; } }); kb.updateMatrixWorld(true);
+  const grip = root ? new V3().setFromMatrixPosition(root.matrixWorld) : new V3(), hp = new V3().setFromMatrixPosition(Hb);
+  Hb.clone().invert().multiply(new THREE.Matrix4().makeTranslation(hp.x - grip.x, hp.y - grip.y, hp.z - grip.z)).decompose(kb.position, kb.quaternion, kb.scale); hand.add(kb); K.blade = kb;
+}
 function khAfterSkins() {
+  soraBlade();
   const kh = khOn();
   for (const K of [hob.skinG || hob.skin, hob.skinW]) {
     if (!K || !K.obj) continue;
@@ -12126,14 +12474,14 @@ function khAfterSkins() {
 }
 // Gandalf the White: Battle for Middle-earth's own (models/gandalfw.glb) takes the Grey's place while the drive form lasts
 function khWhite(on) {
-  if (!LOADED.gandalfw || !hob.skin) return;
+  if (HERO === 'sora' || !LOADED.gandalfw || !hob.skin) return;
   if (!hob.skinW) { hob.skinG = hob.skin; const M2 = { root: hob.root }; addSkin(M2, 'gandalfw', hob.body, [], [], hob.root); hob.skinW = M2.skin; if (SORA.list) soraActs(); }
   if (hob.skinG.obj) hob.skinG.obj.visible = !on; if (hob.skinW.obj) hob.skinW.obj.visible = on;   // (only ever one of them: the White is made hidden)
   if (hob.skin === (on ? hob.skinW : hob.skinG)) return;
   hob.skin = on ? hob.skinW : hob.skinG; hob.skin.cur = ''; hob.skin.holdT = 0; skinPlay(hob, 'idle');
 }
 // the reaction commands: what the green prompt does depends on whose moment it is
-const KH_REACT = { takedown: 'TAKEDOWN', repel: 'REPEL', sword: 'SWORD RUN', stand: 'YOU SHALL NOT PASS!', duel: "WIZARDS' DUEL", staff: 'BREAK HIS STAFF', deflect: 'DEFLECT', anor: 'FLAME OF ANOR', narsil: 'CUT THE RING', black: 'THE BLACK ARROW', climb: 'UP HIS BACK', eye: 'STRIKE THE EYE', shatter: 'SHATTER THE ARMOUR' };
+const KH_REACT = { repel: 'REPEL', sword: 'SWORD RUN', stand: 'YOU SHALL NOT PASS!', duel: "WIZARDS' DUEL", staff: 'BREAK HIS STAFF', deflect: 'DEFLECT', anor: 'FLAME OF ANOR', narsil: 'CUT THE RING', black: 'THE BLACK ARROW', climb: 'UP HIS BACK', eye: 'STRIKE THE EYE', shatter: 'SHATTER THE ARMOUR' };
 function khReaction() {
   const R_ = KH.react; if (!R_) return;
   const u = R_.u; KH.react = null; KH.atk = null; KH.rx = KH.rx || {}; KH.rx[R_.cmd] = (KH.rx[R_.cmd] || 0) + 1;   // (KH.rx: a tally, for testing)
@@ -12146,10 +12494,8 @@ function khReaction() {
   if (R_.cmd === 'sword') { KH.reacting = { u, t: 0, cmd: 'sword', hits: 0, from: [P.s, P.x, P.y] }; KH.invT = 2.4; P.ground = false; skinClip(hob, 'attack_a', .5); S.whoosh(); return; }
   if (R_.cmd === 'stand') { KH.reacting = { u, t: 0, cmd: 'stand' }; KH.invT = 2.5; bossStand(u); return; }
   if (R_.cmd === 'duel' || R_.cmd === 'staff' || R_.cmd === 'deflect' || R_.cmd === 'anor' || R_.cmd === 'narsil' || R_.cmd === 'black' || R_.cmd === 'climb' || R_.cmd === 'eye' || R_.cmd === 'shatter') { KH.reacting = { u, t: 0, cmd: R_.cmd }; KH.invT = 2.5; u.reaction(R_.cmd); return; }   // (Saruman's)
-  KH.reacting = { u, t: 0, hit: false, cmd: 'takedown' }; KH.invT = 1.6;
-  P.vy = 11; P.ground = false; skinClip(hob, 'attack_c', .85); S.saberSwing();
 }
-// Gandalf's movement while he fights: a roll carries him, a cut closes in and then roots him, a takedown leaps at its foe
+// Gandalf's movement while he fights: a roll carries him, a cut closes in and then roots him
 function khMove(dt) {
   KH.hover -= dt; KH.guardT -= dt; KH.guardCD -= dt; KH.invT -= dt; KH.comboT -= dt; KH.magicCD -= dt;
   if (KH.comboT <= 0) KH.combo = 0; if (P.ground && !(KH.atk && KH.atk.air)) KH.airN = 0;
@@ -12175,7 +12521,7 @@ function khHit(u, dmg, fin, air, again) {
   if (u.boss) { (u.hitFn || balHit)(u, dmg, fin, air); return; }
   if (u.sunk) return;   // (a shade gone down into its pool of dark: nothing to strike)
   if (u.m.shade && !UK_KINDS[u.kind].front) shadeReset(u);
-  if (UK_KINDS[u.kind].front && u.state !== 'dizzy' && u.state !== 'launch' && u.state !== 'down') {   // (a barrow-gut's iron belly-plate turns any blow from in front: get round behind it, or catch it winded)
+  if (UK_KINDS[u.kind].front && KH.melee && u.state !== 'dizzy' && u.state !== 'launch' && u.state !== 'down' && u.state !== 'recover') {   // (only the blade: magic gets past it, and it's open as it gets its breath back)   // (a barrow-gut's iron belly-plate turns any blow from in front: get round behind it, or catch it winded)
     const fs = P.s - u.s, fx_ = P.x - u.x, fd = Math.hypot(fs, fx_) || 1;
     if ((fs * Math.cos(u.h) + fx_ * Math.sin(u.h)) / fd > .2) { S.clash(); sparks(tw(u.s + Math.cos(u.h) * .9, u.x + Math.sin(u.h) * .9, u.y + 1.2), 12, 5, [1, .9, .7], [.7, .5, .2]); KH.hitstop = .05; KH.atk = null; P.vs = fs / fd * 7; P.vx = fx_ / fd * 7; return; }
   }
@@ -12184,23 +12530,36 @@ function khHit(u, dmg, fin, air, again) {
     if (c_ > .15) { if (fin) { u.noShield = true; if (u.m.shieldM) u.m.shieldM.visible = false; S.smash(); sparks(tw(u.s, u.x, u.y + 1.2), 26, 8, [1, 1, 1], [.7, .7, .8]); } else { S.clash(); sparks(tw(u.s + Math.cos(u.h) * .6, u.x + Math.sin(u.h) * .6, u.y + 1.2), 8, 4, [1, .9, .7], [.7, .5, .2]); KH.hitstop = .03; return; } }
   }
   if (KH.form > 0) dmg *= 1.5;
-  u.hp -= dmg; u.flash = .15; u.stag += fin ? 30 : 12; KH.target = u; KH.targetT = 4; KH.drive = Math.min(100, KH.drive + (KH.form > 0 ? 0 : 3));
+  const KK = UK_KINDS[u.kind];
+  if (KK.mv) { if (T - (u.rvLast ?? -9) > 2.5) u.rvN = 0; u.rvLast = T; u.rvN = (u.rvN || 0) + 1; }   // (its revenge value: see below)
+  u.hp -= dmg; u.flash = .15; u.stag += KK.mv ? (fin ? 18 : 6) : fin ? 30 : 12; KH.target = u; KH.targetT = 4; KH.drive = Math.min(100, KH.drive + (KH.form > 0 ? 0 : 3));
   KH.hitstop = fin ? .09 : .045; cam.shake = Math.max(cam.shake, fin ? .35 : .15);
   sparks(tw(u.s, u.x, u.y + 1.2), fin ? 22 : 10, fin ? 7 : 4, [1, 1, 1], [.7, .85, 1]); S.saberHit();
   const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx) || 1, ns = ds / d, nx = dx / d;
   const hv = UK_KINDS[u.kind].heavy;   // (a giant isn't thrown about: it staggers, and when it dies it topples where it stands)
   if (u.hp <= 0) { Object.assign(u, hv ? { state: 'launch', t: 0, vs: ns, vx: nx, vy: 2, dead: true } : { state: 'launch', t: 0, vs: ns * 9, vx: nx * 9, vy: 9, dead: true }); gs.kills++; KH.drive = Math.min(100, KH.drive + (KH.form > 0 ? 0 : 6)); return; }
+  // the Colosseum's foes fight as Kingdom Hearts II's do: once a blow of theirs has begun it isn't stopped (only a little one can be knocked out of it, and only
+  // by a finisher), and its revenge value: so many blows in quick succession and it shrugs off the rest and hits back at once
+  if (KK.mv) {
+    if (u.rvN >= (KK.rv ?? (u.lite ? 4 : 3)) && u.state !== 'atk' && u.state !== 'launch' && u.state !== 'down' && state === 'play') {
+      u.rvN = 0; u.rvT = T + 1.4; S.clash(); sparks(tw(u.s, u.x, u.y + 1.2), 20, 7, [1, 1, .7], [1, .5, .1]); const c = foeC(u);
+      const ok = KK.mv.filter(m => c.d <= m.at[1]), mv = (ok.length ? ok : KK.mv).reduce((a, b) => (b.at[1] < a.at[1] ? b : a)); foeStart(u, KK, mv, c, true); return;
+    }
+    if (u.rvT > T || (u.state === 'atk' && !(u.lite && fin)) || (u.armor && u.state === 'wind')) { if (u.stag >= 100) u.stag = 99; return; }   // (it takes the blow, and keeps on)
+    if (u.m.skin) u.m.skin.holdT = 0; u.q = null; if (u.state === 'atk' || u.state === 'wind') { u.lockH = undefined; u.dip = 0; u.air = false; u.m.root.visible = u.m.shadow.visible = true; }
+  }
   if (fin || air || !(u.armor && (u.state === 'atk' || u.state === 'wind'))) {
     if (hv) Object.assign(u, { state: 'flinch', t: 0, vs: ns * (fin ? 2 : 1), vx: nx * (fin ? 2 : 1) });
     else if (fin || air) Object.assign(u, { state: 'launch', t: 0, vs: ns * (fin ? 8 : 1.5), vx: nx * (fin ? 8 : 1.5), vy: fin ? 8 : 6 });
     else Object.assign(u, { state: 'flinch', t: 0, vs: ns * 4, vx: nx * 4 });
   }
-  if (u.stag >= 100) { u.stag = 0; u.dizzy = u.kind === 'L' ? 2.5 : 3.5; }   // dizzy once it's back on its feet
+  if (u.stag >= 100) { u.stag = 0; u.dizzy = u.kind === 'L' ? 2.5 : KK.mv ? 2 : 3.5; }   // dizzy once it's back on its feet
 }
 // a blow on Gandalf: blocked if he's guarding and it comes from in front (unless it can't be: fire, a shockwave, a blast),
 // otherwise it costs HP and throws him back. src is the attacker, or where the blow comes from ({ s, x }).
 function khHurt(dmg, u, o = {}) {
-  if (state !== 'play' || KH.invT > 0 || KH.rollT > 0 || KH.reacting || cheats.god) return false;
+  if (state !== 'play' || KH.invT > 0 || KH.rollT > 0 || KH.reacting) return false;
+  if (cheats.god) { KH.godHits = (KH.godHits || 0) + 1; KH.invT = .5; return false; }   // (counted, for testing)
   if (KH.reflectT > 0) { if (u.state && ukLive(u)) khHit(u, 12, true); S.clash(); sparks(tw(P.s, P.x, P.y + 1.2), 24, 7, [1, 1, 1], [.7, .9, 1]); KH.invT = .2; return false; }   // (Reflect throws it back)
   if (KH.shield > 0) { KH.shield -= dmg; S.clash(); sparks(tw(P.s, P.x, P.y + 1.2), 12, 4, [.8, .9, 1], [.4, .6, 1]); KH.invT = .4; return false; }   // (the Physical Shield soaks it)
   const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx) || 1;
@@ -12324,8 +12683,9 @@ function ukUpdate(u, dt) {
       if (u.plaza.near === false && u.home) { u.state = 'home'; u.t = 0; break; }   // (you've got away: back to where it landed)
       u.h += angDiff(u.h, toP) * Math.min(1, dt * 6);
       const want = K.want ?? (u.kind === 'b' ? 5 : 3.2), k = clamp(d - want, -1, 1), side = Math.sin(u.t * 1.1 + u.seed) > 0 ? 1 : -1, sp = K.speed;
-      ukMove(u, (ds / d * k * sp - dx / d * side * 1.7) * dt, (dx / d * k * sp + ds / d * side * 1.7) * dt); walk = 1;
+      if (!K.root) { ukMove(u, (ds / d * k * sp - dx / d * side * 1.7 * Math.min(1, sp / 3)) * dt, (dx / d * k * sp + ds / d * side * 1.7 * Math.min(1, sp / 3)) * dt); walk = 1; }   // (a creeper plant stays rooted)
       if (live && u.cd <= 0 && dy < 2 && !(u.charmT > 0)) {   // (a turncoat fights for you instead)
+        if (K.mv) { foeChoose(u, K, { ds, dx, d, toP, dy }); break; }   // (the Colosseum's foes: their own attacks)
         if (u.kind === 'b') { if (d < 14) { u.state = 'wind'; u.atk = 'rush'; u.t = 0; u.windT = .9; S.roar(); } else u.cd = .4; break; }
         if (K.style) { ukStyleStart(u, K, d, ds, dx); break; }   // (the pikemen, crossbowmen, fanatics and captains, each its own way)
         if (khTokens() >= (u.lite ? 3 : 2)) { u.cd = .3; break; }
@@ -12339,12 +12699,14 @@ function ukUpdate(u, dt) {
       if (u.lockH === undefined) u.h += angDiff(u.h, toP) * Math.min(1, dt * 8); armX = -2.8;
       if (u.t >= u.windT) {
         u.state = 'atk'; u.t = 0; u.hits = 0; S.whoosh();
+        if (u.mv && FOE_MOVES[u.mv.k].go) FOE_MOVES[u.mv.k].go(u, u.mv);
         if (u.atk === 'leap') { u.from = [u.s, u.x]; u.to = [P.s - ds / d * 1.1, P.x - dx / d * 1.1]; u.y0 = u.y; }
         if (u.atk === 'charge') u.cv = [ds / d * 12, dx / d * 12];
       }
       break;
     }
     case 'atk': {
+      if (K.mv && u.mv) { if (FOE_MOVES[u.mv.k].run(u, K, u.mv, { ds, dx, d, toP, dy }, dt) && u.state === 'atk') foeEnd(u, K); onGround = !u.air; walk = u.mv.k === 'dash' || u.mv.k === 'whirl' ? 1.6 : 0; armX = -2.2; break; }
       if (K.style) { const r_ = ukStyleAtk(u, K, dt, d, ds, dx, dy); walk = r_.walk || 0; if (r_.arm !== undefined) armX = r_.arm; onGround = !r_.air; break; }
       if (u.atk === 'rush') {   // the berserker's run: it steers after you, and goes off when it reaches you (or runs out of fuse)
         u.h += angDiff(u.h, toP) * Math.min(1, dt * 2.4); ukMove(u, Math.cos(u.h) * 9.5 * dt, Math.sin(u.h) * 9.5 * dt); walk = 2; armX = -2.4;
@@ -12377,7 +12739,7 @@ function ukUpdate(u, dt) {
     case 'guard':   // waiting at its post for you to come back
       if (u.plaza.near) { u.state = 'stalk'; u.t = 0; u.cd = Math.min(u.cd, .4); break; }
       u.h += angDiff(u.h, toP) * Math.min(1, dt * 2); break;
-    case 'recover': if (u.t > .55) { u.state = 'stalk'; u.t = 0; u.cd = rand(1.2, 2.6) * (u.kind === 'L' ? .6 : u.lite ? .5 : 1); } break;
+    case 'recover': if (u.t > (K.mv ? .3 : .55)) { u.state = 'stalk'; u.t = 0; if (!K.mv) u.cd = rand(1.2, 2.6) * (u.kind === 'L' ? .6 : u.lite ? .5 : 1); } break;   // (the Colosseum's foes come again sooner: foeEnd sets theirs)
     case 'recoil': case 'flinch': {
       ukMove(u, u.vs * dt, u.vx * dt); u.vs *= Math.exp(-7 * dt); u.vx *= Math.exp(-7 * dt);
       if (u.t > (u.state === 'recoil' ? .7 : .35)) { u.state = u.dizzy > 0 ? 'dizzy' : 'stalk'; u.t = 0; u.cd = Math.min(u.cd, .6); } break;
@@ -12402,14 +12764,16 @@ function ukUpdate(u, dt) {
   for (const o of URUKS) if (o !== u && ukLive(o) && o.state !== 'spawn') { const es = u.s - o.s, ex = u.x - o.x, e = Math.hypot(es, ex); if (e > 0 && e < u.r + o.r + .2) ukMove(u, es / e * (o.boss ? .2 : .04), ex / e * (o.boss ? .2 : .04)); }
   if (d < u.r + .5 && u.state !== 'spawn') ukMove(u, -ds / d * .05, -dx / d * .05);
   // drawing
-  place(m.root, u.s, u.x, u.y + (m.hover ? m.hover * (u.state === 'die' || u.state === 'down' ? 0 : 1) + Math.sin(T * 2.4 + u.seed) * .22 : 0), u.h); tw(u.s, u.x, khLand(u.s, u.x, u.y) + .03, m.shadow.position);
+  place(m.root, u.s, u.x, u.y + (m.hover ? m.hover * (u.state === 'die' || u.state === 'down' ? 0 : 1) * (1 - (u.dip || 0) * .85) + Math.sin(T * 2.4 + u.seed) * .22 : 0), u.h);   // (dip: a flier swooping down) tw(u.s, u.x, khLand(u.s, u.x, u.y) + .03, m.shadow.position);
   if (m.flameS) m.flameS.scale.setScalar((m.flameS.userData.s || 1) * (.85 + Math.sin(T * 17 + u.seed) * .15));
   const ph = u.t * (walk > 1.5 ? 14 : 9); m.legs.forEach((l, i) => l.rotation.x = Math.sin(ph + i * Math.PI) * .6 * Math.min(walk, 1.3));
   m.armR.rotation.x = damp(m.armR.rotation.x, armX * (u.kind === 'w' ? .25 : 1), 18, dt);   // (a warg's head only dips) m.armL.rotation.x = u.kind === 'b' ? -2.6 : -.5 + Math.sin(ph) * .2 * walk;
   if (u.state === 'dizzy') { m.body.rotation.z = Math.sin(u.t * 6) * .15; m.dizzy.material.opacity = .8; m.dizzy.position.set(Math.cos(u.t * 6) * .4, 2.6, Math.sin(u.t * 6) * .4); } else { m.body.rotation.z = 0; m.dizzy.material.opacity = 0; }
   m.eyes.forEach(e => e.material.color.setHex(u.state === 'wind' || (u.state === 'atk' && u.atk === 'rush') ? (m.eyeCol ? m.eyeCol[1] : 0xff2a1a) : m.eyeCol ? m.eyeCol[0] : 0xffa040));
   m.mats.forEach(o => o.material.emissive && o.material.emissive.setHex(u.flash > 0 ? 0x8a8a8a : u.kind === 'b' && u.state === 'atk' ? 0x3a1004 : 0x050506));
-  skinPlay(m, u.state === 'die' ? 'die' : u.state === 'launch' || u.state === 'down' || u.state === 'flinch' || u.state === 'recoil' || u.state === 'dizzy' ? 'hit' : (u.state === 'wind' || u.state === 'atk') && u.atk !== 'rush' ? 'attack' : u.state === 'spawn' ? 'jump' : walk > .5 ? 'walk' : 'idle');
+  if (u.q) { if (u.state !== 'wind' && u.state !== 'atk') u.q = null; else if (u.q.length && m.skin && T >= m.skin.holdT) foeAnimNext(u); }   // (a move's own animations, one after another)
+  const busy = u.state === 'wind' || u.state === 'atk';
+  skinPlay(m, u.state === 'die' ? 'die' : u.state === 'launch' || u.state === 'down' || u.state === 'flinch' || u.state === 'recoil' || u.state === 'dizzy' ? 'hit' : busy && u.atk === 'mv' ? (walk > .5 ? 'walk' : 'idle') : busy && u.atk !== 'rush' ? 'attack' : u.state === 'spawn' ? 'jump' : walk > .5 ? 'walk' : 'idle');
 }
 // green HP orbs and blue MP orbs: they pop out, and fly to Gandalf when he's near
 function khOrb(u, kind) { const sp = glowSprite(kind === 'hp' ? 0x6aff6a : 0x6ab8ff, .7, .95); scene.add(sp); ORBS.push({ s: u.s + rand(-.5, .5), x: u.x + rand(-.5, .5), y: u.y + 1, vy: rand(4, 6), vs: rand(-2, 2), vx: rand(-2, 2), kind, sp, t: 0 }); }
@@ -12443,7 +12807,7 @@ function updateKH(dt) {
       for (const u of URUKS) {
         if (!ukLive(u) || u.state === 'spawn' || A.hit.has(u)) continue; const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx);
         if (d > reach + u.r || !khLevel(u, A.air ? 2.6 : 1.8)) continue; if (!A.fin && d > 1 + (u.boss ? u.r : 0) && (ds * ch + dx * sh) / d < .1) continue;
-        A.hit.add(u); khHit(u, A.fin ? 9 : 5, A.fin, A.air);
+        A.hit.add(u); KH.melee = true; khHit(u, A.fin ? 9 : 5, A.fin, A.air); KH.melee = false;
       }
       for (const c of crates) if (c.alive && Math.hypot(c.s - P.s, c.x - P.x) < 2.2 && Math.abs(c.y - P.y) < 1.6) spinCrate(c);
     }
@@ -12454,13 +12818,7 @@ function updateKH(dt) {
   const R_ = KH.reacting;
   if (R_) {
     R_.t += dt;
-    if (R_.cmd === 'takedown') {   // up, over, and down onto it
-      if (!R_.hit && (R_.t > .55 && P.ground || R_.t > 1)) {
-        R_.hit = true; const p = tw(P.s, P.x, P.y + .5); sparks(p, 40, 9, [1, 1, .9], [1, .8, .4]); puff(p, 8, 1.4); S.smash(); cam.shake = .6; KH.hitstop = .14;
-        khHit(R_.u, 999, true); for (const u of URUKS) if (u !== R_.u && ukLive(u) && Math.hypot(u.s - P.s, u.x - P.x) < 6) khHit(u, 14, true);
-      }
-      if (R_.t > 1.1) KH.reacting = null;
-    } else if (R_.cmd === 'sword') {   // three blows on the Balrog's head
+    if (R_.cmd === 'sword') {   // three blows on the Balrog's head
       for (const [at, n] of [[.7, 1], [.88, 2], [1.08, 3]]) if (R_.t >= at && R_.hits < n) { R_.hits = n; skinClip(hob, KH_CLIPS[n - 1], .2); S.saberSwing(); if (ukLive(R_.u)) balHit(R_.u, n === 3 ? 32 : 18, n === 3, true, true); }
       if (R_.t > 1.5) KH.reacting = null;
     } else if (R_.t > (R_.cmd === 'stand' || R_.cmd === 'duel' || R_.cmd === 'staff' || R_.cmd === 'deflect' || R_.cmd === 'anor' ? 1.6 : .4)) KH.reacting = null;
@@ -12498,9 +12856,10 @@ function updateKH(dt) {
       if (KH.boss && KH.boss.plaza === p) Music.mode = p.near ? 1 : 0;
     }
     if (p.horde) { updateHorde(p, dt); continue; }   // (the Deeping Wall's endless horde comes first)
-    if (p.waveT > 0) { if (p.near) { p.waveT -= dt; if (p.waveT <= 0) { const w = p.waves[p.wave], a0 = rand(0, TAU); w.forEach((k, i) => spawnUruk(k, p, a0 + i / w.length * TAU + rand(-.3, .3), i * .25)); } } }
+    if (p.waveT > 0) { if (p.near) { p.waveT -= dt; if (p.waveT <= 0) { const w = p.waves[p.wave], a0 = rand(0, TAU); if (!khRoundReady(p, w)) p.waveT = .05; else w.forEach((k, i) => spawnUruk(k, p, a0 + i / w.length * TAU + rand(-.3, .3), i * .25)); } } }
     else if (p.eye && !URUKS.some(u => u.plaza === p)) { p.done = true; p.near = false; }   // (the hunters the Eye sent are beaten)
     else if (!URUKS.some(u => u.plaza === p)) {
+      if (SIMMING && p.names && p.near) { console.log(`round ${p.names[p.wave]}: ${(gs.time - (p.roundT || 0)).toFixed(1)}s, ${(KH.godHits || 0) - (p.roundH || 0)} hits on Gandalf`); p.roundT = gs.time; p.roundH = KH.godHits || 0; }   // (testing: how each round went)
       if (p.wave + 1 < p.waves.length) { if (p.near) { p.wave++; p.waveT = 1.2; banner((p.names && p.names[p.wave]) || 'MORE ARE COMING!', p.names ? 2.2 : 1.2); } }
       else {
         p.done = true; p.near = false; S.check(); gs.cp = { s: p.s, x: p.x, y: p.y, t: gs.time, deaths: 0 };
@@ -12598,7 +12957,7 @@ showScreen(null); syncPauseBtns();
       const dr = LV.layout.hall && LV.layout.hall.door; return p ? [p.s, p.x] : dr ? [dr.s, dr.x] : [P.s, P.x]; } };
     if (q.get('aimt') && LV.bow) BOW.aim = true;
     const runTests = () => {
-    if (q.get('sim')) { cheats.god = !q.get('mortal'); for (let i = 0; i < Number(q.get('sim')) * 60; i++) { for (const r of ROUTE) if (Math.round(r[0] * 60) === i) { WALKTO = [r[1], r[2]]; console.log('route t=' + r[0] + ' at ' + P.s.toFixed(0) + ',' + P.x.toFixed(0) + ' y ' + P.y.toFixed(1) + (DECK ? ' deck ' + deckAt(P.s, P.x).toFixed(1) : '') + ' foes ' + URUKS.map(u => u.state + '@' + u.s.toFixed(0) + ',' + u.x.toFixed(0)).join(' ')); } step(1 / 60, true); } if (q.get('cast') === 'all' && LV.kh) { const bad = []; for (const p of KH_POWERS) { try { KH.mp = 100; KH.magicCD = 0; KH.atk = null; if (!khCast(p.id)) bad.push(p.id + ' (not cast)'); for (let i = 0; i < 90; i++) step(1 / 60, true); } catch (e) { bad.push(p.id + ': ' + e.message); } } console.log('castall ' + KH_POWERS.length + ' powers, problems: ' + (bad.join('; ') || 'none') + ', kills ' + gs.kills); }   // (&cast=all: every power in turn, for testing)
+    if (q.get('sim')) { cheats.god = !q.get('mortal'); SIMMING = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) { for (const r of ROUTE) if (Math.round(r[0] * 60) === i) { WALKTO = [r[1], r[2]]; console.log('route t=' + r[0] + ' at ' + P.s.toFixed(0) + ',' + P.x.toFixed(0) + ' y ' + P.y.toFixed(1) + (DECK ? ' deck ' + deckAt(P.s, P.x).toFixed(1) : '') + ' foes ' + URUKS.map(u => u.state + '@' + u.s.toFixed(0) + ',' + u.x.toFixed(0)).join(' ')); } step(1 / 60, true); } if (q.get('cast') === 'all' && LV.kh) { const bad = []; for (const p of KH_POWERS) { try { KH.mp = 100; KH.magicCD = 0; KH.atk = null; if (!khCast(p.id)) bad.push(p.id + ' (not cast)'); for (let i = 0; i < 90; i++) step(1 / 60, true); } catch (e) { bad.push(p.id + ': ' + e.message); } } console.log('castall ' + KH_POWERS.length + ' powers, problems: ' + (bad.join('; ') || 'none') + ', kills ' + gs.kills); }   // (&cast=all: every power in turn, for testing)
     if (q.get('cutnow') && KH.boss) { bossFall(KH.boss); for (let i = 0; i < Number(q.get('cutnow')) * 60; i++) step(1 / 60, true); }   // (&cutnow=2: the bridge's ending, 2 seconds in, for testing)
     if (q.get('aimt') && LV.bow) BOW.aim = true;   // (testing: &aimt=1 starts with the sight up)
     if (q.get('powers') && LV.kh) setTimeout(() => { KH_PMENU.page = q.get('powers') === 'tech' || q.get('powers') === 'keys' ? q.get('powers') : 'magic'; khPowersMenu(true); }, 3000);
@@ -12606,7 +12965,8 @@ showScreen(null); syncPauseBtns();
     if (q.get('drive') && LV.kh) { KH.drive = 100; khDrive(); }   // (&drive=1: the White Wizard, for testing)
     if (q.get('menu') && LV.kh) { KH.sub = q.get('menu'); KH.cur = KH_MENU.findIndex(c => c.sub === KH.sub); }   // (&menu=magic: that list open, for testing)
     if (q.get('cast') && q.get('cast') !== 'all' && LV.kh) { KH.mp = 100; KH.magicCD = 0; KH.atk = null; khCast(q.get('cast')); for (let i = 0; i < 12; i++) step(1 / 60, true); }   // (&cast=thunder: a spell just before the picture)
-    if (LV.kh) console.log(`${LV.name} after ${q.get('sim')}s: walkto ${WALKTO ? WALKTO.map(v => v.toFixed(1)).join(',') : '-'},${KH.boss ? ` boss ${KH.boss.state}${KH.boss.a ? '/' + KH.boss.a.type + '/' + KH.boss.a.ph : ''} hp ${Math.round(KH.boss.hp)} phase ${KH.boss.phase},` : ''} drive ${Math.round(KH.drive)} form ${KH.form.toFixed(1)}, reactions ${JSON.stringify(KH.rx || {})}, squares done ${LV.layout.plazas.filter(p => p.done).length}/${LV.layout.plazas.length}, in ${KH.plaza ? LV.layout.plazas.indexOf(KH.plaza) : '-'} wave ${KH.plaza ? KH.plaza.wave : '-'}, uruks ${URUKS.length} (${URUKS.map(u => u.state + ':' + Math.round(u.hp)).join(' ')}), HP ${Math.round(KH.hp)} MP ${Math.round(KH.mp)}, kills ${gs.kills}, at ${P.s.toFixed(0)},${P.x.toFixed(0)},${P.y.toFixed(1)} (ground ${TERR ? terrainAt(P.s, P.x).toFixed(1) : 'none'}, on ${P.ground} ${P.standOn ? P.standOn.kind + ' ' + [P.standOn.y0, P.standOn.y1].map(v => v && v.toFixed(1)) : ''}), state ${state}`);
+    if (q.get('dbg') && hob.skin && hob.skin.obj) { scene.updateMatrixWorld(true); let smin = 9, smax = 0, nan = 0; hob.skin.obj.traverse(o => { if (o.isSkinnedMesh) for (const bn of o.skeleton.bones) { const s = bn.getWorldScale(new THREE.Vector3()).x; if (isNaN(s)) nan++; else { smin = Math.min(smin, s); smax = Math.max(smax, s); } } }); console.log('HERO bone scales ' + smin.toFixed(5) + '..' + smax.toFixed(5) + ' nan ' + nan + ' acts ' + hob.skin.mixer._actions.filter(a => a.isRunning()).map(a => a.getClip().name + ':' + a.getEffectiveWeight().toFixed(2)).join(',')); const b = new THREE.Box3(); hob.skin.obj.traverse(o => { if (o.isBone) b.expandByPoint(new THREE.Vector3().setFromMatrixPosition(o.matrixWorld)); }); console.log('HERO clip ' + (hob.skin.curAct ? hob.skin.curAct.getClip().name + ' w' + hob.skin.curAct.getEffectiveWeight().toFixed(2) + ' t' + hob.skin.curAct.time.toFixed(2) : '-') + ' bones ' + b.min.toArray().map(v => v.toFixed(1)) + ' .. ' + b.max.toArray().map(v => v.toFixed(1)) + ' P ' + tw(P.s, P.x, P.y).toArray().map(v => v.toFixed(1)) + ' root vis ' + hob.root.visible + ' body vis ' + hob.body.visible + ' scale ' + hob.root.scale.x.toFixed(2)); }
+    if (LV.kh) console.log(`${LV.name} after ${q.get('sim')}s: walkto ${WALKTO ? WALKTO.map(v => v.toFixed(1)).join(',') : '-'},${KH.boss ? ` boss ${KH.boss.state}${KH.boss.a ? '/' + KH.boss.a.type + '/' + KH.boss.a.ph : ''} hp ${Math.round(KH.boss.hp)} phase ${KH.boss.phase},` : ''} drive ${Math.round(KH.drive)} form ${KH.form.toFixed(1)}, reactions ${JSON.stringify(KH.rx || {})}, hits on Gandalf ${KH.godHits || 0}, squares done ${LV.layout.plazas.filter(p => p.done).length}/${LV.layout.plazas.length}, in ${KH.plaza ? LV.layout.plazas.indexOf(KH.plaza) : '-'} wave ${KH.plaza ? KH.plaza.wave : '-'}, uruks ${URUKS.length} (${URUKS.map(u => u.state + ':' + Math.round(u.hp)).join(' ')}), HP ${Math.round(KH.hp)} MP ${Math.round(KH.mp)}, kills ${gs.kills}, at ${P.s.toFixed(0)},${P.x.toFixed(0)},${P.y.toFixed(1)} (ground ${TERR ? terrainAt(P.s, P.x).toFixed(1) : 'none'}, on ${P.ground} ${P.standOn ? P.standOn.kind + ' ' + [P.standOn.y0, P.standOn.y1].map(v => v && v.toFixed(1)) : ''}), state ${state}`);
       console.log(`camera at ${camera.position.toArray().map(v => v.toFixed(1)).join(",")} looking ${camera.getWorldDirection(new V3()).toArray().map(v => v.toFixed(2)).join(",")}, Gandalf at ${tw(P.s, P.x, P.y).toArray().map(v => v.toFixed(1)).join(",")}`);
       if (LV.flyers && q.get('autorun')) setTimeout(() => { const f0 = FLY.list.find(f => f.state !== 'wait'); if (f0) { const p = tw(f0.s, f0.x, f0.y); DEBUG_CAM = { p: p.clone().add(new V3(14, 4, 14)), l: p }; let n = 0, nm = []; const so = f0.m.skin && f0.m.skin.obj, inS = new Set(); if (so) so.traverse(o => inS.add(o)); f0.m.root.traverse(o => { if (o.isMesh && o.visible) { n++; if (!inS.has(o) && nm.length < 6) nm.push(o.name || o.geometry.type); else if (inS.has(o) && nm.length < 12) nm.push('S:' + o.name); } }); console.log('autorun flyer visible meshes ' + n + ' skin ' + !!so + ' insc ' + inS.size + ' ' + nm.join(',') + ' state ' + f0.state + ' names ' + (so ? (() => { const a = []; so.traverse(o => { if (o.isMesh) a.push(o.name + (o.visible ? '' : '(hid)')); }); return a.join(','); })() : '')); } }, 14000);
       if (q.get('autorun')) console.log('autorun after ' + q.get('sim') + 's: s ' + P.s.toFixed(1) + ' y ' + P.y.toFixed(1) + ' of end ' + END_S.toFixed(0) + ', falls ' + (gs.falls || 0));
