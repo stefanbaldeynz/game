@@ -6227,7 +6227,7 @@ function updateMap(dt) {
   const k = 1 - Math.exp(-6 * dt); mc.p.lerp(_b, k); mc.l.lerp(_c, k);
   mapCam.position.copy(mc.p); mapCam.lookAt(mc.l);
   if (MAPSHOT && BOARD) {   // (?mapshot=1: the whole map from straight above, Beleriand and all, for a picture of it)
-    const x0 = BELG ? Math.min(BOARD.ex0, BELG.x0 - 590 * BELG.s) : BOARD.ex0, x1 = BOARD.ex1, z0 = BOARD.ez0, z1 = BOARD.ez1, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, f = 12, half = Math.max((x1 - x0) / 2 / mapCam.aspect, (z1 - z0) / 2), h = half / Math.tan(f / 2 * Math.PI / 180);
+    const x0 = BOARD.pic ? BOARD.x0 : BELG ? Math.min(BOARD.ex0, BELG.x0 - 590 * BELG.s) : BOARD.ex0, x1 = BOARD.pic ? BOARD.x0 + (BOARD.W - 1) * BOARD.step : BOARD.ex1, z0 = BOARD.pic ? BOARD.z0 : BOARD.ez0, z1 = BOARD.pic ? BOARD.z0 + (BOARD.H - 1) * BOARD.step : BOARD.ez1, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, f = 12, half = Math.max((x1 - x0) / 2 / mapCam.aspect, (z1 - z0) / 2), h = half / Math.tan(f / 2 * Math.PI / 180);
     mapCam.fov = f; mapCam.near = h * .7; mapCam.far = h * 1.3; mapCam.updateProjectionMatrix(); mapCam.position.set(cx, h, cz + .001); mapCam.up.set(0, 0, -1); mapCam.lookAt(cx, 0, cz); mapScene.fog.near = 1e5; mapScene.fog.far = 1e6; tok.g.visible = false; document.body.classList.add('mapshot');
   }
   const on = state === 'map' && mc.zoom < .25;
@@ -6333,6 +6333,87 @@ function useBoard(gl, regions) {
   const tq = new URLSearchParams(location.search).get('tok'); if (tq) { const n = NODES.find(n => n.loc === tq), [x, z] = n ? [n.x, n.z] : tq.split(',').map(Number); tok.p.set(x, 0, z); }   // ?tok=shire (or x,z) puts Gandalf there, for testing
   buildBeleriand();   // (fitted again, onto the board)
   console.log(`Valinor: the War of the Ring board, ${Math.round(bb.max.x - bb.min.x)} x ${Math.round(bb.max.z - bb.min.z)} board units, axes ${opt.join(',')}, ${bestIn}/${all.length} regions on it, scale ${k.toFixed(4)}`);
+}
+
+// --- your own painted map of the whole of Arda's west (models/worldmap.png or .jpg: Beleriand and Middle-earth in one picture): it takes the place of the
+//     War of the Ring board. It's toned darker and deeper, its own lettering blended out and the names written again in dark letters set into the land;
+//     its mountains are raised from the picture itself (snow and bare rock stand up, the sea sinks), and Thangorodrim smokes in the north. The places
+//     below are where each stop is in the picture (1731 x 908); another picture can bring its own in models/worldmap.json ({ stops, names, erase })
+const WORLD_PIC = {
+  stops: { shire: [640, 300], bree: [715, 290], weather: [790, 270], riv: [895, 240], moria: [920, 370], isen: [965, 430], helm: [940, 482], rohan: [1015, 492], mt: [1170, 555],
+    osgil: [1205, 562], ungol: [1255, 522], mordor: [1390, 520], doom: [1470, 592], mirk: [1090, 250], erebor: [1190, 140] },
+  // the picture's own lettering, painted over from just above it ('down': from below)
+  erase: [[335, 22, 522, 50], [355, 160, 482, 190], [362, 193, 478, 217], [236, 245, 448, 308], [655, 155, 800, 192], [665, 278, 845, 338], [118, 572, 548, 708, 'down'], [698, 720, 942, 766], [1055, 26, 1325, 58],
+    [1375, 240, 1495, 282], [1495, 322, 1585, 372], [925, 422, 1065, 474], [975, 536, 1145, 594], [1335, 545, 1505, 612], [1275, 786, 1405, 824], [130, 140, 150, 162]],
+  // name, x, y, size, turn; water: pale, as the sea's names are
+  names: [['BELERIAND', 300, 285, 30, -.08], ['HITHLUM', 320, 140, 17, 0], ['NEVRAST', 120, 195, 13, 0], ['FALAS', 150, 405, 13, 0], ['DORIATH', 405, 318, 16, 0], ['TAUR-IM-DUINATH', 395, 420, 13, 0],
+    ['OSSIRIAND', 478, 360, 12, -1.45], ['DOR DAIDELOS', 430, 38, 15, 0], ['ERED LUIN', 548, 230, 13, -1.52], ['ARNOR', 728, 172, 24, 0], ['ERIADOR', 760, 315, 28, -.05], ['FOROCHEL', 760, 62, 14, 0],
+    ['HITHAEGLIR', 962, 250, 12, -1.5], ['MIRKWOOD', 1090, 290, 15, 0], ['WILDERLAND', 1210, 210, 16, 0], ['RHÛN', 1440, 262, 22, 0], ['NORTHERN WASTE', 1190, 42, 17, 0], ['ROHAN', 995, 452, 20, .1],
+    ['GONDOR', 1065, 568, 24, .06], ['MORDOR', 1420, 578, 26, -.05], ['HARAD', 1340, 805, 20, 0], ['ANGBAND', 330, 60, 11, 0]],
+  sea: [['B E L E G A E R', 330, 645, 30, .08], ['BAY OF BELFALAS', 820, 745, 15, 0], ['SEA OF RHÛN', 1542, 347, 11, 0]],
+  thango: [330, 92],   // Thangorodrim, over Angband
+  width: 300,   // how wide the whole picture is on the map
+};
+let WORLDPIC = null;
+function useWorldPic(img, info) {
+  const WP = { ...WORLD_PIC, ...(info || {}) }; hideDiorama(true); if (BELG) { mapScene.remove(BELG.g); BELG = null; }   // (Beleriand's in the picture)
+  const IW = img.naturalWidth || img.width, IH = img.naturalHeight || img.height, sx = IW / 1731, sy = IH / 908, K = Math.max(1, Math.round(3400 / IW));
+  const c = document.createElement('canvas'); c.width = IW * K; c.height = IH * K; const g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, c.width, c.height);
+  const X = x => x * sx * K, Y = y => y * sy * K;
+  // its own lettering: each patch painted over from the ground just above (or below) it, feathered in
+  const tmp = document.createElement('canvas'), q = tmp.getContext('2d');
+  for (const [a0, b0, a1, b1, way] of WP.erase) { const x0 = a0 - 6, y0 = b0 - 6, x1 = a1 + 6, y1 = b1 + 6;
+    const w = X(x1 - x0), h = Y(y1 - y0), up = way !== 'down' && Y(y0) > h + 8, sy0 = up ? Y(y0) - h - 4 : Y(y1) + 4; tmp.width = Math.ceil(w); tmp.height = Math.ceil(h);
+    q.globalCompositeOperation = 'source-over'; q.drawImage(c, X(x0), sy0, w, h, 0, 0, w, h);
+    const f = Math.min(w, h) * .3, gr = q.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(f / h, '#000'); gr.addColorStop(1 - f / h, '#000'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    q.globalCompositeOperation = 'destination-in'; q.fillStyle = gr; q.fillRect(0, 0, w, h); const gx = q.createLinearGradient(0, 0, w, 0); gx.addColorStop(0, 'rgba(0,0,0,0)'); gx.addColorStop(f / w, '#000'); gx.addColorStop(1 - f / w, '#000'); gx.addColorStop(1, 'rgba(0,0,0,0)'); q.fillStyle = gx; q.fillRect(0, 0, w, h); g.drawImage(tmp, X(x0), Y(y0));   // (feathered all round)
+  }
+  // darker and deeper, as the reference: the land's greens richer and its middle tones lower, the sea a deep blue
+  { const id = g.getImageData(0, 0, c.width, c.height), D = id.data, lut = new Uint8ClampedArray(256); for (let i = 0; i < 256; i++) lut[i] = 255 * Math.pow(i / 255, 1.06);
+    for (let i = 0; i < D.length; i += 4) { const r = D[i], gg = D[i + 1], b = D[i + 2];
+      if (b > r + 20 && b >= gg) { D[i] = r * .8; D[i + 1] = gg * .9; D[i + 2] = b; continue; }
+      const l = .3 * r + .59 * gg + .11 * b; D[i] = lut[clamp(l + (r - l) * 1.15, 0, 255) | 0]; D[i + 1] = lut[clamp(l + (gg - l) * 1.15, 0, 255) | 0]; D[i + 2] = lut[clamp(l + (b - l) * 1.15, 0, 255) | 0]; }
+    g.putImageData(id, 0, 0); }
+  // the height of the land, from the picture: the sea (blue) low, snow and bare rock (bright and grey, or rough) raised; then smoothed
+  const GW = Math.round(IW / 4), GH = Math.round(IH / 4), sc = document.createElement('canvas'); sc.width = GW; sc.height = GH; const sg = sc.getContext('2d'); sg.drawImage(img, 0, 0, GW, GH);
+  const SD = sg.getImageData(0, 0, GW, GH).data, lum = new Float32Array(GW * GH), wet = new Uint8Array(GW * GH), mnt = new Float32Array(GW * GH);
+  for (let i = 0; i < GW * GH; i++) { const r = SD[i * 4], gg = SD[i * 4 + 1], b = SD[i * 4 + 2]; lum[i] = (r + gg + b) / 3; wet[i] = b > r + 18 && b >= gg ? 1 : 0; const sat = Math.max(r, gg, b) - Math.min(r, gg, b); mnt[i] = smooth(clamp((lum[i] - 120) / 90, 0, 1)) * clamp(1 - sat / 70, 0, 1); }
+  const blur = (A, r) => { const B = new Float32Array(A.length); for (let j = 0; j < GH; j++) for (let i = 0; i < GW; i++) { let s = 0, n = 0; for (let b = -r; b <= r; b++) for (let a = -r; a <= r; a++) { const x = i + a, y = j + b; if (x < 0 || y < 0 || x >= GW || y >= GH) continue; s += A[y * GW + x]; n++; } B[j * GW + i] = s / n; } return B; };
+  const bl = blur(lum, 2); for (let i = 0; i < mnt.length; i++) if (!wet[i]) mnt[i] = Math.min(1, mnt[i] + Math.max(0, Math.abs(lum[i] - bl[i]) - 10) / 60 * smooth(clamp((lum[i] - 60) / 60, 0, 1)));   // (rough and pale: rock; the plains' own texture stays flat)
+  let M = blur(blur(mnt, 2), 2);
+  const s = WP.width / IW, step = s * (IW / GW), sea = 0, h = new Float32Array(GW * GH), land = new Uint8Array(GW * GH), [tx, ty] = WP.thango;
+  for (let j = 0; j < GH; j++) for (let i = 0; i < GW; i++) {
+    const k = j * GW + i; let n = 0; for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) n += wet[clamp(j + b, 0, GH - 1) * GW + clamp(i + a, 0, GW - 1)];
+    land[k] = n < 5 ? 1 : 0; const dt = Math.hypot(i * 4 / sx - tx, j * 4 / sy - ty);
+    h[k] = land[k] ? sea + .25 + M[k] * 5.2 + (dt < 46 ? 7 * (1 - dt / 46) ** 1.6 : 0) : sea - .35;
+  }
+  // the names: dark letters set into the land (water's pale), spaced as old maps space them
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  const write = (t, x, y, sz, rot, water) => { g.save(); g.translate(X(x), Y(y)); g.rotate(rot); g.font = `${water ? 'italic ' : ''}bold ${sz * K * sx}px Georgia, 'Times New Roman', serif`; const sp = water ? t : t.split('').join(String.fromCharCode(8202, 8202));
+    if (water) { g.fillStyle = 'rgba(190,210,235,.5)'; g.fillText(sp, 0, 0); } else { g.lineJoin = 'round'; g.lineWidth = K * 1.6 * sx; g.strokeStyle = 'rgba(225,215,170,.42)'; g.strokeText(sp, 0, 0); g.fillStyle = 'rgba(10,10,6,.88)'; g.fillText(sp, 0, 0); } g.restore(); };   // (dark letters with a faint light edge, set into the land)
+  for (const [t, x, y, sz, rot] of WP.names) write(t, x, y, sz, rot, false);
+  for (const [t, x, y, sz, rot] of WP.sea) write(t, x, y, sz, rot, true);
+  const tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = Math.min(8, MAX_ANI);
+  // the ground, one sheet over the height grid
+  const W = (GW - 1) * step, H = (GH - 1) * step, x0 = -W / 2, z0 = -H / 2, geo = new THREE.PlaneGeometry(W, H, GW - 1, GH - 1); geo.rotateX(-Math.PI / 2); geo.translate(0, 0, 0);
+  const P_ = geo.attributes.position; for (let i = 0; i < P_.count; i++) P_.setY(i, h[i]); geo.computeVertexNormals();
+  const ground = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex, emissiveMap: tex, emissive: 0xaaaaaa })); mapScene.add(ground);   // (lit by its own picture too, so it keeps the picture's colours, the hills shaded over it)
+  const far = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.MeshBasicMaterial({ color: 0x0c1c3e })); far.rotation.x = -Math.PI / 2; far.position.y = sea - .5; mapScene.add(far);
+  BOARD = { x0, z0, step, W: GW, H: GH, h, land, k: s, sea, tiles: [], ex0: x0 - 99, ex1: x0 + W + 99, ez0: z0 - 99, ez1: z0 + H + 99, pic: true };
+  for (let i = 0; i < h.length; i++) if (h[i] < sea) h[i] = sea;   // (Gandalf walks the sea's surface, where he can't go anyway)
+  EDGE.value.set(-1e4, 1e4, -1e4, 1e4); WORLDPIC = { g: ground };
+  // Thangorodrim's fire and smoke, and Mount Doom's
+  const at = (x, y) => [x0 + x * sx / IW * W, z0 + y * sy / IH * H];
+  { const [x, z] = at(tx, ty), gl = glowSprite(0xff5a10, 9, .8); gl.position.set(x, boardY(x, z) + 1, z); mapScene.add(gl); mapFx.fires.push({ sp: gl, s: 9, ph: 0 }); }
+  mapScene.background.setHex(0x0c1c3e); mapScene.fog.color.setHex(0x0c1c3e); mapScene.fog.near = 110; mapScene.fog.far = 240;
+  // the stops, where the picture has them
+  for (const n of NODES) { const p = WP.stops[n.loc]; if (!p) continue; [n.x, n.z] = at(p[0], p[1]); }
+  for (const n of NODES) { const y = groundY(n.x, n.z); mcyl(1, 1.15, .3, 16, 0xffc21a, n.x, y + .08, n.z, mapScene, { emissive: 0x6a4000 });
+    const gl = glowSprite(0xffd040, 3.2, .75); gl.position.set(n.x, y + 1.1, n.z); gl.material.depthTest = false; mapScene.add(gl); mapFx.marks = (mapFx.marks || []).concat(gl); }
+  const mtn = NODES.find(n => n.loc === 'mt'); MT.set(mtn.x - 5.2, groundY(mtn.x, mtn.z), mtn.z); mapFx.mt.position.copy(MT); mapFx.mt.visible = false;
+  tok.p.set(mtn.x, 0, mtn.z + 2); mc.snap = true;
+  const tq = new URLSearchParams(location.search).get('tok'); if (tq) { const n = NODES.find(n => n.loc === tq), [x, z] = n ? [n.x, n.z] : tq.split(',').map(Number); tok.p.set(x, 0, z); }
+  console.log(`Valinor: your own map, ${IW} x ${IH}, ${W.toFixed(0)} x ${H.toFixed(0)} map units`);
 }
 
 // =====================================================================
@@ -6564,10 +6645,13 @@ const loadImage = src => new Promise((ok, no) => { const i = new Image(); i.onlo
 async function loadLocalAssets() {
   if (!LOCAL_ASSETS) return;   // the public site never asks for them
   if (HERO === 'sora') khNeed(['sora', 'keyblade']);   // (playing Sora: his model and Keyblade first)
-  for (const ext of ['jpg', 'png']) { try { BEL_IMG = await loadImage(`models/beleriand.${ext}`); buildBeleriand(); got.push(`models/beleriand.${ext} (Beleriand)`); break; } catch (e) { } }   // (your own picture of Beleriand)
+  if (!WORLDPIC) for (const ext of ['jpg', 'png']) { try { BEL_IMG = await loadImage(`models/beleriand.${ext}`); buildBeleriand(); got.push(`models/beleriand.${ext} (Beleriand)`); break; } catch (e) { } }   // (your own picture of Beleriand)
   const got = [], only = new URLSearchParams(location.search).get('models');
+  // your own painted map of the whole west of Middle-earth, if it's there, instead of the board (see useWorldPic)
+  let worldImg = null; if (!only || only.split(',').includes('worldmap')) for (const ext of ['png', 'jpg']) { try { worldImg = await loadImage(`models/worldmap.${ext}`); break; } catch (e) { } }
+  if (worldImg) { let info = null; try { info = await (await fetch('models/worldmap.json')).json(); } catch (e) { } useWorldPic(worldImg, info); got.push('models/worldmap (your own map)'); }
   // the War of the Ring board goes first: while it loads the little diorama stays hidden, so the map doesn't change under you
-  const boardOn = (!only || only.split(',').includes('livingmap')) && (await fetch('models/livingmap.glb', { method: 'HEAD' }).catch(() => ({ ok: false }))).ok;
+  const boardOn = !worldImg && (!only || only.split(',').includes('livingmap')) && (await fetch('models/livingmap.glb', { method: 'HEAD' }).catch(() => ({ ok: false }))).ok;
   if (boardOn) { hideDiorama(true, true); MAP_LOADING = true; }
   for (const key of TEXTURE_SLOTS) for (const ext of ['png', 'jpg', 'jpeg', 'webp']) { try { replaceTex(key, await loadImage(`textures/${key}.${ext}`)); got.push(`textures/${key}.${ext}`); break; } catch (e) { } }
   // Jedi Outcast's lightsaber sounds and blade pictures, for the duel (only if sabers/ has them: saberon.mp3 is the sign)

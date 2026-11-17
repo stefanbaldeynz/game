@@ -105,7 +105,11 @@ The Overlord list uses Overlord's own characters, with every move, from `ov/`. M
 & C:\Users\Stefan\bfme\tools\Convert-Overlord.ps1 chars
 ```
 
-## Beleriand on the map: `beleriand.jpg`
+## Your own map: `worldmap.png`
+
+A painted map of the whole west, Beleriand and Middle-earth in one picture, saved here as `worldmap.png` (or `.jpg`), takes the War of the Ring board's place. The game darkens and deepens its colours, blends out its own lettering and writes the names again in dark letters, and raises its mountains from the picture itself. Where each place sits on it, where its own lettering is, and the names, are in `WORLD_PIC` in `index.html` (set for the 1731 × 908 map); another picture can bring its own in `worldmap.json`. `?mapshot=1` shows the whole map from above.
+
+## Beleriand on the board: `beleriand.jpg`
 
 West of Ered Luin the map goes on into Beleriand. With the War of the Ring board in, it's painted from the board's own ground pictures. To use your own painting instead, start from `beleriand-guide.jpg` (open the game with `?belguide=1` to see it again): it is Beleriand's exact frame, 1680 × 1320, with Middle-earth's land shaded grey where it covers it. Paint over it keeping everything where it is, and save it here as `beleriand.jpg` (or `.png`). Only the land is used: the coastline, rivers and names come from the picture, and the hills from the game.
 
