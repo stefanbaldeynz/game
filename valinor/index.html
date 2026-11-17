@@ -95,7 +95,7 @@ body.touch #khcmd{display:none!important}
 .mi.sd{padding:4px 8px;margin:0;transform:none!important}.mi.sd span{font-size:.8em}.mi.sd b{min-width:2em}.mi.sd i{display:block;font-size:.72em;line-height:1.25;opacity:.85}.mi.sd s{opacity:.45}
 .mi.sd.off{opacity:.38;filter:grayscale(1)}
   /* a place with many levels (the Colosseum): two columns, scrolling if they still don't fit, so a laptop screen shows them all */
-  body.mapshot #mapUI,body.mapshot #ov,body.mapshot #hud{display:none!important}
+  body.mapshot #mapUI,body.mapshot #ov,body.mapshot #hud,body.mapshot #banner{display:none!important}
   #chapMenu.long{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;width:min(1100px,94vw);max-height:calc(100vh - 150px);overflow-y:auto;padding:6px 12px;align-content:start}
   #chapMenu.long .mi{padding:.2em .6em}#chapMenu.long .mi.on{transform:scale(1.02)}#chapMenu.long .mi b{font-size:clamp(20px,3.6vh,34px)}#chapMenu.long .mi span{font-size:clamp(15px,2.6vh,24px)}#chapMenu.long .mi i{font-size:11px}
 #sTitle .press{margin-top:2.2vh;font-size:clamp(16px,2.6vw,28px)}
@@ -5712,58 +5712,70 @@ let BOARD = null;
 //     the same size against the Shire and Rivendell as there, Ered Luin along Middle-earth's west coast. It only fills in where Middle-earth has sea, so
 //     the coasts meet. Gandalf may walk all over it; there are no levels there yet
 const BEL = {
-  coast: [[40, 70], [36, 140], [30, 200], [55, 240], [40, 262], [55, 298], [96, 306], [62, 318], [38, 334], [55, 362], [44, 392], [72, 412], [112, 420], [140, 410], [168, 436], [204, 470], [210, 520], [216, 560], [224, 610], [232, 650],
-    [300, 656], [420, 642], [520, 632], [600, 622], [660, 610], [740, 600], [840, 590], [840, 70]],   // (east of Ered Luin it runs on under Middle-earth, filling only its sea)
-  isles: [[[160, 560], [194, 548], [206, 574], [176, 592]]],   // (Balar)
+  luin: 600,   // (Ered Luin's crest, across the reference: laid on the board's own westernmost range)
+  coast: [[25, 175], [32, 140], [45, 95], [70, 62], [120, 48], [200, 40], [300, 36], [400, 42], [480, 38], [560, 48], [600, 70], [612, 110], [600, 150], [615, 190], [640, 230], [645, 600],
+    [640, 615], [600, 628], [560, 636], [480, 640], [400, 638], [330, 636], [290, 640], [250, 648], [210, 657], [230, 640], [250, 620], [268, 595], [282, 565], [288, 540], [278, 522],
+    [262, 514], [240, 512], [205, 516], [188, 505], [182, 480], [172, 462], [150, 450], [130, 440], [125, 418], [118, 424], [100, 428], [80, 429], [72, 415], [70, 400], [62, 378], [55, 345],
+    [48, 326], [52, 306], [66, 294], [112, 278], [80, 270], [72, 258], [62, 245], [45, 222], [28, 205]],
+  isles: [[[160, 585], [170, 568], [195, 557], [212, 553], [205, 565], [185, 577]], [[236, 540], [244, 538], [247, 546], [240, 550]]],   // (Balar, and its little sister)
   ranges: [
-    { p: [[30, 135], [120, 120], [220, 110], [330, 105], [440, 95], [560, 85], [640, 80]], h: 3.6, w: 20 },   // Ered Engrin, the Iron Mountains
-    { p: [[55, 180], [62, 230], [50, 265]], h: 2.4, w: 11 },   // Ered Lómin
-    { p: [[105, 165], [116, 214], [100, 254]], h: 2.6, w: 12 },   // the Mountains of Mithrim
-    { p: [[90, 250], [130, 276], [176, 296], [222, 300], [256, 284]], h: 3, w: 14 },   // Ered Wethrin, the Mountains of Shadow
-    { p: [[268, 254], [282, 252], [300, 262], [302, 282], [288, 293], [270, 290], [262, 274], [268, 254]], h: 3.2, w: 7 },   // the Encircling Mountains round Gondolin
-    { p: [[300, 262], [360, 270], [424, 264]], h: 1.6, w: 26 },   // the highlands of Dorthonion
-    { p: [[310, 316], [360, 322], [412, 318]], h: 2.4, w: 8 },   // Ered Gorgoroth
-    { p: [[600, 70], [586, 160], [580, 250], [590, 330], [600, 420], [614, 500], [628, 575]], h: 4.4, w: 18, luin: true },   // Ered Luin, the Blue Mountains (the board has its own)
-    { p: [[230, 430], [290, 440], [350, 446]], h: 1.2, w: 6 },   // Andram, the Long Wall
-    { p: [[456, 280], [466, 286]], h: 2, w: 9 },   // Himring
-    { p: [[440, 468], [450, 474]], h: 1.6, w: 9 },   // Amon Ereb
+    { p: [[40, 150], [150, 160], [240, 150], [330, 125], [420, 140], [500, 150], [600, 135], [700, 120]], h: 3.6, w: 34 },   // Ered Engrin, the Iron Mountains
+    { p: [[50, 170], [68, 230], [80, 268]], h: 2.4, w: 14 },   // Ered Lómin
+    { p: [[140, 160], [200, 188], [232, 215]], h: 2.6, w: 12 },   // the Mountains of Mithrim
+    { p: [[112, 290], [160, 284], [210, 290], [248, 300]], h: 2.6, w: 10 },   // Ered Wethrin, the Mountains of Shadow
+    { p: [[280, 284], [298, 284], [302, 300], [290, 308], [276, 302], [280, 284]], h: 3, w: 6 },   // the Encircling Mountains round Gondolin
+    { p: [[300, 285], [360, 282], [412, 280]], h: 1.8, w: 18 },   // the highlands of Dorthonion
+    { p: [[318, 304], [378, 302]], h: 2, w: 7 },   // Ered Gorgoroth
+    { p: [[340, 424], [380, 432], [425, 446]], h: 1.2, w: 6 },   // Andram, the Long Wall
+    { p: [[165, 402], [228, 405]], h: .9, w: 8 },   // Taur-en-Faroth
+    { p: [[446, 298], [456, 302]], h: 1.8, w: 9 },   // Himring
+    { p: [[590, 180], [585, 230], [595, 300], [600, 360], [605, 420], [605, 480], [615, 540], [640, 580]], h: 4.4, w: 18, luin: true },   // Ered Luin (the board has its own)
   ],
-  thango: [[345, 195], [370, 184], [395, 200]],   // Thangorodrim's three peaks, over Angband
+  thango: [[350, 182], [372, 170], [394, 184]],   // Thangorodrim's three peaks, over Angband
   woods: [
-    [[320, 335], [375, 328], [430, 340], [440, 375], [415, 400], [360, 405], [320, 390], [310, 360]],   // Doriath
-    [[435, 396], [470, 390], [480, 410], [450, 422]],   // Nan Elmoth
-    [[240, 320], [275, 315], [285, 346], [250, 356]],   // Brethil
-    [[295, 255], [360, 250], [425, 258], [430, 285], [370, 296], [300, 290]],   // Dorthonion
-    [[300, 470], [370, 460], [470, 470], [500, 520], [480, 580], [400, 600], [320, 590], [290, 540]],   // Taur-im-Duinath
-    [[470, 592], [560, 582], [634, 576], [636, 600], [560, 614], [480, 612]],   // Dor Firn-i-Guinar
-    [[48, 330], [72, 324], [78, 346], [56, 352]],   // Nevrast's woods
-    [[180, 330], [205, 326], [212, 348], [186, 354]],   // Talath Dirnen
+    [[305, 315], [395, 315], [402, 378], [345, 388], [300, 376], [298, 340]],   // Doriath: Neldoreth and Region
+    [[250, 318], [298, 318], [304, 345], [255, 350]],   // Brethil
+    [[122, 320], [175, 314], [198, 330], [186, 346], [140, 346]],   // the Woods of Nuath
+    [[380, 334], [404, 332], [410, 352], [384, 358]],   // Nan Elmoth
+    [[285, 520], [340, 505], [400, 498], [468, 505], [470, 560], [445, 615], [380, 624], [310, 626], [280, 600], [276, 560]],   // Taur-im-Duinath
+    [[440, 592], [560, 582], [640, 572], [700, 592], [690, 620], [560, 630], [450, 624]],   // Dor Firn-i-Guinar
+    [[205, 488], [250, 484], [255, 500], [210, 504]],   // Arvernien
+    [[258, 440], [276, 438], [280, 480], [262, 482]],   // by the Gates of Sirion
+    [[52, 300], [90, 292], [98, 306], [60, 312]],   // Nevrast
   ],
   rivers: [
-    [[258, 245], [262, 270], [270, 310], [275, 350], [285, 390], [282, 430], [270, 470], [245, 505], [220, 532]],   // Sirion
-    [[185, 320], [195, 360], [200, 400], [215, 440], [240, 470], [262, 478]],   // Narog
-    [[215, 300], [240, 330], [268, 345]],   // Teiglin
-    [[380, 300], [375, 340], [360, 380], [330, 405], [290, 415]],   // Esgalduin
-    [[440, 300], [445, 340], [430, 390], [390, 410]],   // Aros
-    [[470, 290], [465, 340], [455, 400], [420, 440], [370, 450], [300, 455], [284, 450]],   // Celon
-    [[520, 210], [540, 260], [545, 330], [540, 400], [520, 470], [500, 540], [490, 600], [482, 642]],   // Gelion
-    [[588, 300], [545, 320]], [[594, 370], [545, 380]], [[600, 420], [540, 432]], [[606, 470], [528, 482]], [[615, 520], [512, 522]],   // the six rivers of Ossiriand
-    [[120, 360], [112, 412]], [[160, 350], [140, 410]],   // Brithon, Nenning
+    [[268, 285], [262, 320], [270, 360], [275, 400], [272, 440], [278, 480], [268, 508]],   // Sirion
+    [[205, 315], [205, 360], [210, 395], [225, 415], [272, 430]],   // Narog
+    [[185, 330], [190, 370], [207, 390]],   // Ginglith
+    [[240, 330], [264, 352]],   // Teiglin
+    [[140, 358], [136, 400], [134, 408]],   // Nenning
+    [[110, 350], [92, 385], [80, 396]],   // Brithon
+    [[330, 330], [345, 360], [330, 390], [300, 405], [276, 410]],   // Esgalduin
+    [[400, 320], [390, 360], [370, 395], [330, 410]],   // Aros
+    [[430, 300], [420, 330], [400, 370], [382, 400]],   // Celon
+    [[500, 300], [500, 340], [510, 380], [518, 420], [505, 460], [485, 490], [470, 540], [465, 580], [455, 615], [450, 640]],   // Gelion
+    [[600, 400], [560, 410], [518, 420]], [[600, 435], [560, 440], [512, 445]], [[600, 465], [560, 470], [500, 470]], [[600, 498], [560, 505], [488, 508]], [[605, 520], [540, 525], [478, 522]], [[600, 538], [560, 545], [472, 545]],   // Ascar, Thalos, Legolin, Brilthor, Duilwen, Adurant
+    [[225, 250], [250, 248], [265, 280]],   // from Lake Mithrim
   ],
-  lava: [[[360, 200], [332, 230], [310, 262]], [[380, 205], [396, 240], [422, 252]], [[370, 200], [372, 242]]],
-  lakes: [[150, 230, 9], [190, 316, 4], [570, 250, 5], [300, 420, 6]],   // Mithrim, Ivrin, Helevorn, Aelin-uial
-  places: [['Angband', 420, 140], ['Gondolin', 285, 272], ['Tol Sirion', 258, 250], ['Nargothrond', 205, 395], ['Menegroth', 382, 372], ['Himring', 462, 282], ['Vinyamar', 40, 336], ['Brithombar', 74, 410],
-    ['Eglarest', 136, 408], ['Havens of Sirion', 212, 525], ['Belegost', 584, 330], ['Nogrod', 602, 440], ['Amon Rûdh', 240, 402], ['Amon Ereb', 446, 470], ['Ivrin', 190, 308]],
-  names: [['BELERIAND', 360, 440, 34, -.18], ['HITHLUM', 150, 200, 22, 0], ['DORIATH', 372, 360, 20, 0], ['DORTHONION', 362, 268, 15, 0], ['ANFAUGLITH', 440, 232, 14, 0], ['OSSIRIAND', 560, 420, 15, -1.45],
-    ['TAUR-IM-DUINATH', 395, 530, 14, 0], ['WEST BELERIAND', 245, 422, 10, 0], ['EAST BELERIAND', 490, 350, 12, 0], ['NEVRAST', 70, 300, 12, 0], ['FALAS', 92, 392, 12, 0], ['ERED LUIN', 606, 230, 12, -1.5],
-    ['DOR DAIDELOS', 110, 82, 14, 0], ['THANGORODRIM', 366, 165, 13, 0], ['DOR-LÓMIN', 175, 262, 10, 0], ['ESTOLAD', 500, 300, 10, 0], ['ARVERNIEN', 225, 480, 10, -1.2], ['ANDRAM', 300, 432, 9, .1]],
-  sea: [['B E L E G A E R', -120, 500, 0], ['BAY OF BALAR', 150, 610, 0]],
+  lava: [[[350, 188], [328, 214], [305, 240]], [[372, 180], [380, 225], [396, 250]], [[392, 190], [412, 215]]],
+  lakes: [[218, 250, 6], [560, 312, 4]],   // Mithrim, Helevorn
+  // the land's own borders, drawn as the board draws its own (thick and black)
+  borders: [[[110, 285], [160, 290], [248, 300], [256, 266], [240, 222], [250, 170]], [[256, 266], [330, 262], [420, 270], [500, 282]], [[268, 300], [270, 360], [275, 440], [270, 510]], [[500, 300], [510, 380], [505, 460], [470, 540], [452, 630]]],
+  places: [['Vinyamar', 52, 323], ['Brithombar', 80, 395], ['Barad Nimras', 78, 425], ['Eglarest', 134, 409], ['Nargothrond', 209, 391], ['Bar-erib', 259, 400], ['Gates of Sirion', 258, 417],
+    ['Havens of Sirion', 258, 509], ['Tol Sirion', 270, 280], ['Gondolin', 290, 295], ["Húrin's House", 225, 284], ['Brithiach', 280, 313], ['Dimrast', 272, 331], ['Menegroth', 363, 352], ['Lant Laur', 372, 323],
+    ['Arossiach', 424, 315], ['Himring', 452, 300], ['Lake Helevorn', 560, 306], ['Lake Mithrim', 218, 243], ['Balar', 190, 566]],
+  names: [['BELERIAND', 378, 415, 40, .75], ['HITHLUM', 182, 225, 16, 0], ['DOR-LÓMIN', 186, 276, 9, 0], ['MITHRIM', 246, 262, 8, 0], ['NEVRAST', 116, 296, 11, -.2], ['LAMMOTH', 76, 232, 9, .75],
+    ['DOR DAIDELOS', 490, 62, 16, 0], ['DOR DAEDELOTH', 292, 240, 8, .3], ['ANGBAND', 365, 133, 12, 0], ['THANGORODRIM', 372, 215, 9, .45], ['ARD-GALEN / ANFAUGLITH', 470, 245, 10, 0],
+    ['LOTHLANN', 482, 282, 9, .06], ['DORTHONION', 372, 277, 10, 0], ['HIMLAD', 420, 320, 9, 0], ['ESTOLAD', 440, 345, 10, 0], ['THARGELION', 515, 342, 11, 0], ['EAST BELERIAND', 445, 418, 11, 0],
+    ['WEST BELERIAND', 207, 432, 11, .08], ['DOR-CUARTHOL', 218, 366, 9, .1], ['FALAS', 102, 405, 11, -.05], ['DORIATH', 352, 365, 13, 0], ['NAN ELMOTH', 420, 352, 7, 0], ['ARVERNIEN', 225, 488, 9, 0],
+    ['TAUR-IM-DUINATH', 348, 535, 11, -.15], ['OSSIRIAND', 552, 500, 12, -1.5], ['RAMDAL', 442, 446, 9, -.25], ['ANDRAM', 392, 432, 9, .2], ['DOR FIRN-I-GUINAR', 528, 600, 10, -.12]],
+  sea: [['B E L E G A E R', -120, 500, 0], ['BAY OF BALAR', 205, 600, -.6]],
 };
 function polyIn(px, py, P) { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, yi] = P[i], [xj, yj] = P[j]; if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) c = !c; } return c; }
 // built once the map is ready, and again if your War of the Ring board comes in (it moves the Shire and Rivendell)
 let BELG = null;
-const belAt = (x, z) => BELG ? [(x - BELG.x0) / BELG.s + 590, (z - BELG.z0) / BELG.s + 370] : [0, 0];   // the world to the reference map's pixels
-const belIn = (px, py) => py > 66 && (polyIn(px, py, BEL.coast) || BEL.isles.some(P => polyIn(px, py, P)));
+const belAt = (x, z) => BELG ? [(x - BELG.x0) / BELG.s + BEL.luin, (z - BELG.z0) / BELG.s + 370] : [0, 0];   // the world to the reference map's pixels
+const belIn = (px, py) => py > 30 && (polyIn(px, py, BEL.coast) || BEL.isles.some(P => polyIn(px, py, P)));
 function belH(x, z) {
   const [px, py] = belAt(x, z), sea = BELG ? BELG.sea : 0; if (!belIn(px, py)) return sea + .06;   // (flat out to sea: the picture cuts the coast, so no wall shows)
   const u = BELG ? BELG.s / .09 : 1;   // (heights to the map's own scale)
@@ -5771,11 +5783,18 @@ function belH(x, z) {
   for (const m of (BELG && BELG.ranges) || BEL.ranges) { const d = polyDist(px, py, m.p), w = m.w * 1.7; if (d < w) { const k = 1 - d / w; h += m.h * .55 * u * k * k * (3 - 2 * k) * (.85 + .15 * Math.sin(px * .4 + py * .3)); } }
   for (const [tx, ty] of BEL.thango) { const d = Math.hypot(px - tx, py - ty); if (d < 26) h += 3.6 * u * (1 - d / 26) ** 1.5; }
   for (const [lx, ly, r] of BEL.lakes) if (Math.hypot(px - lx, py - ly) < r) h = Math.min(h, sea + .05);
-  return sea + .06 + (h - sea - .06) * smooth(clamp((py - 66) / 30, 0, 1));   // (down to nothing at the north edge, where the map ends)
+  h = sea + .06 + (h - sea - .06) * smooth(clamp((py - 36) / 40, 0, 1));
+  return BOARD && belCovers(x, z) && boardLand(x, z) ? Math.max(h, boardY(x, z) + .1) : h;   // (over the board's own land, never under it)   // (down to nothing at the north edge, where the map ends)
 }
 const meLand = (x, z) => BOARD ? boardLand(x, z) : coastAt(x, z) > 0;
-const belLand = (x, z) => { if (!BELG || meLand(x, z)) return false; const [px, py] = belAt(x, z); return belIn(px, py) && !BEL.lakes.some(([lx, ly, r]) => Math.hypot(px - lx, py - ly) < r); };
-// where Beleriand goes. On your War of the Ring board, its own westernmost range is Ered Luin: the reference map's Ered Luin (590 across, 100 to 470 down)
+// the board's land west of its Ered Luin is what was left of Ossiriand: Beleriand is drawn over it, up to the range's crest
+function belCovers(x, z) {
+  const R = BELG && BELG.ridge; if (!R || z < R[0][0] - 4 || z > R[R.length - 1][0] + 16) return false;   // (and on south of it, down Ossiriand)
+  let i = 0; while (i < R.length - 1 && R[i + 1][0] < z) i++; const a = R[i], b = R[Math.min(i + 1, R.length - 1)], k = b[0] > a[0] ? clamp((z - a[0]) / (b[0] - a[0]), 0, 1) : 0;
+  return x < lerp(a[1], b[1], k) - 1.2;
+}
+const belLand = (x, z) => { if (!BELG || (meLand(x, z) && !belCovers(x, z))) return false; const [px, py] = belAt(x, z); return belIn(px, py) && !BEL.lakes.some(([lx, ly, r]) => Math.hypot(px - lx, py - ly) < r); };
+// where Beleriand goes. On your War of the Ring board, its own westernmost range is Ered Luin: the reference map's Ered Luin (BEL.luin across, 100 to 470 down)
 // is laid along it, which sets Beleriand's size too. On the little diorama: by the Shire and Rivendell, Ered Luin along its west coast
 function belFit() {
   const shire = NODES.find(n => n.loc === 'shire'), riv = NODES.find(n => n.loc === 'riv');
@@ -5793,15 +5812,15 @@ function belFit() {
     const ma = [0, 1].map(k => prs.reduce((a, q) => a + q[0][k], 0) / prs.length), mb = [prs.reduce((a, q) => a + q[1].x, 0) / prs.length, prs.reduce((a, q) => a + q[1].z, 0) / prs.length];
     let num = 0, den = 0; for (const [a, n] of prs) { num += (a[0] - ma[0]) * (n.x - mb[0]) + (a[1] - ma[1]) * (n.z - mb[1]); den += (a[0] - ma[0]) ** 2 + (a[1] - ma[1]) ** 2; }
     const s = num / den, z0 = mb[1] + (370 - ma[1]) * s;
-    // and Ered Luin (590 across on the reference) on the board's own westernmost range
-    if (best.length > 10) { const xs = best.map(r => r[1]).sort((a, b) => a - b); return { s, x0: xs[xs.length >> 1], z0, luin: true }; }
-    return { s, x0: mb[0] + (590 - ma[0]) * s, z0, luin: true };
+    // and Ered Luin (BEL.luin across on the reference) on the board's own westernmost range
+    if (best.length > 10) { const xs = best.map(r => r[1]).sort((a, b) => a - b); return { s, x0: xs[xs.length >> 1], z0, luin: true, ridge: best }; }
+    return { s, x0: mb[0] + (BEL.luin - ma[0]) * s, z0, luin: true };
   }
   const s = Math.hypot(riv.x - shire.x, riv.z - shire.z) / 333; let cx = shire.x; while (cx > shire.x - 80 && meLand(cx, shire.z)) cx -= .25;
   return { s, x0: cx - 2.5 * s, z0: shire.z, luin: false };
 }
 // your own picture of Beleriand (models/beleriand.jpg or .png), if you've made one: it's laid over the same frame as the guide (see ?belguide=1)
-let BEL_IMG = null; const MAPSHOT = !!new URLSearchParams(location.search).get('mapshot');
+let BEL_IMG = null; const MAPSHOT = new URLSearchParams(location.search).get('mapshot');   // (1: the whole map; bel: Beleriand alone)
 // the board's own ground pictures cut into little squares and sorted by what they show (grass, forest, rock, snow), to paint Beleriand in the board's look
 function belPools() {
   if (BOARD.pools !== undefined) return BOARD.pools; const P = { plain: [], forest: [], rock: [], snow: [] }, c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
@@ -5863,6 +5882,7 @@ function buildBeleriand(guide) {
     for (const R of BEL.rivers) { path(R); g.lineWidth = boardLook ? 2.2 : 1.6; g.strokeStyle = boardLook ? 'rgba(20,50,80,.6)' : '#3a6ab8'; g.stroke(); if (boardLook) { g.lineWidth = 1.1; g.strokeStyle = '#6ab0d8'; g.stroke(); } }
     for (const [x, y, r] of BEL.lakes) { g.beginPath(); g.arc(x, y, r, 0, TAU); g.fillStyle = boardLook ? '#2a5a90' : '#3a6ab8'; g.fill(); g.lineWidth = 1; g.strokeStyle = boardLook ? '#8ac0d8' : '#24467e'; g.stroke(); }
     for (const R of BEL.lava) { path(R); g.lineWidth = 2.4; g.strokeStyle = '#f0a020'; g.stroke(); g.lineWidth = .8; g.strokeStyle = '#ffe070'; g.stroke(); }
+    for (const R of BEL.borders) { path(R); g.lineWidth = 4; g.strokeStyle = 'rgba(0,0,0,.3)'; g.stroke(); g.lineWidth = 2.4; g.strokeStyle = 'rgba(6,6,4,.9)'; g.stroke(); }   // (the land's borders, thick and black as the board's)
     // the names: dark lettering, as the board's own region names are
     g.textAlign = 'center'; g.textBaseline = 'middle';
     for (const [t, x, y, sz, rot] of BEL.names) { if (BELG.luin && t === 'ERED LUIN') continue; g.save(); g.translate(x, y); g.rotate(rot); g.font = `bold ${sz}px Georgia, 'Times New Roman', serif`; const sp = t.split('').join(sz > 16 ? String.fromCharCode(8202, 8202) : String.fromCharCode(8202));
@@ -5870,26 +5890,26 @@ function buildBeleriand(guide) {
     for (const [t, x, y] of BEL.places) { g.beginPath(); g.arc(x, y, 1.6, 0, TAU); g.fillStyle = boardLook ? '#f0e0a0' : '#20301a'; g.fill(); g.font = `italic 7px Georgia, serif`; g.lineWidth = 2; g.strokeStyle = boardLook ? 'rgba(10,10,6,.7)' : 'rgba(240,232,180,.7)'; g.strokeText(t, x, y + 7); g.fillStyle = boardLook ? '#f4ecc8' : '#20301a'; g.fillText(t, x, y + 7); }
   }
   // ?belguide=1: the frame as it is, on screen, to repaint (see BEL_IMG), with Middle-earth's land shaded where it covers Beleriand
-  if (guide) { const id = g.getImageData(0, 0, c.width, c.height), D = id.data; for (let j = 0; j < c.height; j++) for (let i = 0; i < c.width; i++) { const px = PX0 + i / K, py = PY0 + j / K, x = BELG.x0 + (px - 590) * s, z = BELG.z0 + (py - 370) * s, o = (j * c.width + i) * 4; if (meLand(x, z)) { D[o] = D[o] * .4 + 60; D[o + 1] = D[o + 1] * .4 + 60; D[o + 2] = D[o + 2] * .4 + 60; D[o + 3] = 255; } else if (D[o + 3] < 128) { D[o] = 30; D[o + 1] = 60; D[o + 2] = 120; D[o + 3] = 255; } } g.putImageData(id, 0, 0);
+  if (guide) { const id = g.getImageData(0, 0, c.width, c.height), D = id.data; for (let j = 0; j < c.height; j++) for (let i = 0; i < c.width; i++) { const px = PX0 + i / K, py = PY0 + j / K, x = BELG.x0 + (px - BEL.luin) * s, z = BELG.z0 + (py - 370) * s, o = (j * c.width + i) * 4; if (meLand(x, z)) { D[o] = D[o] * .4 + 60; D[o + 1] = D[o + 1] * .4 + 60; D[o + 2] = D[o + 2] * .4 + 60; D[o + 3] = 255; } else if (D[o + 3] < 128) { D[o] = 30; D[o + 1] = 60; D[o + 2] = 120; D[o + 3] = 255; } } g.putImageData(id, 0, 0);
     c.style.cssText = 'position:fixed;left:0;top:0;z-index:99;width:' + c.width + 'px;height:' + c.height + 'px'; document.body.appendChild(c); return; }
   // only where Middle-earth has sea: where its own land is, it shows through
   { const id = g.getImageData(0, 0, c.width, c.height), D = id.data;
-    for (let j = 0; j < c.height; j += 2) for (let i = 0; i < c.width; i += 2) { const px = PX0 + i / K, py = PY0 + j / K, x = BELG.x0 + (px - 590) * s, z = BELG.z0 + (py - 370) * s; if (meLand(x, z)) for (const [a, b] of [[0, 0], [1, 0], [0, 1], [1, 1]]) D[((j + b) * c.width + i + a) * 4 + 3] = 0; }
+    for (let j = 0; j < c.height; j += 2) for (let i = 0; i < c.width; i += 2) { const px = PX0 + i / K, py = PY0 + j / K, x = BELG.x0 + (px - BEL.luin) * s, z = BELG.z0 + (py - 370) * s; if (meLand(x, z) && !belCovers(x, z)) for (const [a, b] of [[0, 0], [1, 0], [0, 1], [1, 1]]) D[((j + b) * c.width + i + a) * 4 + 3] = 0; }
     g.putImageData(id, 0, 0); }
   const tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = Math.min(8, MAX_ANI);
   // the ground, raised into its mountains
   BELG.ranges = ranges;
-  const wx0 = BELG.x0 + (PX0 - 590) * s, wz0 = BELG.z0 + (PY0 - 370) * s, W = PW * s, H = PH * s, geo = new THREE.PlaneGeometry(W, H, 210, 165); geo.rotateX(-Math.PI / 2); geo.translate(wx0 + W / 2, 0, wz0 + H / 2);
+  const wx0 = BELG.x0 + (PX0 - BEL.luin) * s, wz0 = BELG.z0 + (PY0 - 370) * s, W = PW * s, H = PH * s, geo = new THREE.PlaneGeometry(W, H, 210, 165); geo.rotateX(-Math.PI / 2); geo.translate(wx0 + W / 2, 0, wz0 + H / 2);
   const P_ = geo.attributes.position; for (let i = 0; i < P_.count; i++) P_.setY(i, belH(P_.getX(i), P_.getZ(i))); geo.computeVertexNormals();
   const land = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex, alphaTest: .5, side: THREE.DoubleSide, color: boardLook || BEL_IMG ? 0xffffff : 0xd4ccb4 })); BELG.g.add(land);
   // (on the parchment, the woods' trees)
   const trees = [], m4 = new THREE.Matrix4();
-  if (!boardLook && !BEL_IMG) for (const P of BEL.woods) { const xs = P.map(p => p[0]), ys = P.map(p => p[1]); for (let i = 0; i < 70; i++) { const px = lerp(Math.min(...xs), Math.max(...xs), rnd()), py = lerp(Math.min(...ys), Math.max(...ys), rnd()); if (!polyIn(px, py, P)) continue; const x = BELG.x0 + (px - 590) * s, z = BELG.z0 + (py - 370) * s; if (!belLand(x, z)) continue; const k = (.5 + rnd() * .5) * s / .09; trees.push(m4.clone().makeScale(k, k, k).setPosition(x, belH(x, z) + .55 * k, z)); } }
+  if (!boardLook && !BEL_IMG) for (const P of BEL.woods) { const xs = P.map(p => p[0]), ys = P.map(p => p[1]); for (let i = 0; i < 70; i++) { const px = lerp(Math.min(...xs), Math.max(...xs), rnd()), py = lerp(Math.min(...ys), Math.max(...ys), rnd()); if (!polyIn(px, py, P)) continue; const x = BELG.x0 + (px - BEL.luin) * s, z = BELG.z0 + (py - 370) * s; if (!belLand(x, z)) continue; const k = (.5 + rnd() * .5) * s / .09; trees.push(m4.clone().makeScale(k, k, k).setPosition(x, belH(x, z) + .55 * k, z)); } }
   if (trees.length) { const im = new THREE.InstancedMesh(new THREE.ConeGeometry(.45, 1.3, 6), lam(0x2e6a2c), trees.length); trees.forEach((m, i) => im.setMatrixAt(i, m)); BELG.g.add(im); }
-  for (const [px, py] of BEL.thango) { const x = BELG.x0 + (px - 590) * s, z = BELG.z0 + (py - 370) * s, gl = glowSprite(0xff6a10, 4 * s / .09, .7); gl.position.set(x, belH(x, z) + .6, z); BELG.g.add(gl); }
+  for (const [px, py] of BEL.thango) { const x = BELG.x0 + (px - BEL.luin) * s, z = BELG.z0 + (py - 370) * s, gl = glowSprite(0xff6a10, 4 * s / .09, .7); gl.position.set(x, belH(x, z) + .6, z); BELG.g.add(gl); }
   // the sea's names, out on the water
   for (const [t, px, py, rot] of BEL.sea) { const cv = document.createElement('canvas'); cv.width = 512; cv.height = 64; const q = cv.getContext('2d'); q.font = `italic bold ${t.length > 14 ? 40 : 32}px Georgia, serif`; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillStyle = 'rgba(200,220,255,.75)'; q.fillText(t, 256, 32);
-    const tx = new THREE.CanvasTexture(cv), pl = new THREE.Mesh(new THREE.PlaneGeometry(cv.width / 512 * 260 * s, 32 * s), new THREE.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false })); pl.rotation.set(-Math.PI / 2, 0, rot); pl.position.set(BELG.x0 + (px - 590) * s, BELG.sea + .05, BELG.z0 + (py - 370) * s); BELG.g.add(pl); }
+    const tx = new THREE.CanvasTexture(cv), pl = new THREE.Mesh(new THREE.PlaneGeometry(cv.width / 512 * 260 * s, 32 * s), new THREE.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false })); pl.rotation.set(-Math.PI / 2, 0, rot); pl.position.set(BELG.x0 + (px - BEL.luin) * s, BELG.sea + .05, BELG.z0 + (py - 370) * s); BELG.g.add(pl); }
   mapScene.add(BELG.g);
 }
 const groundY = (x, z) => BELG && belLand(x, z) ? belH(x, z) : BOARD ? boardY(x, z) : Math.max(landH(x, z), .12);
@@ -6227,7 +6247,8 @@ function updateMap(dt) {
   const k = 1 - Math.exp(-6 * dt); mc.p.lerp(_b, k); mc.l.lerp(_c, k);
   mapCam.position.copy(mc.p); mapCam.lookAt(mc.l);
   if (MAPSHOT && BOARD) {   // (?mapshot=1: the whole map from straight above, Beleriand and all, for a picture of it)
-    const x0 = BOARD.pic ? BOARD.x0 : BELG ? Math.min(BOARD.ex0, BELG.x0 - 590 * BELG.s) : BOARD.ex0, x1 = BOARD.pic ? BOARD.x0 + (BOARD.W - 1) * BOARD.step : BOARD.ex1, z0 = BOARD.pic ? BOARD.z0 : BOARD.ez0, z1 = BOARD.pic ? BOARD.z0 + (BOARD.H - 1) * BOARD.step : BOARD.ez1, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, f = 12, half = Math.max((x1 - x0) / 2 / mapCam.aspect, (z1 - z0) / 2), h = half / Math.tan(f / 2 * Math.PI / 180);
+    const bel = MAPSHOT === 'bel' && BELG, bx = p => BELG.x0 + (p - BEL.luin) * BELG.s, bz = p => BELG.z0 + (p - 370) * BELG.s;
+    const x0 = bel ? bx(10) : BOARD.pic ? BOARD.x0 : BELG ? Math.min(BOARD.ex0, BELG.x0 - 590 * BELG.s) : BOARD.ex0, x1 = bel ? bx(700) : BOARD.pic ? BOARD.x0 + (BOARD.W - 1) * BOARD.step : BOARD.ex1, z0 = bel ? bz(30) : BOARD.pic ? BOARD.z0 : BOARD.ez0, z1 = bel ? bz(665) : BOARD.pic ? BOARD.z0 + (BOARD.H - 1) * BOARD.step : BOARD.ez1, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, f = 12, half = Math.max((x1 - x0) / 2 / mapCam.aspect, (z1 - z0) / 2), h = half / Math.tan(f / 2 * Math.PI / 180);
     mapCam.fov = f; mapCam.near = h * .7; mapCam.far = h * 1.3; mapCam.updateProjectionMatrix(); mapCam.position.set(cx, h, cz + .001); mapCam.up.set(0, 0, -1); mapCam.lookAt(cx, 0, cz); mapScene.fog.near = 1e5; mapScene.fog.far = 1e6; tok.g.visible = false; document.body.classList.add('mapshot');
   }
   const on = state === 'map' && mc.zoom < .25;
