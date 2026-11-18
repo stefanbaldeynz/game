@@ -5967,7 +5967,8 @@ function buildBeleriand(guide) {
   for (const [t, px, py, rot] of BEL.sea) { const cv = document.createElement('canvas'); cv.width = 512; cv.height = 64; const q = cv.getContext('2d'); q.font = `italic bold ${t.length > 14 ? 40 : 32}px Georgia, serif`; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillStyle = 'rgba(200,220,255,.75)'; q.fillText(t, 256, 32);
     const tx = new THREE.CanvasTexture(cv), pl = new THREE.Mesh(new THREE.PlaneGeometry(cv.width / 512 * 260 * s, 32 * s), new THREE.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false })); pl.rotation.set(-Math.PI / 2, 0, rot); pl.position.set(BELG.x0 + (px - BEL.luin) * s, BELG.sea + .05, BELG.z0 + (py - 370) * s); BELG.g.add(pl); }
   belStops(); mapScene.add(BELG.g);
-  const tq = new URLSearchParams(location.search).get('tok'), tn = tq && NODES.find(n => n.bel && n.loc === tq); if (tn) { tok.p.set(tn.x, 0, tn.z + 2); mc.snap = true; }   // (?tok=gondolin, for testing)
+  const tq = BOARD && new URLSearchParams(location.search).get('tok'), tn = tq && NODES.find(n => n.bel && n.loc === tq); if (tn) {   // (only once the board's in: the first build is before the map's camera)
+    tok.p.set(tn.x, 0, tn.z + 2); mc.snap = true; }   // (?tok=gondolin, for testing)
 }
 const groundY = (x, z) => BELG && belLand(x, z) ? belH(x, z) : BOARD ? boardY(x, z) : Math.max(landH(x, z), .12);
 
