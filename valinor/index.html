@@ -5719,7 +5719,7 @@ const BEL = {
     [48, 326], [52, 306], [66, 294], [112, 278], [80, 270], [72, 258], [62, 245], [45, 222], [28, 205]],
   isles: [[[160, 585], [170, 568], [195, 557], [212, 553], [205, 565], [185, 577]], [[236, 540], [244, 538], [247, 546], [240, 550]]],   // (Balar, and its little sister)
   ranges: [
-    { p: [[40, 150], [150, 160], [240, 150], [330, 125], [420, 140], [500, 150], [600, 135], [700, 120]], h: 3.6, w: 34 },   // Ered Engrin, the Iron Mountains
+    { p: [[40, 150], [150, 160], [240, 150], [330, 125], [420, 140], [500, 150], [600, 135], [700, 120], [800, 108], [900, 96]], h: 3.6, w: 30 },   // Ered Engrin, the Iron Mountains
     { p: [[50, 170], [68, 230], [80, 268]], h: 2.4, w: 14 },   // Ered Lómin
     { p: [[140, 160], [200, 188], [232, 215]], h: 2.6, w: 12 },   // the Mountains of Mithrim
     { p: [[112, 290], [160, 284], [210, 290], [248, 300]], h: 2.6, w: 10 },   // Ered Wethrin, the Mountains of Shadow
@@ -5775,15 +5775,15 @@ function polyIn(px, py, P) { let c = false; for (let i = 0, j = P.length - 1; i 
 // built once the map is ready, and again if your War of the Ring board comes in (it moves the Shire and Rivendell)
 let BELG = null;
 const belAt = (x, z) => BELG ? [(x - BELG.x0) / BELG.s + BEL.luin, (z - BELG.z0) / BELG.s + 370] : [0, 0];   // the world to the reference map's pixels
-const belIn = (px, py) => py > 30 && (polyIn(px, py, BEL.coast) || BEL.isles.some(P => polyIn(px, py, P)));
+const belIn = (px, py) => (polyIn(px, py, (BELG && BELG.coast) || BEL.coast) || BEL.isles.some(P => polyIn(px, py, P)));
 function belH(x, z) {
   const [px, py] = belAt(x, z), sea = BELG ? BELG.sea : 0; if (!belIn(px, py)) return sea + .06;   // (flat out to sea: the picture cuts the coast, so no wall shows)
   const u = BELG ? BELG.s / .09 : 1;   // (heights to the map's own scale)
   let h = sea + .06 + .1 * u * (1 + Math.sin(px * .05 + py * .03) * Math.sin(py * .07 - px * .02));
-  for (const m of (BELG && BELG.ranges) || BEL.ranges) { const d = polyDist(px, py, m.p), w = m.w * 1.7; if (d < w) { const k = 1 - d / w; h += m.h * .55 * u * k * k * (3 - 2 * k) * (.85 + .15 * Math.sin(px * .4 + py * .3)); } }
+  for (const m of (BELG && BELG.ranges) || BEL.ranges) { const d = polyDist(px, py, m.p), w = m.w * 1.15; if (d < w) { const k = 1 - d / w; h += m.h * .85 * u * k * k * k * (.8 + .2 * Math.sin(px * .35 + py * .25) * Math.sin(px * .11 - py * .17)); } }   // (sharp-crested, as the board's own ranges)
   for (const [tx, ty] of BEL.thango) { const d = Math.hypot(px - tx, py - ty); if (d < 26) h += 3.6 * u * (1 - d / 26) ** 1.5; }
   for (const [lx, ly, r] of BEL.lakes) if (Math.hypot(px - lx, py - ly) < r) h = Math.min(h, sea + .05);
-  h = sea + .06 + (h - sea - .06) * smooth(clamp((py - 36) / 40, 0, 1));
+  h = sea + .06 + (h - sea - .06) * smooth(clamp((py - ((BELG && BELG.top) || 30) - 4) / 26, 0, 1));
   return BOARD && belCovers(x, z) && boardLand(x, z) ? Math.max(h, boardY(x, z) + .1) : h;   // (over the board's own land, never under it)   // (down to nothing at the north edge, where the map ends)
 }
 const meLand = (x, z) => BOARD ? boardLand(x, z) : coastAt(x, z) > 0;
@@ -5837,20 +5837,24 @@ function belPools() {
 function buildBeleriand(guide) {
   if (BELG) { mapScene.remove(BELG.g); BELG.g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } }); BELG = null; }
   BELG = { ...belFit(), sea: BOARD ? BOARD.sea : 0, g: new THREE.Group() }; const s = BELG.s, ranges = BEL.ranges.filter(m => !(BELG.luin && m.luin));
+  // the far north: on the board, the land goes on up to the board's own top edge and east over the northern sea to its Forochel, all one land (Dor Daidelos)
+  const top = BELG.top = BOARD ? Math.min(30, Math.round((BOARD.ez0 + 6 - BELG.z0) / s + 370)) : 30;
+  BELG.coast = BOARD ? [[20, 175], [8, 150], [22, 125], [6, 96], [20, 70], [4, 40], [16, top + 62], [2, top + 26], [34, top], [920, top], [920, 190], [700, 205]].concat(BEL.coast.slice(14)) : BEL.coast;   // (a broken northern coast, then the board's top edge)
   const pools = !guide && BOARD && !BEL_IMG && belPools(), boardLook = !!pools;
   // the map itself, painted at two canvas pixels to the reference's one, over 0,40 to 840,700
-  const PX0 = 0, PY0 = 40, PW = 840, PH = 660, K = 2, c = document.createElement('canvas'); c.width = PW * K; c.height = PH * K; const g = c.getContext('2d');
+  const PX0 = 0, PY0 = Math.min(40, top - 4), PW = 920, PH = 700 - PY0, K = 2, c = document.createElement('canvas'); c.width = PW * K; c.height = PH * K; const g = c.getContext('2d');
   g.setTransform(K, 0, 0, K, -PX0 * K, -PY0 * K);
   const path = P => { g.beginPath(); P.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); };
   const rnd = (() => { let q = 7; return () => (q = (q * 16807) % 2147483647) / 2147483647; })();
-  const lands = [BEL.coast, ...BEL.isles], landPath = () => { g.beginPath(); for (const P of lands) { P.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); } };
+  const lands = [BELG.coast, ...BEL.isles], landPath = () => { g.beginPath(); for (const P of lands) { P.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); } };
   // the shallows round the coast (as the board has them), then the land
   landPath(); g.lineJoin = 'round'; g.lineWidth = boardLook ? 9 : 6; g.strokeStyle = boardLook ? '#4a8ab0' : 'rgba(150,140,70,.35)'; g.stroke(); if (boardLook) { g.lineWidth = 4; g.strokeStyle = '#7ab4c8'; g.stroke(); }
   landPath(); g.fillStyle = boardLook ? '#4a6a32' : '#cfc58c'; g.fill();
   const what = (px, py) => {   // (grass, forest, rock or snow, here)
     let m = 0; for (const r of ranges) { const d = polyDist(px, py, r.p); if (d < r.w * 1.5) m = Math.max(m, (1 - d / (r.w * 1.5)) * r.h / 3); }
     for (const [tx, ty] of BEL.thango) { const d = Math.hypot(px - tx, py - ty); if (d < 30) m = Math.max(m, 1.6 * (1 - d / 30)); }
-    return m > .8 ? 'snow' : m > .35 ? 'rock' : BEL.woods.some(P => polyIn(px, py, P)) ? 'forest' : 'plain';
+    const north = BELG.top < 30 ? clamp((70 + 22 * Math.sin(px * .035) + 12 * Math.sin(px * .09 + 1) - py) / 45, 0, 1) : 0;   // (the far north: snow and bare rock, as the board's own north)
+    return m > .6 || north > .55 ? 'snow' : m > .28 || north > .2 ? 'rock' : BEL.woods.some(P => polyIn(px, py, P)) ? 'forest' : 'plain';
   };
   if (BEL_IMG && !guide) { g.save(); landPath(); g.clip(); g.drawImage(BEL_IMG, PX0, PY0, PW, PH); g.restore(); }
   else if (boardLook) {
@@ -5885,9 +5889,9 @@ function buildBeleriand(guide) {
     for (const R of BEL.borders) { path(R); g.lineWidth = 4; g.strokeStyle = 'rgba(0,0,0,.3)'; g.stroke(); g.lineWidth = 2.4; g.strokeStyle = 'rgba(6,6,4,.9)'; g.stroke(); }   // (the land's borders, thick and black as the board's)
     // the names: dark lettering, as the board's own region names are
     g.textAlign = 'center'; g.textBaseline = 'middle';
-    for (const [t, x, y, sz, rot] of BEL.names) { if (BELG.luin && t === 'ERED LUIN') continue; g.save(); g.translate(x, y); g.rotate(rot); g.font = `bold ${sz}px Georgia, 'Times New Roman', serif`; const sp = t.split('').join(sz > 16 ? String.fromCharCode(8202, 8202) : String.fromCharCode(8202));
-      g.lineWidth = boardLook ? 2.5 : 3; g.strokeStyle = boardLook ? 'rgba(230,220,180,.45)' : 'rgba(240,232,180,.7)'; g.strokeText(sp, 0, 0); g.fillStyle = boardLook ? 'rgba(14,16,10,.85)' : '#20301a'; g.fillText(sp, 0, 0); g.restore(); }
-    for (const [t, x, y] of BEL.places) { g.beginPath(); g.arc(x, y, 1.6, 0, TAU); g.fillStyle = boardLook ? '#f0e0a0' : '#20301a'; g.fill(); g.font = `italic 7px Georgia, serif`; g.lineWidth = 2; g.strokeStyle = boardLook ? 'rgba(10,10,6,.7)' : 'rgba(240,232,180,.7)'; g.strokeText(t, x, y + 7); g.fillStyle = boardLook ? '#f4ecc8' : '#20301a'; g.fillText(t, x, y + 7); }
+    for (const [t, x, y, sz, rot] of BEL.names) { if (BELG.luin && t === 'ERED LUIN') continue; g.save(); g.translate(x, y); g.rotate(rot); g.font = `bold ${boardLook ? sz * 1.2 : sz}px Georgia, 'Times New Roman', serif`; const sp = t.split('').join(sz > 16 ? String.fromCharCode(8202, 8202) : String.fromCharCode(8202));
+      if (!boardLook) { g.lineWidth = 3; g.strokeStyle = 'rgba(240,232,180,.7)'; g.strokeText(sp, 0, 0); } g.fillStyle = boardLook ? 'rgba(6,7,4,.9)' : '#20301a'; g.fillText(sp, 0, 0); g.restore(); }   // (on the board: plain black letters, as its own names are)
+    for (const [t, x, y] of BEL.places) { g.beginPath(); g.arc(x, y, 1.6, 0, TAU); g.fillStyle = boardLook ? 'rgba(6,7,4,.9)' : '#20301a'; g.fill(); g.font = `italic bold ${boardLook ? 9 : 7}px Georgia, serif`; if (!boardLook) { g.lineWidth = 2; g.strokeStyle = 'rgba(240,232,180,.7)'; g.strokeText(t, x, y + 7); } g.fillStyle = boardLook ? 'rgba(6,7,4,.88)' : '#20301a'; g.fillText(t, x, y + 7); }
   }
   // ?belguide=1: the frame as it is, on screen, to repaint (see BEL_IMG), with Middle-earth's land shaded where it covers Beleriand
   if (guide) { const id = g.getImageData(0, 0, c.width, c.height), D = id.data; for (let j = 0; j < c.height; j++) for (let i = 0; i < c.width; i++) { const px = PX0 + i / K, py = PY0 + j / K, x = BELG.x0 + (px - BEL.luin) * s, z = BELG.z0 + (py - 370) * s, o = (j * c.width + i) * 4; if (meLand(x, z)) { D[o] = D[o] * .4 + 60; D[o + 1] = D[o + 1] * .4 + 60; D[o + 2] = D[o + 2] * .4 + 60; D[o + 3] = 255; } else if (D[o + 3] < 128) { D[o] = 30; D[o + 1] = 60; D[o + 2] = 120; D[o + 3] = 255; } } g.putImageData(id, 0, 0);
@@ -6248,7 +6252,7 @@ function updateMap(dt) {
   mapCam.position.copy(mc.p); mapCam.lookAt(mc.l);
   if (MAPSHOT && BOARD) {   // (?mapshot=1: the whole map from straight above, Beleriand and all, for a picture of it)
     const bel = MAPSHOT === 'bel' && BELG, bx = p => BELG.x0 + (p - BEL.luin) * BELG.s, bz = p => BELG.z0 + (p - 370) * BELG.s;
-    const x0 = bel ? bx(10) : BOARD.pic ? BOARD.x0 : BELG ? Math.min(BOARD.ex0, BELG.x0 - 590 * BELG.s) : BOARD.ex0, x1 = bel ? bx(700) : BOARD.pic ? BOARD.x0 + (BOARD.W - 1) * BOARD.step : BOARD.ex1, z0 = bel ? bz(30) : BOARD.pic ? BOARD.z0 : BOARD.ez0, z1 = bel ? bz(665) : BOARD.pic ? BOARD.z0 + (BOARD.H - 1) * BOARD.step : BOARD.ez1, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, f = 12, half = Math.max((x1 - x0) / 2 / mapCam.aspect, (z1 - z0) / 2), h = half / Math.tan(f / 2 * Math.PI / 180);
+    const x0 = bel ? bx(10) : BOARD.pic ? BOARD.x0 : BELG ? Math.min(BOARD.ex0, BELG.x0 - 590 * BELG.s) : BOARD.ex0, x1 = bel ? bx(920) : BOARD.pic ? BOARD.x0 + (BOARD.W - 1) * BOARD.step : BOARD.ex1, z0 = bel ? bz(BELG.top) : BOARD.pic ? BOARD.z0 : BOARD.ez0, z1 = bel ? bz(665) : BOARD.pic ? BOARD.z0 + (BOARD.H - 1) * BOARD.step : BOARD.ez1, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, f = 12, half = Math.max((x1 - x0) / 2 / mapCam.aspect, (z1 - z0) / 2), h = half / Math.tan(f / 2 * Math.PI / 180);
     mapCam.fov = f; mapCam.near = h * .7; mapCam.far = h * 1.3; mapCam.updateProjectionMatrix(); mapCam.position.set(cx, h, cz + .001); mapCam.up.set(0, 0, -1); mapCam.lookAt(cx, 0, cz); mapScene.fog.near = 1e5; mapScene.fog.far = 1e6; tok.g.visible = false; document.body.classList.add('mapshot');
   }
   const on = state === 'map' && mc.zoom < .25;
