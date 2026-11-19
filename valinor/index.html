@@ -2649,6 +2649,7 @@ const OV_FOES = {
 };
 for (const n in OV_FOES) { const f = OV_FOES[n]; f.slot = 'ov_' + f.file + (f.sc ? '_' + f.sc : ''); }
 const CUP_FOES = { ...KH2_FOES, ...OV_FOES };
+for (const n in KH2_FOES) { const f = KH2_FOES[n]; f.hp = Math.round(f.hp * (f.boss ? 1.6 : 2.3)); f.dmg = Math.round(f.dmg * 1.4); f.rv = Math.min(f.rv ?? 3, f.lite ? 3 : 2); f.agg = true; }   // (KH II's foes: tougher, harder-hitting, quicker to strike back)
 for (const n in CUP_FOES) { const f = CUP_FOES[n]; f.n = f.n || 1; if (f.boss || f.r >= 1.2) f.heavy = true; if (f.boss) f.armor = true; }
 // --- the Colosseum's two rolls: a round for each kind of foe, in the order above; choose where to start (see openSeeds)
 const KH_CUPS = [['KINGDOM HEARTS II', 'KINGDOM HEARTS', KH2_FOES], ['OVERLORD', 'OVERLORD', OV_FOES]].map(([name, game, F]) => ({ name, game,
@@ -5775,7 +5776,7 @@ function polyIn(px, py, P) { let c = false; for (let i = 0, j = P.length - 1; i 
 // built once the map is ready, and again if your War of the Ring board comes in (it moves the Shire and Rivendell)
 let BELG = null;
 const belAt = (x, z) => BELG ? [(x - BELG.x0) / BELG.s + BEL.luin, (z - BELG.z0) / BELG.s + 370] : [0, 0];   // the world to the reference map's pixels
-const belIn = (px, py) => (polyIn(px, py, (BELG && BELG.coast) || BEL.coast) || BEL.isles.some(P => polyIn(px, py, P)));
+const belIn = (px, py) => (polyIn(px, py, (BELG && BELG.coast) || BEL.coast) || ((BELG && BELG.isles) || BEL.isles).some(P => polyIn(px, py, P)));
 function belH(x, z) {
   const [px, py] = belAt(x, z), sea = BELG ? BELG.sea : 0; if (!belIn(px, py)) return sea + .06;   // (flat out to sea: the picture cuts the coast, so no wall shows)
   const u = BELG ? BELG.s / .09 : 1;
@@ -5874,6 +5875,31 @@ function belRiver(g, R) {
   pts.push([...R[R.length - 1], cum]);
   for (const [lw, col] of [[1.4, 'rgba(14,34,50,.5)'], [0, 'rgba(96,170,205,.92)']]) for (let i = 0; i < pts.length - 1; i++) { g.beginPath(); g.moveTo(pts[i][0], pts[i][1]); g.lineTo(pts[i + 1][0], pts[i + 1][1]); g.lineWidth = .6 + pts[i][2] / cum * 1.7 + lw; g.strokeStyle = col; g.stroke(); }
 }
+// a coastline broken up as a real one is: bays and points along every stretch (not the board's top edge, nor where it runs under Middle-earth)
+function belJag(P, top = -1e9) {
+  const out = []; let cum = 0;
+  for (let i = 0; i < P.length; i++) {
+    const [ax, ay] = P[i], [bx, by] = P[(i + 1) % P.length], L = Math.hypot(bx - ax, by - ay) || 1, nx = -(by - ay) / L, ny = (bx - ax) / L, n = Math.max(1, Math.round(L / 2.5)), keep = (ay <= top + 4 && by <= top + 4) || ax >= 690 || bx >= 690;
+    for (let q = 0; q < n; q++) { const t = q / n, c = cum + L * t, o = keep ? 0 : (belVN(c * .06, 3.3) - .5) * 10 + (belVN(c * .2, 7.1) - .5) * 4 + (belVN(c * .6, 1.7) - .5) * 1.6; out.push([ax + (bx - ax) * t + nx * o, ay + (by - ay) * t + ny * o]); }
+    cum += L;
+  }
+  return out;
+}
+// the coast as the board paints its own: sand along the very edge, speckled pale shallows breaking into foam out over the sea, a dark line between
+function belCoast(g, c, lands) {
+  const W = c.width, H = c.height, m = document.createElement('canvas'); m.width = W; m.height = H; const q = m.getContext('2d'); q.setTransform(g.getTransform()); q.lineJoin = 'round';
+  const shape = cx => { cx.beginPath(); for (const P of lands) { P.forEach(([x, y], i) => i ? cx.lineTo(x, y) : cx.moveTo(x, y)); cx.closePath(); } };
+  for (const [w, v] of [[34, 1], [22, 2], [13, 3], [6, 4], [2.4, 5]]) { shape(q); q.lineWidth = w; q.strokeStyle = `rgb(${v * 50},0,0)`; q.stroke(); }
+  const M = q.getImageData(0, 0, W, H).data, id = g.getImageData(0, 0, W, H), D = id.data;
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    const o = (j * W + i) * 4, b = Math.round(M[o] / 50); if (!b) continue;
+    const n = belVN(i * .05, j * .05);
+    if (D[o + 3] > 200) { if (b >= 5) { const k = .4 + n * .5; D[o] = 140 + 70 * k; D[o + 1] = 128 + 62 * k; D[o + 2] = 96 + 50 * k; } continue; }   // (sand)
+    if (belVN(i * .42 + 50, j * .42) < [0, .14, .3, .5, .72, .95][b] * (.55 + n * .7)) { const col = b >= 4 ? [196, 226, 230] : b >= 3 ? [140, 200, 216] : b >= 2 ? [96, 168, 200] : [70, 136, 182]; D[o] = col[0]; D[o + 1] = col[1]; D[o + 2] = col[2]; D[o + 3] = 255; }
+  }
+  g.putImageData(id, 0, 0);
+  shape(g); g.lineWidth = 1.5; g.strokeStyle = 'rgba(10,12,10,.8)'; g.stroke();
+}
 // Beleriand's great places, marked as the levels are (a gold disc and a glow), to make levels for: loc, name, where on the reference, what it is
 const BEL_STOPS = [['gondolin', 'GONDOLIN', 290, 295, 'THE HIDDEN CITY'], ['nargo', 'NARGOTHROND', 209, 391, "FINROD'S HIDDEN FORTRESS"], ['menegroth', 'MENEGROTH', 363, 352, 'THE THOUSAND CAVES OF DORIATH'],
   ['angband', 'ANGBAND', 372, 190, 'THE IRON HELL UNDER THANGORODRIM'], ['tolsirion', 'TOL SIRION', 270, 280, 'THE ISLE OF WEREWOLVES'], ['himring', 'HIMRING', 452, 300, 'THE FORTRESS OF MAEDHROS'],
@@ -5892,16 +5918,17 @@ function buildBeleriand(guide) {
   BELG = { ...belFit(), sea: BOARD ? BOARD.sea : 0, g: new THREE.Group() }; const s = BELG.s, ranges = BEL.ranges;
   // the far north: on the board, the land goes on up to the board's own top edge and east over the northern sea to its Forochel, all one land (Dor Daidelos)
   const top = BELG.top = BOARD ? Math.min(30, Math.round((BOARD.ez0 + 6 - BELG.z0) / s + 370)) : 30;
-  BELG.coast = BOARD ? [[20, 175], [8, 150], [22, 125], [6, 96], [20, 70], [4, 40], [16, top + 62], [2, top + 26], [34, top], [920, top], [920, 190], [700, 205]].concat(BEL.coast.slice(14)) : BEL.coast;   // (a broken northern coast, then the board's top edge)
+  BELG.coast = BOARD ? [[20, 175], [8, 150], [22, 125], [6, 96], [20, 70], [4, 40], [16, top + 62], [2, top + 26], [34, top], [920, top], [920, 190], [700, 205]].concat(BEL.coast.slice(14)) : BEL.coast;
+  BELG.coast = belJag(BELG.coast, top); BELG.isles = BEL.isles.map(P => belJag(P));   // (a broken northern coast, then the board's top edge)
   const pools = !guide && BOARD && !BEL_IMG && belPools(), boardLook = !!pools;
   // the map itself, painted at two canvas pixels to the reference's one, over 0,40 to 840,700
   const PX0 = 0, PY0 = Math.min(40, top - 4), PW = 920, PH = 700 - PY0, K = 2, c = document.createElement('canvas'); c.width = PW * K; c.height = PH * K; const g = c.getContext('2d');
   g.setTransform(K, 0, 0, K, -PX0 * K, -PY0 * K); belMountains(PX0, PY0, PW, PH);
   const path = P => { g.beginPath(); P.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); };
   const rnd = (() => { let q = 7; return () => (q = (q * 16807) % 2147483647) / 2147483647; })();
-  const lands = [BELG.coast, ...BEL.isles], landPath = () => { g.beginPath(); for (const P of lands) { P.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); } };
+  const lands = [BELG.coast, ...BELG.isles], landPath = () => { g.beginPath(); for (const P of lands) { P.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); } };
   // the shallows round the coast (as the board has them), then the land
-  landPath(); g.lineJoin = 'round'; g.lineWidth = boardLook ? 9 : 6; g.strokeStyle = boardLook ? '#4a8ab0' : 'rgba(150,140,70,.35)'; g.stroke(); if (boardLook) { g.lineWidth = 4; g.strokeStyle = '#7ab4c8'; g.stroke(); }
+  if (!boardLook) { landPath(); g.lineJoin = 'round'; g.lineWidth = 6; g.strokeStyle = 'rgba(150,140,70,.35)'; g.stroke(); }   // (on the board, the coast is painted afterwards: see belCoast)
   landPath(); g.fillStyle = boardLook ? '#4a6a32' : '#cfc58c'; g.fill();
   const what = (px, py) => {   // (grass, forest, rock or snow, here)
     const m = 0;   // (the mountains are painted afterwards, over everything)
@@ -5919,7 +5946,7 @@ function buildBeleriand(guide) {
       q.globalCompositeOperation = 'source-over'; q.clearRect(0, 0, S * K, S * K); q.drawImage(img, u * img.width, v * img.height, sw, sh, 0, 0, S * K, S * K); q.globalCompositeOperation = 'destination-in'; q.fillStyle = mask; q.fillRect(0, 0, S * K, S * K);
       g.drawImage(tmp, px - S / 2, py - S / 2, S, S);
     }
-    g.restore(); belPaintMountains(g, c, K);
+    g.restore(); belPaintMountains(g, c, K); belCoast(g, c, lands);
   } else {
     for (let i = 0; i < 9000; i++) { const x = PX0 + rnd() * PW, y = PY0 + rnd() * PH; g.fillStyle = rnd() < .5 ? 'rgba(120,110,40,.12)' : 'rgba(255,250,200,.18)'; g.fillRect(x, y, 1.2, 1.2); }
     { const gr = g.createLinearGradient(0, 66, 0, 120); gr.addColorStop(0, 'rgba(225,232,220,.9)'); gr.addColorStop(1, 'rgba(225,232,220,0)'); g.fillStyle = gr; g.fillRect(0, 60, 840, 60); }
@@ -6561,7 +6588,7 @@ const LOCAL_ASSETS = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname
 // anims: which clip to use for an action, where the usual names below would pick the wrong one.
 // saberBone: the bone the lightsaber goes on in the Weathertop duel (its sword hand), and saberRot to turn the blade along it.
 const TROLL_ANIMS = { idle: /^idle_a/i, walk: /^(walk_a|run_a)/i, attack: /^attack_a/i, hit: /^hurt_a/i, die: /^die_/i };   // (their files also hold dismounting clips whose names would pass for attacks)
-const KH_ANIMS = { idle: /_IDLE$/, walk: /_RUN$|_WALK$/, attack: /_EX05\d$|_EX1\d\d$|_ATTACK/, hit: /_DAMAGE_S_FRONT_HIGH$/, die: /_DAMAGE_BLOW_FRONT$/, jump: /_APPEAR$/ };
+const KH_ANIMS = { idle: /_IDLE$/, walk: /_RUN$|_WALK$/, attack: /_EX05\d$|_EX1\d\d$|_ATTACK/, hit: /_DAMAGE_S_FRONT_HIGH$/, die: /_DAMAGE_BLOW_FRONT$/, blow: /_DAMAGE_BLOW_FRONT$/, land: /_DAMAGE_BLOW_FRONT_LAND$/, jump: /_APPEAR$/ };   // (blow, land: knocked flying and down, KH II's own)
 const MODEL_SLOTS = {
   eagle: { height: 5.2, turn: -Math.PI / 2, anims: { fly: /^fly_a/i, idle: /^hvra/i, attack: /^attack_b/i, hit: /^hit/i } }, tentacle: { height: 15, fitMax: true, turn: -Math.PI / 2, hide: /BOX/i, anims: { idle: /^idle_a/i, attack: /^attack_a/i, hit: /^spna/i, die: /^dwna/i } },
   watcher: { height: 5, turn: -Math.PI / 2, hide: /SUPRTNTCL/i, anims: { idle: /^idle_a|^idla/i, attack: /eat/i, hit: /^idle_b|^idlb/i, die: /^dwn|^die/i, jump: /^sp/i } }, caldera: { height: 15, fitMax: true, turn: 0, cut: true, hide: /_\d$/, anims: { idle: /^idle_a|^idla/i, die: /^die/i, jump: /^sp/i } },   // (the Watcher's head in its pool, and the crater it bursts up into)
@@ -6646,7 +6673,7 @@ function attachSkin(K) {
     const names = { ...ANIM_NAMES, ...cfg.anims };
     for (const k in names) { const clip = gl.animations.find(a => names[k].test(a.name)); if (clip) K.acts[k] = K.mixer.clipAction(clip); }
     if (!K.acts.idle) K.acts.idle = K.mixer.clipAction(gl.animations[0]);
-    K.acts.die && (K.acts.die.loop = THREE.LoopOnce, K.acts.die.clampWhenFinished = true);
+    for (const k of ['die', 'blow', 'land']) if (K.acts[k]) { K.acts[k].loop = THREE.LoopOnce; K.acts[k].clampWhenFinished = true; }
     skinPlay({ skin: K }, 'idle');
   }
 }
@@ -6687,7 +6714,7 @@ function armyModels(bodies, imB, imH, imP, near) {
 }function skinPlay(M, key) {
   const K = M && M.skin; if (!K || !K.mixer || K.cur === key || (K.holdT > T && key !== 'die')) return;   // a one-off clip (skinClip) plays to the end
   const A_ = khOn() && K.khActs && K.khActs[key] ? K.khActs : K.acts;   // (Sora's own, in the Kingdom Hearts levels)
-  const next = A_[key] || (key === 'jump' || key === 'hit' ? K.acts.idle : key === 'attack' ? K.acts.walk || K.acts.idle : K.acts.idle);
+  const next = A_[key] || (key === 'blow' || key === 'land' ? A_.hit || K.acts.idle : key === 'jump' || key === 'hit' ? K.acts.idle : key === 'attack' ? K.acts.walk || K.acts.idle : K.acts.idle);
   const prev = K.curAct || K.acts[K.cur] || null; if (next === prev) { K.cur = key; return; }
   next.reset().fadeIn(.18).play(); if (prev) prev.fadeOut(.18); K.cur = key; K.curAct = next;
 }
@@ -10250,7 +10277,7 @@ const foeC = u => { const ds = P.s - u.s, dx = P.x - u.x, d = Math.hypot(ds, dx)
 // choose an attack it's in reach of (and a turn to use it: no more than three come at you at once, four of the little ones; a champion any time)
 function foeChoose(u, K, c) {
   const ok = K.mv.filter(m => c.d >= m.at[0] && c.d <= m.at[1]); if (!ok.length) { u.cd = .15; return; }
-  if (!K.boss && khTokens() >= (u.lite ? 4 : 3)) { u.cd = .25; return; }
+  if (!K.boss && khTokens() >= (u.lite ? 4 : 3) + (K.agg ? 1 : 0)) { u.cd = .25; return; }
   foeStart(u, K, ok[Math.random() * ok.length | 0], c);
 }
 function foeStart(u, K, mv, c, fast) {
@@ -10261,7 +10288,7 @@ function foeStart(u, K, mv, c, fast) {
   S.orcGrunt();
 }
 function foeEnd(u, K) {
-  const mv = u.mv; Object.assign(u, { lockH: undefined, state: u.dz ? 'dizzy' : 'recover', t: 0, dizzy: u.dz || 0, cd: rand(.35, 1.1) * (mv.cd || 1) * (K.boss ? .7 : 1), air: false, dip: 0, sunk: false, q: null });
+  const mv = u.mv; Object.assign(u, { lockH: undefined, state: u.dz ? 'dizzy' : 'recover', t: 0, dizzy: u.dz || 0, cd: rand(.35, 1.1) * (mv.cd || 1) * (K.boss ? .7 : 1) * (K.agg ? .6 : 1), air: false, dip: 0, sunk: false, q: null });
   u.m.body.rotation.y = 0; u.m.body.rotation.x = 0; u.m.root.visible = u.m.shadow.visible = true; if (u.m.shade) shadeReset(u);
 }
 // --- Helm's Deep's second level: on the Deeping Wall in the rain, the Uruk-hai massed below. A berserker runs in with a torch: the wall goes up, Gandalf comes
@@ -12916,7 +12943,7 @@ function ukUpdate(u, dt) {
   }
   const m = u.m, K = UK_KINDS[u.kind]; u.t += dt; u.cd -= dt; u.flash -= dt;
   const ds = P.s - u.s, dx = P.x - u.x, d = Math.hypot(ds, dx) || .01, toP = Math.atan2(dx, ds), live = state === 'play', facing = (ds * Math.cos(u.h) + dx * Math.sin(u.h)) / d > .3, dy = Math.abs(P.y - u.y);
-  let walk = 0, onGround = true, armX = -.4;
+  let walk = 0, onGround = true, armX = -.4; const ownKO = !!(m.skin && m.skin.obj && m.skin.acts.blow);   // (a model with its own knockdown moves isn't tipped over by hand)
   switch (u.state) {
     case 'spawn': {   // leaping in (or up a ladder and over the parapet)
       if (u.t < 0) return; m.root.visible = m.shadow.visible = true;
@@ -12989,21 +13016,21 @@ function ukUpdate(u, dt) {
       if (u.t > (u.state === 'recoil' ? .7 : .35)) { u.state = u.dizzy > 0 ? 'dizzy' : 'stalk'; u.t = 0; u.cd = Math.min(u.cd, .6); } break;
     }
     case 'launch': {   // knocked flying
-      u.vy -= 24 * dt; u.y += u.vy * dt; ukMove(u, u.vs * dt, u.vx * dt); onGround = false; m.body.rotation.x = -clamp(u.t * 4, 0, 1.4);
+      u.vy -= 24 * dt; u.y += u.vy * dt; ukMove(u, u.vs * dt, u.vx * dt); onGround = false; if (!ownKO) m.body.rotation.x = -clamp(u.t * 4, 0, 1.4);
       const g = khLand(u.s, u.x, u.y); if (u.y <= g && u.vy < 0) { u.y = g; dustAt(u.s, u.x, u.y, 6); if (u.kind === 'b') { khBoom(u); return; } u.state = u.dead ? 'die' : 'down'; u.t = 0; } break;
     }
-    case 'down': m.body.rotation.x = -1.4; if (u.t > .9) { u.state = 'getup'; u.t = 0; } break;
-    case 'getup': m.body.rotation.x = -1.4 * (1 - u.t / .4); if (u.t > .4) { m.body.rotation.x = 0; u.state = u.dizzy > 0 ? 'dizzy' : 'stalk'; u.t = 0; } break;
+    case 'down': if (!ownKO) m.body.rotation.x = -1.4; if (u.t > (ownKO ? .55 : .9)) { u.state = 'getup'; u.t = 0; } break;
+    case 'getup': if (!ownKO) m.body.rotation.x = -1.4 * (1 - u.t / .4); if (u.t > (ownKO ? .3 : .4)) { m.body.rotation.x = 0; u.state = u.dizzy > 0 ? 'dizzy' : 'stalk'; u.t = 0; } break;
     case 'dizzy': if (u.t > u.dizzy) { u.dizzy = 0; u.state = 'stalk'; u.t = 0; } break;
     case 'die': {   // gone in a breath of black smoke, leaving orbs and apples behind
-      m.body.rotation.x = -1.4; m.body.position.y = -u.t * .6;
+      if (!ownKO) m.body.rotation.x = -1.4; m.body.position.y = -u.t * (ownKO ? .35 : .6);
       if (!u.dropped) { u.dropped = true; const p = tw(u.s, u.x, u.y + 1); for (let k = 0; k < 3; k++) collectApple(p, k * .08); if (Math.random() < .6) khOrb(u, 'hp'); if (Math.random() < .6) khOrb(u, 'mp'); }
       if (Math.random() < .5) puff(tw(u.s + rand(-.5, .5), u.x + rand(-.5, .5), u.y + rand(0, .8)), 1, .8, CSM);
       if (u.t > .9) khRemove(u); return;
     }
   }
   if (onGround) { const g = khLand(u.s, u.x, u.y); u.y += clamp(g - u.y, -20 * dt, 12 * dt); }
-  if (u.state !== 'launch' && u.state !== 'down' && u.state !== 'getup' && u.state !== 'die') m.body.rotation.x = 0;
+  if (ownKO || (u.state !== 'launch' && u.state !== 'down' && u.state !== 'getup' && u.state !== 'die')) m.body.rotation.x = 0;
   // shoulder to shoulder, not inside each other (or Gandalf); and out of the Balrog's way
   for (const o of URUKS) if (o !== u && ukLive(o) && o.state !== 'spawn') { const es = u.s - o.s, ex = u.x - o.x, e = Math.hypot(es, ex); if (e > 0 && e < u.r + o.r + .2) ukMove(u, es / e * (o.boss ? .2 : .04), ex / e * (o.boss ? .2 : .04)); }
   if (d < u.r + .5 && u.state !== 'spawn') ukMove(u, -ds / d * .05, -dx / d * .05);
@@ -13017,7 +13044,7 @@ function ukUpdate(u, dt) {
   m.mats.forEach(o => o.material.emissive && o.material.emissive.setHex(u.flash > 0 ? 0x8a8a8a : u.kind === 'b' && u.state === 'atk' ? 0x3a1004 : 0x050506));
   if (u.q) { if (u.state !== 'wind' && u.state !== 'atk') u.q = null; else if (u.q.length && m.skin && T >= m.skin.holdT) foeAnimNext(u); }   // (a move's own animations, one after another)
   const busy = u.state === 'wind' || u.state === 'atk';
-  skinPlay(m, u.state === 'die' ? 'die' : u.state === 'launch' || u.state === 'down' || u.state === 'flinch' || u.state === 'recoil' || u.state === 'dizzy' ? 'hit' : busy && u.atk === 'mv' ? (walk > .5 ? 'walk' : 'idle') : busy && u.atk !== 'rush' ? 'attack' : u.state === 'spawn' ? 'jump' : walk > .5 ? 'walk' : 'idle');
+  skinPlay(m, u.state === 'die' ? 'die' : u.state === 'launch' ? 'blow' : u.state === 'down' ? 'land' : u.state === 'flinch' || u.state === 'recoil' || u.state === 'dizzy' ? 'hit' : busy && u.atk === 'mv' ? (walk > .5 ? 'walk' : 'idle') : busy && u.atk !== 'rush' ? 'attack' : u.state === 'spawn' ? 'jump' : walk > .5 ? 'walk' : 'idle');
 }
 // green HP orbs and blue MP orbs: they pop out, and fly to Gandalf when he's near
 function khOrb(u, kind) { const sp = glowSprite(kind === 'hp' ? 0x6aff6a : 0x6ab8ff, .7, .95); scene.add(sp); ORBS.push({ s: u.s + rand(-.5, .5), x: u.x + rand(-.5, .5), y: u.y + 1, vy: rand(4, 6), vs: rand(-2, 2), vx: rand(-2, 2), kind, sp, t: 0 }); }
