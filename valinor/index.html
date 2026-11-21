@@ -2644,7 +2644,7 @@ const OV_FOES = {
   'The Forgotten God': { file: 'forgotten_god', sc: .35, base: 'g', hp: 650, r: 4, speed: .8, dmg: 22, armor: true, boss: true, want: 7, rv: 2, anims: OV_A('Idle2', 'Idle2', 'Rock_Hit', 'Forgotten_Dead'), mv: [FM('swipe', 0, 9, .7, 'Strike_Left5|Strike_Right', { reach: 9, arc: -.4, hits: [.4] }), FM('slam', 0, 12, .9, 'Shockwave_start+Shockwave_end', { wave: true, rad: 13 }), FM('rain', 6, 24, .7, 'Forgotten_Dead_Flame', { n: 7, el: 'fire' })] },
 };
 for (const n in OV_FOES) { const f = OV_FOES[n]; f.slot = 'ov_' + f.file + (f.sc ? '_' + f.sc : ''); }
-const CUP_FOES = { ...KH2_FOES, ...OV_FOES };
+const CUP_FOES = { ...KH2_FOES, ...OV_FOES }, FOE_GROW = 1.1;   // (every Colosseum foe a tenth bigger than its game made it)
 for (const n in KH2_FOES) { const f = KH2_FOES[n]; f.hp = Math.round(f.hp * (f.boss ? 1.6 : 2.3)); f.dmg = Math.round(f.dmg * 1.4); f.rv = Math.min(f.rv ?? 3, f.lite ? 3 : 2); f.agg = true; }   // (KH II's foes: tougher, harder-hitting, quicker to strike back)
 for (const n in CUP_FOES) { const f = CUP_FOES[n]; f.n = f.n || 1; if (f.boss || f.r >= 1.2) f.heavy = true; if (f.boss) f.armor = true; }
 // --- the Colosseum's two rolls: a round for each kind of foe, in the order above; choose where to start (see openSeeds)
@@ -3020,9 +3020,21 @@ function clearLevel() {
   for (const b of balrogs) { if (b.atk) endAttack(b); hideBalrog(b); } balrogs = [];
   resetShelob(); lavaY = -99;
 }
+// every level's scenery is built at the start, each level in its own place in the one world. What's drawn in great batches (crowds, armies, grass,
+// rubble) can't be left out by the camera on its own, so it's drawn wherever you are: each level shows only what's its own (the rest is put on
+// another layer, which the camera and the shadows don't see)
+const AWAY = new THREE.Group();   // (other levels' scenery, taken out of the world while you're elsewhere: the renderer doesn't go through it at all)
+function sceneryFor(cx, cz) {
+  const c = new V3();
+  for (const o of [...scene.children, ...AWAY.children]) {
+    if (!o.userData.home) { if (!o.userData.stat && !(o.isInstancedMesh && o.count)) continue; if (o.isInstancedMesh && o.count) { o.getMatrixAt(0, _m4); c.setFromMatrixPosition(_m4); } else { const b = new THREE.Box3().setFromObject(o); if (b.isEmpty()) { o.userData.stat = false; continue; } b.getCenter(c); } o.userData.home = [c.x, c.z]; }
+    const near = Math.hypot(o.userData.home[0] - cx, o.userData.home[1] - cz) < 4000;
+    if (near && o.parent !== scene) scene.add(o); else if (!near && o.parent !== AWAY) AWAY.add(o);
+  }
+}
 function loadLevel(li) {
   clearLevel();
-  LI = li; LV = LEVELS[li]; setFrame(LV);
+  LI = li; LV = LEVELS[li]; setFrame(LV); sceneryFor(CX, CZ);
   START_S = LV.roam ? LV.start[0] : LV.loop ? 0 : 1.2; END_S = LV.loop || LV.roam ? 1e9 : CIRC - 16;
   ORC_PAL = THEMES[LV.theme || 'mt'].orc; applyEnv(THEMES[LV.theme || 'mt'].env);
   buildRing(LV, false);
@@ -3120,10 +3132,11 @@ addEventListener('pointermove', e => { if (state === 'map' && (e.buttons & 1) &&
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; touchReset(); if (state === 'play' && !location.search.includes('sim=')) pause(true); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play' && !location.search.includes('sim=')) pause(true); });
 // F8: a frame-rate meter in the corner (frames a second, and the slowest frame of the last second), to find which levels are slow
-const FPSM = { on: false, n: 0, t: 0, worst: 0, el: null };
+const FPSM = { on: false, n: 0, t: 0, worst: 0, el: null }, FPSLOG = new URLSearchParams(location.search).get('fpslog');   // (?fpslog=1: the meter in the window's title, for testing)
 function fpsTick(dt) {
-  if (!FPSM.on) return; FPSM.n++; FPSM.t += dt; FPSM.worst = Math.max(FPSM.worst, dt);
-  if (FPSM.t >= 1) { FPSM.el.textContent = ` FPS · slowest frame  ms ·  draws · k triangles`; FPSM.n = FPSM.t = FPSM.worst = 0; }
+  if (!FPSM.on && !FPSLOG) return; if (!FPSM.el) { FPSM.el = document.createElement('div'); FPSM.el.style.display = 'none'; document.body.appendChild(FPSM.el); } FPSM.n++; FPSM.t += dt; FPSM.worst = Math.max(FPSM.worst, dt);
+  if (FPSM.gpu === undefined) { try { const gl = renderer.getContext(), x = gl.getExtension('WEBGL_debug_renderer_info'); FPSM.gpu = x ? gl.getParameter(x.UNMASKED_RENDERER_WEBGL).replace(/^ANGLE \(|\)$/g, '').replace(/Direct3D.*$/, '').slice(0, 60) : ''; } catch (e) { FPSM.gpu = ''; } }
+  if (FPSM.t >= 1) { FPSM.el.textContent = `${Math.round(FPSM.n / FPSM.t)} FPS · slowest frame ${Math.round(FPSM.worst * 1000)} ms · game ${(FPSM.logic / FPSM.n).toFixed(1)} ms, drawing ${(FPSM.rend / FPSM.n).toFixed(1)} ms a frame · ${FPSM.calls} draws · ${Math.round(FPSM.tris / 1000)}k triangles · ${URUKS.length} foes · ${(() => { let n = 0; scene.traverse(() => n++); return n; })()} objects in the world · ${FPSM.gpu}`; if (FPSLOG) document.title = 'FPS ' + FPSM.el.textContent; FPSM.n = FPSM.t = FPSM.worst = FPSM.logic = FPSM.rend = 0; }
 }
 addEventListener('keydown', e => { if (e.key !== 'F8') return; e.preventDefault(); FPSM.on = !FPSM.on;
   if (!FPSM.el) { FPSM.el = document.createElement('div'); FPSM.el.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:999;font:bold 13px monospace;color:#fff;background:rgba(0,0,0,.6);padding:4px 8px;border-radius:4px;pointer-events:none'; document.body.appendChild(FPSM.el); }
@@ -5532,6 +5545,7 @@ function updateCamera(dt) {
     }
     // open country: a chase camera behind Gandalf that slowly swings round to follow where he's heading
     // (in a Kingdom Hearts boss fight it pulls back and turns to keep the boss in view beyond Gandalf)
+    if (DBGF && !cam.said2 && URUKS[0] && URUKS[0].state !== 'spawn' && URUKS[0].m.skin && URUKS[0].m.skin.obj) { cam.said2 = 1; const u = URUKS[0]; { scene.updateMatrixWorld(true); const b = new THREE.Box3(); u.m.root.traverse(o => { if (o.isMesh && o.visible) b.union(new THREE.Box3().setFromObject(o)); }); console.log('CBOX ' + b.min.toArray().map(v => v.toFixed(1)) + '..' + b.max.toArray().map(v => v.toFixed(1)) + ' cam ' + camera.position.toArray().map(v => v.toFixed(1)) + ' near ' + camera.near + ' root ' + u.m.root.position.toArray().map(v => v.toFixed(1))); } }
     const bo = LV.kh && !LV.bowU && KH.boss && KH.boss.m.root.visible && KH.boss.state !== 'fall' && KH.boss.plaza.near !== false ? KH.boss : LV.cup !== undefined ? URUKS.find(u => ukLive(u) && u.state !== 'spawn' && UK_KINDS[u.kind] && UK_KINDS[u.kind].heavy) || null : null; cam.bk = damp(cam.bk || 0, bo ? 1 : 0, 2, dt);   // (in the Colosseum, its champions and giants are kept in view too)
     // (Left Shift and / turn it by hand in the Kingdom Hearts levels; it leaves you be for a moment after)
     if (state === 'play' && inp.camT) { cam.yaw += inp.camT * 2.4 * dt; cam.man = 1.4; } cam.man = (cam.man || 0) - dt;
@@ -5726,7 +5740,7 @@ const BEL = {
     [48, 326], [52, 306], [66, 294], [112, 278], [80, 270], [72, 258], [62, 245], [45, 222], [28, 205]],
   isles: [[[160, 585], [170, 568], [195, 557], [212, 553], [205, 565], [185, 577]], [[236, 540], [244, 538], [247, 546], [240, 550]]],   // (Balar, and its little sister)
   ranges: [
-    { p: [[40, 150], [150, 160], [240, 150], [330, 125], [420, 140], [500, 150], [600, 135], [700, 120], [790, 110], [860, 104]], h: 3.6, w: 30 },   // Ered Engrin, the Iron Mountains
+    { p: [[40, 150], [150, 160], [240, 150], [330, 125], [420, 140], [500, 150], [600, 135], [690, 112]], h: 3.6, w: 30 },   // Ered Engrin, the Iron Mountains
     { p: [[50, 170], [68, 230], [80, 268]], h: 2.4, w: 14 },   // Ered Lómin
     { p: [[140, 160], [200, 188], [232, 215]], h: 2.6, w: 12 },   // the Mountains of Mithrim
     { p: [[112, 290], [160, 284], [210, 290], [248, 300]], h: 2.6, w: 10 },   // Ered Wethrin, the Mountains of Shadow
@@ -5793,7 +5807,7 @@ function belH(x, z) {
 }
 const meLand = (x, z) => BOARD ? boardLand(x, z) : coastAt(x, z) > 0;
 // the board's land west of its Ered Luin is what was left of Ossiriand: Beleriand is drawn over it, Ered Luin and all
-function belCovers(x, z) { if (!BELG || !BELG.luin) return false; const [px, py] = belAt(x, z); return (px < BEL.luin + 95 && py < 645) || (py < 236 && px < 920); }   // (and the whole far north, so the Iron Mountains run on unbroken over the board's northern coast)   // (all of it, and the whole of Ered Luin: one unbroken range)
+function belCovers(x, z) { if (!BELG || !BELG.luin) return false; const [px, py] = belAt(x, z); return px < BEL.luin + 95 && py < 645; }   // (all of it, and the whole of Ered Luin: one unbroken range)
 const belLand = (x, z) => { if (!BELG || (meLand(x, z) && !belCovers(x, z))) return false; const [px, py] = belAt(x, z); return belIn(px, py) && !BEL.lakes.some(([lx, ly, r]) => Math.hypot(px - lx, py - ly) < r); };
 // where Beleriand goes. On your War of the Ring board, its own westernmost range is Ered Luin: the reference map's Ered Luin (BEL.luin across, 100 to 470 down)
 // is laid along it, which sets Beleriand's size too. On the little diorama: by the Shire and Rivendell, Ered Luin along its west coast
@@ -5886,7 +5900,7 @@ function belRiver(g, R) {
 function belJag(P, top = -1e9) {
   const out = []; let cum = 0;
   for (let i = 0; i < P.length; i++) {
-    const [ax, ay] = P[i], [bx, by] = P[(i + 1) % P.length], L = Math.hypot(bx - ax, by - ay) || 1, nx = -(by - ay) / L, ny = (bx - ax) / L, n = Math.max(1, Math.round(L / 2.5)), keep = (ay <= top + 4 && by <= top + 4) || ax >= 690 || bx >= 690;
+    const [ax, ay] = P[i], [bx, by] = P[(i + 1) % P.length], L = Math.hypot(bx - ax, by - ay) || 1, nx = -(by - ay) / L, ny = (bx - ax) / L, n = Math.max(1, Math.round(L / 2.5)), keep = (ay <= top + 4 && by <= top + 4) || (ax >= 690 && bx >= 690 && ay > 240 && by > 240);   // (the north-east side, down into the board's northern bay, is a coast too)
     for (let q = 0; q < n; q++) { const t = q / n, c = cum + L * t, o = keep ? 0 : (belVN(c * .06, 3.3) - .5) * 10 + (belVN(c * .2, 7.1) - .5) * 4 + (belVN(c * .6, 1.7) - .5) * 1.6; out.push([ax + (bx - ax) * t + nx * o, ay + (by - ay) * t + ny * o]); }
     cum += L;
   }
@@ -5925,7 +5939,7 @@ function buildBeleriand(guide) {
   BELG = { ...belFit(), sea: BOARD ? BOARD.sea : 0, g: new THREE.Group() }; const s = BELG.s, ranges = BEL.ranges;
   // the far north: on the board, the land goes on up to the board's own top edge and east over the northern sea to its Forochel, all one land (Dor Daidelos)
   const top = BELG.top = BOARD ? Math.min(30, Math.round((BOARD.ez0 + 6 - BELG.z0) / s + 370)) : 30;
-  BELG.coast = BOARD ? [[20, 175], [8, 150], [22, 125], [6, 96], [20, 70], [4, 40], [16, top + 62], [2, top + 26], [34, top], [920, top], [920, 236], [700, 236]].concat(BEL.coast.slice(14)) : BEL.coast;
+  BELG.coast = BOARD ? [[20, 175], [8, 150], [22, 125], [6, 96], [20, 70], [4, 40], [16, top + 62], [2, top + 26], [34, top], [BEL.luin + 95, top]].concat(BEL.coast.slice(14)) : BEL.coast;
   BELG.coast = belJag(BELG.coast, top); BELG.isles = BEL.isles.map(P => belJag(P));   // (a broken northern coast, then the board's top edge)
   const pools = !guide && BOARD && !BEL_IMG && belPools(), boardLook = !!pools;
   // the map itself, painted at two canvas pixels to the reference's one, over 0,40 to 840,700
@@ -5984,14 +5998,14 @@ function buildBeleriand(guide) {
     c.style.cssText = 'position:fixed;left:0;top:0;z-index:99;width:' + c.width + 'px;height:' + c.height + 'px'; document.body.appendChild(c); return; }
   // only where Middle-earth has sea: where its own land is, it shows through
   { const id = g.getImageData(0, 0, c.width, c.height), D = id.data;
-    for (let j = 0; j < c.height; j += 2) for (let i = 0; i < c.width; i += 2) { const px = PX0 + i / K, py = PY0 + j / K, x = BELG.x0 + (px - BEL.luin) * s, z = BELG.z0 + (py - 370) * s; if (meLand(x, z) && !belCovers(x, z)) for (const [a, b] of [[0, 0], [1, 0], [0, 1], [1, 1]]) D[((j + b) * c.width + i + a) * 4 + 3] = 0; }
+    for (let j = 0; j < c.height; j += 2) for (let i = 0; i < c.width; i += 2) { const px = PX0 + i / K, py = PY0 + j / K, x = BELG.x0 + (px - BEL.luin) * s, z = BELG.z0 + (py - 370) * s; const ml = meLand(x, z), cov = ml && belCovers(x, z), al = !ml ? 1 : !cov ? 0 : clamp((BEL.luin + 95 - px) / 28, 0, 1); if (al < 1) for (const [a, b] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { const o = ((j + b) * c.width + i + a) * 4 + 3; D[o] = D[o] * al; } }   // (over the board's own land it fades out towards its east edge: no seam)
     g.putImageData(id, 0, 0); }
   const tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = Math.min(8, MAX_ANI);
   // the ground, raised into its mountains
   BELG.ranges = ranges;
   const wx0 = BELG.x0 + (PX0 - BEL.luin) * s, wz0 = BELG.z0 + (PY0 - 370) * s, W = PW * s, H = PH * s, geo = new THREE.PlaneGeometry(W, H, 210, 165); geo.rotateX(-Math.PI / 2); geo.translate(wx0 + W / 2, 0, wz0 + H / 2);
   const P_ = geo.attributes.position; for (let i = 0; i < P_.count; i++) P_.setY(i, belH(P_.getX(i), P_.getZ(i))); geo.computeVertexNormals();
-  const land = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex, alphaTest: .5, side: THREE.DoubleSide, color: boardLook || BEL_IMG ? 0xffffff : 0xd4ccb4 })); BELG.g.add(land);
+  const land = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex, alphaTest: .02, transparent: true, side: THREE.DoubleSide, color: boardLook || BEL_IMG ? 0xffffff : 0xd4ccb4 })); BELG.g.add(land);
   // (on the parchment, the woods' trees)
   const trees = [], m4 = new THREE.Matrix4();
   if (!boardLook && !BEL_IMG) for (const P of BEL.woods) { const xs = P.map(p => p[0]), ys = P.map(p => p[1]); for (let i = 0; i < 70; i++) { const px = lerp(Math.min(...xs), Math.max(...xs), rnd()), py = lerp(Math.min(...ys), Math.max(...ys), rnd()); if (!polyIn(px, py, P)) continue; const x = BELG.x0 + (px - BEL.luin) * s, z = BELG.z0 + (py - 370) * s; if (!belLand(x, z)) continue; const k = (.5 + rnd() * .5) * s / .09; trees.push(m4.clone().makeScale(k, k, k).setPosition(x, belH(x, z) + .55 * k, z)); } }
@@ -6534,7 +6548,7 @@ function useWorldPic(img, info) {
 //  MAIN LOOP
 // =====================================================================
 function step(dt, noRender) {
-  pollPad(); readInput();
+  const tq0 = performance.now(); pollPad(); readInput();
   if (LV && LV.boss && (boss.state === 'intro' || boss.state === 'transform')) { inp.x = inp.z = 0; inp.jump = inp.jumpP = inp.spinP = inp.fireP = false; }   // hands off during cutscenes
   T += dt;
   const gdt = khOn() && KH.hitstop > 0 ? dt * .08 : dt; KH.hitstop -= dt;   // (a hit in Edoras freezes the moment for a blink)
@@ -6554,12 +6568,13 @@ function step(dt, noRender) {
   updateSabers(state === 'paused' ? 0 : dt);
   updateLights(); updateHUD(dt); updateTouchUI();
   const onMap = state === 'map' || state === 'title'; if (onMap) updateMap(dt); else if (mapUIOn) { mapUIOn = false; mapUI.classList.remove('on'); } updateIris(dt); musicTick();
-  for (const k in hit) hit[k] = false;
+  for (const k in hit) hit[k] = false; const tq1 = performance.now(); FPSM.logic = (FPSM.logic || 0) + tq1 - tq0;
   if (!noRender) {
     skyMesh.position.copy(camera.position); clouds.position.copy(camera.position); starPts.position.copy(camera.position);
     if (!RETRO && !onMap) updateSun(LV && LV.arena ? _sunP.set(CX, Y0, CZ).lerp(tw(P.s, P.x, P.y), .5) : tw(P.s, P.x, P.y, _sunP));
+    if (AOFF.includes('sh')) renderer.shadowMap.enabled = false;
     renderer.setRenderTarget(rt); renderer.render(onMap ? mapScene : scene, onMap ? mapCam : camera);
-    if (!RETRO) {
+    if (!RETRO && !AOFF.includes('bloom')) {
       post.uniforms.uBloomK.value = onMap ? .3 : ENV_BLOOM;
       brightMat.uniforms.tDiffuse.value = rt.texture; quadPass(brightMat, bloomA);
       const d = blurMat.uniforms.uDir.value, bw = bloomA.width, bh = bloomA.height;
@@ -6568,13 +6583,13 @@ function step(dt, noRender) {
         blurMat.uniforms.tDiffuse.value = bloomB.texture; d.set(0, k / bh); quadPass(blurMat, bloomA);
       }
     }
-    renderer.setRenderTarget(null); renderer.render(postScene, postCam);
+    renderer.setRenderTarget(null); renderer.render(postScene, postCam); FPSM.rend = (FPSM.rend || 0) + performance.now() - tq1;
   }
 }
 let last = performance.now(), DEBUG_CAM = null;   // DEBUG_CAM { p, l }: a fixed camera, for testing
-function frame(now) {
+let OBJN = 0; function frame(now) {
   requestAnimationFrame(frame);
-  fpsTick((now - last) / 1000); const dt = clamp((now - last) / 1000, 0, .05); last = now;
+  fpsTick((now - last) / 1000); renderer.info.autoReset = false; FPSM.calls = renderer.info.render.calls; FPSM.tris = renderer.info.render.triangles; renderer.info.reset(); const dt = clamp((now - last) / 1000, 0, .05); last = now;
   step(dt);
 }
 
@@ -6633,9 +6648,10 @@ const MODEL_SLOTS = {
     ['khlance', 'M_EX760', 2.4, 'LANCE SOLDIER'], ['khvendor', 'M_EX590', 1.8, 'BULKY VENDOR'], ['khdusk', 'M_EX880', 1.9, 'DUSK'], ['khsamurai', 'M_EX890', 2.2, 'SAMURAI'], ['khsniper', 'M_EX920', 2.2, 'SNIPER'],
     ['khdancer', 'M_EX930', 2, 'DANCER'], ['khberserker', 'M_EX940', 2.7, 'BERSERKER'], ['khgambler', 'M_EX950', 2, 'GAMBLER'], ['khsorcerer', 'M_EX960', 2.6, 'SORCERER']].map(([s, fbx, height, kh]) => [s, { fbx, height, turn: 0, cut: true, kh, anims: KH_ANIMS }])),
   // (and the Overlord cup's foes: Overlord's own models and moves, brightened like its scenery)
-  ...Object.fromEntries(Object.entries(OV_FOES).map(([n, f]) => [f.slot, { ov: f.file, scale: 1.05 * (f.sc || 1), turn: 0, cut: true, tone: true, kh: n.toUpperCase(), anims: f.anims }])),
+  ...Object.fromEntries(Object.entries(OV_FOES).map(([n, f]) => [f.slot, { ov: f.file, scale: 1.05 * FOE_GROW * (f.sc || 1), turn: 0, cut: true, tone: true, kh: n.toUpperCase(), anims: f.anims }])),
   blackrider: { height: 3.1, turn: -Math.PI / 2, hide: /CINEMA|_NEW/i, anims: { walk: /^run_a/i } },   // (its cinematic duplicates hidden: it has one horse and one rider)   // (the race to the Ford: Rise of the Witch-king's Black Rider, on his horse)   // Mirkwood's spiders: Shelob again (src: whose model it is), smaller
 };
+for (const f of Object.values(KH2_FOES)) { const c = MODEL_SLOTS[f.slot]; if (c && c.fbx) c.height *= FOE_GROW; }   // (KH II's foes a tenth bigger too)
 // which animation plays for each action: the first clip whose name matches (case doesn't matter)
 const ANIM_NAMES = { idle: /idle|stand|breath|ready/i, fly: /fly|glid|hover/i, walk: /walk|wala|run|move|gallop/i, attack: /attack|atk|smash|swing|slash|strike|hit_?a/i, hit: /hurt|damage|stun|flinch|react/i, die: /die|death|dead|dtha/i, jump: /jump|fall|air/i };
 const TEXTURE_SLOTS = ['meadow', 'grass', 'rock', 'path', 'turf', 'moss', 'marble', 'floor', 'dark', 'lavaRock', 'wood', 'roof', 'plains', 'metal', 'mosaic', 'rrRock', 'rrWood', 'rrFern', 'rrGrass', 'rrWeb', 'rrBarrel', 'rrCrate', 'rrPlate', 'arMoss', 'arRoots', 'arTwig', 'arGrass', 'arBark', 'arLeaves', 'arBranch', 'arVines', 'arFern', 'arRope', 'lush', 'cobble'];
@@ -6731,7 +6747,7 @@ function skinPin(K) {
   const P_ = K.obj; if (!K.hips) { let best = null, bn = -1; K.obj.traverse(o => { if (!o.isBone) return; let n = 0; o.traverse(c => { if (c.isBone) n++; }); if (n > bn || (n === bn && o.parent && o.parent.isBone)) { bn = n; best = o; } }); K.hips = best; if (!best) { K.pin = false; return; } P_.updateMatrixWorld(true); K.hipY = K.attachTo.worldToLocal(new V3().setFromMatrixPosition(best.matrixWorld)).y - P_.position.y; K.hipP = new V3(); }
   P_.updateMatrixWorld(true); const v = K.attachTo.worldToLocal(K.hipP.setFromMatrixPosition(K.hips.matrixWorld)), H = (MODEL_SLOTS[K.slot].height || 2);
   P_.position.x -= v.x; P_.position.z -= v.z;
-  const dy = v.y - P_.position.y - K.hipY, up = Math.max(0, dy - H * .45), down = Math.min(0, dy + K.hipY * .8); P_.position.y = -(up + down);
+  const dy = v.y - P_.position.y - K.hipY, down = Math.min(0, dy + K.hipY * .8); P_.position.y = -down;   // (only kept from sinking: a beast rearing up must rise, not be pushed down through the floor)
 }
 function updateSkins(dt) {
   for (let i = SKINS.length - 1; i >= 0; i--) { const K = SKINS[i]; if (!K.top.parent) { if (K.slot === 'orc' || K.temp) SKINS.splice(i, 1); continue; } if (K.mixer) { K.mixer.update(dt); if (K.pin) skinPin(K); } }
@@ -6805,7 +6821,7 @@ async function loadLocalAssets() {
   for (const s in MODEL_SLOTS) if (MODEL_SLOTS[s].src && LOADED[MODEL_SLOTS[s].src]) LOADED[s] = LOADED[MODEL_SLOTS[s].src];   // the same model in another part
   for (const s in MODEL_SLOTS) if (!LOADED[s] && MODEL_SLOTS[s].fb && LOADED[MODEL_SLOTS[s].fb]) LOADED[s] = LOADED[MODEL_SLOTS[s].fb];   // (not converted yet: the nearest one you have)
   for (const K of SKINS) attachSkin(K);
-  MODELS_DONE = true; for (const fn of MODEL_WAIT.splice(0)) fn();   // (crowds built before the models were in)
+  MODELS_DONE = true; for (const fn of MODEL_WAIT.splice(0)) fn(); if (LV) sceneryFor(CX, CZ);   // (the crowds made from the models just now: theirs only, too)   // (crowds built before the models were in)
   if (LOADED.gandalf) mapGandalf();   // your own Gandalf walks the map too
   await boardP;
   if (got.length) console.log('Valinor is using your own files:\n  ' + got.join('\n  '));
@@ -9152,7 +9168,7 @@ function buildArena(L, TH) {
   // the wall round the floor, and the tiers of seats rising behind it, crowded
   { const w = new THREE.Mesh(new THREE.CylinderGeometry(22.4, 22.4, 3, 48, 1, true), stoneD); w.position.copy(tw(0, 0, 1.5)); w.material.side = THREE.DoubleSide; scene.add(w); part(new THREE.TorusGeometry(22.5, .3, 6, 48), gold, scene, ...tw(0, 0, 3).toArray()).rotation.x = Math.PI / 2; }
   const crowd = [], cols = [0x7a2a1a, 0x2a4a7a, 0x3a6a2a, 0xc8a050, 0x6a3a6a, 0x8a8a8a]; for (let t = 0; t < 7; t++) { const r = 23.6 + t * 1.6, y = 3.4 + t * 1.1; const step = new THREE.Mesh(new THREE.CylinderGeometry(r + .8, r + .8, 1.1, 56, 1, true), stone); step.material.side = THREE.DoubleSide; step.position.copy(tw(0, 0, y - .55)); scene.add(step); const top = new THREE.Mesh(new THREE.RingGeometry(r - .8, r + .8, 56), stone); top.rotation.x = -Math.PI / 2; top.position.copy(tw(0, 0, y)); scene.add(top); for (let k = 0; k < r * 3.3; k++) { const a = k / (r * 3.3) * TAU + t; if (Math.abs(Math.sin(a)) < .08 && Math.cos(a) < 0) continue; const q = tw(Math.cos(a) * r, Math.sin(a) * r, y); crowd.push([q.x, q.y + .55, q.z, .26, rand(.85, 1.05), .26, cols[(k * 7 + t * 3) % 6]]); } }
-  for (const c of cols) instanced(new THREE.CylinderGeometry(1, 1.3, 1, 5), lam(c), crowd.filter(q => q[6] === c).map(q => q.slice(0, 6)));
+  if (!AOFF.includes('crowd')) for (const c of cols) instanced(new THREE.CylinderGeometry(1, 1.3, 1, 5), lam(c), crowd.filter(q => q[6] === c).map(q => q.slice(0, 6)));
   TH.crowdHeads = crowd.length;
   // the great arches round the top, banners of the horse between them, braziers
   const banT = mkTex(64, 128, g => { g.fillStyle = '#2a6a2a'; g.fillRect(0, 0, 64, 128); g.fillStyle = '#e8c860'; g.fillRect(0, 0, 64, 8); g.beginPath(); g.moveTo(14, 90); g.lineTo(22, 60); g.lineTo(18, 44); g.lineTo(34, 34); g.lineTo(46, 40); g.lineTo(40, 52); g.lineTo(50, 62); g.lineTo(42, 92); g.lineTo(36, 70); g.lineTo(28, 92); g.closePath(); g.fill(); g.beginPath(); g.moveTo(0, 128); g.lineTo(32, 112); g.lineTo(64, 128); g.lineTo(64, 120); g.lineTo(0, 120); g.fill(); }, false); banT.magFilter = THREE.LinearFilter; const banM = ps1(new THREE.MeshLambertMaterial({ map: banT, side: THREE.DoubleSide }));
@@ -9160,10 +9176,12 @@ function buildArena(L, TH) {
   { const g = new THREE.Group(); place(g, -22.6, 0, 0, Math.PI / 2); scene.add(g); for (const sx of [-1, 1]) part(GEO_BOX, stone, g, sx * 3, 3.5, 0, 1.4, 7, 2); part(new THREE.TorusGeometry(3, .6, 8, 18, Math.PI), stone, g, 0, 7, 0); part(GEO_BOX, wood, g, 0, 3, .2, 4.6, 6, .3); part(GEO_BOX, gold, g, 0, 10, 0, 7, .8, 2.2); }   // (the gates you came in by)
   { const q = tw(23, 0, 9); part(GEO_BOX, stoneD, scene, q.x, q.y, q.z, 4, 1.2, 8); part(GEO_BOX, lam(0x7a1a14), scene, q.x, q.y + .7, q.z, 3.8, .3, 7.6); part(new THREE.ConeGeometry(5, 3, 4), gold, scene, q.x, q.y + 4, q.z).rotation.y = Math.PI / 4; }   // (the king's box)
   { const hl = []; for (let k = 0; k < 36; k++) { const a = k / 36 * TAU, r = rand(110, 200), q = tw(Math.cos(a) * r, Math.sin(a) * r, -r * .2); hl.push([q.x, q.y, q.z, rand(40, 80), rand(20, 50), rand(40, 80)]); } instanced(new THREE.SphereGeometry(1, 16, 9), lam(0x6a7a3a), hl); }
+  if (AOFF.includes('scen')) for (const o of scene.children.slice(first)) o.visible = false; if (AOFF.includes('shadow')) renderer.shadowMap.enabled = false;
   bakeScenery(scene.children.slice(first));
 }
+const AOFF = (new URLSearchParams(location.search).get('aoff') || '').split(',');   // (testing: parts of the arena left out, to find what's slow)
 function updateArena(dt) {
-  if (!LV || LV.theme !== 'arena' || state === 'map' || state === 'title') return; const TH = THEMES.arena;
+  if (!LV || LV.theme !== 'arena' || state === 'map' || state === 'title' || AOFF.includes('upd')) return; const TH = THEMES.arena;
   for (const [s, x, y] of TH.braz || []) if (Math.random() < dt * 8) bfire(tw(s, x, y), .8, 1.4);
   const p = LV.layout.plazas[0]; if (p.wave !== TH.lastWave) { if (TH.lastWave !== undefined && p.wave > 0 && S.roar) { S.check && S.check(); } TH.lastWave = p.wave; }
   if (Math.random() < dt * 1.2) for (let k = 0; k < 6; k++) { const a = rand(0, TAU), r = rand(24, 33); fx.spawn(...tw(Math.cos(a) * r, Math.sin(a) * r, 5 + (r - 23.6) * .7).toArray(), rand(-.3, .3), rand(1, 2.5), rand(-.3, .3), .5, .14, .05, [1, .9, .5], [1, .7, .3]); }   // (the crowd throws up its hats)
@@ -10112,14 +10130,37 @@ const FOE_EL = { fire: [[1, .9, .5], [1, .3, .1], 0xff8a30], ice: [[.9, 1, 1], [
 const foeHurt = (u, K, mv, o = {}, k = 1) => khHurt(K.dmg * (mv.dmg || 1) * k, u, o);
 const foeOwn = u => !!(u.m.skin && u.m.skin.obj);   // (wearing its own model: its animations show the move, so the built body isn't spun about)
 const foeAt = (s, x) => { const [S0, S1, X0, X1] = LV.field; return [clamp(s, S0 + 2, S1 - 2), clamp(x, X0 + 2, X1 - 2)]; };
-const FOE_MOVES = {
+// the foes' attacks' effects (see vfx): a glint as one sets itself, a slash's arc, dust and stones thrown up, an element bursting
+const elC = el => (FOE_EL[el] || FOE_EL.fire)[2];
+function vfxCharge(p, col = 0xff4020, sc = 1) { vfx({ tex: 'star', p, life: .4, s0: .2 * sc, s1: 1.6 * sc, c0: 0xffffff, c1: col, rot: rand(0, TAU), spin: 5, ease: 1 }); vfx({ tex: 'flare', p, life: .35, s0: .3 * sc, s1: 1.2 * sc, c0: col, c1: col, a: .8 }); }
+function vfxSlash(u, R, arc, col = 0xfff0e0) {
+  const w = Math.acos(clamp(arc ?? .3, -1, 1)), g = new THREE.Group(), m = new THREE.Mesh(new THREE.RingGeometry(R * .45, R, 28, 1, Math.PI / 2 - w, 2 * w), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+  m.rotation.x = Math.PI / 2; m.rotation.y = rand(-.25, .25); g.add(m); place(g, u.s, u.x, u.y + (u.m.hover || 0) + Math.min(1.8, .6 + u.r * .5), u.h);
+  khFx(g, f => { const k = f.t / .22; m.material.opacity = .85 * (1 - k); g.scale.setScalar(1 + k * .4); if (k >= 1) { m.geometry.dispose(); m.material.dispose(); return false; } return true; });
+}
+function vfxDust(s, x, y, sc = 1) {
+  const p = tw(s, x, y + .15);
+  vfx({ tex: 'ring', p, life: .45, s0: .5, s1: 4 * sc, c0: 0xf0e4c0, c1: 0x806040, a: .7, ease: 1 });
+  for (let i = 0; i < 8; i++) vfx({ tex: 'flare', p: p.clone().add(vRand(.6 * sc)), v: vRand(1.5 * sc, .3), life: rand(.6, 1), s0: .8 * sc, s1: 2.2 * sc, c0: 0xd8c8a0, c1: 0x6a5a40, a: .35 });
+  for (let i = 0; i < 12 * sc; i++) vfx({ tex: 'flare', p, v: vRand(rand(4, 8) * sc, .9), life: rand(.5, .8), s0: .2, s1: .1, c0: 0xc0a880, c1: 0x504030, a: .8, grav: 18 });
+}
+function vfxDark(p, sc = 1) {
+  vfx({ tex: 'flare', p, life: .35, s0: .6 * sc, s1: 3 * sc, c0: 0xd0a0ff, c1: 0x300050, ease: 1 });
+  vfx({ tex: 'ring', p, life: .4, s0: .4, s1: 3 * sc, c0: 0xa060ff, c1: 0x200040, ease: 1 });
+  for (let i = 0; i < 14; i++) vfx({ tex: 'flare', p, v: vRand(rand(2, 5) * sc, 1), life: rand(.4, .8), s0: .4, s1: .1, c0: 0xc080ff, c1: 0x200030, drag: 1.5 });
+}
+function vfxElem(p, el, sc = 1) {
+  if (el === 'fire') return vfxFireBurst(p, .6 * sc); if (el === 'ice') return vfxIceBurst(p); if (el === 'thunder') return vfxThunder(p, .8 * sc); if (el === 'dark') return vfxDark(p, sc);
+  const c = elC(el); vfx({ tex: 'flare', p, life: .25, s0: .6, s1: 3 * sc, c0: 0xffffff, c1: c, ease: 1 }); vfx({ tex: 'ring', p, life: .3, s0: .4, s1: 3 * sc, c0: c, c1: c, ease: 1 });
+  for (let i = 0; i < 14; i++) vfx({ tex: el === 'star' || el === 'light' ? 'star' : 'flare', p, v: vRand(rand(3, 7) * sc, .4), life: rand(.3, .6), s0: .3, s1: .05, c0: 0xffffff, c1: c, rot: rand(0, TAU), grav: el === 'poison' ? -1 : 5, drag: 2 });
+}const FOE_MOVES = {
   swipe: {   // a cut, a bite, a punch, a kick: a step in, and whatever's in front of it is struck (hits: when each blow of a combo lands)
     dur: mv => (mv.hits || [.2]).slice(-1)[0] + .4,
     mark(u, mv) { const w = Math.acos(clamp(mv.arc ?? .3, -1, 1)); return warnMesh(u.s, u.x, .3, mv.reach || u.r + 1.8, u.h - w, u.h + w); },
     run(u, K, mv, c, dt) {
       const R = mv.reach || u.r + 1.8, hs = mv.hits || [.2];
       if (u.t < .25 && c.d > R * .5) ukMove(u, Math.cos(u.h) * (mv.step ?? 3) * dt, Math.sin(u.h) * (mv.step ?? 3) * dt);
-      for (let i = 0; i < hs.length; i++) if (u.t >= hs[i] && u.hits <= i) { u.hits = i + 1; S.saberSwing(); if (c.d < R + .4 && c.dy < 1.8 && (c.ds * Math.cos(u.h) + c.dx * Math.sin(u.h)) / c.d > (mv.arc ?? .3) - .15) foeHurt(u, K, mv, { kb: 7 }); }
+      for (let i = 0; i < hs.length; i++) if (u.t >= hs[i] && u.hits <= i) { u.hits = i + 1; S.saberSwing(); vfxSlash(u, R, mv.arc, mv.el ? elC(mv.el) : 0xfff0e0); if (c.d < R + .4 && c.dy < 1.8 && (c.ds * Math.cos(u.h) + c.dx * Math.sin(u.h)) / c.d > (mv.arc ?? .3) - .15) foeHurt(u, K, mv, { kb: 7 }); }
       return u.t > hs[hs.length - 1] + .4;
     } },
   dash: {   // a charge along the red line (steer: it bends after you as it goes, and a wall it runs into leaves it dazed)
@@ -10131,9 +10172,9 @@ const FOE_MOVES = {
       if (mv.steer) { const a = Math.atan2(u.cv[1], u.cv[0]), na = a + clamp(angDiff(a, c.toP), -mv.steer * dt, mv.steer * dt); u.cv = [Math.cos(na) * sp, Math.sin(na) * sp]; u.h = na; }
       const s0 = u.s, x0 = u.x; ukMove(u, u.cv[0] * dt, u.cv[1] * dt);
       if (mv.spin && !foeOwn(u)) u.m.body.rotation.y += dt * 15;
-      const E = mv.el && FOE_EL[mv.el]; if (E && Math.random() < .7) fx.spawn(...tw(u.s, u.x, u.y + 1).toArray(), rand(-1, 1), rand(1, 2), rand(-1, 1), .4, .6, .1, E[0], E[1]); else if (Math.random() < .25) puff(tw(u.s, u.x, u.y + .1), 1, .5);
+      const E = mv.el && FOE_EL[mv.el]; if (Math.random() < .6) vfx({ tex: 'flare', p: tw(u.s, u.x, u.y + .9), v: vRand(1), life: .3, s0: .9 * Math.max(1, u.r), s1: .2, c0: E ? E[2] : 0xffffff, c1: E ? E[2] : 0x8090a0, a: .5 }); if (E && Math.random() < .7) fx.spawn(...tw(u.s, u.x, u.y + 1).toArray(), rand(-1, 1), rand(1, 2), rand(-1, 1), .4, .6, .1, E[0], E[1]); else if (Math.random() < .25) puff(tw(u.s, u.x, u.y + .1), 1, .5);
       if (!u.hits && c.d < 1.2 + u.r && c.dy < 1.8) { u.hits = 1; foeHurt(u, K, mv, { kb: 10 }); }
-      if (u.t > .12 && Math.hypot(u.s - s0, u.x - x0) < sp * dt * .3) { if (mv.steer) { u.dz = 2; S.smash(); cam.shake = Math.max(cam.shake, .3); dustAt(u.s, u.x, u.y, 10); } return true; }   // (into the wall)
+      if (u.t > .12 && Math.hypot(u.s - s0, u.x - x0) < sp * dt * .3) { if (mv.steer) { u.dz = 2; S.smash(); cam.shake = Math.max(cam.shake, .3); dustAt(u.s, u.x, u.y, 10); vfxDust(u.s, u.x, u.y, 1.2); } return true; }   // (into the wall)
       return u.t > T_;
     } },
   leap: {   // up and down onto the red circle where you stood
@@ -10143,7 +10184,7 @@ const FOE_MOVES = {
     run(u, K, mv, c, dt) {
       const k = Math.min(1, u.t / .7); u.s = lerp(u.from[0], u.to[0], k); u.x = lerp(u.from[1], u.to[1], k); u.y = lerp(u.y0, khLand(u.s, u.x, u.y0 + .5), k) + Math.sin(k * Math.PI) * (mv.h || 5); u.air = k < 1;
       if (!foeOwn(u)) u.m.body.rotation.x = k < 1 ? k * TAU : 0;
-      if (k >= 1 && !u.hits) { u.hits = 1; dustAt(u.s, u.x, u.y, 12); S.stomp(); cam.shake = Math.max(cam.shake, .3); if (Math.hypot(P.s - u.s, P.x - u.x) < (mv.rad || 2.5) && P.y - u.y < 1.4) foeHurt(u, K, mv, { unblock: true, kb: 9 }); if (mv.dizzy) u.dz = mv.dizzy; }
+      if (k >= 1 && !u.hits) { u.hits = 1; dustAt(u.s, u.x, u.y, 12); vfxDust(u.s, u.x, u.y, (mv.rad || 2.5) / 2.5); S.stomp(); cam.shake = Math.max(cam.shake, .3); if (Math.hypot(P.s - u.s, P.x - u.x) < (mv.rad || 2.5) && P.y - u.y < 1.4) foeHurt(u, K, mv, { unblock: true, kb: 9 }); if (mv.dizzy) u.dz = mv.dizzy; }
       return u.t > 1.05;
     } },
   whirl: {   // a spin of blades, claws or fists, edging after you
@@ -10152,7 +10193,7 @@ const FOE_MOVES = {
     run(u, K, mv, c, dt) {
       if (!foeOwn(u)) u.m.body.rotation.y += dt * 17;
       if (c.d > .5) ukMove(u, c.ds / c.d * (mv.sp || 2.6) * dt, c.dx / c.d * (mv.sp || 2.6) * dt);
-      u.tick = (u.tick || 0) - dt; if (u.tick <= 0) { u.tick = .3; S.saberSwing(); sparks(tw(u.s, u.x, u.y + 1.2), 6, 5, [1, .9, .6], [.8, .4, .1]); if (c.d < (mv.rad || 2.6) + .3 && c.dy < 1.8) foeHurt(u, K, mv, { kb: 8 }, .6); }
+      u.tick = (u.tick || 0) - dt; if (u.tick <= 0) { u.tick = .3; S.saberSwing(); vfxSlash(u, mv.rad || 2.6, -.2, mv.el ? elC(mv.el) : 0xfff0e0); if (c.d < (mv.rad || 2.6) + .3 && c.dy < 1.8) foeHurt(u, K, mv, { kb: 8 }, .6); }
       return u.t > (mv.dur || 1.2);
     } },
   sink: {   // down into the ground, across under everything, and up under you
@@ -10166,7 +10207,7 @@ const FOE_MOVES = {
         if (u.t >= 1.05 && !u.warn) { u.warn = true; khFx(warnMesh(u.s, u.x, 0, mv.rad || 1.9), f => { warnPulse(f); return f.t < .45; }); }
         return false;
       }
-      if (!u.up) { u.up = true; u.sunk = false; b.visible = true; b.position.y = 0; S.whoosh(); puff(tw(u.s, u.x, u.y + .2), 6, .8 * Math.max(1, u.r), [.05, .05, .1]); foeAnim(u, mv.clip, .7); if (c.d < (mv.rad || 1.9) && c.dy < 1.8) foeHurt(u, K, mv, { kb: 8, unblock: true }); }
+      if (!u.up) { u.up = true; u.sunk = false; b.visible = true; b.position.y = 0; S.whoosh(); puff(tw(u.s, u.x, u.y + .2), 6, .8 * Math.max(1, u.r), [.05, .05, .1]); vfxDark(tw(u.s, u.x, u.y + .5), Math.max(1, u.r)); foeAnim(u, mv.clip, .7); if (c.d < (mv.rad || 1.9) && c.dy < 1.8) foeHurt(u, K, mv, { kb: 8, unblock: true }); }
       if (pud) pud.material.opacity = Math.max(0, pud.material.opacity - dt * 3);
       return u.t > 1.9;
     } },
@@ -10182,7 +10223,7 @@ const FOE_MOVES = {
     dur: () => .8, track: true,
     mark: (u, mv) => warnMesh(u.s, u.x, 0, mv.wave ? Math.max(2, u.r + 1) : mv.rad || 4),
     run(u, K, mv, c) {
-      if (!u.hits && u.t > .12) { u.hits = 1; S.stomp(); cam.shake = Math.max(cam.shake, .35); dustAt(u.s, u.x, u.y, 16);
+      if (!u.hits && u.t > .12) { u.hits = 1; S.stomp(); cam.shake = Math.max(cam.shake, .35); dustAt(u.s, u.x, u.y, 16); vfxDust(u.s, u.x, u.y, 1.6); if (mv.el) vfxElem(tw(u.s, u.x, u.y + .5), mv.el, 1.2);
         if (mv.wave) bossWave(u, u.s, u.x, mv.rad || 8, 9, K.dmg * (mv.dmg || 1)); else if (c.d < (mv.rad || 4) && P.y - u.y < 1.2) foeHurt(u, K, mv, { unblock: true, kb: 10 }); }
       return u.t > .8;
     } },
@@ -10193,6 +10234,7 @@ const FOE_MOVES = {
       const R = mv.reach || 5, E = FOE_EL[mv.el || 'fire'], y = u.y + (u.m.hover || 0) + Math.min(2, .7 + u.r * .6); u.h += clamp(angDiff(u.h, c.toP), -.5 * dt, .5 * dt);
       const p0 = tw(u.s + Math.cos(u.h) * u.r, u.x + Math.sin(u.h) * u.r, y);
       for (let k = 0; k < 4; k++) { const a = u.h + rand(-.4, .4), q = tw(u.s + Math.cos(a) * R, u.x + Math.sin(a) * R, y - .6).sub(p0).multiplyScalar(1 / .5); fx.spawn(p0.x, p0.y, p0.z, q.x, q.y, q.z, .5, .3, 1.4, E[0], E[1]); }
+      for (let k = 0; k < 2; k++) { const a = u.h + rand(-.35, .35), q = tw(u.s + Math.cos(a) * R, u.x + Math.sin(a) * R, y - .6).sub(p0).multiplyScalar(1 / .45); vfx({ tex: 'flare', p: p0, v: q, life: .45, s0: .5, s1: 1.9, c0: 0xffffff, c1: E[2], a: .7 }); }
       u.tick = (u.tick || 0) - dt;
       if (u.tick <= 0) { u.tick = .25; if (c.d < R + .3 && c.dy < 2 && (c.ds * Math.cos(u.h) + c.dx * Math.sin(u.h)) / c.d > .85) foeHurt(u, K, mv, { kb: 6 }, .5); }
       return u.t > (mv.dur || 1.4);
@@ -10212,11 +10254,11 @@ const FOE_MOVES = {
   blink: {   // gone in a puff, and there again behind you, striking; or (away) off out of reach
     dur: () => .95, noAnim: true,
     run(u, K, mv, c) {
-      if (u.t < .2) { if (!u.gone2) { u.gone2 = true; puff(tw(u.s, u.x, u.y + 1), 8, 1, [.2, .1, .3]); S.whoosh(); u.m.root.visible = u.m.shadow.visible = false; } return false; }
+      if (u.t < .2) { if (!u.gone2) { u.gone2 = true; puff(tw(u.s, u.x, u.y + 1), 8, 1, [.2, .1, .3]); vfxDark(tw(u.s, u.x, u.y + 1), 1); S.whoosh(); u.m.root.visible = u.m.shadow.visible = false; } return false; }
       if (!u.there) {
         u.there = true; const a = mv.away ? Math.atan2(-c.dx, -c.ds) + rand(-.7, .7) : P.heading + Math.PI + rand(-.5, .5), r = mv.away ? rand(8, 11) : 1.4 + u.r;
         [u.s, u.x] = foeAt(P.s + Math.cos(a) * r, P.x + Math.sin(a) * r); u.y = khLand(u.s, u.x, u.y);
-        u.h = Math.atan2(P.x - u.x, P.s - u.s); u.m.root.visible = u.m.shadow.visible = true; puff(tw(u.s, u.x, u.y + 1), 8, 1, [.2, .1, .3]);
+        u.h = Math.atan2(P.x - u.x, P.s - u.s); u.m.root.visible = u.m.shadow.visible = true; puff(tw(u.s, u.x, u.y + 1), 8, 1, [.2, .1, .3]); vfxDark(tw(u.s, u.x, u.y + 1), 1);
         if (mv.away) return true; foeAnim(u, mv.hitClip || mv.clip, .7); khFx(warnMesh(u.s, u.x, .3, mv.reach || u.r + 2, u.h - 1, u.h + 1), f => { warnPulse(f); return f.t < .3; });
       }
       const ds = P.s - u.s, dx = P.x - u.x, d = Math.hypot(ds, dx) || .01;
@@ -10227,7 +10269,7 @@ const FOE_MOVES = {
     dur: () => .1, track: true,
     mark: (u, mv) => warnMesh(u.s, u.x, 0, mv.rad || 3),
     run(u, K, mv) {
-      const p = tw(u.s, u.x, u.y + .8), R = mv.rad || 3; bblast(p, R * 1.5); sparks(p, 40, 12, [1, .95, .6], [1, .4, .1], .3); puff(p, 12, 2); S.smash(); cam.shake = Math.max(cam.shake, .5); flashV = Math.max(flashV, .3);
+      const p = tw(u.s, u.x, u.y + .8), R = mv.rad || 3; bblast(p, R * 1.5); vfxFireBurst(p, R / 2); sparks(p, 40, 12, [1, .95, .6], [1, .4, .1], .3); puff(p, 12, 2); S.smash(); cam.shake = Math.max(cam.shake, .5); flashV = Math.max(flashV, .3);
       if (Math.hypot(P.s - u.s, P.x - u.x) < R && Math.abs(P.y - u.y) < 2.5) foeHurt(u, K, mv, { kb: 12, unblock: true });
       for (const o of URUKS) if (o !== u && ukLive(o) && !o.boss && o.state !== 'spawn' && Math.hypot(o.s - u.s, o.x - u.x) < R) khHit(o, 12, true);
       gs.kills++; Object.assign(u, { hp: 0, dead: true, state: 'die', t: .6 }); u.m.root.visible = false; return false;
@@ -10236,17 +10278,17 @@ const FOE_MOVES = {
 // one shot: fire seeks you out; ice comes three in a fan; bolts, cards, stars and seeds fly straight and fast; a dark orb slow and big; a bomb or rock is thrown
 // onto a red circle where you stood and bursts there. Guarding as a shot (not a bomb) reaches you sends it back at whoever threw it
 function foeShot(u, K, mv, i) {
-  const t = mv.shot || 'fire', E = FOE_EL[mv.el || { ice: 'ice', orb: 'dark', star: 'star', card: 'light', seed: 'poison', bolt: 'light' }[t] || 'fire'];
+  const t = mv.shot || 'fire', EL = mv.el || { ice: 'ice', orb: 'dark', star: 'star', card: 'light', seed: 'poison', bolt: 'light' }[t] || 'fire', E = FOE_EL[mv.el || { ice: 'ice', orb: 'dark', star: 'star', card: 'light', seed: 'poison', bolt: 'light' }[t] || 'fire'];
   const p = tw(u.s + Math.cos(u.h) * u.r * .6, u.x + Math.sin(u.h) * u.r * .6, u.y + (u.m.hover || 0) + Math.min(2.4, .9 + u.r * .7));
   if (t === 'bomb' || t === 'rock') {
     const rock = t === 'rock', R = mv.rad || (rock ? 3 : 2.2), T0 = rock ? 1.1 : .9, ts = P.s, tx = P.x, ty = landAt(ts, tx), end = tw(ts, tx, ty + .3);
     const ball = rock ? new THREE.Mesh(new THREE.IcosahedronGeometry(.9, 0), lam(0x8a8078)) : glowSprite(E[2], 1.1, 1); ball.position.copy(p); S.whoosh();
     khFx(warnMesh(ts, tx, 0, R), f => { warnPulse(f); return f.t < T0; });
     khFx(ball, f => {
-      const k = Math.min(1, f.t / T0); ball.position.lerpVectors(p, end, k); ball.position.y += Math.sin(k * Math.PI) * (rock ? 5 : 3.5); if (rock) ball.rotation.x += .2; else if (Math.random() < .6) fx.spawn(ball.position.x, ball.position.y, ball.position.z, 0, 0, 0, .3, .3, .05, E[0], E[1]);
+      const k = Math.min(1, f.t / T0); ball.position.lerpVectors(p, end, k); ball.position.y += Math.sin(k * Math.PI) * (rock ? 5 : 3.5); if (Math.random() < .5) vfx({ tex: 'flare', p: ball.position, v: vRand(1), life: .35, s0: rock ? .7 : .6, s1: .1, c0: rock ? 0xd0c0a0 : 0xffffff, c1: rock ? 0x605040 : E[2], a: rock ? .5 : .9 }); if (rock) ball.rotation.x += .2; else if (Math.random() < .6) fx.spawn(ball.position.x, ball.position.y, ball.position.z, 0, 0, 0, .3, .3, .05, E[0], E[1]);
       if (k < 1) return true;
       if (mv.el === 'poison') { for (let q = 0; q < 30; q++) fx.spawn(end.x + rand(-R, R) * .6, end.y + rand(0, .5), end.z + rand(-R, R) * .6, 0, rand(.5, 1.5), 0, rand(.6, 1.2), .5, 1.2, E[0], E[1]); S.whoosh(); } else { bblast(end, R * 1.3); S.smash(); }
-      puff(end, rock ? 10 : 5, rock ? 2 : 1.2); cam.shake = Math.max(cam.shake, rock ? .4 : .2);
+      puff(end, rock ? 10 : 5, rock ? 2 : 1.2); if (rock) vfxDust(ts, tx, ty, 1.4); else vfxElem(end, mv.el || 'fire', .9); cam.shake = Math.max(cam.shake, rock ? .4 : .2);
       if (Math.hypot(P.s - ts, P.x - tx) < R && P.y - ty < 2) foeHurt(u, K, mv, { unblock: true, kb: 9 }); return false;
     });
     return;
@@ -10261,11 +10303,11 @@ function foeShot(u, K, mv, i) {
     if (f.t > 3.4) return false;
     if (t === 'fire' && !back) { const want = tw(P.s, P.x, P.y + 1).sub(g.position).normalize().multiplyScalar(sp); v.lerp(want, Math.min(1, dt * 1.3)); }
     g.position.addScaledVector(v, dt); g.lookAt(_a.copy(g.position).add(v)); if (t === 'star') g.rotation.z += dt * 20;
-    if (Math.random() < .5) fx.spawn(g.position.x, g.position.y, g.position.z, 0, 0, 0, .3, t === 'orb' ? .5 : .25, .03, E[0], E[1]);
+    if (Math.random() < .5) fx.spawn(g.position.x, g.position.y, g.position.z, 0, 0, 0, .3, t === 'orb' ? .5 : .25, .03, E[0], E[1]); if (Math.random() < .7) vfx({ tex: t === 'ice' || t === 'star' ? 'star' : 'flare', p: g.position, v: vRand(.8), life: .3, s0: t === 'orb' ? 1.1 : .55, s1: .1, c0: 0xffffff, c1: E[2], rot: rand(0, TAU) });
     if (back) { if (ukLive(u) && g.position.distanceTo(tw(u.s, u.x, u.y + 1.2 + (u.m.hover || 0))) < 1 + u.r * .6) { khHit(u, Math.max(10, K.dmg * 1.5), true); return false; } return true; }
     if (g.position.distanceTo(tw(P.s, P.x, P.y + 1)) < (t === 'orb' ? 1.2 : .9)) {
       if (KH.guardT > 0) { back = true; v.copy(tw(u.s, u.x, u.y + 1.2 + (u.m.hover || 0)).sub(g.position)).normalize().multiplyScalar(24); S.clash(); sparks(g.position, 16, 6, [1, 1, 1], [.7, .85, 1]); return true; }
-      foeHurt(u, K, mv, { kb: 5 }); sparks(g.position, 14, 5, E[0], E[1]); return false;
+      foeHurt(u, K, mv, { kb: 5 }); vfxElem(g.position.clone(), EL, .7); return false;
     }
     return g.position.y > -1;
   });
@@ -10278,7 +10320,7 @@ function foeStrike(u, K, mv, s, x, delay) {
     warnPulse(f); const k = f.t / delay; if (ball && k > .55) { ball.position.lerpVectors(top, bot, (k - .55) / .45); if (Math.random() < .8) bfire(ball.position, 1, -.5); }
     if (k < 1) return true;
     if (ball) { scene.remove(ball); bblast(bot, R * 1.8); } else if (mv.el === 'thunder') { zapFlash(bot, 2.6); khArc(() => top, () => bot, .3); } else { const pil = new THREE.Mesh(new THREE.CylinderGeometry(R * .6, R * .6, 16, 12, 1, true), new THREE.MeshBasicMaterial({ color: E[2], transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })); pil.position.copy(tw(s, x, y + 8)); khFx(pil, g => { pil.material.opacity = .8 * (1 - g.t / .5); return g.t < .5; }); }
-    sparks(bot, 18, 7, E[0], E[1]); S.stomp(); cam.shake = Math.max(cam.shake, .2);
+    sparks(bot, 8, 7, E[0], E[1]); vfxElem(bot, mv.el || 'fire', 1.1); S.stomp(); cam.shake = Math.max(cam.shake, .2);
     if (Math.hypot(P.s - s, P.x - x) < R && P.y - y < 2.5) foeHurt(u, K, mv, { unblock: true, kb: 7 }); return false;
   });
 }
@@ -10304,7 +10346,7 @@ function foeStart(u, K, mv, c, fast) {
   if (F.aim) F.aim(u, mv, c);
   const mm = F.mark && F.mark(u, mv, c); if (mm) khFx(mm, f => { warnPulse(f); return ukLive(u) && u.mv === mv && (u.state === 'wind' || (F.keep && u.state === 'atk')); });
   if (!F.noAnim) foeAnim(u, mv.clip, u.windT + F.dur(mv)); else foeAnim(u, mv.clip, u.windT);
-  S.orcGrunt();
+  vfxCharge(tw(u.s, u.x, u.y + (u.m.hover || 0) + Math.min(2.2, .8 + u.r * .6)), mv.el ? elC(mv.el) : 0xff4020, Math.max(1, u.r * .8)); S.orcGrunt();
 }
 function foeEnd(u, K) {
   const mv = u.mv; Object.assign(u, { lockH: undefined, state: u.dz ? 'dizzy' : 'recover', t: 0, dizzy: u.dz || 0, cd: rand(.35, 1.1) * (mv.cd || 1) * (K.boss ? .7 : 1) * (K.agg ? .6 : 1), air: false, dip: 0, sunk: false, q: null });
@@ -12633,7 +12675,7 @@ const KH_POWERS = [
       khFx(sp, f => { const k = f.t / .9, r = Math.sin(Math.min(1, k) * Math.PI) * R, s = P.s + Math.cos(a) * r, x = P.x + Math.sin(a) * r; tw(s, x, P.y + 1.2, sp.position); sp.material.rotation += .6; for (const o of khFoes(30, 99)) { if (hit.has(o.u) || Math.hypot(o.u.s - s, o.u.x - x) > 1.6 + (o.u.boss ? o.u.r : 0)) continue; hit.add(o.u); khHit(o.u, w ? 12 : 9, true); } if (k > .5 && hit.size) hit.clear(); return k < 1; }); } },
   // --- Fable: the Will
   { id: 'fireball', game: 'Fable', name: 'FIREBALL', mp: 15, anim: 'fire', desc: 'A ball of fire that bursts', cast(w) { const o = khFoes(18, 1)[0]; khFace(o && o.u); const u = o && o.u, sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: FX_TEX.exfireballc || TX.glow, color: FX_TEX.exfireballc ? 0xffffff : 0xff7020, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); sp.scale.setScalar(2); sp.position.copy(khHand()); const fw = tw(P.s + Math.cos(P.heading) * 14, P.x + Math.sin(P.heading) * 14, P.y + 1.2); S.whoosh();
-      khFx(sp, (f, dt) => { const t = u && ukLive(u) ? khUp(u) : fw; sp.position.add(t.clone().sub(sp.position).normalize().multiplyScalar(20 * dt)); bfire(sp.position, .7, .3); if (sp.position.distanceTo(t) < 1 || f.t > 1.4) { bblast(sp.position.clone(), 6); S.smash(); for (const q of URUKS) if (ukLive(q) && q.state !== 'spawn' && sp.position.distanceTo(khUp(q)) < 3.5 + (q.boss ? q.r : 0)) khHit(q, w ? 18 : 14, true); return false; } return true; }); } },
+      khFx(sp, (f, dt) => { const t = u && ukLive(u) ? khUp(u) : fw; sp.position.add(t.clone().sub(sp.position).normalize().multiplyScalar(20 * dt)); vfxFireTrail(sp.position); if (sp.position.distanceTo(t) < 1 || f.t > 1.4) { vfxFireBurst(sp.position.clone(), 1.3); S.smash(); for (const q of URUKS) if (ukLive(q) && q.state !== 'spawn' && sp.position.distanceTo(khUp(q)) < 3.5 + (q.boss ? q.r : 0)) khHit(q, w ? 18 : 14, true); return false; } return true; }); } },
   { id: 'enflame', game: 'Fable', name: 'ENFLAME', mp: 25, anim: 'cure', desc: 'A ring of fire bursts round you', cast(w) { S.smash(); const R = w ? 6 : 5; for (let k = 0; k < 50; k++) { const a = k / 50 * TAU; bfire(tw(P.s + Math.cos(a) * R * .7, P.x + Math.sin(a) * R * .7, P.y + .3), 1.6, 1.4); } for (const o of khFoes(R, 99)) khHit(o.u, w ? 16 : 12, true); cam.shake = .3; } },
   { id: 'fpush', game: 'Fable', name: 'FORCE PUSH', mp: 12, anim: 'fire', desc: 'A blast that throws back all round you', cast(w) { S.forcePush(); khFoes(w ? 8 : 6.5, 99).forEach(o => khShove(o.u, 13, 8, 5)); khRing([.9, .9, 1], 40, 2); } },
   { id: 'slow', game: 'Fable', name: 'SLOW TIME', mp: 20, anim: 'cure', desc: 'Time crawls for everyone but you', cast(w) { KH.slowT = Math.max(KH.slowT || 0, w ? 9 : 7); khRing([.7, .6, 1], 40, 2); } },
@@ -12682,7 +12724,7 @@ function khTechPay(id) { const t = TECH[id]; if (!khTechOn(id)) return false; co
 function khBattleCharge() {
   if (KH.atk || KH.rollT > 0 || KH.reacting || !P.ground || !khTechPay('charge')) return;
   const hit = new Set(), w = KH.form > 0; KH.invT = Math.max(KH.invT, .5); S.whoosh(); skinClip(hob, khc(KH_SORA.ground[3], 'attack_b'), .5);
-  khLast(.45, () => { P.vs = Math.cos(P.heading) * 20; P.vx = Math.sin(P.heading) * 20; dustAt(P.s, P.x, P.y, 1); for (const o of khFoes(1.8, 99)) if (!hit.has(o.u)) { hit.add(o.u); khShove(o.u, 10, 6, w ? 12 : 9); } });
+  khLast(.45, () => { P.vs = Math.cos(P.heading) * 20; P.vx = Math.sin(P.heading) * 20; dustAt(P.s, P.x, P.y, 1); vfx({ tex: 'flare', p: atP(1), life: .3, s0: 1.2, s1: .2, c0: 0xfff0c0, c1: 0xff8020, a: .7 }); if (Math.random() < .5) vfx({ tex: 'streak', p: atP(rand(.4, 1.6)), life: .2, s0: 1, s1: .2, sx: .12, rot: P.heading, c0: 0xffffff, c1: 0xffa040 }); for (const o of khFoes(1.8, 99)) if (!hit.has(o.u)) { hit.add(o.u); khShove(o.u, 10, 6, w ? 12 : 9); } });
 }
 function khForceJump() { if (P.ground || !khTechPay('fjump')) return; P.vy = KH.form > 0 ? 18 : 15; KH.hover = 0; puff(tw(P.s, P.x, P.y), 6, 1, [.8, .85, 1]); S.whoosh(); }
 // the techniques that last: each frame they're on and paid for
@@ -12694,18 +12736,82 @@ function khTechs(dt) {
   else { KH.shield = 0; if (KH.shieldFx) KH.shieldFx.material.opacity = 0; }
   if (on('ghost')) {
     pay('ghost'); if (!KH.ghost) { KH.ghost = glowSprite(0xa0e0ff, 1.8, 1); scene.add(KH.ghost); KH.ghostCd = new Map(); }
-    KH.ghost.visible = true; const a = T * 6, s = P.s + Math.cos(a) * 2.2, x = P.x + Math.sin(a) * 2.2; tw(s, x, P.y + 1.1, KH.ghost.position);
+    KH.ghost.visible = true; const a = T * 6, s = P.s + Math.cos(a) * 2.2, x = P.x + Math.sin(a) * 2.2; tw(s, x, P.y + 1.1, KH.ghost.position); if (Math.random() < .7) vfx({ tex: 'flare', p: KH.ghost.position, life: .25, s0: .8, s1: .1, c0: 0xffffff, c1: 0x60c0ff });
     for (const o of khFoes(4, 99)) { if (Math.hypot(o.u.s - s, o.u.x - x) > 1.3 + (o.u.boss ? o.u.r : 0) || (KH.ghostCd.get(o.u) || 0) > T) continue; KH.ghostCd.set(o.u, T + .5); khHit(o.u, 5, false); }
   } else if (KH.ghost) KH.ghost.visible = false;
 }const khCost = p => Math.round(p.mp * (KH.form > 0 ? .6 : 1));
 function khMagic() { khCast(KH.spell || KH_POWER_SET.f); }   // (the quick cast: the last spell again)
+// each power's own look, played as it's cast (Fire, Blizzard, Thunder and Cure have theirs in their own code): see vfx
+const atP = (dy = 1) => tw(P.s, P.x, P.y + dy), fwdP = (d, dy = 1.2) => tw(P.s + Math.cos(P.heading) * d, P.x + Math.sin(P.heading) * d, P.y + dy);
+const toward = (a, b, t) => b.clone().sub(a).multiplyScalar(1 / t);
+const POWER_FX = {
+  magnet(w) {   // a purple well in the air, everything spiralling into it
+    const c = fwdP(4.5, 2.4); vfx({ tex: 'ring', p: c, life: .5, s0: 6, s1: .5, c0: 0xe0b0ff, c1: 0x6020c0, ease: 1 }); vfx({ tex: 'flare', p: c, life: .4, s0: 1, s1: 3.5, c0: 0xffffff, c1: 0xa060ff });
+    khLast(w ? 3 : 2.2, () => { for (let i = 0; i < 3; i++) { const a = rand(0, TAU), r = rand(2, 4.5), p = c.clone().add(new V3(Math.cos(a) * r, rand(-1.2, 1.2), Math.sin(a) * r)), v = toward(p, c, .5).add(new V3(-Math.sin(a) * 3, 0, Math.cos(a) * 3)); vfx({ tex: Math.random() < .3 ? 'star' : 'flare', p, v, life: .5, s0: .45, s1: .08, c0: 0xf0d0ff, c1: 0x8040ff, rot: rand(0, TAU) }); }
+      if (Math.random() < .2) vfx({ tex: 'star', p: c, life: .3, s0: 1.5, s1: 2.5, c0: 0xffffff, c1: 0xa060ff, rot: rand(0, TAU), spin: 4 }); });
+  },
+  reflect() {   // a bright shell round him, glinting while it lasts
+    const p = atP(); vfx({ tex: 'flare', p, life: .3, s0: 1, s1: 4, c0: 0xffffff, c1: 0x9ad8ff, ease: 1 }); for (let k = 0; k < 3; k++) vfx({ tex: 'ring', p, life: .3 + k * .1, s0: .5, s1: 3.6, c0: 0xffffff, c1: 0x6ab8ff, ease: 1 });
+    khLast(KH.reflectT, () => { if (Math.random() < .7) { const d = vRand(1); d.y = rand(-.6, 1); d.normalize(); vfx({ tex: 'star', p: atP().add(d.clone().multiplyScalar(1.6)), v: d.multiplyScalar(.5), life: .3, s0: .35, s1: .05, c0: 0xffffff, c1: 0x9ad8ff, rot: rand(0, TAU) }); } });
+  },
+  push() {   // a wave of force thrown out ahead
+    const p = khHand(), f = fwdP(1).sub(atP()).setY(0).normalize(); vfx({ tex: 'flare', p, life: .2, s0: .6, s1: 2.6, c0: 0xffffff, c1: 0x8aa8ff, ease: 1 });
+    for (let k = 0; k < 3; k++) vfx({ tex: 'ring', p: p.clone().addScaledVector(f, k * 1.2), v: f.clone().multiplyScalar(12), life: .35, s0: .6 + k * .4, s1: 3, c0: 0xdfe8ff, c1: 0x5a70ff, a: .8, ease: 1 });
+    for (let i = 0; i < 18; i++) vfx({ tex: 'flare', p, v: f.clone().multiplyScalar(rand(10, 16)).add(vRand(3)), life: rand(.3, .5), s0: .5, s1: .1, c0: 0xdfe8ff, c1: 0x4a60e0, drag: 2 });
+  },
+  pull() {   // force streaming back from each foe to his hand
+    const h = khHand(); vfx({ tex: 'flare', p: h, life: .4, s0: 2, s1: .4, c0: 0xffffff, c1: 0x8aa8ff });
+    for (const o of khAhead(14, .2)) { const q = khUp(o.u); for (let i = 0; i < 10; i++) vfx({ tex: 'flare', p: q.clone().add(vRand(.5)), v: toward(q, h, .4), life: .4, s0: .4, s1: .1, c0: 0xdfe8ff, c1: 0x4a60e0 }); }
+  },
+  grip(w) {   // a choking hold of dark light round the foe held up
+    const o = khAhead(11, .3)[0]; if (!o) return; const u = o.u;
+    khLast(w ? 2.6 : 2, () => { if (!ukLive(u)) return false; const q = khUp(u); if (Math.random() < .6) vfx({ tex: 'flare', p: q.clone().add(vRand(.5)), v: vRand(.6), life: .35, s0: .5, s1: .1, c0: 0xd0c0ff, c1: 0x4020a0 });
+      if (Math.random() < .35) vfx({ tex: 'flare', p: khHand(), v: toward(khHand(), q, .25), life: .25, s0: .25, s1: .1, c0: 0xffffff, c1: 0x6040ff }); if (Math.random() < .15) vfx({ tex: 'star', p: q, life: .25, s0: .8, s1: 1.4, c0: 0xffffff, c1: 0x8060ff, rot: rand(0, TAU) }); });
+  },
+  trick(w) {   // stars circling each dazed head
+    vfx({ tex: 'ring', p: atP(.3), life: .5, s0: .5, s1: (w ? 12 : 9) * .8, c0: 0xc0d0ff, c1: 0x4a60c0, a: .7, ease: 1 });
+    for (const o of khFoes(w ? 12 : 9, 99)) { if (o.u.boss) continue; const q = khUp(o.u).add(new V3(0, .8, 0)); for (let i = 0; i < 7; i++) { const a = i / 7 * TAU; vfx({ tex: 'star', p: q.clone().add(new V3(Math.cos(a) * .6, 0, Math.sin(a) * .6)), v: new V3(-Math.sin(a) * 2, .3, Math.cos(a) * 2), life: 1, s0: .35, s1: .1, c0: 0xffffd0, c1: 0x8aa8ff, rot: rand(0, TAU), spin: 6 }); } }
+  },
+  speed() { POWER_FX.timeRing(0x9ae0ff, 0x2a80c0); for (let i = 0; i < 16; i++) vfx({ tex: 'streak', p: atP(rand(0, 1.6)).add(new V3(rand(-.8, .8), 0, rand(-.8, .8))), v: new V3(0, rand(4, 7), 0), life: .4, s0: 1, s1: .2, sx: .12, c0: 0xffffff, c1: 0x6ab8ff }); },
+  slow() { POWER_FX.timeRing(0xd0b0ff, 0x5020a0); for (let i = 0; i < 20; i++) { const a = rand(0, TAU), r = rand(1, 6); vfx({ tex: 'star', p: atP(rand(.2, 2.5)).add(new V3(Math.cos(a) * r, 0, Math.sin(a) * r)), v: new V3(0, .3, 0), life: rand(1, 1.6), s0: .3, s1: .1, c0: 0xffffff, c1: 0x8060ff, rot: rand(0, TAU), spin: .5 }); } },
+  timeRing(c0, c1) { const p = atP(.2); vfx({ tex: 'flare', p: atP(), life: .4, s0: 1, s1: 4, c0: 0xffffff, c1, ease: 1 }); for (let k = 0; k < 3; k++) vfx({ tex: 'ring', p, life: .5 + k * .15, s0: 1, s1: 7 + k * 2, c0, c1, a: .7, ease: 1 }); },
+  throw(w) {   // the blade's path, a bright streak behind it out and back
+    const a = P.heading, R = w ? 13 : 10;
+    khLast(.9, f => { const r = Math.sin(Math.min(1, f.t / .9) * Math.PI) * R, p = tw(P.s + Math.cos(a) * r, P.x + Math.sin(a) * r, P.y + 1.2); vfx({ tex: 'flare', p, life: .25, s0: 1.1, s1: .2, c0: 0xffffff, c1: 0x4a9aff }); if (Math.random() < .4) vfx({ tex: 'star', p, life: .2, s0: .6, s1: .1, c0: 0xffffff, c1: 0x9ad8ff, rot: rand(0, TAU) }); });
+  },
+  enflame(w) {   // a ring of fire bursting up round him
+    const R = (w ? 6 : 5) * .7; vfxFireBurst(atP(.6), .7); vfx({ tex: 'ring', p: atP(.2), life: .5, s0: 1, s1: R * 2.4, c0: 0xffd080, c1: 0xff2000, ease: 1 });
+    for (let i = 0; i < 32; i++) { const a = i / 32 * TAU; vfx({ tex: 'flare', p: tw(P.s + Math.cos(a) * R, P.x + Math.sin(a) * R, P.y + .3), v: new V3(0, rand(3, 6), 0), life: rand(.4, .7), s0: .9, s1: .2, c0: 0xffe0a0, c1: 0xff2000 }); }
+  },
+  fpush(w) {   // a blast of force out all round him
+    const p = atP(.8); vfx({ tex: 'flare', p, life: .25, s0: 1, s1: 4, c0: 0xffffff, c1: 0xc0c8ff, ease: 1 }); for (let k = 0; k < 2; k++) vfx({ tex: 'ring', p: atP(.3 + k * .8), life: .35 + k * .1, s0: 1, s1: (w ? 8 : 6.5) * 2, c0: 0xffffff, c1: 0x8090ff, a: .8, ease: 1 });
+    for (let i = 0; i < 24; i++) { const a = i / 24 * TAU; vfx({ tex: 'flare', p, v: tw(P.s + Math.cos(a), P.x + Math.sin(a), P.y + .8).sub(p).multiplyScalar(14), life: .35, s0: .5, s1: .1, c0: 0xffffff, c1: 0x6070ff, drag: 2 }); }
+  },
+  turncoat() {   // green light taking hold of the foe that turns
+    const u = URUKS.find(q => q.charmT > 0 && ukLive(q)); if (!u) return; vfx({ tex: 'ring', p: khUp(u), life: .5, s0: .5, s1: 3, c0: 0xc0ffc0, c1: 0x20a040, ease: 1 }); vfx({ tex: 'flare', p: khUp(u), life: .4, s0: 1, s1: 3, c0: 0xffffff, c1: 0x40d060 });
+    khLast(u.charmT, () => { if (!ukLive(u) || !(u.charmT > 0)) return false; if (Math.random() < .25) vfx({ tex: 'star', p: khUp(u).add(new V3(rand(-.5, .5), 1, rand(-.5, .5))), v: new V3(0, .8, 0), life: .5, s0: .3, s1: .05, c0: 0xe0ffd0, c1: 0x30c050, rot: rand(0, TAU) }); });
+  },
+  drain() {   // life drawn out of the foe in red, into his hand
+    const o = khFoes(10, 1)[0]; if (!o) return; const u = o.u;
+    khLast(1.5, () => { if (!ukLive(u)) return false; const q = khUp(u), h = khHand(); for (let i = 0; i < 2; i++) vfx({ tex: 'flare', p: q.clone().add(vRand(.4)), v: toward(q, h, .35), life: .35, s0: .45, s1: .15, c0: 0xff8080, c1: 0x900010 }); if (Math.random() < .2) vfx({ tex: 'flare', p: atP(), life: .3, s0: .5, s1: 2, c0: 0xffd0d0, c1: 0x40c060, a: .6 }); });
+  },
+  divine(w) {   // a pillar of gold light on each foe, one after another
+    khFoes(w ? 18 : 15, w ? 10 : 7).forEach((o, k) => { const u = o.u; khFx(null, f => { if (f.t < k * .12) return true; const q = tw(u.s, u.x, u.y + .2);
+      vfx({ tex: 'streak', p: q.clone().setY(q.y + 6), life: .5, s0: 13, s1: 11, sx: .2, c0: 0xffffff, c1: 0xffc040, a: .9 }); vfx({ tex: 'flare', p: q.clone().setY(q.y + 1), life: .4, s0: 1, s1: 4, c0: 0xffffff, c1: 0xffd060, ease: 1 });
+      vfx({ tex: 'ring', p: q, life: .45, s0: .5, s1: 4, c0: 0xfff0c0, c1: 0xffa020, ease: 1 }); for (let i = 0; i < 10; i++) vfx({ tex: 'star', p: q.clone().setY(q.y + rand(.5, 3)), v: vRand(3, .5), life: .6, s0: .4, s1: .05, c0: 0xffffff, c1: 0xffc040, rot: rand(0, TAU) }); return false; }); });
+  },
+  wrath(w) {   // hell bursting up all round him
+    vfxFireBurst(atP(.6), 1.6); vfx({ tex: 'ring', p: atP(.2), life: .6, s0: 1, s1: (w ? 9 : 7.5) * 2.2, c0: 0xffc060, c1: 0x800000, ease: 1 });
+    for (let i = 0; i < 40; i++) { const a = rand(0, TAU), r = rand(1, w ? 9 : 7.5); vfx({ tex: 'flare', p: tw(P.s + Math.cos(a) * r, P.x + Math.sin(a) * r, P.y + .2), v: new V3(0, rand(4, 9), 0), life: rand(.5, .9), s0: rand(.8, 1.5), s1: .2, c0: 0xffe0a0, c1: 0xa01000 }); }
+  },
+};
 function khCast(id) {
   const p = POWER[id]; if (!p || KH.magicCD > 0 || KH.atk) return false;
   const cost = khCost(p); if (KH.mp < cost) { S.click(); return false; }
   KH.mp -= cost; KH.magicCD = .6; P.fireAnim = .5; KH.spell = id; khFlash('M');
   if (p.anim) skinClip(hob, khc(KH_SORA[p.anim], 'attack_c'), .9);
   if (LV.khl && p.anim !== 'cure') { const n = id === 'thunder' ? 3 : id === 'divine' || id === 'wrath' ? 6 : 1, am = cheats.ammo; cheats.ammo = true; for (let k = 0; k < n; k++) setTimeout(() => { if (state === 'play') { P.fireCD = 0; fireRocket(); } }, k * 140); cheats.ammo = am; S.zap(); return true; }   // (the old levels: homing bolts at their enemies)
-  p.cast(KH.form > 0); return true;
+  p.cast(KH.form > 0); if (POWER_FX[id]) POWER_FX[id](KH.form > 0); return true;
 }
 function khItem(id) {
   if (!(KH.items[id] > 0)) { S.click(); return false; }
@@ -12927,7 +13033,7 @@ function khHurt(dmg, u, o = {}) {
   if (state !== 'play' || KH.invT > 0 || KH.rollT > 0 || KH.reacting) return false;
   if (cheats.god) { KH.godHits = (KH.godHits || 0) + 1; KH.invT = .5; return false; }   // (counted, for testing)
   if (KH.reflectT > 0) { if (u.state && ukLive(u)) khHit(u, 12, true); S.clash(); sparks(tw(P.s, P.x, P.y + 1.2), 24, 7, [1, 1, 1], [.7, .9, 1]); KH.invT = .2; return false; }   // (Reflect throws it back)
-  if (KH.shield > 0) { KH.shield -= dmg; S.clash(); sparks(tw(P.s, P.x, P.y + 1.2), 12, 4, [.8, .9, 1], [.4, .6, 1]); KH.invT = .4; return false; }   // (the Physical Shield soaks it)
+  if (KH.shield > 0) { KH.shield -= dmg; S.clash(); vfx({ tex: 'ring', p: atP(), life: .3, s0: .8, s1: 3.2, c0: 0xd0e8ff, c1: 0x4a80ff, ease: 1 }); sparks(tw(P.s, P.x, P.y + 1.2), 12, 4, [.8, .9, 1], [.4, .6, 1]); KH.invT = .4; return false; }   // (the Physical Shield soaks it)
   const ds = u.s - P.s, dx = u.x - P.x, d = Math.hypot(ds, dx) || 1;
   if (!o.unblock && KH.guardT > 0 && (ds * Math.cos(P.heading) + dx * Math.sin(P.heading)) / d > -.25) {
     if (!u.boss && u.state) { Object.assign(u, { state: 'recoil', t: 0, vs: ds / d * 7, vx: dx / d * 7 }); u.stag += 25; }
@@ -13140,7 +13246,7 @@ function ukUpdate(u, dt) {
   if (DBGF && m.skin && m.skin.obj && MODEL_SLOTS[m.skin.slot].fbx && (u.dbgT = (u.dbgT || 0) - dt) < 0) { u.dbgT = .25; m.root.updateMatrixWorld(true); const b = new THREE.Box3(), v = new V3(); m.skin.obj.traverse(o => { if (o.isBone) b.expandByPoint(v.setFromMatrixPosition(o.matrixWorld)); }); const rp = m.root.position, c = b.getCenter(new V3()), dr = Math.hypot(c.x - rp.x, c.z - rp.z), hg = b.max.y - b.min.y, bt = b.min.y - rp.y, cl = (m.skin.curAct && m.skin.curAct.getClip().name) || '-', R = DBGF[u.kind] || (DBGF[u.kind] = { dr: 0, hmin: 99, hmax: 0, bmin: 99, bmax: -99, n: 0, H: MODEL_SLOTS[m.skin.slot].height, drc: '', st: {} }); R.n++; if (dr > R.dr) { R.dr = dr; R.drc = cl + '/' + u.state; } R.hmin = Math.min(R.hmin, hg); R.hmax = Math.max(R.hmax, hg); if (bt < R.bmin) { R.bmin = bt; R.bminc = cl + '/' + u.state; } if (bt > R.bmax) { R.bmax = bt; R.bmaxc = cl + '/' + u.state; } }
   if (u.q) { if (u.state !== 'wind' && u.state !== 'atk') u.q = null; else if (u.q.length && m.skin && T >= m.skin.holdT) foeAnimNext(u); }   // (a move's own animations, one after another)
   const busy = u.state === 'wind' || u.state === 'atk';
-  skinPlay(m, u.state === 'die' ? 'die' : u.state === 'launch' ? 'blow' : u.state === 'down' ? 'land' : u.state === 'flinch' || u.state === 'recoil' || u.state === 'dizzy' ? 'hit' : busy && u.atk === 'mv' ? (walk > .5 ? 'walk' : 'idle') : busy && u.atk !== 'rush' ? 'attack' : u.state === 'spawn' ? 'jump' : walk > .5 ? 'walk' : 'idle');
+  if (!(busy && u.atk === 'mv' && m.skin && m.skin.curAct && m.skin.cur === 'clip')) skinPlay(m, u.state === 'die' ? 'die' : u.state === 'launch' ? 'blow' : u.state === 'down' ? 'land' : u.state === 'flinch' || u.state === 'recoil' || u.state === 'dizzy' ? 'hit' : busy && u.atk === 'mv' ? (walk > .5 ? 'walk' : 'idle') : busy && u.atk !== 'rush' ? 'attack' : u.state === 'spawn' ? 'jump' : walk > .5 ? 'walk' : 'idle');
 }
 // green HP orbs and blue MP orbs: they pop out, and fly to Gandalf when he's near
 function khOrb(u, kind) { const sp = glowSprite(kind === 'hp' ? 0x6aff6a : 0x6ab8ff, .7, .95); scene.add(sp); ORBS.push({ s: u.s + rand(-.5, .5), x: u.x + rand(-.5, .5), y: u.y + 1, vy: rand(4, 6), vs: rand(-2, 2), vx: rand(-2, 2), kind, sp, t: 0 }); }
@@ -13294,7 +13400,7 @@ THEMES.rivfable = natTheme({
 // boot: Oakvale, Rivendell's gorge, Mirkwood and the scenery models first if they're there (they change how levels are built), then everything else
 (async () => {
 await Promise.all([loadOakvale(), loadRivendell(), loadMirkwood(), loadProps()]);   // (each changes how its level is built)
-buildStatic();
+{ const before = new Set(scene.children); buildStatic(); for (const o of scene.children) if (!before.has(o)) o.userData.stat = true; }   // (the levels' scenery, not Gandalf or anything shared: see sceneryFor)
 renderer.shadowMap.enabled = !RETRO; moon.castShadow = !RETRO; softTex();
 setupEntities();
 loadLocalAssets();
@@ -13326,7 +13432,12 @@ showScreen(null); syncPauseBtns();
       const dr = LV.layout.hall && LV.layout.hall.door; return p ? [p.s, p.x] : dr ? [dr.s, dr.x] : [P.s, P.x]; } };
     if (q.get('aimt') && LV.bow) BOW.aim = true;
     const runTests = () => {
-    if (q.get('sim')) { cheats.god = !q.get('mortal'); SIMMING = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) { for (const r of ROUTE) if (Math.round(r[0] * 60) === i) { WALKTO = [r[1], r[2]]; console.log('route t=' + r[0] + ' at ' + P.s.toFixed(0) + ',' + P.x.toFixed(0) + ' y ' + P.y.toFixed(1) + (DECK ? ' deck ' + deckAt(P.s, P.x).toFixed(1) : '') + ' foes ' + URUKS.map(u => u.state + '@' + u.s.toFixed(0) + ',' + u.x.toFixed(0)).join(' ')); } step(1 / 60, true); } if (q.get('castone') && LV.kh) { KH.mp = 100; KH.magicCD = 0; KH.atk = null; khCast(q.get('castone')); for (let i = 0; i < +(q.get('castt') || 12); i++) step(1 / 60, true); }   // (testing: one spell, a moment after)
+    const PROF = q.get('prof') ? { n: 0, sum: 0, max: 0, slow: 0 } : null;
+    if (q.get('sim')) { cheats.god = !q.get('mortal'); SIMMING = true; for (let i = 0; i < Number(q.get('sim')) * 60; i++) { const pt0 = PROF && performance.now(); for (const r of ROUTE) if (Math.round(r[0] * 60) === i) { WALKTO = [r[1], r[2]]; console.log('route t=' + r[0] + ' at ' + P.s.toFixed(0) + ',' + P.x.toFixed(0) + ' y ' + P.y.toFixed(1) + (DECK ? ' deck ' + deckAt(P.s, P.x).toFixed(1) : '') + ' foes ' + URUKS.map(u => u.state + '@' + u.s.toFixed(0) + ',' + u.x.toFixed(0)).join(' ')); } step(1 / 60, true); if (PROF && i > 120) { const d = performance.now() - pt0; PROF.n++; PROF.sum += d; PROF.max = Math.max(PROF.max, d); if (d > 8) PROF.slow++; } } if (q.get('film')) { const N = +q.get('film'), every = Math.round(+(q.get('filmdt') || .25) * 60), W = 480, H = 270, cv = document.createElement('canvas'); cv.width = W * 4; cv.height = H * Math.ceil(N / 4); const g = cv.getContext('2d');   // (testing: ?film=8 lays that many frames, a quarter-second apart, side by side)
+      for (let f = 0; f < N; f++) { for (let i = 0; i < every; i++) step(1 / 60, i < every - 1); g.drawImage(renderer.domElement, (f % 4) * W, Math.floor(f / 4) * H, W, H); g.fillStyle = '#ff0'; g.font = '16px sans-serif'; g.fillText((f * every / 60).toFixed(2) + 's ' + URUKS.map(u => u.state + (u.m.skin && u.m.skin.curAct ? '/' + u.m.skin.curAct.getClip().name.replace(/^\d+_/, '') : '')).join(' '), (f % 4) * W + 4, Math.floor(f / 4) * H + 18); }
+      cv.style.cssText = 'position:fixed;left:0;top:0;z-index:999;width:' + cv.width + 'px;height:' + cv.height + 'px'; document.body.appendChild(cv); }
+    if (q.get('tris')) { const L = []; scene.traverse(o => { if (!(o.isMesh || o.isPoints) || !o.visible) return; let v = true, p = o; while (p) { if (!p.visible) v = false; p = p.parent; } if (!v) return; const g = o.geometry, n = (g.index ? g.index.count : g.attributes.position.count) / 3 * (o.isInstancedMesh ? o.count : 1); let top = o; while (top.parent && top.parent !== scene) top = top.parent; L.push([n, o.name || o.type, top.name || top.type, o.isInstancedMesh ? o.count : 1, o.castShadow]); }); L.sort((a, b) => b[0] - a[0]); console.log('TRIS total ' + Math.round(L.reduce((s, q) => s + q[0], 0) / 1000) + 'k: ' + L.slice(0, 14).map(q => Math.round(q[0] / 1000) + 'k ' + q[1] + ' in ' + q[2] + ' x' + q[3] + (q[4] ? ' shadow' : '')).join(' | ')); }
+    if (PROF) console.log(`PROF game logic per frame: average ${(PROF.sum / PROF.n).toFixed(2)} ms, slowest ${PROF.max.toFixed(1)} ms, ${PROF.slow} of ${PROF.n} frames over 8 ms`); if (q.get('castone') && LV.kh) { KH.mp = 100; KH.magicCD = 0; KH.atk = null; khCast(q.get('castone')); for (let i = 0; i < +(q.get('castt') || 12); i++) step(1 / 60, true); }   // (testing: one spell, a moment after)
     if (q.get('cast') === 'all' && LV.kh) { const bad = []; for (const p of KH_POWERS) { try { KH.mp = 100; KH.magicCD = 0; KH.atk = null; if (!khCast(p.id)) bad.push(p.id + ' (not cast)'); for (let i = 0; i < 90; i++) step(1 / 60, true); } catch (e) { bad.push(p.id + ': ' + e.message); } } console.log('castall ' + KH_POWERS.length + ' powers, problems: ' + (bad.join('; ') || 'none') + ', kills ' + gs.kills); }   // (&cast=all: every power in turn, for testing)
     if (q.get('cutnow') && KH.boss) { bossFall(KH.boss); for (let i = 0; i < Number(q.get('cutnow')) * 60; i++) step(1 / 60, true); }   // (&cutnow=2: the bridge's ending, 2 seconds in, for testing)
     if (q.get('aimt') && LV.bow) BOW.aim = true;   // (testing: &aimt=1 starts with the sight up)

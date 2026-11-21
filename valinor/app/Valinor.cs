@@ -21,6 +21,25 @@ class ValinorApp : Form
         Application.Run(new ValinorApp(args.Length > 0 ? args[0] : ""));
     }
 
+    // Windows' own setting (Settings > Display > Graphics) for this program and Edge's WebView2 engine: the high-performance graphics card, not the battery-saving one
+    static void HighPerformanceGpu()
+    {
+        try
+        {
+            using (var k = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\DirectX\UserGpuPreferences"))
+            {
+                var paths = new System.Collections.Generic.List<string> { Application.ExecutablePath };
+                foreach (string root in new[] { Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles) })
+                {
+                    string ev = Path.Combine(root, @"Microsoft\EdgeWebView\Application");
+                    if (Directory.Exists(ev)) foreach (string f in Directory.GetFiles(ev, "msedgewebview2.exe", SearchOption.AllDirectories)) paths.Add(f);
+                }
+                foreach (string p in paths) if ((k.GetValue(p) as string) != "GpuPreference=2;") k.SetValue(p, "GpuPreference=2;");
+            }
+        }
+        catch { }
+    }
+
     ValinorApp(string query)
     {
         Text = "Valinor";
@@ -55,7 +74,7 @@ class ValinorApp : Form
         try
         {
             // (the graphics card always used, and nothing slowed while the window is in the background)
-            var opts = new CoreWebView2EnvironmentOptions("--ignore-gpu-blocklist --enable-gpu-rasterization --enable-zero-copy --disable-background-timer-throttling --disable-renderer-backgrounding --autoplay-policy=no-user-gesture-required");
+            var opts = new CoreWebView2EnvironmentOptions("--force_high_performance_gpu --ignore-gpu-blocklist --enable-gpu-rasterization --enable-zero-copy --disable-background-timer-throttling --disable-renderer-backgrounding --autoplay-policy=no-user-gesture-required");
             string data = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Valinor");
             var env = await CoreWebView2Environment.CreateAsync(null, data, opts);
             await web.EnsureCoreWebView2Async(env);
