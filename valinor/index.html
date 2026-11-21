@@ -5720,12 +5720,13 @@ const BEL = {
     [48, 326], [52, 306], [66, 294], [112, 278], [80, 270], [72, 258], [62, 245], [45, 222], [28, 205]],
   isles: [[[160, 585], [170, 568], [195, 557], [212, 553], [205, 565], [185, 577]], [[236, 540], [244, 538], [247, 546], [240, 550]]],   // (Balar, and its little sister)
   ranges: [
-    { p: [[40, 150], [150, 160], [240, 150], [330, 125], [420, 140], [500, 150], [600, 135], [700, 120], [800, 108], [900, 96]], h: 3.6, w: 30 },   // Ered Engrin, the Iron Mountains
+    { p: [[40, 150], [150, 160], [240, 150], [330, 125], [420, 140], [500, 150], [600, 135], [700, 120], [790, 110], [860, 104]], h: 3.6, w: 30 },   // Ered Engrin, the Iron Mountains
     { p: [[50, 170], [68, 230], [80, 268]], h: 2.4, w: 14 },   // Ered Lómin
     { p: [[140, 160], [200, 188], [232, 215]], h: 2.6, w: 12 },   // the Mountains of Mithrim
     { p: [[112, 290], [160, 284], [210, 290], [248, 300]], h: 2.6, w: 10 },   // Ered Wethrin, the Mountains of Shadow
-    { p: [[280, 284], [298, 284], [302, 300], [290, 308], [276, 302], [280, 284]], h: 3, w: 6 },   // the Encircling Mountains round Gondolin
-    { p: [[300, 285], [360, 282], [412, 280]], h: 1.8, w: 18 },   // the highlands of Dorthonion
+    { p: [[276, 278], [294, 274], [308, 284], [310, 302], [298, 314], [280, 314], [270, 302], [272, 288], [276, 278]], h: 4.2, w: 9 },   // the Encircling Mountains round Gondolin (the hidden vale in the middle stays low)
+    { p: [[308, 280], [340, 276], [375, 279], [410, 276], [430, 282]], h: 3.8, w: 16 },   // Dorthonion: high, dark pine-clad mountains
+    { p: [[325, 290], [360, 293], [400, 291]], h: 2.6, w: 10 },   // (its southern heights, over Ered Gorgoroth)
     { p: [[318, 304], [378, 302]], h: 2, w: 7 },   // Ered Gorgoroth
     { p: [[340, 424], [380, 432], [425, 446]], h: 1.2, w: 6 },   // Andram, the Long Wall
     { p: [[165, 402], [228, 405]], h: .9, w: 8 },   // Taur-en-Faroth
@@ -5786,7 +5787,7 @@ function belH(x, z) {
 }
 const meLand = (x, z) => BOARD ? boardLand(x, z) : coastAt(x, z) > 0;
 // the board's land west of its Ered Luin is what was left of Ossiriand: Beleriand is drawn over it, Ered Luin and all
-function belCovers(x, z) { if (!BELG || !BELG.luin) return false; const [px, py] = belAt(x, z); return px < BEL.luin + 95 && py < 645; }   // (all of it, and the whole of Ered Luin: one unbroken range)
+function belCovers(x, z) { if (!BELG || !BELG.luin) return false; const [px, py] = belAt(x, z); return (px < BEL.luin + 95 && py < 645) || (py < 236 && px < 920); }   // (and the whole far north, so the Iron Mountains run on unbroken over the board's northern coast)   // (all of it, and the whole of Ered Luin: one unbroken range)
 const belLand = (x, z) => { if (!BELG || (meLand(x, z) && !belCovers(x, z))) return false; const [px, py] = belAt(x, z); return belIn(px, py) && !BEL.lakes.some(([lx, ly, r]) => Math.hypot(px - lx, py - ly) < r); };
 // where Beleriand goes. On your War of the Ring board, its own westernmost range is Ered Luin: the reference map's Ered Luin (BEL.luin across, 100 to 470 down)
 // is laid along it, which sets Beleriand's size too. On the little diorama: by the Shire and Rivendell, Ered Luin along its west coast
@@ -5918,7 +5919,7 @@ function buildBeleriand(guide) {
   BELG = { ...belFit(), sea: BOARD ? BOARD.sea : 0, g: new THREE.Group() }; const s = BELG.s, ranges = BEL.ranges;
   // the far north: on the board, the land goes on up to the board's own top edge and east over the northern sea to its Forochel, all one land (Dor Daidelos)
   const top = BELG.top = BOARD ? Math.min(30, Math.round((BOARD.ez0 + 6 - BELG.z0) / s + 370)) : 30;
-  BELG.coast = BOARD ? [[20, 175], [8, 150], [22, 125], [6, 96], [20, 70], [4, 40], [16, top + 62], [2, top + 26], [34, top], [920, top], [920, 190], [700, 205]].concat(BEL.coast.slice(14)) : BEL.coast;
+  BELG.coast = BOARD ? [[20, 175], [8, 150], [22, 125], [6, 96], [20, 70], [4, 40], [16, top + 62], [2, top + 26], [34, top], [920, top], [920, 236], [700, 236]].concat(BEL.coast.slice(14)) : BEL.coast;
   BELG.coast = belJag(BELG.coast, top); BELG.isles = BEL.isles.map(P => belJag(P));   // (a broken northern coast, then the board's top edge)
   const pools = !guide && BOARD && !BEL_IMG && belPools(), boardLook = !!pools;
   // the map itself, painted at two canvas pixels to the reference's one, over 0,40 to 840,700
@@ -6819,14 +6820,14 @@ function gltfLoader() {
 // in it. Their run and attack moves carry the Heartless across the floor themselves; Valinor moves its foes, so that drift is taken out
 let FBXL = null;
 // the Kingdom Hearts models a level's foes wear, fetched as it starts (they're large); each foe already made puts its model on as it arrives
-const KH_WANT = {}, KH_DONE = {}; let SIMMING = false;
+const KH_WANT = {}, KH_DONE = {}; let SIMMING = false; const DBGF = new URLSearchParams(location.search).get('dbgfoe') ? {} : null;
 // a Colosseum round waits for its foes' models (fetched between rounds, not in the middle of a fight, where reading one would make the game stutter); the
 // rounds before's are let go, as there are dozens of them and each is big
 function khRoundReady(p, w) {
-  if (!LV || LV.cup === undefined || !LOCAL_ASSETS || SIMMING) return true;   // (a test run can't wait: its foes fight in their built bodies)
+  if (!LV || LV.cup === undefined || !LOCAL_ASSETS || (SIMMING && !DBGF)) return true;   // (a test run can't wait: its foes fight in their built bodies)
   const sl = [...new Set(w.map(k => UK_KINDS[k] && UK_KINDS[k].slot).filter(Boolean))];
   if (p.loadFor !== p.wave) { p.loadFor = p.wave; p.loadT = 0; const cup = new Set(Object.values(CUP_FOES).map(f => f.slot));
-    for (const s of Object.keys(LOADED)) if (cup.has(s) && !sl.includes(s) && !URUKS.some(u => u.m.skin && u.m.skin.slot === s)) { delete LOADED[s]; delete KH_WANT[s]; delete KH_DONE[s]; }
+    for (const s of Object.keys(LOADED)) if (!DBGF && cup.has(s) && !sl.includes(s) && !URUKS.some(u => u.m.skin && u.m.skin.slot === s)) { delete LOADED[s]; delete KH_WANT[s]; delete KH_DONE[s]; }
     khNeed(sl); }
   p.loadT += 1 / 60; return sl.every(s => !KH_WANT[s] || KH_DONE[s]) || p.loadT > 25;
 }
@@ -13042,6 +13043,7 @@ function ukUpdate(u, dt) {
   if (u.state === 'dizzy') { m.body.rotation.z = Math.sin(u.t * 6) * .15; m.dizzy.material.opacity = .8; m.dizzy.position.set(Math.cos(u.t * 6) * .4, 2.6, Math.sin(u.t * 6) * .4); } else { m.body.rotation.z = 0; m.dizzy.material.opacity = 0; }
   m.eyes.forEach(e => e.material.color.setHex(u.state === 'wind' || (u.state === 'atk' && u.atk === 'rush') ? (m.eyeCol ? m.eyeCol[1] : 0xff2a1a) : m.eyeCol ? m.eyeCol[0] : 0xffa040));
   m.mats.forEach(o => o.material.emissive && o.material.emissive.setHex(u.flash > 0 ? 0x8a8a8a : u.kind === 'b' && u.state === 'atk' ? 0x3a1004 : 0x050506));
+  if (DBGF && m.skin && m.skin.obj && MODEL_SLOTS[m.skin.slot].fbx && (u.dbgT = (u.dbgT || 0) - dt) < 0) { u.dbgT = .25; m.root.updateMatrixWorld(true); const b = new THREE.Box3(), v = new V3(); m.skin.obj.traverse(o => { if (o.isBone) b.expandByPoint(v.setFromMatrixPosition(o.matrixWorld)); }); const rp = m.root.position, c = b.getCenter(new V3()), dr = Math.hypot(c.x - rp.x, c.z - rp.z), hg = b.max.y - b.min.y, bt = b.min.y - rp.y, cl = (m.skin.curAct && m.skin.curAct.getClip().name) || '-', R = DBGF[u.kind] || (DBGF[u.kind] = { dr: 0, hmin: 99, hmax: 0, bmin: 99, bmax: -99, n: 0, H: MODEL_SLOTS[m.skin.slot].height, drc: '', st: {} }); R.n++; if (dr > R.dr) { R.dr = dr; R.drc = cl + '/' + u.state; } R.hmin = Math.min(R.hmin, hg); R.hmax = Math.max(R.hmax, hg); if (bt < R.bmin) { R.bmin = bt; R.bminc = cl + '/' + u.state; } if (bt > R.bmax) { R.bmax = bt; R.bmaxc = cl + '/' + u.state; } }
   if (u.q) { if (u.state !== 'wind' && u.state !== 'atk') u.q = null; else if (u.q.length && m.skin && T >= m.skin.holdT) foeAnimNext(u); }   // (a move's own animations, one after another)
   const busy = u.state === 'wind' || u.state === 'atk';
   skinPlay(m, u.state === 'die' ? 'die' : u.state === 'launch' ? 'blow' : u.state === 'down' ? 'land' : u.state === 'flinch' || u.state === 'recoil' || u.state === 'dizzy' ? 'hit' : busy && u.atk === 'mv' ? (walk > .5 ? 'walk' : 'idle') : busy && u.atk !== 'rush' ? 'attack' : u.state === 'spawn' ? 'jump' : walk > .5 ? 'walk' : 'idle');
@@ -13239,6 +13241,7 @@ showScreen(null); syncPauseBtns();
     if (q.get('menu') && LV.kh) { KH.sub = q.get('menu'); KH.cur = KH_MENU.findIndex(c => c.sub === KH.sub); }   // (&menu=magic: that list open, for testing)
     if (q.get('cast') && q.get('cast') !== 'all' && LV.kh) { KH.mp = 100; KH.magicCD = 0; KH.atk = null; khCast(q.get('cast')); for (let i = 0; i < 12; i++) step(1 / 60, true); }   // (&cast=thunder: a spell just before the picture)
     if (q.get('dbg') && hob.skin && hob.skin.obj) { scene.updateMatrixWorld(true); let smin = 9, smax = 0, nan = 0; hob.skin.obj.traverse(o => { if (o.isSkinnedMesh) for (const bn of o.skeleton.bones) { const s = bn.getWorldScale(new THREE.Vector3()).x; if (isNaN(s)) nan++; else { smin = Math.min(smin, s); smax = Math.max(smax, s); } } }); console.log('HERO bone scales ' + smin.toFixed(5) + '..' + smax.toFixed(5) + ' nan ' + nan + ' acts ' + hob.skin.mixer._actions.filter(a => a.isRunning()).map(a => a.getClip().name + ':' + a.getEffectiveWeight().toFixed(2)).join(',')); const b = new THREE.Box3(); hob.skin.obj.traverse(o => { if (o.isBone) b.expandByPoint(new THREE.Vector3().setFromMatrixPosition(o.matrixWorld)); }); console.log('HERO clip ' + (hob.skin.curAct ? hob.skin.curAct.getClip().name + ' w' + hob.skin.curAct.getEffectiveWeight().toFixed(2) + ' t' + hob.skin.curAct.time.toFixed(2) : '-') + ' bones ' + b.min.toArray().map(v => v.toFixed(1)) + ' .. ' + b.max.toArray().map(v => v.toFixed(1)) + ' P ' + tw(P.s, P.x, P.y).toArray().map(v => v.toFixed(1)) + ' root vis ' + hob.root.visible + ' body vis ' + hob.body.visible + ' scale ' + hob.root.scale.x.toFixed(2)); }
+    if (DBGF) for (const k in DBGF) { const R = DBGF[k]; console.log(`FOE ${k}: drift ${R.dr.toFixed(2)} (${R.drc}) height ${R.hmin.toFixed(2)}..${R.hmax.toFixed(2)} of ${R.H} feet ${R.bmin.toFixed(2)} (${R.bminc}) .. ${R.bmax.toFixed(2)} (${R.bmaxc}) n${R.n}`); }
     if (LV.kh) console.log(`${LV.name} after ${q.get('sim')}s: walkto ${WALKTO ? WALKTO.map(v => v.toFixed(1)).join(',') : '-'},${KH.boss ? ` boss ${KH.boss.state}${KH.boss.a ? '/' + KH.boss.a.type + '/' + KH.boss.a.ph : ''} hp ${Math.round(KH.boss.hp)} phase ${KH.boss.phase},` : ''} drive ${Math.round(KH.drive)} form ${KH.form.toFixed(1)}, reactions ${JSON.stringify(KH.rx || {})}, hits on Gandalf ${KH.godHits || 0}, squares done ${LV.layout.plazas.filter(p => p.done).length}/${LV.layout.plazas.length}, in ${KH.plaza ? LV.layout.plazas.indexOf(KH.plaza) : '-'} wave ${KH.plaza ? KH.plaza.wave : '-'}, uruks ${URUKS.length} (${URUKS.map(u => u.state + ':' + Math.round(u.hp)).join(' ')}), HP ${Math.round(KH.hp)} MP ${Math.round(KH.mp)}, kills ${gs.kills}, at ${P.s.toFixed(0)},${P.x.toFixed(0)},${P.y.toFixed(1)} (ground ${TERR ? terrainAt(P.s, P.x).toFixed(1) : 'none'}, on ${P.ground} ${P.standOn ? P.standOn.kind + ' ' + [P.standOn.y0, P.standOn.y1].map(v => v && v.toFixed(1)) : ''}), state ${state}`);
       console.log(`camera at ${camera.position.toArray().map(v => v.toFixed(1)).join(",")} looking ${camera.getWorldDirection(new V3()).toArray().map(v => v.toFixed(2)).join(",")}, Gandalf at ${tw(P.s, P.x, P.y).toArray().map(v => v.toFixed(1)).join(",")}`);
       if (LV.flyers && q.get('autorun')) setTimeout(() => { const f0 = FLY.list.find(f => f.state !== 'wait'); if (f0) { const p = tw(f0.s, f0.x, f0.y); DEBUG_CAM = { p: p.clone().add(new V3(14, 4, 14)), l: p }; let n = 0, nm = []; const so = f0.m.skin && f0.m.skin.obj, inS = new Set(); if (so) so.traverse(o => inS.add(o)); f0.m.root.traverse(o => { if (o.isMesh && o.visible) { n++; if (!inS.has(o) && nm.length < 6) nm.push(o.name || o.geometry.type); else if (inS.has(o) && nm.length < 12) nm.push('S:' + o.name); } }); console.log('autorun flyer visible meshes ' + n + ' skin ' + !!so + ' insc ' + inS.size + ' ' + nm.join(',') + ' state ' + f0.state + ' names ' + (so ? (() => { const a = []; so.traverse(o => { if (o.isMesh) a.push(o.name + (o.visible ? '' : '(hid)')); }); return a.join(','); })() : '')); } }, 14000);
