@@ -11501,7 +11501,7 @@ THEMES.minekh = natTheme({
 //  open space from solid (by the brushes in their own order: the last one round a point says whether it's carved out or filled), cut finer where that changes
 //  across it. Its floors become walkways, its walls walls (in WGRID); its static meshes stand where the map put them, its lights are baked into the stone.
 // =====================================================================
-const UTM = {}, UTM_SC = 1 / 50, UT_NOWALL = new URLSearchParams(location.search).get('utreach') === '2';
+const UTM = {}, UTM_SC = 1 / 50, UTH_S = -700, UT_NOWALL = new URLSearchParams(location.search).get('utreach') === '2';
 async function loadUTMap(name) {
   if (!LOCAL_ASSETS || new URLSearchParams(location.search).get('layout') === 'classic') return null;
   const r = await fetch(`levels/ut/${name}.json`).catch(() => null); if (!r || !r.ok) return null;
@@ -11563,19 +11563,19 @@ function utCarve(D) {
 }
 // a light's colour from Unreal's hue and saturation (0..255; 255 saturation is white)
 const utLightCol = (h, s) => new THREE.Color().setHSL(h / 255, 1 - s / 255, .5 + (s / 255) * .5);
-// the Mines of Moria on CTF-BridgeOfFate: its halls of arches and columns, its banners, its great bridges of rock over the chasm; Moria's goblins in its open halls,
-// from one base across the bridges to the other. Without the file the Mines keep their own caverns (mineLayout)
+// the Dwarrowdelf on CTF-BridgeOfFate, the halls you come through to the Bridge of Khazad-dûm: its halls of arches and columns and banners, set far off from the bridge's own
+// chamber; goblins in three of them, and at the far end a dwarven gate that brings you out on the ledge before the bridge. Without the file the level starts in its own halls
 async function loadMoriaUT() {
   const U = await loadUTMap('bridgeoffate'); if (!U) return;
-  try { applyUTMines(LEVELS.find(L => L.theme === 'minekh'), U); } catch (e) { console.warn('Valinor: the Mines could not be built on CTF-BridgeOfFate:', e); }
+  try { applyUTMines(LEVELS.find(L => L.theme === 'khazad'), U); } catch (e) { console.warn('Valinor: the halls before the Bridge of Khazad-dûm could not be built on CTF-BridgeOfFate:', e); }
 }
 function applyUTMines(L, U) {
-  const D = U.D, SC = UTM_SC, t0 = performance.now(), C = utCarve(D);
+  const D = U.D, SC = UTM_SC, t0 = performance.now(), C = utCarve(D), tC = performance.now();
   // the level's frame: Unreal's middle at s = x = 0, its lowest floor at 0
   let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, z0 = 1e9; for (const b of D.brushes) if (b.op < 0) { x0 = Math.min(x0, b.b[0]); x1 = Math.max(x1, b.b[3]); y0 = Math.min(y0, b.b[1]); y1 = Math.max(y1, b.b[4]); }
   for (const [A, B_, Cc] of C.floors) z0 = Math.min(z0, A[2], B_[2], Cc[2]);
-  const ox = (x0 + x1) / 2, oy = (y0 + y1) / 2, oz = z0, lv = (X, Y, Z) => [(Y - oy) * SC, -(X - ox) * SC, (Z - oz) * SC];
-  const S0 = Math.floor((y0 - oy) * SC) - 4, S1 = Math.ceil((y1 - oy) * SC) + 4, X0 = Math.floor(-(x1 - ox) * SC) - 4, X1 = Math.ceil(-(x0 - ox) * SC) + 4;
+  const ox = (x0 + x1) / 2, oy = (y0 + y1) / 2, oz = z0, lv = (X, Y, Z) => [(Y - oy) * SC + UTH_S, -(X - ox) * SC, (Z - oz) * SC];   /* (well away from the bridge's chamber) */
+  const S0 = Math.floor((y0 - oy) * SC + UTH_S) - 4, S1 = Math.ceil((y1 - oy) * SC + UTH_S) + 4, X0 = Math.floor(-(x1 - ox) * SC) - 4, X1 = Math.ceil(-(x0 - ox) * SC) + 4;
   // the floors: walkways (each face turned up, laid into metre squares)
   const DK = newDeck(S0, X0, X1 - X0 + 1, S1 - S0 + 1);
   // the blocking volumes (often smooth ramps laid over stairs): their tops are floor, their sides wall; and the tops of the map's meshes that are walked on (its bridges)
@@ -11590,13 +11590,13 @@ function applyUTMines(L, U) {
       if (nl > 1e-6 && ny / nl > .6) meshF.push(w); } }
   for (const [A, B_, Cc] of [...C.floors, ...volF, ...meshF]) deckTri(DK, lv(A[0], A[1], A[2]), lv(B_[0], B_[1], B_[2]), lv(Cc[0], Cc[1], Cc[2]));
   // the walls: what each metre square has of wall in it, high and low; a step's riser (lower than .7) is no wall, the walkway climbs it
-  const wc = new Map();   // (each metre square: its pieces of wall, as height ranges [low, high], those that touch joined)
-  for (const [A, B_, Cc] of [...C.walls, ...volW]) { const e = Math.max(Math.hypot(A[0] - B_[0], A[1] - B_[1], A[2] - B_[2]), Math.hypot(B_[0] - Cc[0], B_[1] - Cc[1], B_[2] - Cc[2]), Math.hypot(Cc[0] - A[0], Cc[1] - A[1], Cc[2] - A[2])), n = Math.max(1, Math.ceil(e / 20)), own = new Map();
+  const tD = performance.now(); const wc = new Map();   // (each metre square: its pieces of wall, as height ranges [low, high], those that touch joined)
+  for (const [A, B_, Cc] of [...C.walls, ...volW]) { const e = Math.max(Math.hypot(A[0] - B_[0], A[1] - B_[1], A[2] - B_[2]), Math.hypot(B_[0] - Cc[0], B_[1] - Cc[1], B_[2] - Cc[2]), Math.hypot(Cc[0] - A[0], Cc[1] - A[1], Cc[2] - A[2])), n = Math.max(1, Math.ceil(e / 30)), own = new Map();
     for (let i = 0; i <= n; i++) for (let j = 0; j <= n - i; j++) { const a = i / n, b = j / n, c = 1 - a - b, p = lv(A[0] * a + B_[0] * b + Cc[0] * c, A[1] * a + B_[1] * b + Cc[1] * c, A[2] * a + B_[2] * b + Cc[2] * c), k = Math.round(p[0]) * 100003 + Math.round(p[1]); const w = own.get(k); if (!w) own.set(k, [Math.round(p[0]), Math.round(p[1]), p[2], p[2]]); else { w[2] = Math.min(w[2], p[2]); w[3] = Math.max(w[3], p[2]); } }
     for (const [k, [s, x, lo, hi]] of own) { let c = wc.get(k); if (!c) wc.set(k, c = { s, x, r: [] }); let a = lo, b = hi; c.r = c.r.filter(r => { if (r[0] <= b + .15 && r[1] >= a - .15) { a = Math.min(a, r[0]); b = Math.max(b, r[1]); return false; } return true; }); c.r.push([a, b]); } }
   const walls = []; for (const c of wc.values()) for (const [lo, hi] of c.r) if (hi - lo > .7) walls.push({ s0: c.s - .5, s1: c.s + .5, x0: c.x - .5, x1: c.x + .5, y0: lo, y1: hi, kind: 'wall', on: true });  // the map's columns are walls too
   for (const m of D.placed) { if (!/column|Pillar/i.test(m[0])) continue; const pc = U.pieces[m[0]]; if (!pc) continue; const r = Math.max(pc.b[3] - pc.b[0], pc.b[4] - pc.b[1]) * Math.max(m[7], m[8]) * SC * .4, p = lv(m[1], m[2], m[3]); walls.push({ s0: p[0] - r, s1: p[0] + r, x0: p[1] - r, x1: p[1] + r, y0: p[2] + pc.b[2] * m[9] * SC, y1: p[2] + pc.b[5] * m[9] * SC, kind: 'wall', on: true }); }
-  const grid = new Map(); for (const b of walls) for (let s = Math.floor((b.s0 - 1) / 4); s <= Math.floor((b.s1 + 1) / 4); s++) for (let x = Math.floor((b.x0 - 1) / 4); x <= Math.floor((b.x1 + 1) / 4); x++) { const k = s * 100003 + x; let l = grid.get(k); if (!l) grid.set(k, l = []); l.push(b); }
+  const tW = performance.now(); const grid = new Map(); for (const b of walls) for (let s = Math.floor((b.s0 - 1) / 4); s <= Math.floor((b.s1 + 1) / 4); s++) for (let x = Math.floor((b.x0 - 1) / 4); x <= Math.floor((b.x1 + 1) / 4); x++) { const k = s * 100003 + x; let l = grid.get(k); if (!l) grid.set(k, l = []); l.push(b); }
   // a flat floor far down, under the chasm (fall to it and you're put back where you last stood)
   const lowY = -24, N = 9, T_ = { w: N, h: N, hs: new Float32Array(N * N).fill(lowY), cx: 4, cy: 4, sea: -999, sc: Math.max(S1 - S0, X1 - X0), g: new Array(N * N).fill('c') };
   // where you start (a player start, the one furthest from the middle), and four squares to fight in: open halls, further and further from it, the last at the far end
@@ -11608,9 +11608,12 @@ function applyUTMines(L, U) {
   // how far each floor square is from the start on foot (up steps under a metre, down drops under four, never through a wall): the squares go in halls you can reach
   const NL = DECK_L, dist = new Int32Array(DK.w * DK.h * NL).fill(-1), lay = DK.lay, layerOf = (k, y, up, down) => { let b = -1, bd = 1e9; for (let q = 0; q < NL; q++) { const v = lay[k * NL + q]; if (v <= NO_DECK) continue; const dy = v - y; if (dy <= up && dy >= -down && Math.abs(dy) < bd) { bd = Math.abs(dy); b = q; } } return b; };
   // (search the floors from some squares: how many steps to each, up steps under 1.9 m (a jump), down drops under 5 m, never through a wall)
-  const bfs = src => { dist.fill(-1); const Q = src.slice(); for (const n of Q) dist[n] = 0; for (let h = 0; h < Q.length; h++) { const n = Q[h], k = n / NL | 0, y = lay[n], i = k % DK.w, j = k / DK.w | 0; for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= DK.w || jj >= DK.h) continue; const kk = jj * DK.w + ii, q = layerOf(kk, y, 1.9, 5); if (q < 0) continue; const nn = kk * NL + q; if (dist[nn] >= 0 || (!UT_NOWALL && wallAt(DK.s0 + jj, DK.x0 + ii, Math.min(y, lay[nn])))) continue; dist[nn] = dist[n] + 1; Q.push(nn); } } return Q; };
+  const bfs = (src, dd = dist, keep) => { if (!keep) dd.fill(-1); const Q = src.slice(); for (const n of Q) dd[n] = 0; for (let h = 0; h < Q.length; h++) { const n = Q[h], k = n / NL | 0, y = lay[n], i = k % DK.w, j = k / DK.w | 0; for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= DK.w || jj >= DK.h) continue; const kk = jj * DK.w + ii, q = layerOf(kk, y, 1.9, 5); if (q < 0) continue; const nn = kk * NL + q; if (dd[nn] >= 0 || (!UT_NOWALL && wallAt(DK.s0 + jj, DK.x0 + ii, Math.min(y, lay[nn])))) continue; dd[nn] = dd[n] + 1; Q.push(nn); } } return Q; };
   // the biggest stretch of floor you can walk, and the two ends of the longest walk across it: you start at one, the last fight is at the other
-  { let best = null; const seen = new Uint8Array(dist.length); for (let n = 0; n < lay.length; n += 7) { if (lay[n] <= NO_DECK || seen[n]) continue; const Q = bfs([n]); for (const m of Q) seen[m] = 1; if (!best || Q.length > best.length) best = Q; if (best.length > lay.length * .2) break; }
+  { const seen = new Int32Array(dist.length).fill(-1), lab = new Int32Array(dist.length).fill(-1), comps = [];   /* (every stretch marked once, in one pass; the one the map's bots walk most is the one) */
+    for (let n = 0; n < lay.length; n += 7) { if (lay[n] <= NO_DECK || seen[n] >= 0) continue; const Q = bfs([n], seen, true); for (const m of Q) lab[m] = comps.length; comps.push({ Q, hits: 0 }); }
+    for (const p of D.paths) { const q = lv(...p), i = Math.round(q[1] - DK.x0), j = Math.round(q[0] - DK.s0); if (i < 0 || j < 0 || i >= DK.w || j >= DK.h) continue; const k = j * DK.w + i, ly = layerOf(k, q[2] - .8, 1.5, 1.5); if (ly >= 0 && lab[k * NL + ly] >= 0) comps[lab[k * NL + ly]].hits++; }
+    var best = comps.reduce((a, c) => !a || c.hits > a.hits || (c.hits === a.hits && c.Q.length > a.Q.length) ? c : a, null); best = best && best.Q;
     if (best) { let a = best[best.length - 1]; const Q2 = bfs([a]), b = Q2[Q2.length - 1]; const k = b / NL | 0; st[0] = DK.s0 + (k / DK.w | 0); st[1] = DK.x0 + k % DK.w; st[2] = lay[b]; bfs([b]); } }
   if (new URLSearchParams(location.search).get('utreach') === '3') { const W = 300, cv = document.createElement('canvas'); cv.width = cv.height = W * 3; cv.style.cssText = 'position:fixed;left:0;top:0;z-index:99999;background:#000;width:900px;height:900px'; const g = cv.getContext('2d');
     for (let j = 0; j < W; j++) for (let i = 0; i < W; i++) { const s = st[0] + (W / 2 - j), x = st[1] + (i - W / 2), ii = Math.round(x - DK.x0), jj = Math.round(s - DK.s0); if (ii < 0 || jj < 0 || ii >= DK.w || jj >= DK.h) continue; const k = jj * DK.w + ii; let reach = false, any = false; for (let q = 0; q < NL; q++) { if (lay[k * NL + q] > NO_DECK) any = true; if (dist[k * NL + q] >= 0) reach = true; } const w = wc.get(Math.round(s) * 100003 + Math.round(x)); g.fillStyle = reach ? '#2c2' : w && w.r.some(r => r[1] - r[0] > .7) ? '#c22' : any ? '#555' : '#000'; g.fillRect(i * 3, j * 3, 3, 3); }
@@ -11619,21 +11622,20 @@ function applyUTMines(L, U) {
   // (the start: the most open floor near that end of the walk; and the lowest floor you can walk to, under which a fall puts you back)
   let lowWalk = 1e9, maxD = 0; for (let n = 0; n < dist.length; n++) if (dist[n] >= 0) { lowWalk = Math.min(lowWalk, lay[n]); maxD = Math.max(maxD, dist[n]); }
   { let best = null, bs = -1; for (let n = 0; n < dist.length; n += 3) { if (dist[n] < 0 || dist[n] > maxD * .18) continue; const k = n / NL | 0, s = DK.s0 + (k / DK.w | 0), x = DK.x0 + k % DK.w, sc = open(s, x, lay[n], 6) - dist[n] / maxD * .3; if (sc > bs) { bs = sc; best = [s, x, lay[n]]; } } if (best) { st[0] = best[0]; st[1] = best[1]; st[2] = best[2]; } }  const cand = D.paths.map(p => lv(...p)).map(p => [p[0], p[1], deckY(p[0], p[1], p[2])]).filter(p => p[2] > NO_DECK).map(p => [...p, open(p[0], p[1], p[2], 8), walkD(p[0], p[1], p[2])]).filter(p => p[3] > .8 && p[4] > 0);
-  if (new URLSearchParams(location.search).get('utreach')) { let n = 0, all = 0; for (const v of dist) if (v >= 0) n++; for (const v of lay) if (v > NO_DECK) all++; console.log(`Mines: ${n} of ${all} floor squares reachable from the start (${st.map(v => v.toFixed(1))}), ${cand.length} open places to fight, furthest ${Math.max(0, ...cand.map(p => p[4]))} squares' walk`); }
+  if (new URLSearchParams(location.search).get('utreach')) { let n = 0, all = 0; for (const v of dist) if (v >= 0) n++; for (const v of lay) if (v > NO_DECK) all++; console.log(`Dwarrowdelf: ${n} of ${all} floor squares reachable from the start (${st.map(v => v.toFixed(1))}), ${cand.length} open places to fight, furthest ${Math.max(0, ...cand.map(p => p[4]))} squares' walk`); }
   const far = Math.max(...cand.map(p => p[4]), 40), picks = [];
-  for (const f of [.18, .45, .72, 1]) { let best = null, bd = 1e9; for (const p of cand) { const d = Math.abs(p[4] - far * f) + (picks.some(q => Math.hypot(q[0] - p[0], q[1] - p[1]) < 22) ? 1e5 : 0); if (d < bd) { bd = d; best = p; } } if (best) picks.push(best); }
-  const old = mineLayout().layout.plazas;
-  const plazas = picks.map((p, i) => ({ ...old[Math.min(i, old.length - 1)], s: p[0], x: p[1], y: p[2], fromY: p[2], r: i === picks.length - 1 ? 11 : 9.5, breach: [p[0] + 6, p[1]], bossTo: [p[0] + 3, p[1]], noAdds: true }));
-  if (plazas.length) { plazas.forEach((p, i) => { p.last = p.boss = i === plazas.length - 1; }); }
-  Object.assign(L, { field: [S0 + 3, S1 - 3, X0 + 3, X1 - 3], start: [st[0], st[1]], startY: st[2], startH: plazas.length ? Math.atan2(plazas[0].x - st[1], plazas[0].s - st[0]) : 0, deck: DK, terrain: T_, wgrid: grid, stepUp: true, camWalls: true, theme: 'mineut', utFall: lowWalk - 8,
-    layout: { blocks: [], plazas, ut: { U, C, lv, ox, oy, oz, SC } }, content() { mineUTContent(this); } });
-  console.log(`Valinor: the Mines on CTF-BridgeOfFate: ${Object.values(C.out).reduce((n, g) => n + g.p.length / 9, 0) | 0} faces, ${C.floors.length} floor, ${walls.length} walls, ${plazas.length} squares, built in ${(performance.now() - t0) | 0} ms`);
+  for (const f of [.3, .65, .95]) { let best = null, bd = 1e9; for (const p of cand) { const d = Math.abs(p[4] - far * f) + (picks.some(q => Math.hypot(q[0] - p[0], q[1] - p[1]) < 22) ? 1e5 : 0); if (d < bd) { bd = d; best = p; } } if (best) picks.push(best); }
+  const old = L.layout.plazas, plazas = [...picks.map((p, i) => ({ ...old[Math.min(i, old.length - 2)], s: p[0], x: p[1], y: p[2], fromY: p[2], r: 9.5, breach: [p[0] + 6, p[1]], bossTo: [p[0] + 3, p[1]], noAdds: true })), old[old.length - 1]];
+  let gate = null; { let bd = -1; for (let n = 0; n < dist.length; n += 2) if (dist[n] > bd) { bd = dist[n]; const k = n / NL | 0; gate = [DK.s0 + (k / DK.w | 0), DK.x0 + k % DK.w, lay[n]]; } }   // (the dwarven gate on to the bridge: the far end of the walk)
+  const kc = L.content; Object.assign(L, { field: [S0 + 3, Math.max(S1 - 3, L.field[1]), Math.min(X0 + 3, L.field[2]), Math.max(X1 - 3, L.field[3])], start: [st[0], st[1]], startY: st[2], startH: Math.atan2(plazas[0].x - st[1], plazas[0].s - st[0]), deck: DK, wgrid: grid, stepUp: true, camWalls: true, utFall: lowWalk - 8,
+    layout: { ...L.layout, plazas, utGate: gate, ut: { U, C, lv, ox, oy, oz, SC } }, content() { kc.call(this); mineUTContent(this); } });
+  console.log(`Valinor: the Dwarrowdelf before the Bridge of Khazad-dûm, on CTF-BridgeOfFate: ${Object.values(C.out).reduce((n, g) => n + g.p.length / 9, 0) | 0} faces, ${C.floors.length} floor, ${walls.length} walls, ${plazas.length} squares, built in ${(performance.now() - t0) | 0} ms (carving ${(tC - t0) | 0}, floors ${(tD - tC) | 0}, walls ${(tW - tD) | 0})`);
 }
 function mineUTContent(L) {
-  const Y = L.layout; for (const p of Y.plazas) for (const [a, k] of [[.8, 'b'], [2.7, 'q'], [4.7, 'b']]) { const s = p.s + Math.cos(a) * (p.r - 2), x = p.x + Math.sin(a) * (p.r - 2); addCrate(k, s, x, 0, p.y + 2); }
+  const Y = L.layout; for (const p of Y.plazas) if (p.s < UTH_S / 2) for (const [a, k] of [[.8, 'b'], [2.7, 'q'], [4.7, 'b']]) { const s = p.s + Math.cos(a) * (p.r - 2), x = p.x + Math.sin(a) * (p.r - 2); addCrate(k, s, x, 0, p.y + 2); }
 }
 // the map's stone, its own pictures made brighter, each face lit by the map's own lights (baked in), and its meshes where it put them
-function buildMineUT(L, TH) {
+function buildDwarrowdelf(L, TH) {
   const { U, C, lv, ox, oy, oz, SC } = L.layout.ut, D = U.D, first = scene.children.length, sky = TH.env, K = U.K;
   const tone = [1.25, .78], AMB = new THREE.Color(.34, .32, .31);
   // the lights: those near each point light it, by Unreal's falloff (radius in Unreal units is 25 to each of its LightRadius)
@@ -11672,21 +11674,19 @@ function buildMineUT(L, TH) {
   TH.fires = fires;
   // glows at the brighter lights, so the halls shine as the map's do
   lights.forEach((l, i) => { if (i % 4) return; const p = lv(l.x, l.y, l.z), g = glowSprite('#' + l.c.getHexString(), 3, .35); tw(p[0], p[1], p[2], g.position); scene.add(g); });
+  // the dwarven gate on to the bridge: two pillars, a lintel with runes of blue fire, the doorway full of light
+  { const G = L.layout.utGate; if (G) { const g = new THREE.Group(); place(g, G[0], G[1], G[2], 0); scene.add(g); const st = surf(TX.hdStone, { sky, color: 0x9a96a2, rough: .55, bump: 3, env: .45, tri: 2.2 }); for (const sx of [-1, 1]) part(GEO_BOX, st, g, sx * 2.4, 3.2, 0, 1.2, 6.4, 1.6); part(GEO_BOX, st, g, 0, 6.9, 0, 6.4, 1.1, 1.8); part(GEO_BOX, new THREE.MeshBasicMaterial({ color: 0x7ad0ff }), g, 0, 6.9, .92, 4, .2, .05); const d = part(new THREE.PlaneGeometry(3.6, 6.2), new THREE.MeshBasicMaterial({ color: 0xbfe8ff, transparent: true, opacity: .55, side: THREE.DoubleSide, depthWrite: false }), g, 0, 3.1, 0); d.userData.keep = true; const gl = glowSprite(0x8ad8ff, 9, .7); gl.position.set(0, 3.2, 0); g.add(gl); g.userData.keep = true; } }
   bakeScenery(scene.children.slice(first));
 }
 function updateMineUT(dt) {
-  if (!LV || LV.theme !== 'mineut' || state !== 'play') return; const TH = THEMES.mineut;
+  if (!LV || !LV.layout || !LV.layout.ut || state !== 'play' || P.s > UTH_S / 2) return; const TH = THEMES[LV.theme], G = LV.layout.utGate;
+  if (G && !TH.gateTest && new URLSearchParams(location.search).get('utgate')) { TH.gateTest = 1; LV.layout.plazas.slice(0, -1).forEach(p => p.done = true); P.s = G[0]; P.x = G[1]; P.y = G[2] + .05; }   /* (&utgate=1: straight to the gate, the halls done, for testing) */
+  if (G && Math.hypot(P.s - G[0], P.x - G[1]) < 3.2 && Math.abs(P.y - G[2]) < 3) { if (LV.layout.plazas.slice(0, -1).every(p => p.done)) { P.s = -20; P.x = 0; P.y = .05; P.vs = P.vx = P.vy = 0; P.heading = cam.yaw = 0; LV.utSafe = null; banner('THE BRIDGE OF KHAZAD-DÛM: DURIN\'S BANE!', 2.4); return; } else if (!TH.gateSaid) { TH.gateSaid = 1; banner('THE DWARROWDELF: CLEAR THE HALLS FIRST!', 1.8); } } else TH.gateSaid = 0;
   TH.airT = P.ground ? 0 : (TH.airT || 0) + dt;   /* (a fall into a hole the halls don't show a floor for, or to the bottom of the chasm: back to where you last stood) */
-  if (P.ground && P.y > LV.utFall) LV.utSafe = [P.s, P.x, P.y]; else if ((P.y < LV.utFall || TH.airT > 2.5) && LV.utSafe) { TH.airT = 0; [P.s, P.x, P.y] = LV.utSafe; P.vy = P.vs = P.vx = 0; banner('THE MINES OF MORIA: BACK FROM THE BRINK!', 1.6); }
+  if (P.ground && P.y > LV.utFall) LV.utSafe = [P.s, P.x, P.y]; else if ((P.y < LV.utFall || TH.airT > 2.5) && LV.utSafe) { TH.airT = 0; [P.s, P.x, P.y] = LV.utSafe; P.vy = P.vs = P.vx = 0; banner('THE DWARROWDELF: BACK FROM THE BRINK!', 1.6); }
   for (const p of TH.fires || []) if (Math.random() < dt * 3 && p.distanceTo(tw(P.s, P.x, P.y)) < 40) bfire(p.clone().add(new V3(0, .7, 0)), rand(.5, .9), 1.4);
   if (Math.random() < dt * 10) fx.spawn(...tw(P.s + rand(-12, 12), P.x + rand(-12, 12), P.y + rand(.5, 7)).toArray(), rand(-.15, .15), rand(-.1, .1), rand(-.15, .15), rand(2, 4), .05, .05, [1, .9, .7], [.6, .5, .35], 0, 0);
 }
-THEMES.mineut = natTheme({
-  wallTex: TX.hdRock, floorTex: TX.hdRock, tint: [.75, .75, .72], door: 0x6a6a7a,
-  env: { sky: [0x0a0806, 0x140e0a, 0x201810, 0x2a2016], fog: [30, 160], fogC: 0x1a120c, amb: [0x8a7a6a, .55], hemi: [0xd8c0a0, 0x3a2c1e, .4], sun: [0xffd8a0, .2], east: [0xffa060, .1], bloom: .35, sunDir: [10, 90, 20] },
-  orc: { sk: 0x8a907a, ska: 0xa0a488, ar: 0x2a2630, le: 0x3a2a1a, met: 0x1e1c22, sc: .85 },
-  scenery(L) { buildMineUT(L, this); },
-});
 // the Balrog in The Fall: his bones posed by hand each frame (no clip of his lies him out): flat on his back, wings spread wide to each side, arms flung out,
 // legs trailing, head up the screen looking at Gandalf; then the whole of him moved so his body's middle lies on the middle of the shaft
 const _fq = new THREE.Quaternion(), _fw = new THREE.Quaternion(), _fp = new THREE.Quaternion(), _f1 = new V3(), _f2 = new V3(), _f3 = new V3();
@@ -12638,6 +12638,7 @@ function khazadContent(L) {
   for (let s = 2; s < 28; s += 3) addApple(s, 0, .8);
 }
 function buildKhazad(L, TH) {
+  if (L.layout.ut) buildDwarrowdelf(L, TH);
   const first = scene.children.length, sky = TH.env, Y = L.layout;
   const rock = surf(TX.hdRock, { sky, color: 0x4a4a54, rough: .7, bump: 2.6, env: .3, tri: 4 }), stone = surf(TX.hdStone, { sky, color: 0x77727e, rough: .6, bump: 3, env: .4, tri: 2.2 }), stoneL = surf(TX.hdStone, { sky, color: 0x9a96a2, rough: .55, bump: 3, env: .45, tri: 2.2 }), iron = lam(0x1a1a20), flag = surf(TX.hdFlag || TX.hdStone, { sky, color: 0x8a8690, rough: .45, bump: 2.5, env: .6, tri: 3 });
   // the floors of the halls, polished by the feet of dwarves; the two ledges falling away into the dark
