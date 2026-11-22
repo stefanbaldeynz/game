@@ -9274,6 +9274,54 @@ function utPut(K, name, s, x, y, h = 0, sc = 1, look = {}, blocks = null) {
   }
   return g;
 }
+// a piece inside a group, in the group's own frame (x across, y up, z along); look as utPut's. Without the kit a plain block its size
+function utAdd(parent, K, name, x, y, z, ry = 0, sc = 1, look = {}) {
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; if (Array.isArray(sc)) g.scale.set(sc[0], sc[1], sc[2]); else g.scale.setScalar(sc); parent.add(g);
+  const p = K && K.pieces[name];
+  if (p) for (const q of p.parts) g.add(new THREE.Mesh(q.geo, utMat(K, q.tex, look)));
+  else { const b = (UT_BOX[name] || [-100, -100, 0, 100, 100, 200]).map(v => v * UT_SC), o = typeof look === 'function' ? look('') : look; part(GEO_BOX, o.mat || lam(o.color ?? 0xf4f0e8), g, (b[0] + b[3]) / 2, (b[2] + b[5]) / 2, (b[1] + b[4]) / 2, b[3] - b[0], b[5] - b[2], b[4] - b[1]); }
+  return g;
+}
+// a paper lantern as CTF-MoonDragon hangs them: a glowing round shade between gold caps, on a cord (len) from where it hangs
+function paperLantern(parent, x, y, z, r = .5, col = 0xff6a48, len = 0) {
+  part(GEO.sph, new THREE.MeshBasicMaterial({ color: col }), parent, x, y, z, r, r * 1.2, r); const gold = lam(0xe0b040, { emissive: 0x3a2400 });
+  part(GEO.cyl, gold, parent, x, y + r * 1.15, z, r * .55, r * .2, r * .55); part(GEO.cyl, gold, parent, x, y - r * 1.15, z, r * .45, r * .2, r * .45);
+  if (len) part(GEO.cyl, lam(0x2a1a10), parent, x, y + r * 1.2 + len / 2, z, .03, len, .03);
+  const gl = glowSprite(col === 0xff6a48 ? 0xff9a60 : col, r * 7, .6); gl.position.set(x, y, z); parent.add(gl);
+}
+// Elrond's house as CTF-MoonDragon's great hall: three storeys of Far East's red-lacquered panels (shoji doors at the front) on a marble plinth, each under a sweeping
+// roof (Rivendell's jade, gold-edged), balconies with the Far East's red rails, round windows glowing in the gables, paper lanterns at every eave, bronze urns by the steps.
+// The front faces the group's +z. sweep is buildRivKH's curved roof; pale its marble
+const RIV_HALL = { W: 16.4, D: 12.3, H: 4.1 };
+function rivHall(g, K, sweep, pale, paleD, sky) {
+  const P = 4.1 / 5.12, wood = { tone: [1.35, .72], rough: .6, bump: 1.2, env: .25 }, lac = lam(0xc8322a, { emissive: 0x2a0402 }), goldM = lam(0xe8b848, { emissive: 0x3a2800 }), cream = lam(0xf6ecd8);
+  const roofT = K ? utTex(K, 'FarEast.Architecture.roofdark', [.35, .55]) : null, roof = roofT ? surf(roofT, { sky, color: 0x62c4a8, rough: .45, bump: 1.4, env: .6, side: THREE.DoubleSide }) : lam(0x4a9a88, { side: THREE.DoubleSide });
+  part(GEO_BOX, paleD, g, 0, .6, 0, RIV_HALL.W + 3, 1.2, RIV_HALL.D + 3);
+  for (let k = 0; k < 4; k++) part(GEO_BOX, pale, g, 0, k * .3 + .15, RIV_HALL.D / 2 + 1.5 + (3 - k) * .55 + .3, 6, .3, .6);   // (the front steps)
+  for (const sx of [-1, 1]) { utAdd(g, K, 'urnopen01', sx * 4, 1.2 + 64 * UT_SC * 1.5, RIV_HALL.D / 2 + 2.2, 0, 1.5, { tone: [1.4, .5], color: 0xfff0c8, metal: .15, rough: .4, env: .5, emissive: 0x2a1a08 }); paperLantern(g, sx * 4, 3.4, RIV_HALL.D / 2 + 2.2, .3, 0xffd890); }
+  // one storey: panels on all four sides (the doors in the front middle), red pillars at the corners and between, a cream core so nothing shows through
+  const storey = (y0, nw, nd, doors) => {
+    const W = nw * 4.1, D = nd * 4.1; part(GEO_BOX, cream, g, 0, y0 + 2.05, 0, W - .3, 4.1, D - .3);
+    for (let i = 0; i < nw; i++) for (const [sz, ry] of [[1, Math.PI], [-1, 0]]) {   /* (the panels' faces look along their -z) */ const x = (i - (nw - 1) / 2) * 4.1, door = doors && sz > 0 && Math.abs(x) < 4.2; utAdd(g, K, door ? 'wallpanelwood25625604' : 'wallpanelwood25625601', x, y0 + 64 * UT_SC * P, sz * D / 2, ry, P, wood); }
+    for (let i = 0; i < nd; i++) for (const [sx, ry] of [[1, -Math.PI / 2], [-1, Math.PI / 2]]) utAdd(g, K, 'wallpanelwood25625601', sx * W / 2, y0 + 64 * UT_SC * P, (i - (nd - 1) / 2) * 4.1, ry, P, wood);
+    for (let i = 0; i <= nw; i++) for (const sz of [-1, 1]) { const x = (i - nw / 2) * 4.1; part(GEO.cyl, lac, g, x, y0 + 2.1, sz * (D / 2 + .15), .2, 4.2, .2); part(GEO_BOX, goldM, g, x, y0 + 4.15, sz * (D / 2 + .15), .5, .16, .5); }
+    for (let i = 1; i < nd; i++) for (const sx of [-1, 1]) part(GEO.cyl, lac, g, sx * (W / 2 + .15), y0 + 2.1, (i - nd / 2) * 4.1, .2, 4.2, .2);
+    return [W, D];
+  };
+  // a sweeping roof over a storey (W by D), gold along its edge, lanterns hanging from its corners, a round window glowing in its front
+  const eave = (y, W, D, h, over, lanterns = true) => {
+    const r = (W / 2 + over) / .707, m = sweep(g, 0, y, 0, r, h, 4, roof); if (m) m.scale.z = (D + over * 2) / (W + over * 2);
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { part(GEO.cone, goldM, g, sx * (W / 2 + over) * .98, y + .45, sz * (D / 2 + over) * .98, .22, .9, .22); if (lanterns) paperLantern(g, sx * (W / 2 + over - .5), y - 1.1, sz * (D / 2 + over - .5), .42, 0xff6a48, .7); }
+    const win = part(new THREE.CircleGeometry(.85, 24), new THREE.MeshBasicMaterial({ color: 0xffe0a0 }), g, 0, y + h * .38, (D / 2 + over) * (1 - .38) * .9 + .2); const fr = part(new THREE.TorusGeometry(.9, .1, 6, 24), goldM, g, 0, y + h * .38, (D / 2 + over) * (1 - .38) * .9 + .22);
+  };
+  // the balcony round an upper storey: a deck on the roof below, the Far East's red rail at its edge
+  const balcony = (y, W, D) => { part(GEO_BOX, paleD, g, 0, y - .15, 0, W, .3, D);
+    for (const [len, ax] of [[W, 'x'], [D, 'z']]) for (const sd of [-1, 1]) for (let t = -len / 2 + 2.56; t <= len / 2 + .01; t += 2.56) { if (ax === 'x') utAdd(g, K, 'balconystraight128', t, y, sd * D / 2, sd > 0 ? 0 : Math.PI, 1, wood); else utAdd(g, K, 'balconystraight128', sd * W / 2, y, t, sd > 0 ? -Math.PI / 2 : Math.PI / 2, 1, wood); } };
+  let y = 1.2; storey(y, 4, 3, true); eave(y + 4.1, 16.4, 12.3, 3, 2.2);
+  y += 5.3; balcony(y, 15, 11); storey(y, 3, 2, true); eave(y + 4.1, 12.3, 8.2, 2.6, 1.9);
+  y += 5.1; storey(y, 2, 1, false); eave(y + 4.1, 8.2, 4.1, 3.4, 1.7, false);
+  const dg = glowSprite(0xffd890, 9, .55); dg.position.set(0, 3.4, RIV_HALL.D / 2 + .8); g.add(dg);
+}
 // a round tower of Unreal's curved wall pieces (sixteen to a ring), r its radius, one storey of height hh for each in rings: [[r, hh], ...]; returns the top's height
 function utTower(K, s, x, y, rings, look, blocks) {
   let yy = y;
@@ -9947,7 +9995,7 @@ function rivLayout() {
     { kind: 'gate', s: -60, x: 0, y: PK[0][3] }, { kind: 'pav', s: -28, x: -30, y: PK[1][3], r: 4 }, { kind: 'tower', s: -24, x: 30, y: PK[2][3], h: 11 }, { kind: 'pav', s: 10, x: -48, y: PK[4][3], r: 3.6 }, { kind: 'tower', s: 13, x: 50, y: PK[5][3], h: 12 },
     { kind: 'pav', s: 42, x: -24, y: PK[6][3], r: 4.2 }, { kind: 'tower', s: 44, x: 28, y: PK[7][3], h: 10 }, { kind: 'shrine', s: 60, x: 0, y: PK[8][3] },
   ];
-  for (const b of builds) { if (b.kind === 'house') blocks.push([b.s, b.s + 7, -9, 9, b.y + 12, 'wall', -20]); else if (b.kind === 'tower') blocks.push([b.s - 1.8, b.s + 1.8, b.x - 1.8, b.x + 1.8, b.y + b.h, 'wall', -20]); }
+  for (const b of builds) { if (b.kind === 'house') blocks.push([b.s - 7.7, b.s + 7.7, -9.7, 9.7, b.y + 18, 'wall', -20]); else if (b.kind === 'tower') blocks.push([b.s - 1.8, b.s + 1.8, b.x - 1.8, b.x + 1.8, b.y + b.h, 'wall', -20]); }
   const FEL_ = [['frodo', 'FRODO', -22, -34, 1], ['sam', 'SAM', -32, -27, 1], ['merry', 'MERRY', -30, 33, 2], ['pippin', 'PIPPIN', 7, -46, 4], ['aragorn', 'ARAGORN', 8, 45, 5], ['legolas', 'LEGOLAS', 40, -21, 6], ['gimli', 'GIMLI', 39, 28, 7], ['boromir', 'BOROMIR', 58, 3, 8]];
   const fellowship = FEL_.map(([sl, nm, s, x, pi]) => [sl, nm, s, x, PK[pi][3]]);
   return { field: [-76, 76, -76, 76], start: [-66, 0], deck, terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -999, g },
@@ -9964,20 +10012,20 @@ function buildRivKH(L, TH) {
   const pale = surf(TX.marble, { sky, color: 0xe8e8f4, rough: .55, bump: 1.4, env: .55, tri: 3 }), paleD = surf(TX.marble, { sky, color: 0xb8bcd0, rough: .6, bump: 1.4, env: .45, tri: 3 }), goldM = lam(0xd8b060, { emissive: 0x3a2806 }), roofM = surf(TX.hdPlate || TX.marble, { sky, color: 0x4a7a7a, rough: .4, bump: 1, env: .8, side: THREE.DoubleSide }), roofG = lam(0xb89040, { emissive: 0x2a1c04, side: THREE.DoubleSide }), glassM = new THREE.MeshBasicMaterial({ color: 0xffd890 });
   // a roof that sweeps up at its edge, round (or squared, n = 4), with a golden finial
   const roofPts = (r, h) => { const a = []; for (let k = 0; k <= 10; k++) { const t = k / 10; a.push(new THREE.Vector2(r * (1 - t) * (1 - t) + .02, h * Math.pow(t, 1.5) + (1 - t) * (1 - t) * r * .14)); } return a; };
-  const sweep = (g, x, y, z, r, h, n = 16, m = roofM) => { const R_ = new THREE.Mesh(new THREE.LatheGeometry(roofPts(r, h), n), m); R_.position.set(x, y, z); if (n === 4) R_.rotation.y = Math.PI / 4; g.add(R_); part(GEO.cyl, goldM, g, x, y + h + .5, z, .05, 1.2, .05); part(GEO.sph, goldM, g, x, y + h + 1.1, z, .13, .13, .13); };
+  const sweep = (g, x, y, z, r, h, n = 16, m = roofM) => { const R_ = new THREE.Mesh(new THREE.LatheGeometry(roofPts(r, h), n), m); R_.position.set(x, y, z); if (n === 4) R_.rotation.y = Math.PI / 4; g.add(R_); part(GEO.cyl, goldM, g, x, y + h + .5, z, .05, 1.2, .05); part(GEO.sph, goldM, g, x, y + h + 1.1, z, .13, .13, .13); return R_; };
   const colonnade = (g, r, h, n, y0 = 0) => { for (let k = 0; k < n; k++) { const a = k / n * TAU, cx = Math.cos(a) * r, cz = Math.sin(a) * r; part(new THREE.CylinderGeometry(.13, .17, h, 8), pale, g, cx, y0 + h / 2, cz); part(new THREE.CylinderGeometry(.24, .13, .28, 8), goldM, g, cx, y0 + h - .1, cz); const na = (k + .5) / n * TAU, arch = part(new THREE.TorusGeometry(r * Math.sin(Math.PI / n), .07, 5, 10, Math.PI), pale, g, Math.cos(na) * r * Math.cos(Math.PI / n), y0 + h - r * Math.sin(Math.PI / n) * .35, Math.sin(na) * r * Math.cos(Math.PI / n)); arch.rotation.y = -na + Math.PI / 2; } part(new THREE.TorusGeometry(r, .11, 6, 24), pale, g, 0, y0 + h, 0).rotation.x = Math.PI / 2; };
   const lamp = (g, x, y, z, s = 2.4) => { part(GEO.sph, glassM, g, x, y, z, .14, .18, .14); const gl = glowSprite(0xffd890, s, .75); gl.position.set(x, y, z); g.add(gl); };
   for (const b of Y.builds) { const g = new THREE.Group(); place(g, b.s, b.x, b.y, b.f || 0); scene.add(g);
     if (b.kind === 'pav') { part(new THREE.CylinderGeometry(b.r + .7, b.r + 1, .45, 18), paleD, g, 0, .22, 0); colonnade(g, b.r, 4, 10, .45); sweep(g, 0, 4.5, 0, b.r + 1.4, 3.2); lamp(g, 0, 3.4, 0, 4); }
     if (b.kind === 'tower') { part(new THREE.CylinderGeometry(1.5, 1.9, b.h, 12), pale, g, 0, b.h / 2, 0); for (let k = 1; k * 4.2 < b.h; k++) { part(new THREE.CylinderGeometry(2, 2, .18, 14), goldM, g, 0, k * 4.2, 0); for (let q = 0; q < 6; q++) { const a = q / 6 * TAU + k; part(GEO_BOX, glassM, g, Math.cos(a) * 1.72, k * 4.2 - 1.6, Math.sin(a) * 1.72, .35, .9, .35); } } colonnade(g, 1.9, 2.8, 8, b.h); sweep(g, 0, b.h + 2.8, 0, 3.2, 3.6); lamp(g, 0, b.h + 1.8, 0, 4); }
-    if (b.kind === 'house') { part(GEO_BOX, paleD, g, 0, .35, 2, 19, .7, 12); for (let i = -2; i <= 2; i++) for (const zz of [-3.4, 0]) { if (zz === 0 && i === 0) continue; part(new THREE.CylinderGeometry(.17, .22, 5, 8), pale, g, i * 3.6, 3.2, zz); } part(GEO_BOX, pale, g, 0, 3.9, 3.8, 18, 7.2, 7); for (let i = -2; i <= 2; i++) { const a = part(new THREE.TorusGeometry(1.8, .14, 6, 14, Math.PI), pale, g, i * 3.6, 4.9, -3.4); for (let k = 0; k < 2; k++) part(GEO_BOX, glassM, g, i * 3.6 + (k - .5) * 1.4, 3 + 2.8, .3, .7, 1.6, .1); } part(GEO_BOX, paleD, g, 0, 7.8, -.8, 18.6, .3, 8); sweep(g, -6.2, 7.5, 3, 6.4, 3.6, 4); sweep(g, 6.2, 7.5, 3, 6.4, 3.6, 4); sweep(g, 0, 7.8, 2.4, 8.2, 6, 4, roofG); part(GEO_BOX, glassM, g, 0, 2.2, .32, 3.4, 3.8, .12); const dg = glowSprite(0xffd890, 8, .6); dg.position.set(0, 2.6, -1); g.add(dg); lamp(g, -9, 5, -3.6, 3); lamp(g, 9, 5, -3.6, 3); }
+    if (b.kind === 'house') rivHall(g, UTK.rivendell || null, sweep, pale, paleD, sky);   // (Elrond's house: see rivHall)
     if (b.kind === 'gate') { for (const sx of [-1, 1]) { part(new THREE.CylinderGeometry(.42, .6, 8, 10), pale, g, sx * 3.6, 4, 0); sweep(g, sx * 3.6, 8, 0, 1.3, 1.5, 8); lamp(g, sx * 3.6, 6.8, 0, 3); } part(new THREE.TorusGeometry(3.6, .26, 7, 20, Math.PI), pale, g, 0, 8, 0).scale.y = .55; part(GEO_BOX, goldM, g, 0, 8, 0, 7.6, .25, .35); }
     if (b.kind === 'shrine') { part(new THREE.CylinderGeometry(6.6, 7, .7, 22), paleD, g, 0, .35, 0); part(new THREE.CylinderGeometry(5, 5.2, .4, 22), pale, g, 0, .9, 0); colonnade(g, 4.6, 6.2, 12, 1.1); sweep(g, 0, 7.3, 0, 6.2, 5); part(GEO_BOX, paleD, g, 0, 1.6, 0, 3, 1.1, 1); const glw = glowSprite(0xbfd8ff, 7, .7); glw.position.set(0, 3.4, 0); g.add(glw); const sw = part(GEO_BOX, lam(0xd8e0f0, { emissive: 0x2a3040 }), g, 0, 2.9, 0, .1, 1.7, .03); }
   }
   // the bridges: pale, arched, a rail of slender balusters, a lamp on a post at intervals, and a great curved rib under each
   const planks = [], bal = [], railT = [], posts = [], under = [];
   for (const b of Y.bridges) { const ry = Math.atan2(b.s1 - b.s0, b.x0 - b.x1) * 1, n = Math.round(b.L / 1.05); for (let k = 0; k < n; k++) { const t = (k + .5) / n, t0 = k / n, t1 = (k + 1) / n, s = lerp(b.s0, b.s1, t), x = lerp(b.x0, b.x1, t), y = b.yAt(t);
-      for (const sd of [-1, 1]) { const ss_ = s - Math.sin(b.ang) * sd * 2.25, sx = x + Math.cos(b.ang) * sd * 2.25, r = tw(ss_, sx, y + .55); bal.push([r.x, r.y, r.z, .12, 1.1, .12, 0]); const c = tw(ss_, sx, y + 1.13); railT.push([c.x, c.y, c.z, b.L / n + .12, .13, .3, ry]); if (k % 9 === 4) { const m = tw(ss_, sx, y + 2); posts.push([m.x, m.y, m.z, .08, 2, .08]); const gl = glowSprite(0xffd890, 1.7, .55); gl.position.set(m.x, m.y + 1.05, m.z); scene.add(gl); } } } }
+      for (const sd of [-1, 1]) { const ss_ = s - Math.sin(b.ang) * sd * 2.25, sx = x + Math.cos(b.ang) * sd * 2.25, r = tw(ss_, sx, y + .55); bal.push([r.x, r.y, r.z, .12, 1.1, .12, 0]); const c = tw(ss_, sx, y + 1.13); railT.push([c.x, c.y, c.z, b.L / n + .12, .13, .3, ry]); if (k % 9 === 4) { const m = tw(ss_, sx, y + 2); posts.push([m.x, m.y, m.z, .08, 2, .08]); paperLantern(scene, m.x, m.y + 1.3, m.z, .3, k % 2 ? 0xff6a48 : 0xffd890); } } } }
   const palebridge = new THREE.MeshStandardMaterial({ map: (() => { const t = TX.marble.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })(), color: 0xb8bcd0, roughness: .6, side: THREE.DoubleSide });
   instanced(new THREE.CylinderGeometry(1, 1, 1, 6), pale, bal); instanced(GEO_BOX, pale, railT); instanced(new THREE.CylinderGeometry(1, 1, 1, 6), goldM, posts);
   // (each bridge's deck and the deep curved rib under it, one smooth piece)
@@ -14048,7 +14096,7 @@ THEMES.rivfable = natTheme({
 });
 // boot: Oakvale, Rivendell's gorge, Mirkwood and the scenery models first if they're there (they change how levels are built), then everything else
 (async () => {
-await Promise.all([loadOakvale(), loadRivendell(), loadMirkwood(), loadProps(), loadUTKit('gondolin')]);   // (each changes how its level is built)
+await Promise.all([loadOakvale(), loadRivendell(), loadMirkwood(), loadProps(), loadUTKit('gondolin'), loadUTKit('rivendell')]);   // (each changes how its level is built)
 { const before = new Set(scene.children); buildStatic(); for (const o of scene.children) if (!before.has(o)) o.userData.stat = true; }   // (the levels' scenery, not Gandalf or anything shared: see sceneryFor)
 renderer.shadowMap.enabled = !RETRO; moon.castShadow = !RETRO; softTex();
 setupEntities();
