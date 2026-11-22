@@ -2555,6 +2555,83 @@ function rivendellLayout() {
   for (const [s, x, w, d, h] of L.houses) L.blocks.push([s - w / 2, s + w / 2, x - d / 2, x + d / 2, h]);
   return L;
 }
+// =====================================================================
+//  BELERIAND'S PLACES (version 1): each great place on the map of Beleriand is a level of its own, open country to roam as Hobbiton and Rivendell
+//  are, with Kingdom Hearts squares of foes along the way and a champion at the last. Each is made from its kind of land (a hidden vale ringed by
+//  mountains, a river gorge, forest, a burning plain, an island, a lake among hills, a fortress hill, a coast, a mountainside) and its own landmarks,
+//  after what the books and the old maps say of them
+// =====================================================================
+const BELV = [
+  { loc: 'gondolin', name: 'GONDOLIN', sub: 'THE HIDDEN CITY OF TURGON · THE FALL', land: 'vale', mark: 'city', ground: 'meadow',
+    env: { sky: [0x4a8ad8, 0x8ac0f0, 0xf0f4ff, 0xfff0c8], fog: [120, 600], fogC: 0xd0e0f0, amb: [0xa0a8b8, .7], hemi: [0xeef4ff, 0x6a7a4a, .75], sun: [0xfff4e0, 1.2], east: [0xffe0b0, .2], cloud: 0xffffff, bloom: .3 },
+    waves: [[['o', 'o', 'o', 'w']], [['o', 'M', 'w', 'w'], ['u', 'u', 'M']], [['R', 'o', 'o'], ['w', 'w', 'u']]], boss: ['B'], bossT: 'GOTHMOG, LORD OF BALROGS!', win: 'THE KING\'S TOWER HOLDS!' },
+  { loc: 'nargo', name: 'NARGOTHROND', sub: 'FINROD\'S FORTRESS ABOVE THE NAROG', land: 'gorge', mark: 'gates', ground: 'grass',
+    env: { sky: [0x3a5a8a, 0x7a9ac0, 0xd8e0e8, 0xffe0b0], fog: [90, 480], fogC: 0xb0c0c8, amb: [0x909aa8, .7], hemi: [0xdfe8f0, 0x4a5a3a, .7], sun: [0xfff0d8, 1.05], east: [0xffc890, .3], cloud: 0xf0f0f8, bloom: .3 },
+    waves: [[['o', 'o', 'M']], [['o', 'w', 'w', 'M'], ['u', 'o', 'o']], [['R', 'w', 'u'], ['E', 'E', 'o']]], boss: ['A', 'o', 'o'], bossT: 'GLAURUNG\'S HOST AT THE DOORS!', win: 'THE DOORS OF NARGOTHROND HOLD!' },
+  { loc: 'menegroth', name: 'MENEGROTH', sub: 'THE THOUSAND CAVES OF THINGOL IN DORIATH', land: 'forest', mark: 'caves', ground: 'lush',
+    env: { sky: [0x2a4a3a, 0x6a9070, 0xd0e0c0, 0xfff0c0], fog: [60, 360], fogC: 0x8aa890, amb: [0x8a9a80, .7], hemi: [0xd8f0d0, 0x3a4a2a, .7], sun: [0xfff4d0, .95], east: [0xffd8a0, .25], cloud: 0xe8f0e0, bloom: .35 },
+    waves: [[['Dwarf', 'Dwarf']], [['Dwarf', 'Dwarf Crossbowman', 'Dwarf']], [['Dwarf', 'Dwarf Flamer'], ['Dwarf Crossbowman', 'Dwarf', 'Dwarf']]], boss: ['Dwarf King'], bossT: 'THE LORD OF NOGROD COMES FOR THE NAUGLAMÍR!', win: 'THE THOUSAND CAVES ARE SAVED!' },
+  { loc: 'angband', name: 'ANGBAND', sub: 'THE IRON HELL UNDER THANGORODRIM', land: 'fire', mark: 'iron', ground: 'lavaRock',
+    env: { sky: [0x0a0404, 0x2a0806, 0x6a1406, 0xff5010], fog: [50, 320], fogC: 0x4a1006, amb: [0x8a5040, .8], hemi: [0xff9060, 0x2a0604, .6], sun: [0xff8040, .6], east: [0xff4010, .5], cloud: 0x2a0806, bloom: .55, embers: true },
+    waves: [[['o', 'o', 'o', 'M']], [['T']], [['R', 'R', 'o'], ['w', 'w', 'w', 'M']]], boss: ['B'], bossT: 'A BALROG OF MORGOTH!', win: 'THE GATES OF ANGBAND ARE BROKEN!' },
+  { loc: 'tolsirion', name: 'TOL SIRION', sub: 'THE ISLE OF WEREWOLVES IN THE PASS OF SIRION', land: 'isle', mark: 'tower', ground: 'grass',
+    env: { sky: [0x1a1a2a, 0x3a3a5a, 0x8a8aa8, 0xd8c8b0], fog: [50, 300], fogC: 0x5a5a70, amb: [0x7a7a90, .8], hemi: [0xc0c8e0, 0x2a2a20, .6], sun: [0xd0d0f0, .7], east: [0xa0a0c0, .3], cloud: 0x4a4a5a, bloom: .4 },
+    waves: [[['w', 'w', 'w']], [['w', 'w', 'o', 'o']], [['w', 'w', 'w', 'c']]], boss: ['c', 'w', 'w', 'w'], bossT: 'DRAUGLUIN, SIRE OF WEREWOLVES!', win: 'THE ISLE OF WEREWOLVES IS CLEANSED!' },
+  { loc: 'himring', name: 'HIMRING', sub: 'THE EVER-COLD HILL OF MAEDHROS', land: 'hill', mark: 'fort', ground: 'plains',
+    env: { sky: [0x5a7090, 0x9ab0c8, 0xe0e8f0, 0xf0e0d0], fog: [100, 520], fogC: 0xc0ccd8, amb: [0x9aa0ac, .7], hemi: [0xe0eaf8, 0x5a5a4a, .7], sun: [0xf4f4ff, 1], east: [0xd8d0c0, .2], cloud: 0xf8f8ff, bloom: .25 },
+    waves: [[['o', 'o', 'o']], [['E', 'E', 'o']], [['E', 'E', 'H'], ['o', 'M', 'M', 'u']]], boss: ['c', 'E', 'E'], bossT: 'ULFANG THE BLACK TURNS TRAITOR!', win: 'HIMRING STANDS!' },
+  { loc: 'hithlum', name: 'HITHLUM', sub: 'THE LAND OF MIST BY LAKE MITHRIM', land: 'lake', mark: 'camp', ground: 'moss',
+    env: { sky: [0x6a7a8a, 0xa0b0b8, 0xd8dcdc, 0xe8e0d0], fog: [30, 220], fogC: 0xb8c0c4, amb: [0xa0a8a8, .8], hemi: [0xe0e8ec, 0x4a5040, .7], sun: [0xe8e8e8, .7], east: [0xd0ccc0, .2], cloud: 0xe0e4e8, bloom: .25 },
+    waves: [[['o', 'o', 'M']], [['E', 'E', 'o', 'o']], [['u', 'u', 'M'], ['E', 'H', 'o']]], boss: ['T', 'o', 'o'], bossT: 'A TROLL OUT OF THE MIST!', win: 'THE CAMP BY MITHRIM HOLDS!' },
+  { loc: 'vinyamar', name: 'VINYAMAR', sub: 'TURGON\'S HALLS UNDER MOUNT TARAS, BY THE SEA', land: 'coast', mark: 'halls', ground: 'grass', mount: true,
+    env: { sky: [0x3a7ab8, 0x8ac0e0, 0xe8f4f8, 0xfff0d0], fog: [120, 600], fogC: 0xc8dce8, amb: [0xa0a8b0, .7], hemi: [0xeaf4ff, 0x5a6a4a, .7], sun: [0xfff4e0, 1.1], east: [0xffe0c0, .2], cloud: 0xffffff, bloom: .3 },
+    waves: [[['z', 'z', 'z']], [['z', 'k', 'z', 'z']], [['g', 'z', 'z'], ['k', 'k', 'f', 'i']]], boss: ['R', 'z', 'z'], bossT: 'THE SHADOWS OF NEVRAST!', win: 'VINYAMAR IS AT PEACE!' },
+  { loc: 'falas', name: 'EGLAREST', sub: 'THE HAVEN OF CÍRDAN ON THE FALAS', land: 'coast', mark: 'haven', ground: 'meadow',
+    env: { sky: [0x3a80c0, 0x90c8e8, 0xf0f8ff, 0xfff0d0], fog: [120, 600], fogC: 0xd0e4f0, amb: [0xa8b0b8, .7], hemi: [0xeef6ff, 0x6a6a4a, .7], sun: [0xfff6e8, 1.1], east: [0xffe0c0, .2], cloud: 0xffffff, bloom: .3 },
+    waves: [[['o', 'o', 'o']], [['o', 'M', 'M', 'o']], [['u', 'u', 'o'], ['R', 'o', 'M']]], boss: ['A', 'o', 'M'], bossT: 'THE SIEGE OF THE HAVENS!', win: 'THE HAVENS OF THE FALAS STAND!' },
+  { loc: 'sirion', name: 'THE HAVENS OF SIRION', sub: 'THE LAST REFUGE AT THE MOUTHS OF SIRION', land: 'coast', mark: 'haven', ground: 'meadow', delta: true,
+    env: { sky: [0x4a80b0, 0xa0c8e0, 0xf0f0f0, 0xffe0c0], fog: [100, 560], fogC: 0xd8e0e8, amb: [0xa8b0b8, .7], hemi: [0xeef4ff, 0x6a6a4a, .7], sun: [0xfff0e0, 1.05], east: [0xffd0b0, .25], cloud: 0xffffff, bloom: .3 },
+    waves: [[['E', 'E']], [['s', 'u', 'E']], [['p', 'p', 'u'], ['E', 'H', 'H']]], boss: ['L', 'E', 'E'], bossT: 'THE SONS OF FËANOR COME FOR THE SILMARIL!', win: 'ELWING FLIES WITH THE SILMARIL!' },
+  { loc: 'balar', name: 'BALAR', sub: 'THE ISLE OF CÍRDAN IN THE BAY', land: 'isle', mark: 'haven', ground: 'meadow', big: true,
+    env: { sky: [0x3a80c0, 0x90c8e8, 0xf0f8ff, 0xfff0d0], fog: [120, 620], fogC: 0xd0e4f0, amb: [0xa8b0b8, .7], hemi: [0xeef6ff, 0x6a6a4a, .7], sun: [0xfff6e8, 1.1], east: [0xffe0c0, .2], cloud: 0xffffff, bloom: .3 },
+    waves: [[['Raider', 'Raider']], [['Raider', 'Raider Bomber', 'Raider']], [['Raider', 'Raider', 'Raider Bomber']]], boss: ['Kahn'], bossT: 'CORSAIRS ON THE ISLE!', win: 'BALAR IS SAFE!' },
+  { loc: 'nogrod', name: 'NOGROD', sub: 'THE DWARF-CITY IN THE BLUE MOUNTAINS', land: 'mount', mark: 'dwarfgate', ground: 'rock',
+    env: { sky: [0x4a6a90, 0x8aa8c8, 0xd8e0e8, 0xf0d8b0], fog: [90, 480], fogC: 0xb0bcc8, amb: [0x9098a4, .7], hemi: [0xdfe8f4, 0x4a4a40, .7], sun: [0xfff0dc, 1], east: [0xffc890, .3], cloud: 0xf0f0f8, bloom: .3 },
+    waves: [[['o', 'o', 'M']], [['Forest Troll']], [['o', 'w', 'w', 'u'], ['R', 'o', 'o']]], boss: ['Chain Troll', 'o', 'o'], bossT: 'A TROLL AT THE DWARF-GATE!', win: 'THE GATES OF NOGROD HOLD!' },
+  { loc: 'belegost', name: 'BELEGOST', sub: 'THE GREAT FORTRESS OF THE DWARVES', land: 'mount', mark: 'dwarfgate', ground: 'rock', snow: true,
+    env: { sky: [0x6a80a0, 0xa8bcd0, 0xe8eef4, 0xf0e8d8], fog: [80, 440], fogC: 0xc8d0dc, amb: [0x9ca4b0, .75], hemi: [0xe8f0f8, 0x5a5a50, .7], sun: [0xf8f8ff, 1], east: [0xe0d0c0, .2], cloud: 0xffffff, bloom: .25 },
+    waves: [[['o', 'o', 'o', 'w']], [['Rock Giant']], [['R', 'u', 'u'], ['w', 'w', 'M', 'M']]], boss: ['A', 'o', 'w'], bossT: 'MORGOTH\'S HOST AT BELEGOST!', win: 'BELEGOST HOLDS!' },
+];
+const BEL_N = 161, BEL_C = 80;
+// the land of each kind (belGround): height at (s, x), and 'w' where it's water (sea or lake or river)
+function belGround(c, s, x) {
+  const r = Math.hypot(s, x), n = Math.sin(s * .07) * Math.cos(x * .06) * 1.4 + Math.sin(s * .19 + x * .13) * .5, ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  switch (c.land) {
+    case 'vale': return [n * .4 + 10 * ss(30, 8, r) + 70 * ss(62, 82, r) * (1 + .2 * Math.sin(Math.atan2(x, s) * 7)), r > 60 ? 'c' : 'g'];   // (the Encircling Mountains round the plain of Tumladen, Amon Gwareth in the middle)
+    case 'gorge': { const rv = Math.abs(x - 6 * Math.sin(s * .04)); return rv < 6 ? [-3, 'w'] : [n + 30 * ss(35, 50, s) - 2 * ss(12, 6, rv) + 3, s > 38 ? 'c' : 'g']; }   // (the Narog in its gorge, the cliffs of the fortress on the far side)
+    case 'forest': { const rv = Math.abs(s + 18 + 5 * Math.sin(x * .05)); return rv < 4 ? [-2, 'w'] : [n * 1.2 + 14 * ss(50, 72, s) + 1, 'g']; }   // (the Esgalduin before the caves' hill)
+    case 'fire': return [n * 1.5 + 55 * ss(45, 68, s) + 2 * Math.abs(Math.sin(x * .2)), s > 44 ? 'c' : 'g'];   // (Thangorodrim's cliffs to the north, the iron gates in them)
+    case 'isle': { const R = c.big ? 70 : 48; return r > R ? [-4, 'w'] : [n + 4 * ss(R, R - 14, r) + (c.big ? 0 : 6 * ss(18, 4, r)), 'g']; }
+    case 'hill': return [n + 22 * ss(55, 12, r), 'g'];
+    case 'lake': { const lr = Math.hypot(s + 10, x * .8); return lr < 28 ? [-2.5, 'w'] : [n * 1.5 + 18 * ss(55, 78, r) + 1, 'g']; }
+    case 'coast': { const sh = -34 + 6 * Math.sin(x * .05); if (c.delta && Math.abs(x - 10 * Math.sin(s * .05)) < 5 && s > sh) return [-2, 'w']; return s < sh ? [-3.5, 'w'] : [n * .6 + 1.5 * ss(sh, sh + 10, s) + (c.mount ? 60 * ss(40, 70, s) : 6 * ss(40, 70, s)), s > 42 && c.mount ? 'c' : 'g']; }
+    case 'mount': return [n + 70 * ss(28, 52, s) + 3 * ss(-80, 20, s), s > 30 ? 'c' : 'g'];   // (the Blue Mountains' wall, the dwarf-gate cut into it)
+  }
+  return [n, 'g'];
+}
+function belLayout(c) {
+  const N = BEL_N, C = BEL_C, hs = new Float32Array(N * N), g = new Array(N * N).fill('g');
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const [y, k] = belGround(c, C - j, C - i); hs[j * N + i] = y; g[j * N + i] = k; }
+  const at = (s, x) => belGround(c, s, x)[0], dry = (s, x) => belGround(c, s, x)[1] !== 'w';
+  // the way: the start at the south, squares along it up towards the landmark, the last one before it
+  const route = { vale: [[-50, 0], [-30, 14], [-14, 0], [12, 0]], gorge: [[-60, -20], [-34, -18], [-8, -16], [22, -18]], forest: [[-60, 0], [-38, 10], [-6, 8], [30, 0]], fire: [[-60, 0], [-32, -12], [-6, 10], [28, 0]],
+    isle: c.big ? [[-50, 0], [-26, 16], [0, -10], [26, 6]] : [[-34, 0], [-18, 14], [0, -14], [14, 4]], hill: [[-60, 0], [-36, 12], [-14, -6], [4, 0]], lake: [[-60, 20], [-30, 40], [10, 36], [32, 8]],
+    coast: [[-22, -40], [-10, -14], [8, 10], [26, 0]], mount: [[-60, 0], [-36, 14], [-12, -10], [14, 0]] }[c.land];
+  const pts = route.map(([s, x]) => { let q = [s, x]; for (let k = 0; k < 20 && !dry(...q); k++) q = [q[0] + 3, q[1] * .8]; return q; });
+  const plazas = pts.slice(1).map(([s, x], i) => { const last = i === pts.length - 2, w = c.waves[Math.min(i, c.waves.length - 1)];
+    return { s, x, y: Math.max(at(s, x), -.5), r: last ? 16 : 13, waves: last ? [...w, c.boss] : w, title: last ? c.bossT : c.name + ': THEY COME!', names: last ? [...w.map(() => 'MORE ARE COMING!'), c.bossT] : null, boss: last, last, breach: [s + 10, x], bossTo: [s + 6, x], bossHp: 900, noAdds: true }; });
+  return { field: [-78, 78, -78, 78], start: pts[0], terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -1.2, g }, layout: { blocks: [], plazas, bel: c } };
+}
 const USTAIR = { FLIGHTS: 6, STEPS: 30, RISE: 7, X: 18, LAND: 23 }, OSG = { TOP: 30, R: 8.6 };   // (the Stairs of Cirith Ungol's size; Osgiliath's tower)
 const RACE_FORD = 520, RACE_END = 572;
 const ER = { WALK: 12, X0: -46, X1: 46, TOWERS: [-46, -23, 0, 23, 46], TOP: 20 };   // (Erebor's ramparts: the walk's height and ends, its towers, their tops)   // (the race to the Ford: where the river crosses the road, and where the road ends)
@@ -2903,6 +2980,9 @@ const LEVELS = [
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { },
   },
+  // Beleriand's places, each a level of its own (see BELERIAND'S PLACES)
+  ...BELV.map((c, i) => ({ straight: true, roam: true, kh: true, name: c.name, sub: c.sub, loc: c.loc, theme: 'bel_' + c.loc, next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 150000 + i * 5000, CZ: 0, base: -4, wallH: 0, winTitle: c.win,
+    ...belLayout(c), floors: [], pillars: [], bars: [], dz: [], balrogs: [], content() { } })),
   {
     // Bree by starlight: through the lanes to The Prancing Pony, keeping out of sight of the Nazgûl (see Bree)
     straight: true, roam: true, kh: true, name: 'BREE', sub: 'THE NINE IN THE LANES', loc: 'bree', theme: 'bree', camGrid: true, next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 125000, CZ: 0, base: -4, wallH: 0, winTitle: 'SAFE AT THE PRANCING PONY!',
@@ -5561,7 +5641,7 @@ function updateCamera(dt) {
     // open country: a chase camera behind Gandalf that slowly swings round to follow where he's heading
     // (in a Kingdom Hearts boss fight it pulls back and turns to keep the boss in view beyond Gandalf)
     if (DBGF && !cam.said2 && URUKS[0] && URUKS[0].state !== 'spawn' && URUKS[0].m.skin && URUKS[0].m.skin.obj) { cam.said2 = 1; const u = URUKS[0]; { scene.updateMatrixWorld(true); const b = new THREE.Box3(); u.m.root.traverse(o => { if (o.isMesh && o.visible) b.union(new THREE.Box3().setFromObject(o)); }); console.log('CBOX ' + b.min.toArray().map(v => v.toFixed(1)) + '..' + b.max.toArray().map(v => v.toFixed(1)) + ' cam ' + camera.position.toArray().map(v => v.toFixed(1)) + ' near ' + camera.near + ' root ' + u.m.root.position.toArray().map(v => v.toFixed(1))); } }
-    const bo = LV.kh && !LV.bowU && KH.boss && KH.boss.m.root.visible && KH.boss.state !== 'fall' && KH.boss.plaza.near !== false ? KH.boss : LV.cup !== undefined ? URUKS.find(u => ukLive(u) && u.state !== 'spawn' && UK_KINDS[u.kind] && UK_KINDS[u.kind].heavy) || null : null; cam.bk = damp(cam.bk || 0, bo ? 1 : 0, 2, dt);   // (in the Colosseum, its champions and giants are kept in view too)
+    const bo = LV.kh && !LV.bowU && KH.boss && KH.boss.m.root.visible && KH.boss.state !== 'fall' && KH.boss.plaza.near !== false ? KH.boss : LV.cup !== undefined ? URUKS.find(u => ukLive(u) && u.state !== 'spawn' && UK_KINDS[u.kind] && UK_KINDS[u.kind].heavy && u.r >= 1.5) || null : null;   /* (only the big ones: a man-sized champion is fought close, as any foe) */ cam.bk = damp(cam.bk || 0, bo ? 1 : 0, 2, dt);   // (in the Colosseum, its champions and giants are kept in view too)
     // (Left Shift and / turn it by hand in the Kingdom Hearts levels; it leaves you be for a moment after)
     if (state === 'play' && inp.camT) { cam.yaw += inp.camT * 2.4 * dt; cam.man = 1.4; } cam.man = (cam.man || 0) - dt;
     // (inside Orthanc it rides behind Gandalf round the stair, looking forward and up it, as on Kingdom Hearts II's Wayward Stairs)
@@ -6572,7 +6652,7 @@ function step(dt, noRender) {
   else if (state === 'win') updateWin(dt);
   if (state !== 'paused') {
     if (state !== 'title' && state !== 'map' && state !== 'gameover' && state !== 'complete') {
-      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateRace(dt); updateFly(dt); updateFellowship(dt); updateHobbiton(dt); updateMordorKH(dt); updateDoom(dt); updateEagleLv(dt); updateWrath(dt); updateBree(dt); updateWatcher(dt); updateRivKH(dt); updatePrimeval(dt); updateArena(dt); updateDuel(dt); updateSprings(dt); updateKH(gdt);
+      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateRace(dt); updateFly(dt); updateFellowship(dt); updateHobbiton(dt); updateMordorKH(dt); updateDoom(dt); updateEagleLv(dt); updateWrath(dt); updateBel(dt); updateBree(dt); updateWatcher(dt); updateRivKH(dt); updatePrimeval(dt); updateArena(dt); updateDuel(dt); updateSprings(dt); updateKH(gdt);
     }
     updateDragons(dt); updateApples(); updatePhial(dt); updateLightning(dt); updateAmbient(dt); updateTree(dt);
     fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt); poseDuelGandalf(dt);
@@ -8966,6 +9046,99 @@ function updateWrath(dt) {
   if (Math.random() < dt * .35) { flashV = Math.max(flashV, .35); S.zap(); }   // (the storm)
   for (let i = WR.bolts.length - 1; i >= 0; i--) if (WR.bolts[i].dead && !WR.bolts[i].g.parent) WR.bolts.splice(i, 1);
 }
+// landmarks: each made of plain shapes, white stone and gold for the Elves, dark iron for Angband, carved grey rock for the Dwarves
+function belBuild(L, TH) {
+  const c = L.layout.bel, T_ = L.terrain, first = scene.children.length, sky = TH.env, at = (s, x) => terrainAt(s, x, true), B = L.layout.blocks;
+  const tex = TX[c.ground] || TX.grass, gcol = { meadow: [.7, .82, .55], grass: [.62, .78, .5], lush: [.55, .74, .45], lavaRock: [.42, .34, .32], plains: [.72, .74, .62], moss: [.6, .7, .58], rock: [.66, .66, .64] }[c.ground] || [.7, .8, .6];
+  groundMesh(T_, tex, (k, sl, y) => k === 'c' || sl > 1.6 ? (c.land === 'fire' ? [.22, .16, .15] : c.snow && y > 30 ? [.95, .97, 1] : [.56, .56, .58]) : k === 'w' ? [.5, .45, .35] : gcol, 6);
+  wideFloor(tex, c.land === 'fire' ? 0x3a2622 : 0x6a7a5a, 120, -5, 900);
+  const white = surf(TX.marble, { sky, color: 0xf4f2ee, rough: .6, bump: 1.4, env: .35, tri: 3 }), whiteD = surf(TX.marble, { sky, color: 0xd8d4cc, rough: .7, bump: 1.6, env: .25, tri: 3 }), gold = lam(0xe0b040, { emissive: 0x3a2a04 });
+  const rock = surf(TX.rock, { sky, color: c.land === 'fire' ? 0x3a2e2c : 0x8a8a86, rough: .95, bump: 4, env: .05, tri: 3 }), iron = lam(0x2a2628, { emissive: 0x0a0404 }), wood = surf(TX.wood, { sky, color: 0x8a6a4a, rough: .9, bump: 2, env: .05 });
+  const solid = (s, x, w, d, h, y0) => B.push([s - d / 2, s + d / 2, x - w / 2, x + w / 2, y0 + h, 'wall', y0 - 2]);
+  const tower = (s, x, r, h, mat, roof, y0 = at(s, x)) => { const q = tw(s, x, y0); part(new THREE.CylinderGeometry(r * .9, r, h, 12), mat, scene, q.x, q.y + h / 2, q.z); part(new THREE.ConeGeometry(r * 1.25, r * 2.2, 12), roof || mat, scene, q.x, q.y + h + r * 1.1, q.z); solid(s, x, r * 2, r * 2, h, y0); };
+  const house = (s, x, w, d, h, mat, roof, ang = 0, y0 = at(s, x)) => { const g = new THREE.Group(); place(g, s, x, y0, ang); scene.add(g); part(GEO_BOX, mat, g, 0, h / 2, 0, w, h, d); const r = part(new THREE.ConeGeometry(Math.max(w, d) * .75, h * .7, 4), roof, g, 0, h + h * .35, 0); r.rotation.y = Math.PI / 4; r.scale.set(w / Math.max(w, d), 1, d / Math.max(w, d)); solid(s, x, w, d, h, y0); };
+  const wallRing = (s0, x0, R, h, mat, gaps = [0]) => { for (let k = 0; k < 40; k++) { const a = k / 40 * TAU; if (gaps.some(g => Math.abs(angDiff(a, g)) < .2)) continue; const s = s0 + Math.cos(a) * R, x = x0 + Math.sin(a) * R, y0 = at(s, x), q = tw(s, x, y0 + h / 2), m = part(GEO_BOX, mat, scene, q.x, q.y, q.z, 1.6, h, TAU * R / 40 + .2); m.rotation.y = -(a) - trackAng(0); solid(s, x, 2, 2, h, y0); } };
+  const trees = (n, kind, avoid) => { const tr = [], cr = []; for (let k = 0; k < n * 4 && tr.length < n; k++) { const s = rand(-76, 76), x = rand(-76, 76); if (T_.g[(BEL_C - Math.round(s)) * BEL_N + BEL_C - Math.round(x)] !== 'g' || at(s, x) < -.5 || (avoid && avoid(s, x)) || way(s, x)) continue; const q = tw(s, x, at(s, x)), h = rand(6, 14); tr.push([q.x, q.y + h * .35, q.z, .35, h * .7, .35]); cr.push(kind === 'beech' ? [q.x, q.y + h * .8, q.z, h * .38, h * .3, h * .38] : [q.x, q.y + h * .7, q.z, h * .25, h * .7, h * .25]); }
+    instanced(GEO.cyl, lam(0x5a4430), tr); instanced(kind === 'beech' ? GEO.sph : GEO.cone, lam(kind === 'beech' ? 0x5a8a3a : kind === 'dead' ? 0x3a3230 : 0x2e5a2c), cr); };
+  const water = y => { const t = TX.sea.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(40, 40); const m = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.MeshPhongMaterial({ map: t, color: c.land === 'fire' ? 0xff5010 : 0x4a8aa8, emissive: c.land === 'fire' ? 0x802000 : 0x000000, specular: 0xfff0d0, shininess: 60, transparent: true, opacity: .85 })); m.rotation.x = -Math.PI / 2; tw(0, 0, y, m.position); scene.add(m); TH.flow = t; };
+  const end = L.layout.plazas[L.layout.plazas.length - 1], stops = [L.start, ...L.layout.plazas.map(p => [p.s, p.x])], way = (s, x) => stops.some((q, i) => { if (Math.hypot(s - q[0], x - q[1]) < (i ? 18 : 10)) return true; const n = stops[i + 1]; if (!n) return false; const ds = n[0] - q[0], dx = n[1] - q[1], L2 = ds * ds + dx * dx, k = clamp(((s - q[0]) * ds + (x - q[1]) * dx) / L2, 0, 1); return Math.hypot(s - q[0] - ds * k, x - q[1] - dx * k) < 6; });   // (the way through, kept clear of trees)
+  if (c.land !== 'fire' && c.land !== 'vale' && c.land !== 'hill' && c.land !== 'mount') water(-1.25); else if (c.land === 'fire') water(-1.25);
+  switch (c.mark) {
+    case 'city': {   // Gondolin on Amon Gwareth: white walls in three rings, white towers and houses, the King's tower with its gold
+      const top = at(0, 0); for (const [R, h] of [[30, 6], [21, 8], [12, 10]]) wallRing(0, 0, R, h, white, [Math.PI, Math.PI + .02]);
+      for (let k = 0; k < 120; k++) { const a = rand(0, TAU), r = rand(13, 28), s = Math.cos(a) * r, x = Math.sin(a) * r; if (Math.abs(angDiff(a, Math.PI)) < .3 || Math.abs(r - 21) < 2) continue; house(s, x, rand(2.5, 4), rand(2.5, 4), rand(3, 7), k % 3 ? white : whiteD, k % 4 ? gold : lam(0x6a90c8), a); }
+      for (let k = 0; k < 8; k++) { const a = k / 8 * TAU; tower(Math.cos(a) * 30, Math.sin(a) * 30, 2, 14, white, gold); }
+      tower(0, 0, 4, 46, white, gold, top); const sg = glowSprite(0xfff0c0, 10, .6); tw(0, 0, top + 52, sg.position); scene.add(sg);
+      for (const [x0, h] of [[-6, 6], [6, 6]]) { const q = tw(-34, x0, at(-34, x0)); part(GEO_BOX, white, scene, q.x, q.y + h, q.z, 2, h * 2, 3); }   // (the last gate)
+      trees(90, 'pine', (s, x) => Math.hypot(s, x) < 36); break;
+    }
+    case 'gates': {   // Nargothrond: the great doors in the cliff over the Narog, pillars carved in the rock, a bridge of stone across
+      const s0 = 36, y0 = at(30, 0), g = new THREE.Group(); place(g, s0, 0, y0, Math.PI); scene.add(g);
+      part(GEO_BOX, rock, g, 0, 16, -1, 54, 32, 6); part(GEO_BOX, iron, g, 0, 7, 2.2, 10, 14, .6); part(GEO_BOX, gold, g, 0, 7, 2.6, .4, 14, .2);
+      for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) { part(new THREE.CylinderGeometry(1.3, 1.5, 22, 12), whiteD, g, sx * (9 + k * 7), 11, 2.6); part(GEO_BOX, white, g, sx * (9 + k * 7), 22.6, 2.6, 3.6, 1.2, 3.6); }
+      part(GEO_BOX, white, g, 0, 23.5, 2.8, 48, 2, 2); const lit = glowSprite(0xffe0a0, 6, .5); lit.position.set(0, 15, 3); g.add(lit);
+      { const q = tw(0, 0, 1.6); const br = part(GEO_BOX, whiteD, scene, q.x, q.y, q.z, 4, .8, 22); br.rotation.y = -trackAng(0) + Math.PI / 2; for (const sx of [-1.8, 1.8]) { const r = part(GEO_BOX, white, scene, q.x, q.y + .7, q.z, .3, .6, 22); r.rotation.y = br.rotation.y; r.position.add(tw(0, sx, 0).sub(tw(0, 0, 0))); } B.push([-2, 2, -11, 11, 1.6, 'floor', -10]); }
+      trees(70, 'beech', (s, x) => s > 30); break;
+    }
+    case 'caves': {   // Menegroth: the stone bridge over the Esgalduin to the gates in the hill, beech woods all about
+      const s0 = 52, y0 = at(48, 0), g = new THREE.Group(); place(g, s0, 0, y0, Math.PI); scene.add(g);
+      part(GEO.sph, rock, g, 0, 4, -10, 34, 20, 18); part(GEO_BOX, white, g, 0, 6, 6, 16, 12, 2); part(GEO_BOX, iron, g, 0, 4.5, 7.2, 6, 9, .5);
+      for (const sx of [-1, 1]) { part(new THREE.CylinderGeometry(.9, 1.1, 12, 10), white, g, sx * 6, 6, 7.4); const t = glowSprite(0x9ad8ff, 3, .7); t.position.set(sx * 4, 9, 8); g.add(t); }
+      { const q = tw(-18, 0, 1.2); const br = part(GEO_BOX, white, scene, q.x, q.y, q.z, 4.4, .9, 12); br.rotation.y = -trackAng(0); B.push([-24, -12, -2.2, 2.2, 1.2, 'floor', -10]); }
+      trees(220, 'beech', (s, x) => s > 40 && Math.abs(x) < 18); break;
+    }
+    case 'iron': {   // Angband: the iron gates in the black cliff, towers of slag, chains, fire running in channels
+      const s0 = 46, y0 = at(40, 0), g = new THREE.Group(); place(g, s0, 0, y0, Math.PI); scene.add(g);
+      part(GEO_BOX, iron, g, 0, 14, 0, 26, 28, 3); part(GEO_BOX, lam(0x4a2a1a, { emissive: 0x401000 }), g, 0, 9, 1.7, 12, 18, .4);
+      for (const sx of [-1, 1]) { part(new THREE.CylinderGeometry(4, 6, 40, 8), rock, g, sx * 17, 20, 0); for (let k = 0; k < 4; k++) part(GEO.cone, iron, g, sx * 17 + rand(-3, 3), 40 + k, rand(-3, 3), .6, 4, .6); }
+      const gl = glowSprite(0xff5010, 26, .5); gl.position.set(0, 10, 4); g.add(gl);
+      for (let k = 0; k < 20; k++) { const s = rand(-60, 40), x = rand(-60, 60), q = tw(s, x, at(s, x)), h = rand(3, 9); part(GEO.cone, rock, scene, q.x, q.y + h / 2, q.z, rand(1, 2.5), h, rand(1, 2.5)); }
+      trees(60, 'dead'); break;
+    }
+    case 'tower': {   // Tol Sirion: Minas Tirith of Finrod, a white watch-tower become the werewolves' den
+      const y0 = at(0, 0); tower(0, 0, 4.5, 30, whiteD, iron, y0); wallRing(0, 0, 11, 4, whiteD, [Math.PI]); for (let k = 0; k < 6; k++) { const a = k / 6 * TAU; tower(Math.cos(a) * 11, Math.sin(a) * 11, 1.6, 8, whiteD, iron); }
+      trees(60, 'dead', (s, x) => Math.hypot(s, x) < 14); break;
+    }
+    case 'fort': {   // Himring: Maedhros's walls and keep on the bare hill
+      const y0 = at(0, 0); for (const [s, x, w, d] of [[14, 0, 28, 2], [-14, 0, 28, 2], [0, 14, 2, 28], [0, -14, 2, 28]]) { if (s === -14) { for (const x2 of [-9, 9]) { const q = tw(s, x2, y0); part(GEO_BOX, whiteD, scene, q.x, q.y + 4, q.z, 10, 8, 2); solid(s, x2, 10, 2, 8, y0); } continue; } const q = tw(s, x, y0); const m = part(GEO_BOX, whiteD, scene, q.x, q.y + 4, q.z, w, 8, d); m.rotation.y = -trackAng(0); solid(s, x, w, d, 8, y0); }
+      for (const [s, x] of [[14, 14], [14, -14], [-14, 14], [-14, -14]]) tower(s, x, 2.6, 14, whiteD, lam(0x8a2a2a));
+      tower(4, 0, 4, 20, white, lam(0x8a2a2a), y0); trees(30, 'pine', (s, x) => Math.hypot(s, x) < 40); break;
+    }
+    case 'camp': {   // Hithlum: the Noldor's camp on the shore of Mithrim, tents and banners in the mist
+      for (let k = 0; k < 30; k++) { const s = rand(10, 50), x = rand(-40, 40), y0 = at(s, x); if (y0 < -.5) continue; const q = tw(s, x, y0), t = part(GEO.cone, lam(k % 3 ? 0x2a4a8a : 0xe8e0d0, { side: THREE.DoubleSide }), scene, q.x, q.y + 1.6, q.z, 2.2, 3.2, 2.2); t.rotation.y = rand(0, 3); solid(s, x, 3, 3, 3, y0); }
+      for (let k = 0; k < 8; k++) { const s = rand(10, 50), x = rand(-40, 40), q = tw(s, x, at(s, x)); part(GEO.cyl, wood, scene, q.x, q.y + 3, q.z, .1, 6, .1); part(GEO_BOX, lam(0x2a4a8a, { side: THREE.DoubleSide }), scene, q.x + .6, q.y + 5, q.z, 1.2, 1.6, .05); }
+      trees(80, 'pine'); break;
+    }
+    case 'halls': {   // Vinyamar: Turgon's halls of white stone at the foot of Mount Taras, looking out over the sea
+      const s0 = 34, y0 = at(30, 0), g = new THREE.Group(); place(g, s0, 0, y0, Math.PI); scene.add(g);
+      part(GEO_BOX, white, g, 0, 5, 0, 30, 10, 12); for (let k = -3; k <= 3; k++) part(new THREE.CylinderGeometry(.7, .8, 10, 10), white, g, k * 4, 5, 6.6); part(GEO_BOX, gold, g, 0, 10.5, 6.6, 31, .8, 1.4);
+      const rf = part(new THREE.ConeGeometry(18, 7, 4), lam(0x5a7aa8), g, 0, 14, 0); rf.rotation.y = Math.PI / 4; rf.scale.set(1, 1, .45); solid(s0, 0, 30, 12, 10, y0);
+      trees(50, 'pine', (s, x) => s > 20 && Math.abs(x) < 20); break;
+    }
+    case 'haven': {   // a haven of the Elves: quays of white stone, swan-ships at anchor, a lighthouse tower, white houses with blue roofs
+      const sh = c.land === 'isle' ? -(c.big ? 70 : 48) : -34; for (let k = -2; k <= 2; k++) { const q = tw(sh + 4, k * 14, .3); part(GEO_BOX, whiteD, scene, q.x, q.y, q.z, 6, .8, 9); }
+      for (let k = 0; k < 5; k++) { const sx = (k - 2) * 14, q = tw(sh - 8, sx, -1); const sp = new THREE.Group(); sp.position.copy(q); sp.rotation.y = -trackAng(0); scene.add(sp); const hl = part(GEO.sph, white, sp, 0, .4, 0, 1.4, .9, 4.4); part(GEO.cyl, wood, sp, 0, 4.5, 0, .1, 8, .1); part(new THREE.PlaneGeometry(3.6, 5), lam(0xfafaff, { side: THREE.DoubleSide }), sp, 0, 5, .2).rotation.y = Math.PI / 2; }
+      tower(sh + 10, -26, 2.4, 22, white, gold); const lh = glowSprite(0xfff0c0, 8, .8); tw(sh + 10, -26, at(sh + 10, -26) + 26, lh.position); scene.add(lh);
+      for (let k = 0; k < 40; k++) { const s = rand(sh + 14, sh + 50), x = rand(-40, 40); if (at(s, x) < -.5 || Math.hypot(s - (sh + 10), x + 26) < 6) continue; house(s, x, rand(3, 5), rand(3, 5), rand(3, 6), k % 3 ? white : whiteD, lam(0x5a80b8), rand(0, 3)); }
+      trees(50, 'pine', (s, x) => s < sh + 52); break;
+    }
+    case 'dwarfgate': {   // Nogrod and Belegost: a gate carved huge in the mountain's wall, with stairs, great kings of stone either side, forge-fire within
+      const s0 = 34, y0 = at(28, 0), g = new THREE.Group(); place(g, s0, 0, y0, Math.PI); scene.add(g);
+      part(GEO_BOX, rock, g, 0, 20, -2, 60, 40, 6); part(GEO_BOX, lam(0x1a1414), g, 0, 8, 1.2, 12, 16, .5); const fg = glowSprite(0xff8a30, 12, .6); fg.position.set(0, 6, 1.6); g.add(fg);
+      for (const sx of [-1, 1]) { const k = new THREE.Group(); k.position.set(sx * 16, 0, 2); g.add(k); part(GEO_BOX, rock, k, 0, 2, 0, 6, 4, 6); part(GEO.cyl, rock, k, 0, 10, 0, 2.2, 12, 2.2); part(GEO.sph, rock, k, 0, 17.5, 0, 1.8, 2, 1.8); part(GEO.cone, rock, k, 0, 13, .8, 1.4, 4, .6).rotation.x = Math.PI; }
+      for (let k = 0; k < 6; k++) part(GEO_BOX, rock, g, 0, k * .5, 4 + k * 1.2, 16, .5, 1.2);
+      trees(40, 'pine', (s, x) => s > 22); break;
+    }
+  }
+  bakeScenery(scene.children.slice(first));
+}
+function updateBel(dt) {
+  if (!LV || !LV.layout || !LV.layout.bel || state === 'map' || state === 'title') return; const c = LV.layout.bel, TH = THEMES[LV.theme];
+  if (TH.flow) { TH.flow.offset.x += dt * .01; TH.flow.offset.y += dt * .006; }
+  if (c.land === 'fire' && Math.random() < dt * 14) bfire(tw(P.s + rand(-30, 30), P.x + rand(-30, 30), landAt(P.s, P.x) + rand(0, 1)), rand(1, 2), 2);
+  if (c.land === 'lake' && Math.random() < dt * 6) smoke.spawn(...tw(P.s + rand(-30, 30), P.x + rand(-30, 30), landAt(P.s, P.x) + rand(.2, 2)).toArray(), rand(-.2, .2), .05, rand(-.2, .2), rand(6, 10), 5, 12, [.8, .82, .84], [.9, .9, .92], 0, .15);   // (the mist of Hithlum)
+}
+BELV.forEach(c => { THEMES['bel_' + c.loc] = natTheme({ wallTex: TX.rock, floorTex: TX.grass, tint: [1, 1, 1], door: 0x8a6a4a, env: c.env, orc: MT_ORC, scenery(L) { belBuild(L, this); } }); });
 function resetWrath() { Object.assign(WR, { ang: 0, rad: 88, y: WR_C.Y, vr: 0, vy: 0, rollT: 0, rollCD: 0, shotCD: 0, said: 0, won: false, boss: null, bolts: [] }); }
 // --- The Watcher in the Water: before the Doors of Durin, by moonlight, on the paved shore of the black lake. It bursts up through the stones into a crater of broken slabs and
 //     churning water, as Battle for Middle-earth's Watcher does: only the top of its head out of the pool, its long tentacles sprawling out over the shore on every side. It's
