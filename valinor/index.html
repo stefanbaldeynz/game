@@ -9119,7 +9119,8 @@ function belBuild(L, TH) {
   const tower = (s, x, r, h, mat, roof, y0 = at(s, x)) => { const q = tw(s, x, y0); part(new THREE.CylinderGeometry(r * .9, r, h, 12), mat, scene, q.x, q.y + h / 2, q.z); part(new THREE.ConeGeometry(r * 1.25, r * 2.2, 12), roof || mat, scene, q.x, q.y + h + r * 1.1, q.z); solid(s, x, r * 2, r * 2, h, y0); };
   const house = (s, x, w, d, h, mat, roof, ang = 0, y0 = at(s, x)) => { const g = new THREE.Group(); place(g, s, x, y0, ang); scene.add(g); part(GEO_BOX, mat, g, 0, h / 2, 0, w, h, d); const r = part(new THREE.ConeGeometry(Math.max(w, d) * .75, h * .7, 4), roof, g, 0, h + h * .35, 0); r.rotation.y = Math.PI / 4; r.scale.set(w / Math.max(w, d), 1, d / Math.max(w, d)); solid(s, x, w, d, h, y0); };
   const wallRing = (s0, x0, R, h, mat, gaps = [0]) => { for (let k = 0; k < 40; k++) { const a = k / 40 * TAU; if (gaps.some(g => Math.abs(angDiff(a, g)) < .2)) continue; const s = s0 + Math.cos(a) * R, x = x0 + Math.sin(a) * R, y0 = at(s, x), q = tw(s, x, y0 + h / 2), m = part(GEO_BOX, mat, scene, q.x, q.y, q.z, 1.6, h, TAU * R / 40 + .2); m.rotation.y = -(a) - trackAng(0); solid(s, x, 2, 2, h, y0); } };
-  const trees = (n, kind, avoid) => { const tr = [], cr = []; for (let k = 0; k < n * 4 && tr.length < n; k++) { const s = rand(-76, 76), x = rand(-76, 76); if (T_.g[(BEL_C - Math.round(s)) * BEL_N + BEL_C - Math.round(x)] !== 'g' || at(s, x) < -.5 || (avoid && avoid(s, x)) || way(s, x)) continue; const q = tw(s, x, at(s, x)), h = rand(6, 14); tr.push([q.x, q.y + h * .35, q.z, .35, h * .7, .35]); cr.push(kind === 'beech' ? [q.x, q.y + h * .8, q.z, h * .38, h * .3, h * .38] : [q.x, q.y + h * .7, q.z, h * .25, h * .7, h * .25]); }
+  const trees = (n, kind, avoid) => { const tr = [], cr = [], ut = belTreeUT(c);
+    if (ut) { for (let k = 0, m = 0; k < n * 4 && m < n; k++) { const s = rand(-76, 76), x = rand(-76, 76); if (T_.g[(BEL_C - Math.round(s)) * BEL_N + BEL_C - Math.round(x)] !== 'g' || at(s, x) < -.5 || (avoid && avoid(s, x)) || way(s, x)) continue; const [kt, nm, sc] = ut[m % ut.length]; belPiece(kt, nm, s, x, -.2, rand(0, TAU), sc * rand(.85, 1.2), at, { tone: [1.45, .72], rough: .9, bump: 1.2, env: .05 }); B.push([s - .5, s + .5, x - .5, x + .5, at(s, x) + 8, 'wall', at(s, x) - 2]); m++; } return; }   /* (the map's own trees: see BEL_UT) */ for (let k = 0; k < n * 4 && tr.length < n; k++) { const s = rand(-76, 76), x = rand(-76, 76); if (T_.g[(BEL_C - Math.round(s)) * BEL_N + BEL_C - Math.round(x)] !== 'g' || at(s, x) < -.5 || (avoid && avoid(s, x)) || way(s, x)) continue; const q = tw(s, x, at(s, x)), h = rand(6, 14); tr.push([q.x, q.y + h * .35, q.z, .35, h * .7, .35]); cr.push(kind === 'beech' ? [q.x, q.y + h * .8, q.z, h * .38, h * .3, h * .38] : [q.x, q.y + h * .7, q.z, h * .25, h * .7, h * .25]); }
     instanced(GEO.cyl, lam(0x5a4430), tr); instanced(kind === 'beech' ? GEO.sph : GEO.cone, lam(kind === 'beech' ? 0x5a8a3a : kind === 'dead' ? 0x3a3230 : 0x2e5a2c), cr); };
   const water = y => { const t = TX.sea.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(40, 40); const m = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.MeshPhongMaterial({ map: t, color: c.land === 'fire' ? 0xff5010 : 0x4a8aa8, emissive: c.land === 'fire' ? 0x802000 : 0x000000, specular: 0xfff0d0, shininess: 60, transparent: true, opacity: .85 })); m.rotation.x = -Math.PI / 2; tw(0, 0, y, m.position); scene.add(m); TH.flow = t; };
   const end = L.layout.plazas[L.layout.plazas.length - 1], stops = [L.start, ...L.layout.plazas.map(p => [p.s, p.x])], way = (s, x) => stops.some((q, i) => { if (Math.hypot(s - q[0], x - q[1]) < (i ? 18 : 10)) return true; const n = stops[i + 1]; if (!n) return false; const ds = n[0] - q[0], dx = n[1] - q[1], L2 = ds * ds + dx * dx, k = clamp(((s - q[0]) * ds + (x - q[1]) * dx) / L2, 0, 1); return Math.hypot(s - q[0] - ds * k, x - q[1] - dx * k) < 6; });   // (the way through, kept clear of trees)
@@ -9191,7 +9192,52 @@ function belBuild(L, TH) {
       trees(40, 'pine', (s, x) => s > 22); break;
     }
   }
+  belDress(L, c, at, way, B);   // (the UT2004 maps' trees, rocks and set pieces: BEL_UT)
   bakeScenery(scene.children.slice(first));
+}
+// --- Beleriand dressed from Unreal Tournament 2004's maps (only on your own computer: levels/ut/bel_*.json, Prep-UTKitGltf.ps1): each place's trees and rocks from the
+//     map that suits it, and some of that map's own set pieces at its landmark. trees and rocks: [kit, piece, scale]; deco: [kit, piece, s, x, up, facing, scale]
+const BEL_KITS = ['bel_desertisle', 'bel_lostfaith', 'bel_magma', 'bel_goopgod', 'bel_calandras', 'bel_grassy', 'bel_antalus'];
+const BUT_D = 'bel_desertisle', BUT_G = 'bel_goopgod', BUT_A = 'bel_antalus', BUT_C = 'bel_calandras';
+const BEL_UT = {
+  nargo: { trees: [[BUT_D, 'DaveTreeG', .28], [BUT_D, 'AntTree', 1.1], [BUT_D, 'AntTreeb', 1.1], [BUT_D, 'AntTwoTrees', 1]], rocks: [[BUT_D, 'cRockA', .3], [BUT_D, 'AntRockAHigh', .35], [BUT_D, 'elevRock', .8]],
+    deco: [[BUT_D, 'doubleArch', 8, 0, -3, 0, .22], [BUT_D, 'smallestArch', 26, -14, 0, .3, .3]] },
+  menegroth: { trees: [[BUT_G, 'AbTreesD', .19], [BUT_G, 'AbTreesE', .19], [BUT_G, 'AbTreeA', 1.2], [BUT_G, 'AbTreesF', .2]], rocks: [['bel_lostfaith', 'littlerock01', .45], ['bel_lostfaith', 'cliffwall03', .4]],
+    deco: [['bel_lostfaith', 'banner2', 44, -6, 0, 0, .45], ['bel_lostfaith', 'banner2', 44, 6, 0, 0, .45], ['bel_lostfaith', 'cliffwall01', 64, -24, -4, 0, 1], ['bel_lostfaith', 'cliffwall04', 66, 20, -4, 0, 1], ['bel_lostfaith', 'cliffwall07merge', 70, 0, -6, 0, 1.1], ['bel_lostfaith', 'cliffwall05', 60, -44, -4, .5, 1], ['bel_lostfaith', 'cliffwall02', 60, 44, -4, -.5, 1]] },
+  angband: { trees: [], rocks: [['bel_magma', 'VolcanoRock1', 2.2], ['bel_magma', 'VolcanoRock2', 2.2]],
+    deco: [['bel_magma', 'Volcano', 120, 0, -6, 0, 1.3], ['bel_magma', 'Castle1', 40, -22, 0, 0, 1], ['bel_magma', 'Castle1', 40, 22, 0, Math.PI, 1], ['bel_magma', 'Castle3', 36, -14, 0, 0, 1], ['bel_magma', 'Castle5', 36, 14, 0, 0, 1], ['bel_magma', 'Castle2', 44, -42, 0, 0, 1], ['bel_magma', 'Castle4', 44, 42, 0, 0, 1],
+      ['bel_magma', 'Spire1', 76, -46, -4, 0, .55], ['bel_magma', 'Spire1', 86, 34, -4, 1, .6], ['bel_magma', 'Spire1', 64, 60, -4, 2, .45]] },
+  tolsirion: { trees: [[BUT_G, 'AbTreeG', .2], [BUT_G, 'AbTreeA', 1]], rocks: [[BUT_G, 'Alb_rock1', .7], [BUT_G, 'Alb_rock3', .5], [BUT_G, 'Alb_rock5', .5]], ring: [BUT_G, 'Pillar01aAR', 15, 10, 1.6], fire: [BUT_G, 'WallFirePot2AR', 8, 6, 1.4],
+    deco: [[BUT_G, 'MiscRootArchway01AR', -12.5, 0, 0, Math.PI / 2, 2.4], [BUT_G, 'ARBTempleVines', 0, 0, 2, 0, 1]] },
+  himring: { trees: [[BUT_C, 'KAMIbarbol01', .26], [BUT_C, 'KAMIbarbol03', .4]], rocks: [[BUT_C, 'KAMIrock', .45], [BUT_C, 'KAMIgrass&rock1', .6]],
+    deco: [[BUT_C, 'KAMItowerx3', -5, 9, 0, 0, .45], [BUT_C, 'KAMIarchEntrance', -15.5, 0, 0, Math.PI / 2, .8], [BUT_C, 'KAMIhorseStatue', -28, 0, 0, Math.PI / 2, 1.3], [BUT_C, 'KAMIwallruins', -30, -20, 0, .4, .8], [BUT_C, 'KAMIwallruins', -26, 24, 0, -.3, .8]] },
+  hithlum: { trees: [['bel_grassy', 'StaticMesh2', .55], ['bel_grassy', 'StaticMesh13', .55], ['bel_grassy', 'StaticMesh14', .55], ['bel_grassy', 'StaticMesh21', .55]], rocks: [[BUT_G, 'ARockBunchedA', .6]], deco: [] },
+  vinyamar: { trees: [[BUT_D, 'AntTree', 1.1], [BUT_D, 'AntTreeSmallGroup', 1], [BUT_D, 'DaveTreesE', .2]], rocks: [[BUT_D, 'cRockA', .4], [BUT_D, 'AntRockAHigh', .45]],
+    deco: [[BUT_D, 'doubleArch', 22, 0, 0, 0, .16], [BUT_D, 'smallestArch', -24, -14, 0, 0, .3], [BUT_D, 'smallestArch', -24, 14, 0, 0, .3], [BUT_D, 'cRockA', -52, -30, -4, 0, .35], [BUT_D, 'cRockA', -58, 24, -4, 1, .3]] },
+  falas: { trees: [[BUT_D, 'AntTree', 1.1], [BUT_D, 'AntTreeb', 1.1], [BUT_D, 'AntTwoTrees', 1]], rocks: [[BUT_D, 'AntRockAHigh', .3], [BUT_D, 'elevRock', .8]], havens: true },
+  sirion: { trees: [[BUT_D, 'AntTreeb', 1.1], [BUT_D, 'AntTreeSmallGroup', 1], [BUT_D, 'DaveTreeG', .22]], rocks: [[BUT_D, 'elevRock', .8], [BUT_D, 'cRockB', .9]], havens: true },
+  balar: { trees: [[BUT_D, 'AntTree', 1.1], [BUT_D, 'AntTwoTrees', 1], [BUT_D, 'AntTreeSmall', 1.4]], rocks: [[BUT_D, 'AntRockALow', .3], [BUT_D, 'elevRock', .8]], havens: true },
+  nogrod: { trees: [[BUT_A, 'AntTree', 1.1], [BUT_A, 'AntTreeb', 1.1]], rocks: [[BUT_A, 'AntRockAHigh', .5], [BUT_A, 'elevSpine', 1], [BUT_A, 'AntStoneC', .5]], wall: [BUT_A, ['cliffwall01', 'cliffwall02', 'cliffwall04', 'cliffwall05', 'cliffwall06'], .8], deco: [] },
+  belegost: { trees: [[BUT_A, 'AntTreeSmall', 1.4], [BUT_A, 'AntTree', 1]], rocks: [[BUT_A, 'snowlump02', .8], [BUT_A, 'Icewall16', .4], [BUT_A, 'IceIsland01', .3]], wall: [BUT_A, ['Icewall10', 'Icewall11', 'Icewall12', 'Icewall14', 'Icewall15'], .8],
+    deco: [[BUT_A, 'Icicle01', 33, -5, 13, 0, 2], [BUT_A, 'Icicle02', 33, 0, 14, 0, 2], [BUT_A, 'Icicle03', 33, 5, 13, 0, 2]] },
+};
+const BEL_LOOK = { tone: [1.3, .74], rough: .85, bump: 1.6, env: .1 };
+// a kit's piece standing on the ground at s, x (its own foot at the ground), y up from there
+function belPiece(kit, n, s, x, up, h, sc, at, look = BEL_LOOK, B) { const K = UTK[kit], p = K && K.pieces[n]; if (!p) return null; return utPut(K, n, s, x, at(s, x) + up - p.b[2] * sc, h, sc, look, B); }
+function belTreeUT(c) { const D = BEL_UT[c.loc]; return D && D.trees.length && D.trees.some(([k, n]) => UTK[k] && UTK[k].pieces[n]) ? D.trees.filter(([k, n]) => UTK[k] && UTK[k].pieces[n]) : null; }
+function belDress(L, c, at, way, B) {
+  const D = BEL_UT[c.loc]; if (!D) return; const T_ = L.terrain, kind = (s, x) => T_.g[(BEL_C - Math.round(s)) * BEL_N + BEL_C - Math.round(x)];
+  const ok = ([k, n]) => UTK[k] && UTK[k].pieces[n];
+  // rocks, on the cliffs and steep ground, kept off the way through
+  const rocks = D.rocks.filter(ok); if (rocks.length) for (let k = 0, n = 0; k < 600 && n < 46; k++) { const s = rand(-76, 76), x = rand(-76, 76), g = kind(s, x); if (g === 'w' || way(s, x)) continue; const sl = Math.abs(at(s + 1, x) - at(s - 1, x)) + Math.abs(at(s, x + 1) - at(s, x - 1)); if (g !== 'c' && sl < 1.2 && Math.random() < .8) continue; const [kt, nm, sc] = rocks[n % rocks.length]; belPiece(kt, nm, s, x, -.8, rand(0, TAU), sc * rand(.8, 1.3), at, BEL_LOOK); n++; }
+  // a mountain wall faced with the map's cliffs (Nogrod and Belegost)
+  if (D.wall && ok([D.wall[0], D.wall[1][0]])) for (let x = -76, i = 0; x <= 76; x += 13, i++) { if (Math.abs(x) < 34) continue; belPiece(D.wall[0], D.wall[1][i % D.wall[1].length], 33 + rand(0, 3), x, -6, rand(-.2, .2), D.wall[2], at); }   /* (clear of the gate) */
+  // a ring of pillars and of fire-pots round the landmark (Tol Sirion)
+  if (D.ring && ok(D.ring)) for (let k = 0; k < D.ring[3]; k++) { const a = (k + .5) / D.ring[3] * TAU; belPiece(D.ring[0], D.ring[1], Math.cos(a) * D.ring[2], Math.sin(a) * D.ring[2], 0, a, D.ring[4], at, BEL_LOOK, B); }
+  if (D.fire && ok(D.fire)) for (let k = 0; k < D.fire[3]; k++) { const a = k / D.fire[3] * TAU; belPiece(D.fire[0], D.fire[1], Math.cos(a) * D.fire[2], Math.sin(a) * D.fire[2], 0, a, D.fire[4], at); const g = glowSprite(0x6affc0, 4, .7); tw(Math.cos(a) * D.fire[2], Math.sin(a) * D.fire[2], at(Math.cos(a) * D.fire[2], Math.sin(a) * D.fire[2]) + 2.6, g.position); scene.add(g); }
+  // the havens: arches along the quays, stacks of rock out in the sea
+  if (D.havens && ok([BUT_D, 'smallestArch'])) { const sh = c.land === 'isle' ? -(c.big ? 70 : 48) : -34; for (const x of [-28, 0, 28]) belPiece(BUT_D, 'smallestArch', sh + 8, x, 0, 0, .3, at); for (let k = 0; k < 6; k++) { const s = sh - rand(14, 40), x = rand(-60, 60); belPiece(BUT_D, k % 2 ? 'cRockA' : 'cRockB', s, x, -4, rand(0, TAU), k % 2 ? rand(.25, .4) : rand(.8, 1.2), at); } if (ok([BUT_D, 'WindChimes'])) for (let k = 0; k < 4; k++) belPiece(BUT_D, 'WindChimes', sh + 14 + k * 6, rand(-20, 20), 3, 0, 1.4, at); }
+  for (const [k, n, s, x, up, h, sc] of D.deco || []) belPiece(k, n, s, x, up, h, sc, at, BEL_LOOK, /tower|Castle/i.test(n) ? B : null);
 }
 function updateBel(dt) {
   if (!LV || !LV.layout || !LV.layout.bel || state === 'map' || state === 'title') return; const c = LV.layout.bel, TH = THEMES[LV.theme];
@@ -14308,7 +14354,7 @@ THEMES.rivfable = natTheme({
 });
 // boot: Oakvale, Rivendell's gorge, Mirkwood and the scenery models first if they're there (they change how levels are built), then everything else
 (async () => {
-await Promise.all([loadOakvale(), loadRivendell(), loadMirkwood(), loadProps(), loadUTKit('gondolin'), loadUTKit('rivendell'), loadMoriaUT()]);   // (each changes how its level is built)
+await Promise.all([loadOakvale(), loadRivendell(), loadMirkwood(), loadProps(), loadUTKit('gondolin'), loadUTKit('rivendell'), loadMoriaUT(), ...BEL_KITS.map(loadUTKit)]);   // (each changes how its level is built)
 { const before = new Set(scene.children); buildStatic(); for (const o of scene.children) if (!before.has(o)) o.userData.stat = true; }   // (the levels' scenery, not Gandalf or anything shared: see sceneryFor)
 renderer.shadowMap.enabled = !RETRO; moon.castShadow = !RETRO; softTex();
 setupEntities();
