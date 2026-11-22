@@ -2645,7 +2645,8 @@ const OV_FOES = {
 };
 for (const n in OV_FOES) { const f = OV_FOES[n]; f.slot = 'ov_' + f.file + (f.sc ? '_' + f.sc : ''); }
 const CUP_FOES = { ...KH2_FOES, ...OV_FOES }, FOE_GROW = 1.1;   // (every Colosseum foe a tenth bigger than its game made it)
-for (const n in KH2_FOES) { const f = KH2_FOES[n]; f.hp = Math.round(f.hp * (f.boss ? 1.6 : 2.3)); f.dmg = Math.round(f.dmg * 1.4); f.rv = Math.min(f.rv ?? 3, f.lite ? 3 : 2); f.agg = true; }   // (KH II's foes: tougher, harder-hitting, quicker to strike back)
+for (const n in OV_FOES) { const f = OV_FOES[n]; f.hp = Math.round(f.hp * (f.boss ? 1.6 : 3.2)); f.dmg = Math.round(f.dmg * 1.3); f.agg = true; }   // (Overlord's too)
+for (const n in KH2_FOES) { const f = KH2_FOES[n]; f.hp = Math.round(f.hp * (f.boss ? 1.6 : 3.2)); f.dmg = Math.round(f.dmg * 1.4); f.rv = Math.min(f.rv ?? 3, f.lite ? 3 : 2); f.agg = true; }   // (KH II's foes: tougher, harder-hitting, quicker to strike back)
 for (const n in CUP_FOES) { const f = CUP_FOES[n]; f.n = f.n || 1; if (f.boss || f.r >= 1.2) f.heavy = true; if (f.boss) f.armor = true; }
 // --- the Colosseum's two rolls: a round for each kind of foe, in the order above; choose where to start (see openSeeds)
 const KH_CUPS = [['KINGDOM HEARTS II', 'KINGDOM HEARTS', KH2_FOES], ['OVERLORD', 'OVERLORD', OV_FOES]].map(([name, game, F]) => ({ name, game,
@@ -2894,6 +2895,13 @@ const LEVELS = [
     ...eagleLayout(),
     floors: [], pillars: [], bars: [], dz: [], balrogs: [],
     content() { eagleContent(); },
+  },
+  {
+    // the War of Wrath: on Vingilot with Eärendil, against Ancalagon the Black over Thangorodrim (see THE WAR OF WRATH)
+    straight: true, roam: true, kh: true, wrath: true, name: 'ANCALAGON THE BLACK', sub: 'THE WAR OF WRATH · ON VINGILOT WITH EÄRENDIL', loc: 'ancalagon', theme: 'wrath', next: 'RETURN TO THE MAP', R: 40, Y0: 0, CX: 140000, CZ: 0, base: -30, wallH: 0, winTitle: 'ANCALAGON IS FALLEN!',
+    ...wrathLayout(),
+    floors: [], pillars: [], bars: [], dz: [], balrogs: [],
+    content() { },
   },
   {
     // Bree by starlight: through the lanes to The Prancing Pony, keeping out of sight of the Nazgûl (see Bree)
@@ -3325,7 +3333,8 @@ function updateTouchUI() {
 let cratesDirty = 0;
 function bounce(v) { P.vy = inp.jump ? v * 1.22 : v; P.ground = false; P.jumpHeld = inp.jump; P.coyote = 0; P.dbl = false; }
 function updatePlayer(dt) {
-  if (LV.flight) { eagleMove(dt); return; }   // (The Escape: on Thorondor's back)
+  if (LV.flight) { eagleMove(dt); return; }
+  if (LV.wrath) { wrathMove(dt); return; }   // (Vingilot, round Ancalagon)   // (The Escape: on Thorondor's back)
   if (LV.deeping && !DEEP.blown) { inp.x = inp.z = 0; inp.spinP = false; }   // (the Deeping Wall's scene: hands off until it goes up)
   if (LV.bow && BOW.aim) { const sp_ = LV.bowU ? .95 : 1.4; BOW.cx = clamp(BOW.cx + inp.x * sp_ * dt, -.97, .97); BOW.cy = clamp(BOW.cy + inp.z * sp_ * dt, -.7, .94); inp.x = inp.z = 0; }   // (taking aim: W A S D move the sight, and Gandalf stands)
   let ix = inp.x, iz = inp.z;
@@ -5511,6 +5520,12 @@ function updateCamera(dt) {
     camera.lookAt(cam.wl); return;
   }
   if (LV.roam && !LV.duel) {
+    if (LV.wrath) {   // (behind Vingilot and out a little from the ring it flies, Ancalagon in view across it)
+      const [s, x] = wrPos(), ts = -Math.sin(WR.ang), tx = Math.cos(WR.ang), os = Math.cos(WR.ang), ox = Math.sin(WR.ang), b = WR.boss && !WR.boss.gone ? WR.boss : null;
+      _a.copy(tw(s - ts * 17 + os * 10, x - tx * 17 + ox * 10, WR.y + 7)); _b.copy(tw(s + ts * 22, x + tx * 22, WR.y + 1)).lerp(b ? tw(b.s, b.x, b.y + 10) : tw(0, 0, WR_C.Y), .42);
+      if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-6 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp);
+      const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .5)); camera.lookAt(cam.wl); return;
+    }
     if (LV.flight) {   // (on Thorondor: behind and above him, leaning into his turns)
       const c = eagleC(P.s + 8); cam.yaw = 0; _a.copy(tw(P.s - 13, lerp(P.x, c[0], .25), P.y + 3.8)); _b.copy(tw(P.s + 16, lerp(P.x, c[0], .35), P.y + .4)); if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-9 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp);
       const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .35)); camera.lookAt(cam.wl); return;
@@ -5925,10 +5940,10 @@ function belCoast(g, c, lands) {
 const BEL_STOPS = [['gondolin', 'GONDOLIN', 290, 295, 'THE HIDDEN CITY'], ['nargo', 'NARGOTHROND', 209, 391, "FINROD'S HIDDEN FORTRESS"], ['menegroth', 'MENEGROTH', 363, 352, 'THE THOUSAND CAVES OF DORIATH'],
   ['angband', 'ANGBAND', 372, 190, 'THE IRON HELL UNDER THANGORODRIM'], ['tolsirion', 'TOL SIRION', 270, 280, 'THE ISLE OF WEREWOLVES'], ['himring', 'HIMRING', 452, 300, 'THE FORTRESS OF MAEDHROS'],
   ['hithlum', 'HITHLUM', 175, 240, 'THE LAND OF MIST'], ['vinyamar', 'VINYAMAR', 52, 323, "TURGON'S HALLS IN NEVRAST"], ['falas', 'EGLAREST', 134, 409, 'THE HAVENS OF THE FALAS'],
-  ['sirion', 'HAVENS OF SIRION', 258, 509, 'THE LAST REFUGE'], ['balar', 'BALAR', 190, 566, 'THE ISLE OF CÍRDAN'], ['nogrod', 'NOGROD', 598, 405, 'THE DWARF-CITY OF THE BLUE MOUNTAINS'], ['belegost', 'BELEGOST', 608, 512, 'THE GREAT FORTRESS OF THE DWARVES']];
+  ['sirion', 'HAVENS OF SIRION', 258, 509, 'THE LAST REFUGE'], ['balar', 'BALAR', 190, 566, 'THE ISLE OF CÍRDAN'], ['nogrod', 'NOGROD', 598, 405, 'THE DWARF-CITY OF THE BLUE MOUNTAINS'], ['belegost', 'BELEGOST', 608, 512, 'THE GREAT FORTRESS OF THE DWARVES'], ['ancalagon', 'ANCALAGON THE BLACK', 372, 96, 'THE WAR OF WRATH · ON VINGILOT WITH EÄRENDIL']];
 function belStops() {
   for (const [loc, name, px, py, sub] of BEL_STOPS) {
-    let n = NODES.find(q => q.loc === loc); if (!n) { n = { name, open: true, loc, bel: true, sub: 'BELERIAND · ' + sub + ' · NO LEVEL YET' }; NODES.push(n); }
+    let n = NODES.find(q => q.loc === loc); if (!n) { n = { name, open: true, loc, bel: true, sub: 'BELERIAND · ' + sub + (LEVELS.some(L => L.loc === loc) ? '' : ' · NO LEVEL YET') }; NODES.push(n); }
     n.x = BELG.x0 + (px - BEL.luin) * BELG.s; n.z = BELG.z0 + (py - 370) * BELG.s;
     const y = groundY(n.x, n.z); mcyl(1, 1.15, .3, 16, 0xffc21a, n.x, y + .08, n.z, BELG.g, { emissive: 0x6a4000 });
     const gl = glowSprite(0xffd040, 3.2, .75); gl.position.set(n.x, y + 1.1, n.z); gl.material.depthTest = false; BELG.g.add(gl); mapFx.marks = (mapFx.marks || []).concat(gl);
@@ -6557,7 +6572,7 @@ function step(dt, noRender) {
   else if (state === 'win') updateWin(dt);
   if (state !== 'paused') {
     if (state !== 'title' && state !== 'map' && state !== 'gameover' && state !== 'complete') {
-      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateRace(dt); updateFly(dt); updateFellowship(dt); updateHobbiton(dt); updateMordorKH(dt); updateDoom(dt); updateEagleLv(dt); updateBree(dt); updateWatcher(dt); updateRivKH(dt); updatePrimeval(dt); updateArena(dt); updateDuel(dt); updateSprings(dt); updateKH(gdt);
+      updateCrates(dt); updateOrcs(dt); updateArrows(dt); updateRockets(dt); updateFireballs(dt); updateBalrogs(dt); updateBoss(dt); updateShelob(dt); updateLava(dt); updateNazgul(dt); updateRace(dt); updateFly(dt); updateFellowship(dt); updateHobbiton(dt); updateMordorKH(dt); updateDoom(dt); updateEagleLv(dt); updateWrath(dt); updateBree(dt); updateWatcher(dt); updateRivKH(dt); updatePrimeval(dt); updateArena(dt); updateDuel(dt); updateSprings(dt); updateKH(gdt);
     }
     updateDragons(dt); updateApples(); updatePhial(dt); updateLightning(dt); updateAmbient(dt); updateTree(dt);
     fx.update(dt); smoke.update(dt); updateFlies(dt); animHobbit(dt); poseDuelGandalf(dt);
@@ -8794,6 +8809,164 @@ THEMES.eaglelv = natTheme({
   orc: MT_ORC,
   scenery(L) { buildEagleLv(L, this); },
 });
+// =====================================================================
+//  THE WAR OF WRATH: Ancalagon the Black, greatest of the winged dragons, over Thangorodrim, and you aboard Vingilot with Eärendil, the Silmaril on his brow.
+//  The ship circles the dragon on its own: W and S climb and dive, A and D steer in towards him or out away; guard rolls the ship out of harm's way.
+//  Attack looses bolts of the Silmaril's light at him (his head, while he gathers fire to breathe, takes three times the harm); magic, a great beam.
+//  He breathes fire sweeping round after you (climb or dive out of it), hurls burning bolts that home on you (shoot them down), beats his wings in a
+//  shockwave rolling out at his own height (go over or under it), and at the last he dives through the ring you fly. Three bars of him; then he falls.
+// =====================================================================
+const WR = { ang: 0, rad: 88, y: 120, vr: 0, vy: 0, rollT: 0, rollCD: 0, shotCD: 0, said: 0, won: false, boss: null, bolts: [] };
+const WR_C = { Y: 118, R0: 62, R1: 120, Y0: 84, Y1: 160 };   // (where he hovers; how near and far, low and high, the ship may go)
+function wrathLayout() {   // (called as the levels are listed, before WR_C is: so its height is written out)
+  return { field: [-300, 300, -300, 300], start: [88, 0], startY: 118, noFloor: true, layout: { blocks: [], plazas: [] } }; }
+function makeVingilot() {
+  const root = new THREE.Group(), hullM = lam(0xf2f0ea, { emissive: 0x2a2a30 }), trimM = lam(0xd8b050, { emissive: 0x3a2a08 }), sailM = lam(0xfafaff, { side: THREE.DoubleSide, emissive: 0x30343c });
+  // the hull, white and gold, its prow a swan's neck curving up
+  const hull = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 10, 0, TAU, Math.PI / 2, Math.PI / 2), hullM); hull.scale.set(1.6, 1.1, 5.2); root.add(hull);
+  part(new THREE.TorusGeometry(1, .07, 6, 30), trimM, root, 0, 0, 0).scale.set(1.62, 5.25, 1); root.children[root.children.length - 1].rotation.x = Math.PI / 2;
+  part(GEO_BOX, lam(0xc8b89a), root, 0, -.02, 0, 3, .08, 9.6);   // (the deck)
+  const neck = new THREE.CatmullRomCurve3([new V3(0, 0, 4.8), new V3(0, 1.2, 6), new V3(0, 3, 6.3), new V3(0, 3.8, 5.6)]); root.add(new THREE.Mesh(new THREE.TubeGeometry(neck, 16, .28, 8), hullM));
+  part(GEO.sph, hullM, root, 0, 3.9, 5.75, .42, .38, .7); part(GEO.cone, trimM, root, 0, 3.85, 6.45, .14, .5, .14).rotation.x = Math.PI / 2;
+  // the mast and its sail, and a long pennant streaming back
+  part(GEO.cyl, trimM, root, 0, 4.5, .6, .14, 9, .14); const sail = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 6, 6, 6), sailM); sail.position.set(0, 5.2, .9); root.add(sail);
+  { const p = sail.geometry.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, (1 - (p.getX(i) / 2.6) ** 2) * .9); sail.geometry.computeVertexNormals(); }
+  const pen = new THREE.Mesh(new THREE.PlaneGeometry(4, .5), sailM); pen.position.set(0, 9, -1.4); pen.rotation.y = Math.PI / 2; root.add(pen);
+  // Eärendil at the prow, the Silmaril blazing on his brow
+  const er = new THREE.Group(); er.position.set(0, 0, 3.8); root.add(er);
+  part(GEO.cone, lam(0x2a3a6a, { side: THREE.DoubleSide }), er, 0, .8, 0, .38, 1.6, .38); part(GEO.sph, lam(0xe8c8a8), er, 0, 1.78, 0, .2, .22, .2); part(GEO.sph, lam(0xd8c890), er, 0, 1.88, -.04, .22, .2, .22);
+  const star = glowSprite(0xffffff, 3.2, 1); star.position.set(0, 1.9, .22); er.add(star); const halo = glowSprite(0xbfe0ff, 14, .5); halo.position.copy(star.position); er.add(halo);
+  const light = new THREE.PointLight(0xdfeeff, 2.2, 40, 2); light.position.set(0, 2, 0); er.add(light);
+  root.visible = false; scene.add(root); return { root, sail, pen, star, halo };
+}
+function buildWrath(L, TH) {
+  const first = scene.children.length, sky = TH.env, rockM = surf(TX.doomRock, { sky, color: 0x5a4a48, rough: .9, bump: 4, glow: .5, side: THREE.DoubleSide });
+  // Thangorodrim: three black towers of slag and rock, fire running down them, the plain of Anfauglith ashen far below
+  for (const [s, x, r, h] of [[-8, -10, 26, 98], [14, 6, 20, 84], [-4, 18, 17, 72]]) { const q = tw(s, x, h / 2); part(new THREE.ConeGeometry(r, h, 9, 4), rockM, scene, q.x, q.y, q.z); const g = glowSprite(0xff5a10, r * 1.8, .6); tw(s, x, h * .55, g.position); g.userData.keep = true; scene.add(g); }
+  const plain = new THREE.Mesh(new THREE.PlaneGeometry(2400, 2400), new THREE.MeshLambertMaterial({ color: 0x2a2220 })); plain.rotation.x = -Math.PI / 2; plain.position.copy(tw(0, 0, -.5)); scene.add(plain);
+  { const cr = []; for (let k = 0; k < 160; k++) { const a = rand(0, TAU), r = rand(60, 900), q = tw(Math.cos(a) * r, Math.sin(a) * r, 0), h = rand(8, 60); cr.push([q.x, q.y + h * .3, q.z, rand(10, 40), h, rand(10, 40), rand(0, 3)]); } instanced(new THREE.IcosahedronGeometry(1, 1), rockM, cr); }
+  bakeScenery(scene.children.slice(first));
+}   // (the ship and the eagles are made as the level starts: see updateWrath)
+THEMES.wrath = natTheme({
+  wallTex: TX.rock, floorTex: TX.dark, tint: [.7, .65, .7], door: 0x4a3a4a,
+  env: { sky: [0x0a0610, 0x2a0e14, 0x6a1a10, 0xff7a30], fog: [180, 1100], fogC: 0x3a1410, amb: [0x8a6a80, .9], hemi: [0xc8b0ff, 0x3a1008, .7], sun: [0xffd0a0, .7], east: [0xff6a30, .5], cloud: 0x2a1014, bloom: .55, embers: true },
+  orc: MT_ORC,
+  scenery(L) { buildWrath(L, this); },
+});
+const wrPos = () => [Math.cos(WR.ang) * WR.rad, Math.sin(WR.ang) * WR.rad];
+function spawnAncalagon() {
+  const m = makeDrogoth(); m.root.scale.setScalar(4.6); m.shadow.visible = false; m.dark = false;
+  const b = { m, boss: true, kind: 'N', name: 'ANCALAGON THE BLACK', title: 'ANCALAGON THE BLACK!', hp: 1500, max: 1500, bars: 3, r: 26, tall: 30, plaza: { near: true, s: 0, x: 0, y: WR_C.Y }, s: 0, x: 0, y: WR_C.Y + 30, h: 0, state: 'intro', t: 0, cd: 3, n: 0, phase: 1, flash: 0,
+    upd: anUpdate, hitFn: anHit, reactFn: () => null };
+  URUKS.push(b); KH.boss = b; WR.boss = b; return b;
+}
+function anHit(b, dmg, fin, air, head) {
+  if (!ukLive(b) || b.state === 'intro' || b.state === 'fall') return;
+  b.hp -= dmg * (head ? 3 : 1); b.flash = .1; KH.target = b; KH.targetT = 6;
+  if (head) { S.smash(); vfxImpact(drMouth(b), true, 0xffffff); banner('THE SILMARIL STRIKES HIS HEAD!', .8, true); }
+  const ph = b.hp > b.max * 2 / 3 ? 1 : b.hp > b.max / 3 ? 2 : 3; if (ph > b.phase) { b.phase = ph; b.a = null; b.state = 'roar'; b.t = 0; S.roar(); cam.shake = 1; banner(ph === 2 ? 'HE BURNS WITH RAGE!' : 'HE RISES TO DIVE!', 2, true); }
+  if (b.hp <= 0) { b.hp = 0; b.state = 'fall'; b.t = 0; b.a = null; S.roar(); banner('ANCALAGON FALLS!', 3, true); }
+}
+// his attacks: each one set up with a warning, then done (b.a holds it)
+function anStart(b) {
+  const P_ = b.phase, opts = ['breath', 'bolts', 'gust'].concat(P_ >= 2 ? ['breath', 'bolts'] : []).concat(P_ >= 3 ? ['dive', 'dive'] : []);
+  const k = opts[Math.random() * opts.length | 0]; b.a = { k, t: 0, hit: false }; b.state = 'atk'; b.t = 0;
+  if (k === 'breath') { b.a.lead = WR.ang + .5 * Math.sign(WR.spin || 1); banner('HE DRAWS BREATH: CLIMB OR DIVE!', 1.4, true); }
+  if (k === 'gust') { b.a.y = b.y; banner('HIS WINGS! GO OVER OR UNDER!', 1.4, true); }
+  if (k === 'dive') { const [ps, px] = wrPos(); b.a.from = [b.s, b.x, b.y]; b.a.dir = Math.atan2(px, ps); b.a.yy = WR.y; banner('HE DIVES! TURN AWAY!', 1.4, true); }
+}
+function anUpdate(b, dt) {
+  const m = b.m; b.t += dt; b.flash -= dt; const [ps, px] = wrPos(), toS = Math.atan2(px - b.x, ps - b.s);
+  let open = false;
+  switch (b.state) {
+    case 'intro': { m.root.visible = true; const k = Math.min(1, b.t / 3); b.y = WR_C.Y - 16 + 60 * (1 - k * k * (3 - 2 * k)); b.h += angDiff(b.h, toS) * Math.min(1, dt); if (b.t > .4 && !b.said) { b.said = 1; S.roar(); cam.shake = 1.2; banner('ANCALAGON THE BLACK!', 3, true); } if (b.t > 3.5) { b.state = 'idle'; b.t = 0; b.cd = 1.5; } break; }
+    case 'idle': b.h += angDiff(b.h, toS) * Math.min(1, dt * 1.2); b.y = damp(b.y, WR_C.Y - 16 + Math.sin(T * .6) * 6, 1, dt);   // (his body level with the ship, his head above) b.cd -= dt; if (b.cd <= 0 && state === 'play') anStart(b); break;
+    case 'roar': open = true; if (b.t > 2.4) { b.state = 'idle'; b.t = 0; b.cd = 1; } break;
+    case 'atk': {
+      const A = b.a; A.t += dt;
+      if (A.k === 'breath') {   // a long gather of fire (strike his head now), then the stream, sweeping round after the ship
+        if (A.t < 1.6) { b.charging = true; b.h += angDiff(b.h, A.lead) * Math.min(1, dt * 2); open = A.t > 1; const mp = drMouth(b); if (Math.random() < .8) vfx({ tex: 'flare', p: mp, v: vRand(2), life: .3, s0: 3, s1: 1, c0: 0xffffff, c1: 0xff6020 }); }
+        else if (A.t < 4) { b.charging = false; open = true; b.h += angDiff(b.h, toS) * Math.min(1, dt * .9); const mp = drMouth(b), dir = new V3(Math.cos(b.h), 0, Math.sin(b.h)), wdir = tw(b.s + Math.cos(b.h), b.x + Math.sin(b.h), 0).sub(tw(b.s, b.x, 0)).normalize();
+          for (let q = 0; q < 6; q++) { const v = wdir.clone().multiplyScalar(rand(70, 95)).add(vRand(6)); vfx({ tex: 'flare', p: mp, v, life: rand(.7, 1), s0: 4, s1: 16, c0: 0xfff0c0, c1: 0xa01000, a: .85 }); }
+          const ang = angDiff(Math.atan2(px - b.x, ps - b.s), b.h), dy = Math.abs(WR.y - drMouth(b).y + tw(0, 0, 0).y);
+          if (Math.abs(ang) < .32 && dy < 13 && (A.tick = (A.tick || 0) - dt) <= 0 && WR.rollT <= 0) { A.tick = .3; khHurt(9, { s: b.s, x: b.x }, { unblock: true, kb: 0 }); }
+          cam.shake = Math.max(cam.shake, .25); }
+        else { b.charging = false; b.a = null; b.state = 'idle'; b.cd = rand(1.2, 2.2) / b.phase; }
+      } else if (A.k === 'bolts') {   // burning bolts hurled one after another, homing slowly on the ship: shoot them down
+        open = A.t < 1.4; const n = 3 + b.phase * 2; while ((A.n || 0) < n && A.t > .3 + (A.n || 0) * .22) { A.n = (A.n || 0) + 1; anFireball(b); }
+        if (A.t > 1.8) { b.a = null; b.state = 'idle'; b.cd = rand(1, 2) / b.phase; }
+      } else if (A.k === 'gust') {   // a beat of the great wings: a ring of storm rolling out at his own height
+        if (A.t > .9 && !A.hit) { A.hit = true; S.roar(); cam.shake = .8; const y = b.y + 8, ring = new THREE.Mesh(new THREE.RingGeometry(.96, 1, 96), new THREE.MeshBasicMaterial({ color: 0xffc080, transparent: true, opacity: .9, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+          ring.rotation.x = -Math.PI / 2; tw(b.s, b.x, y, ring.position); let got = false;
+          khFx(ring, f => { const r = 20 + f.t * 55; ring.scale.set(r, r, 1); ring.material.opacity = .9 * (1 - r / 130); for (let q = 0; q < 3; q++) { const a = rand(0, TAU); vfx({ tex: 'flare', p: tw(b.s + Math.cos(a) * r, b.x + Math.sin(a) * r, y + rand(-3, 3)), life: .5, s0: 6, s1: 12, c0: 0xffe0b0, c1: 0x602010, a: .5 }); }
+            if (!got && Math.abs(r - WR.rad) < 6 && Math.abs(WR.y - y) < 9 && WR.rollT <= 0) { got = true; khHurt(14, { s: b.s, x: b.x }, { unblock: true, kb: 0 }); WR.vr += 30; } return r < 130; }); }
+        if (A.t > 2) { b.a = null; b.state = 'idle'; b.cd = rand(1.2, 2) / b.phase; }
+      } else if (A.k === 'dive') {   // across the ring where you fly, along the red line
+        const [s0, x0, y0] = A.from, L = 190, k = clamp((A.t - 1.1) / 1.6, 0, 1);
+        if (A.t < 1.1) { if (!A.mark) { A.mark = khFx(null, f => { if (Math.random() < .9) { const t = rand(-1, 1); vfx({ tex: 'flare', p: tw(s0 + Math.cos(A.dir) * L * t * .5, x0 + Math.sin(A.dir) * L * t * .5, A.yy), life: .3, s0: 5, s1: 2, c0: 0xff4020, c1: 0x800000, a: .6 }); } return A.t < 1.1; }); } b.h += angDiff(b.h, A.dir) * Math.min(1, dt * 3); }
+        else { const d = (k - .5) * L; b.s = Math.cos(A.dir) * d; b.x = Math.sin(A.dir) * d; b.y = lerp(y0, A.yy, Math.sin(k * Math.PI)); b.h = A.dir;
+          if (!A.hit && Math.hypot(ps - b.s, px - b.x) < 24 && Math.abs(WR.y - b.y) < 14 && WR.rollT <= 0) { A.hit = true; khHurt(22, { s: b.s, x: b.x }, { unblock: true, kb: 0 }); cam.shake = 1.2; } }
+        if (k >= 1) { b.s = damp(b.s, 0, 1.5, dt); b.x = damp(b.x, 0, 1.5, dt); if (Math.hypot(b.s, b.x) < 3) { b.a = null; b.state = 'idle'; b.cd = 1.5; } }
+      }
+      break;
+    }
+    case 'fall': {   // down onto Thangorodrim, and the towers break under him
+      b.y -= dt * (10 + b.t * 14); b.h += dt * .4; m.body.rotation.z = Math.min(1.2, b.t * .4); if (Math.random() < .7) vfxFireBurst(tw(b.s + rand(-20, 20), b.x + rand(-20, 20), b.y + rand(0, 20)), .8);
+      if (b.y < 40 && !b.crashed) { b.crashed = true; cam.shake = 2; flashV = .8; S.smash(); S.roar(); for (let q = 0; q < 6; q++) vfxFireBurst(tw(rand(-30, 30), rand(-30, 30), rand(20, 70)), 3); }
+      if (b.t > 4.5 && !WR.won) { WR.won = true; b.dead = true; b.gone = true; m.root.visible = false; roamWin('ANCALAGON IS FALLEN!'); }
+      break;
+    }
+  }
+  drDraw(b, dt, true, open); m.mouth.material.opacity = open ? 1 : .2; skinPlay(m, b.state === 'fall' ? 'die' : open ? 'attack' : 'fly');
+  if (m.skin && m.skin.obj && !m.dark) { m.dark = true; m.skin.obj.traverse(o => { if (!o.isMesh) return; const cl = q => { const c = q.clone(); if (c.color) c.color.setHex(0x34303c); if (c.emissive) c.emissive.setHex(0x140404); return c; }; o.material = Array.isArray(o.material) ? o.material.map(cl) : cl(o.material); }); }   // (black, not Smaug's red)
+}
+function anFireball(b) {
+  const p = drMouth(b), g = glowSprite(0xff7020, 6, 1); g.position.copy(p); let v = null, gone = false; S.whoosh();
+  const fb = { g, dead: false }; WR.bolts.push(fb);
+  khFx(g, (f, dt) => {
+    if (fb.dead) { vfxFireBurst(g.position.clone(), 1); return false; }
+    const [ps, px] = wrPos(), tgt = tw(ps, px, WR.y + 1); const want = tgt.clone().sub(g.position).normalize().multiplyScalar(26); v = v ? v.lerp(want, Math.min(1, dt * 1.1)) : want; g.position.addScaledVector(v, dt); vfxFireTrail(g.position);
+    if (g.position.distanceTo(tgt) < 3.5) { if (WR.rollT <= 0) khHurt(10, { s: b.s, x: b.x }, { unblock: true, kb: 0 }); vfxFireBurst(g.position.clone(), 1.2); fb.dead = true; return false; }
+    return f.t < 7;
+  });
+}
+// a bolt of the Silmaril's light from Eärendil's brow: it flies at the dragon, and burns his head if it's open and gathering fire
+function wrathShoot(big) {
+  if (WR.shotCD > 0) return; WR.shotCD = big ? .8 : .16; const b = WR.boss; if (!b || !ukLive(b)) return;
+  const sh = THEMES.wrath.ship, from = sh.star.getWorldPosition(new V3()); S.zap();
+  // aim: a burning bolt near the ship first, then his head if he's gathering fire, else his body
+  const bolt = WR.bolts.filter(q => !q.dead).sort((p, q) => p.g.position.distanceTo(from) - q.g.position.distanceTo(from))[0], head = b.charging, aimAt = () => bolt && !bolt.dead && bolt.g.position.distanceTo(from) < 60 ? bolt.g.position.clone() : head ? drMouth(b) : b.m.root.getWorldPosition(new V3()).add(new V3(0, 14, 0));
+  const g = glowSprite(0xe0f0ff, big ? 7 : 2.6, 1); g.position.copy(from); g.material.map = vfxTex('star');
+  khFx(g, (f, dt) => {
+    const t = aimAt(), d = t.clone().sub(g.position), L = d.length(); g.position.addScaledVector(d.normalize(), Math.min(L, (big ? 120 : 160) * dt)); g.material.rotation += dt * 8; vfx({ tex: 'flare', p: g.position, life: .2, s0: big ? 4 : 1.6, s1: .2, c0: 0xffffff, c1: 0x8ac8ff });
+    if (L < 4) { if (bolt && !bolt.dead && bolt.g.position.distanceTo(g.position) < 6) { bolt.dead = true; S.clash(); } else { anHit(b, big ? 40 : 6, false, false, head && drMouth(b).distanceTo(g.position) < 12); vfxImpact(g.position.clone(), big, 0xbfe0ff); } return false; }
+    return f.t < 2;
+  });
+}
+function wrathMove(dt) {
+  if (!WR.boss || WR.boss.gone && !WR.won) { WR.boss = null; if (!WR.won) spawnAncalagon(); }
+  const spin = .22; WR.spin = 1; WR.ang += spin * dt * (88 / WR.rad); WR.rollT -= dt; WR.rollCD -= dt; WR.shotCD -= dt;
+  WR.vr = damp(WR.vr, -inp.x * 26, 4, dt); WR.vy = damp(WR.vy, inp.z * 22, 5, dt);
+  WR.rad = clamp(WR.rad + WR.vr * dt * (WR.rollT > 0 ? 2 : 1), WR_C.R0, WR_C.R1); WR.y = clamp(WR.y + WR.vy * dt, WR_C.Y0, WR_C.Y1);
+  const [s, x] = wrPos(); P.s = s; P.x = x; P.y = WR.y; P.vs = P.vx = P.vy = 0; P.ground = true; P.standOn = null; P.heading = WR.ang + Math.PI / 2;
+  if (state === 'play' && !WR.said) { WR.said = 1; setTimeout(() => { if (LV && LV.wrath && state === 'play') banner('W S: CLIMB, DIVE · A D: IN, OUT · ATTACK: THE SILMARIL · GUARD: ROLL', 4, true); }, 3500); }
+}
+function wrathRoll() { if (WR.rollCD > 0) return; WR.rollT = .6; WR.rollCD = 1.1; WR.vr += (inp.x ? -Math.sign(inp.x) : 1) * 30; KH.invT = Math.max(KH.invT, .6); S.whoosh(); }
+function updateWrath(dt) {
+  const TH = THEMES.wrath, on = !!LV && LV.wrath && state !== 'map' && state !== 'title'; if (TH.ship) TH.ship.root.visible = on; if (!on) return;
+  if (!TH.ship) { TH.ship = makeVingilot();
+    // the host of the Valar's eagles wheeling far off, and the storm
+  TH.eagles = []; for (let k = 0; k < 14; k++) { const e = new THREE.Group(); for (const sx of [-1, 1]) part(GEO_BOX, lam(0x5a3a1a), e, sx * 2.2, 0, 0, 4.2, .12, 1.4).rotation.z = sx * .15; part(GEO.sph, lam(0x6a4422), e, 0, 0, 0, .6, .5, 1.6); e.userData = { a: rand(0, TAU), r: rand(140, 260), y: rand(90, 190), sp: rand(.08, .16) * (k % 2 ? 1 : -1), keep: true }; scene.add(e); TH.eagles.push(e); }
+  }
+  const sh = TH.ship; sh.root.rotation.set(0, 0, 0); sh.root.position.copy(tw(P.s, P.x, P.y - .05));
+  const fwd = tw(P.s - Math.sin(WR.ang), P.x + Math.cos(WR.ang), P.y - .05); sh.root.lookAt(fwd); sh.root.rotateZ(WR.rollT > 0 ? (1 - WR.rollT / .6) * TAU : -WR.vr * .01); sh.root.rotateX(-WR.vy * .012);
+  sh.sail.scale.z = 1 + Math.sin(T * 3) * .08; sh.pen.rotation.x = Math.sin(T * 6) * .3; sh.star.scale.setScalar(3.2 + Math.sin(T * 7) * .4); sh.halo.material.opacity = .45 + Math.sin(T * 2) * .1;
+  if (Math.random() < .7) vfx({ tex: 'star', p: sh.star.getWorldPosition(new V3()), v: vRand(2), life: .5, s0: .6, s1: .05, c0: 0xffffff, c1: 0x8ac8ff });
+  for (const e of TH.eagles) { const u = e.userData; u.a += u.sp * dt; e.position.copy(tw(Math.cos(u.a) * u.r, Math.sin(u.a) * u.r, u.y + Math.sin(T + u.r) * 4)); e.rotation.y = -u.a + (u.sp > 0 ? 0 : Math.PI); e.children.forEach((c, i) => { if (i < 2) c.rotation.z = (i ? -1 : 1) * (.15 + Math.sin(T * 4 + u.r) * .35); }); }
+  if (Math.random() < dt * .35) { flashV = Math.max(flashV, .35); S.zap(); }   // (the storm)
+  for (let i = WR.bolts.length - 1; i >= 0; i--) if (WR.bolts[i].dead && !WR.bolts[i].g.parent) WR.bolts.splice(i, 1);
+}
+function resetWrath() { Object.assign(WR, { ang: 0, rad: 88, y: WR_C.Y, vr: 0, vy: 0, rollT: 0, rollCD: 0, shotCD: 0, said: 0, won: false, boss: null, bolts: [] }); }
 // --- The Watcher in the Water: before the Doors of Durin, by moonlight, on the paved shore of the black lake. It bursts up through the stones into a crater of broken slabs and
 //     churning water, as Battle for Middle-earth's Watcher does: only the top of its head out of the pool, its long tentacles sprawling out over the shore on every side. It's
 //     fought like a many-headed beast: each tentacle must be cut down when it comes down to the stones: they slam along a red line (and lie there a moment: strike), sweep
@@ -11264,8 +11437,9 @@ function bossUpdate(b, dt) {
       const k = clamp((b.t - .5) / 2, 0, 1); b.y = b.gy - 11 * (1 - k * k * (3 - 2 * k)); b.h += angDiff(b.h, toP) * Math.min(1, dt * 3);
       for (let q = 0; q < 6; q++) { const a = rand(0, TAU), r = rand(.5, 4.5); bfire(tw(b.s + Math.cos(a) * r, b.x + Math.sin(a) * r, b.gy + .2), 2, 3); }
       if (Math.random() < .5) smoke.spawn(...tw(b.s + rand(-3, 3), b.x + rand(-3, 3), b.gy + 1).toArray(), rand(-.5, .5), rand(3, 5), rand(-.5, .5), rand(4, 6), 2, 6, [.1, .05, .05], [.2, .15, .15], -.2, .3);
-      if (k >= 1 && !b.landed) { b.landed = true; b.y = b.gy; const p = tw(b.s, b.x, b.y + .3); sparks(p, 60, 12, [1, .9, .6], [1, .4, .1], .3); puff(p, 16, 3); S.smash(); S.roar(); cam.shake = 1.1; if (m.skin && m.skin.cur === 'clip' && m.skin.curAct) { m.skin.curAct.paused = false; m.skin.holdT = T + clipDur(m, 'ignite_ta', 1.8); } bossWave(b, b.s, b.x, 12, 11, 6); }
-      if (b.t > 2.6 + clipDur(m, 'ignite_ta', 1.8)) { b.state = 'idle'; b.t = 0; b.cd = .8; }   // (and the summoning to its end)
+      if (k >= 1 && !b.landed) { b.landed = true; b.y = b.gy; const p = tw(b.s, b.x, b.y + .3); sparks(p, 60, 12, [1, .9, .6], [1, .4, .1], .3); puff(p, 16, 3); S.smash(); S.roar(); cam.shake = 1.1; if (m.skin && m.skin.cur === 'clip' && m.skin.curAct) { m.skin.curAct.paused = false; m.skin.holdT = T + clipDur(m, 'ignite_ta', 1.8); } b.seq = ['ignite_tb', 'roar_b']; bossWave(b, b.s, b.x, 12, 11, 6); }
+      if (b.landed && b.seq && b.seq.length && m.skin && T >= m.skin.holdT - .05) { const n = b.seq.shift(); if (skinClip(m, n, clipDur(m, n, 2))) { if (n.startsWith('roar')) { S.roar(); cam.shake = Math.max(cam.shake, .7); } } }   // (then his wings spread, and he roars)
+      if (b.landed && (!m.skin || !m.skin.obj || ((!b.seq || !b.seq.length) && T >= m.skin.holdT)) && b.t > 2.6) { b.state = 'idle'; b.t = 0; b.cd = .8; }   // (and the whole of it, wings and roar, to its end before he fights)
       break;
     }
     case 'idle': {
@@ -12497,6 +12671,7 @@ function resetKH(fresh) {
   if (LV && LV.layout && LV.layout.plazas) { const pl = LV.layout.plazas; for (let i = pl.length - 1; i >= 0; i--) if (pl[i].eye) pl.splice(i, 1); }   // (the hunters the Eye sent are gone too)
   if (LV && LV.theme === 'mordorkh') resetEye();
   if (LV && LV.flight) resetEagle();
+  if (LV && LV.wrath) resetWrath();
   if (LV && LV.theme === 'bree') resetBree();
   for (const p of (LV && LV.layout && LV.layout.plazas) || []) if (!p.done) { p.wave = -1; p.waveT = 0; p.near = false; if (p.hordeOf) { p.horde = p.hordeOf; p.hLeft = undefined; } }   // any square you hadn't finished starts again
   for (const o of ORBS) scene.remove(o.sp); ORBS.length = 0; khClearFx();
@@ -12608,6 +12783,7 @@ function khInput() {
 const khFlash = c => KH.cmdT[c] = .25;   // the command menu lights the command just used
 const KH_CLIPS = ['attack_a', 'attack_b', 'attack_c', 'attack_a', 'attack_e'];
 function khAttack() {
+  if (LV && LV.wrath) { wrathShoot(); return; }   // (on Vingilot: the Silmaril's light)
   if (LV && LV.bow && (!LV.bowU || BOW.aim)) { bowShoot(); return; }   // (the bow instead of the blade: at Erebor only with the sight up)
   if (KH.rollT > 0) return;
   if (KH.atk) { if (KH.atk.t > KH.atk.dur * .35) KH.buf = true; return; }   // pressed during a cut: the next comes when this one's done
@@ -12621,7 +12797,8 @@ function khAttack() {
   if (LV.khl) { P.spinT = A.dur + .05; P.spinId = (P.spinId || 0) + 1; }
   skinClip(hob, khc(KH_SORA[air ? 'air' : 'ground'][Math.min(n, 4)], KH_CLIPS[Math.min(n, 4)]), A.dur * (HERO === 'sora' || SORA.clips[KH_SORA.ground[0]] ? 2.2 : 1.15)); S.saberSwing();   // (Sora's own swing, the follow-through too)
 }
-function khGuard(dodge) {   // (dodge: Space always rolls, the way you're pushing or else straight back)
+function khGuard(dodge) {
+  if (LV && LV.wrath) { wrathRoll(); return; }   // (dodge: Space always rolls, the way you're pushing or else straight back)
   if (KH.atk || KH.rollT > 0 || KH.guardCD > 0) return;
   const len = Math.hypot(inp.x, inp.z); KH.guardCD = .5; khFlash('G');
   if (dodge && len <= .4 && P.ground) { const b = P.heading + Math.PI; KH.rollV = [Math.cos(b) * 11, Math.sin(b) * 11]; KH.rollT = .36; KH.invT = .4; S.whoosh(); dustAt(P.s, P.x, P.y, 6); skinClip(hob, khc(KH_SORA.roll), .5); return; }
@@ -12806,6 +12983,7 @@ const POWER_FX = {
   },
 };
 function khCast(id) {
+  if (LV && LV.wrath) { if (KH.mp < 20 && !cheats.ammo) { S.click(); return false; } if (!cheats.ammo) KH.mp -= 20; WR.shotCD = 0; wrathShoot(true); return true; }   // (on Vingilot: any magic is the Silmaril's great beam)
   const p = POWER[id]; if (!p || KH.magicCD > 0 || KH.atk) return false;
   const cost = khCost(p); if (KH.mp < cost) { S.click(); return false; }
   KH.mp -= cost; KH.magicCD = .6; P.fireAnim = .5; KH.spell = id; khFlash('M');
@@ -13020,9 +13198,10 @@ function khHit(u, dmg, fin, air, again) {
     if (u.rvT > T || (u.state === 'atk' && !(u.lite && fin)) || (u.armor && u.state === 'wind')) { if (u.stag >= 100) u.stag = 99; return; }   // (it takes the blow, and keeps on)
     if (u.m.skin) u.m.skin.holdT = 0; u.q = null; if (u.state === 'atk' || u.state === 'wind') { u.lockH = undefined; u.dip = 0; u.air = false; u.m.root.visible = u.m.shadow.visible = true; }
   }
+  if ((u.state === 'down' || u.state === 'getup') && !fin) { u.t = Math.min(u.t, .2); return; }   // (lying there: struck again, it stays down a moment longer)
   if (fin || air || !(u.armor && (u.state === 'atk' || u.state === 'wind'))) {
     if (hv) Object.assign(u, { state: 'flinch', t: 0, vs: ns * (fin ? 2 : 1), vx: nx * (fin ? 2 : 1) });
-    else if (fin || air) Object.assign(u, { state: 'launch', t: 0, vs: ns * (fin ? 8 : 1.5), vx: nx * (fin ? 8 : 1.5), vy: fin ? 8 : 6 });
+    else if (fin || air) Object.assign(u, { state: 'launch', t: 0, vs: ns * (fin ? 6 : 1.5), vx: nx * (fin ? 6 : 1.5), vy: fin ? 7.5 : 6 });
     else Object.assign(u, { state: 'flinch', t: 0, vs: ns * 4, vx: nx * 4 });
   }
   if (u.stag >= 100) { u.stag = 0; u.dizzy = u.kind === 'L' ? 2.5 : KK.mv ? 2 : 3.5; }   // dizzy once it's back on its feet
@@ -13217,11 +13396,11 @@ function ukUpdate(u, dt) {
       if (u.t > (u.state === 'recoil' ? .7 : .35)) { u.state = u.dizzy > 0 ? 'dizzy' : 'stalk'; u.t = 0; u.cd = Math.min(u.cd, .6); } break;
     }
     case 'launch': {   // knocked flying
-      u.vy -= 24 * dt; u.y += u.vy * dt; ukMove(u, u.vs * dt, u.vx * dt); onGround = false; if (!ownKO) m.body.rotation.x = -clamp(u.t * 4, 0, 1.4);
-      const g = khLand(u.s, u.x, u.y); if (u.y <= g && u.vy < 0) { u.y = g; dustAt(u.s, u.x, u.y, 6); if (u.kind === 'b') { khBoom(u); return; } u.state = u.dead ? 'die' : 'down'; u.t = 0; } break;
+      u.vy -= 22 * dt; u.y += u.vy * dt; ukMove(u, u.vs * dt, u.vx * dt); u.vs *= Math.exp(-1.8 * dt); u.vx *= Math.exp(-1.8 * dt); onGround = false; if (!ownKO) m.body.rotation.x = damp(m.body.rotation.x, -1.35, 7, dt);
+      const g = khLand(u.s, u.x, u.y); if (u.y <= g && u.vy < 0) { u.y = g; dustAt(u.s, u.x, u.y, 6); if (u.kind === 'b') { khBoom(u); return; } if (!u.dead && !u.bounced && u.vy < -7) { u.bounced = true; u.vy = -u.vy * .28; u.vs *= .5; u.vx *= .5; break; } u.bounced = false; u.state = u.dead ? 'die' : 'down'; u.t = 0; } break;   // (a little bounce first, if it came down hard)
     }
-    case 'down': if (!ownKO) m.body.rotation.x = -1.4; if (u.t > (ownKO ? .55 : .9)) { u.state = 'getup'; u.t = 0; } break;
-    case 'getup': if (!ownKO) m.body.rotation.x = -1.4 * (1 - u.t / .4); if (u.t > (ownKO ? .3 : .4)) { m.body.rotation.x = 0; u.state = u.dizzy > 0 ? 'dizzy' : 'stalk'; u.t = 0; } break;
+    case 'down': ukMove(u, u.vs * dt, u.vx * dt); u.vs *= Math.exp(-9 * dt); u.vx *= Math.exp(-9 * dt); if (!ownKO) m.body.rotation.x = damp(m.body.rotation.x, -1.4, 10, dt); if (u.t > (ownKO ? .6 : .7)) { u.state = 'getup'; u.t = 0; } break;   // (sliding to a stop)
+    case 'getup': if (!ownKO) m.body.rotation.x = -1.4 * (1 - smooth(clamp(u.t / .5, 0, 1))); if (u.t > (ownKO ? .35 : .5)) { m.body.rotation.x = 0; u.state = u.dizzy > 0 ? 'dizzy' : 'stalk'; u.t = 0; } break;
     case 'dizzy': if (u.t > u.dizzy) { u.dizzy = 0; u.state = 'stalk'; u.t = 0; } break;
     case 'die': {   // gone in a breath of black smoke, leaving orbs and apples behind
       if (!ownKO) m.body.rotation.x = -1.4; m.body.position.y = -u.t * (ownKO ? .35 : .6);
@@ -13411,6 +13590,7 @@ showScreen(null); syncPauseBtns();
   const q = new URLSearchParams(location.search), li = /^\d+$/.test(q.get('play') || '') ? Number(q.get('play')) : (LEVELS.findIndex(L => L.loc === q.get('play')) + 1 || LEVELS.findIndex(L => q.get('play') && (L.name || '').replace(/ /g, '').includes(q.get('play').toUpperCase())) + 1) - 1;   // or ?play=2 for the third level in the list
   if (q.get('swaphero')) setTimeout(() => setHero(HERO === 'sora' ? 'gandalf' : 'sora'), +q.get('swaphero') * 1000);   // (testing: change hero after that many seconds)
   if (q.get('belguide')) { const w = setInterval(() => { if (BOARD || MODELS_DONE && !MAP_LOADING) { clearInterval(w); buildBeleriand(true); } }, 300); }   // (?belguide=1: Beleriand's frame, to repaint as models/beleriand.jpg)
+  if (q.get('foes') && LEVELS[li] && LEVELS[li].theme === 'arena') Object.assign(LEVELS[li], arenaLayout(-1, { name: 'TEST', rounds: [q.get('foes').split(',')] }));   // (testing: ?play=THEORCTRIAL&foes=B, any foes in the arena)
   if (q.get('from') && LEVELS[li] && LEVELS[li].cup !== undefined) Object.assign(LEVELS[li], cupLayout(LEVELS[li].cup, +q.get('from')));   // (&from=3 with a cup: start at its fourth seed, for testing)
   if (q.get('look')) setLook(q.get('look') === 'retro');   // ?look=retro or ?look=hd
   if (q.get('mapat')) backToMap(q.get('mapat'));
