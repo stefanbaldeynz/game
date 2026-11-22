@@ -970,8 +970,12 @@ const MARBLE_T = [1, .97, .93];
 
 // --- collision solids (track-space boxes) for the level being played ---
 const solids = [], spikes = [];
+// a level's many fixed walls (a whole UT2004 map's) kept in a grid of 4 m squares, each checked only where you are: see solidsNear
+let WGRID = null; const _sn = [];
+const wgKey = (s, x) => Math.floor(s / 4) * 100003 + Math.floor(x / 4);
+function solidsNear(s, x) { if (!WGRID) return solids; const w = WGRID.get(wgKey(s, x)); if (!w) return solids; _sn.length = 0; for (const b of solids) _sn.push(b); for (const b of w) _sn.push(b); return _sn; }
 function solid(s0, s1, x0, x1, y0, y1, kind = 'wall', ref = null) { const b = { s0, s1, x0, x1, y0, y1, kind, ref, on: true }; solids.push(b); return b; }
-function groundBelow(s, x, y, skip) { let g = -100; for (const b of solids) { if (!b.on || b === skip) continue; if (s >= b.s0 && s <= b.s1 && x >= b.x0 && x <= b.x1 && b.y1 <= y + .06 && b.y1 > g) g = b.y1; } if (TERR) { const t = terrainAt(s, x); if (t <= y + .06 && t > g) g = t; } if (DECK) { const d = deckAt(s, x, y + .06); if (d > g) g = d; } return g; }
+function groundBelow(s, x, y, skip) { let g = -100; for (const b of solidsNear(s, x)) { if (!b.on || b === skip) continue; if (s >= b.s0 && s <= b.s1 && x >= b.x0 && x <= b.x1 && b.y1 <= y + .06 && b.y1 > g) g = b.y1; } if (TERR) { const t = terrainAt(s, x); if (t <= y + .06 && t > g) g = t; } if (DECK) { const d = deckAt(s, x, y + .06); if (d > g) g = d; } return g; }
 // rolling ground for an open level built from a heightmap (Oakvale, from Fable: see levels/README.md). TERR is the level's, or null.
 // Its height under any point, smoothly between the metre-square corners; the sea floor counts as just under the water, for wading.
 let TERR = null;
@@ -1015,14 +1019,14 @@ function deckTri(D, A, B, C) {
 // ground distance between two track points: in the small courtyard ring, track units aren't metres, so measure in the world
 const _h1 = new V3(), _h2 = new V3();
 function hd(s1, x1, s2, x2) { if (!LV || !LV.arena) return Math.hypot(s1 - s2, x1 - x2); tw(s1, x1, 0, _h1); tw(s2, x2, 0, _h2); return Math.hypot(_h1.x - _h2.x, _h1.z - _h2.z); }
-function inSolid(t) { for (const b of solids) if (b.on && t.s > b.s0 && t.s < b.s1 && t.x > b.x0 && t.x < b.x1 && t.y > b.y0 && t.y < b.y1) return b; return null; }
+function inSolid(t) { for (const b of solidsNear(t.s, t.x)) if (b.on && t.s > b.s0 && t.s < b.s1 && t.x > b.x0 && t.x < b.x1 && t.y > b.y0 && t.y < b.y1) return b; return null; }
 
 // =====================================================================
 //  LEVEL RINGS — each circle of the city is a ring with its own radius (R) and walkway height (Y0).
 //  Every ring's visuals are built once so the circles you've climbed stay visible below; solids only for the level being played.
 // =====================================================================
 let LV = null, LI = 0, START_S = 1.2, END_S = 298.16, torches = [], buildL = null;
-function setFrame(L) { R = L.R; Y0 = L.Y0; CIRC = TAU * R; CX = L.CX || 0; CZ = L.CZ || 0; STRAIGHT = !!L.straight; CURVE = L.curve ? (L.curveT || (L.curveT = buildCurve(L.curve))) : null; TERR = L.terrain || null; DECK = L.deck || null; }
+function setFrame(L) { R = L.R; Y0 = L.Y0; CIRC = TAU * R; CX = L.CX || 0; CZ = L.CZ || 0; STRAIGHT = !!L.straight; CURVE = L.curve ? (L.curveT || (L.curveT = buildCurve(L.curve))) : null; TERR = L.terrain || null; DECK = L.deck || null; WGRID = L.wgrid || null; }
 const GM = new Geo(), GF = new Geo();
 const rubbleList = [], cityFires = [], torchSprites = [];
 function rubble(s, x, y) { rubbleList.push({ p: tw(s, x, y), sz: rand(.3, .8) }); }
@@ -3546,7 +3550,7 @@ function moveH(ax, d) {
   if (TERR) { const was = terrainAt(P.s, P.x); P[ax] += d; const now = terrainAt(P.s, P.x); if (now - Math.max(P.y, was) > .55) { P[ax] -= d; if (ax === 's') P.vs = 0; else P.vx = 0; return; } P[ax] -= d; }
   P[ax] += d;
   if (DECK && P.ground) { const dk = deckAt(P.s, P.x, P.y + .9); if (dk > P.y) P.y = dk; }   // (the seams between walkway pieces can be a step up)   // up a walkway's ramp, or onto its edge
-  for (const b of solids) {
+  for (const b of solidsNear(P.s, P.x)) {
     if (!b.on || P.s + PR <= b.s0 || P.s - PR >= b.s1 || P.x + PR <= b.x0 || P.x - PR >= b.x1 || P.y + PH <= b.y0 || P.y >= b.y1 - 1e-4) continue;
     if (b.kind === 'crate' && b.ref.type === 'n') { crateExplode(b.ref); continue; }
     // Shadowfax charges straight through crates (TNT included, so mind those)
@@ -3558,7 +3562,7 @@ function moveH(ax, d) {
 }
 function moveV(d, lands, bonks) {
   const prevY = P.y; P.y += d; P.ground = false; P.standOn = null;
-  for (const b of solids) {
+  for (const b of solidsNear(P.s, P.x)) {
     if (!b.on || P.s + PR <= b.s0 || P.s - PR >= b.s1 || P.x + PR <= b.x0 || P.x - PR >= b.x1 || P.y + PH <= b.y0 || P.y >= b.y1) continue;
     if (b.kind === 'crate' && b.ref.type === 'n') { crateExplode(b.ref); continue; }
     if (d <= 0 && prevY >= b.y1 - .35) { P.y = b.y1; P.vy = 0; P.ground = true; P.standOn = b; if (b.kind === 'crate') lands.push(b.ref); }
@@ -5516,7 +5520,7 @@ function updateAmbient(dt) {
   for (const t of THEMES_FALLS) t.offset.y += dt * 1.2;
   if (THEMES.riv.bigFall) THEMES.riv.bigFall.offset.y += dt * .6;
   torchSprites.forEach((s, i) => s.scale.set(.7 + Math.sin(T * 13 + i) * .06, 1.15 + Math.sin(T * 11 + i * 2) * .1, 1));
-  clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt); updateEnt(dt); updateKhazad(dt); updateFall(dt); updateWeathertop(dt); updateCitadel(dt); updateRivKH(dt); updateErebor(dt); updateBow(dt); updateDeep(dt); updateBalin(dt); updateUstair(dt); updateMine(dt);
+  clouds.rotation.y += dt * .004; updateHelms(dt); updateIsen(dt); updateEnt(dt); updateKhazad(dt); updateFall(dt); updateWeathertop(dt); updateCitadel(dt); updateRivKH(dt); updateErebor(dt); updateBow(dt); updateDeep(dt); updateBalin(dt); updateUstair(dt); updateMine(dt); updateMineUT(dt);
   doomGlow.material.opacity = .8 + Math.sin(T * 1.7) * .2;
   // embers rising from the burning city below
   if (ENV.embers) for (let k = 0; k < 2; k++) { tw(P.s + rand(-6, 26), rand(-14, -4), rand(-8, 0), _a); fx.spawn(_a.x, _a.y, _a.z, rand(-.5, .5), rand(1.5, 3), rand(-.5, .5), rand(2, 3.5), .12, .05, [1, .7, .3], [1, .2, .05]); }
@@ -11491,6 +11495,198 @@ THEMES.minekh = natTheme({
   orc: { sk: 0x8a907a, ska: 0xa0a488, ar: 0x2a2630, le: 0x3a2a1a, met: 0x1e1c22, sc: .85 },
   scenery(L) { buildMine(L, this); },
 });
+// =====================================================================
+//  WHOLE UT2004 MAPS (only on your own computer): levels/ut/<name>.json and textures/ut/*.png, made by bfme\tools\Prep-UTLevel.ps1 (UT2004's own UCC.exe for the
+//  layout, UE Viewer for the meshes and pictures). utCarve builds the map's halls from its brushes as UnrealEd's CSG does: each brush face is kept where it parts
+//  open space from solid (by the brushes in their own order: the last one round a point says whether it's carved out or filled), cut finer where that changes
+//  across it. Its floors become walkways, its walls walls (in WGRID); its static meshes stand where the map put them, its lights are baked into the stone.
+// =====================================================================
+const UTM = {}, UTM_SC = 1 / 50, UT_NOWALL = new URLSearchParams(location.search).get('utreach') === '2';
+async function loadUTMap(name) {
+  if (!LOCAL_ASSETS || new URLSearchParams(location.search).get('layout') === 'classic') return null;
+  const r = await fetch(`levels/ut/${name}.json`).catch(() => null); if (!r || !r.ok) return null;
+  let D; try { D = await r.json(); } catch (e) { console.warn(`Valinor: levels/ut/${name}.json is there but could not be read:`, e.message); return null; }
+  const imgs = await Promise.all(D.tex.map(n => n ? loadImage(`textures/ut/${n}.png`).catch(() => null) : null));
+  const pieces = {};
+  for (const [nm, m] of Object.entries(D.meshes)) {
+    const parts = [];
+    for (const [ti, v, u] of m.g) {
+      const n = v.length / 3, pos = new Float32Array(v.length), uv = new Float32Array(n * 2);
+      for (let q = 0; q < n; q++) { const c = q - q % 3 + [0, 2, 1][q % 3]; pos[c * 3] = v[q * 3] * UTM_SC; pos[c * 3 + 1] = v[q * 3 + 2] * UTM_SC; pos[c * 3 + 2] = v[q * 3 + 1] * UTM_SC; uv[c * 2] = u[q * 2]; uv[c * 2 + 1] = u[q * 2 + 1]; }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.computeVertexNormals();
+      parts.push({ geo: g, tex: D.tex[ti] });
+    }
+    pieces[nm] = { parts, b: m.b };
+  }
+  console.log(`Valinor: ${D.name} from Unreal Tournament 2004 (levels/ut/${name}.json): ${D.brushes.length} brushes, ${D.placed.length} meshes`);
+  return UTM[name] = { D, pieces, img: Object.fromEntries(D.tex.map((n, i) => [n, imgs[i]])), K: { img: Object.fromEntries(D.tex.map((n, i) => [n, imgs[i]])) } };
+}
+// Unreal's rotation (65536 to the turn) as its three axes: a local vector v goes to v.x * X + v.y * Y + v.z * Z
+function utAxes(p, y, r) {
+  const k = TAU / 65536, SP = Math.sin(p * k), CP = Math.cos(p * k), SY = Math.sin(y * k), CY = Math.cos(y * k), SR = Math.sin(r * k), CR = Math.cos(r * k);
+  return [[CP * CY, CP * SY, SP], [SR * SP * CY - CR * SY, SR * SP * SY + CR * CY, -SR * CP], [-(CR * SP * CY + SR * SY), CY * SR - CR * SP * SY, CR * CP]];
+}
+// the map's surfaces from its brushes: { tex index: { p: [x, y, z, ...] (Unreal units), t: [u, v, ...] (texels), n: [nx, ny, nz, ...] } } and its floors and walls
+function utCarve(D) {
+  const Bs = D.brushes.map(b => {
+    let cx = 0, cy = 0, cz = 0, n = 0; for (const [, , v] of b.p) for (let i = 0; i < v.length; i += 5) { cx += v[i]; cy += v[i + 1]; cz += v[i + 2]; n++; } cx /= n; cy /= n; cz /= n;
+    const planes = b.p.map(([, , v]) => { let nx = 0, ny = 0, nz = 0; const m = v.length / 5; for (let i = 0; i < m; i++) { const a = i * 5, c = ((i + 1) % m) * 5; nx += (v[a + 1] - v[c + 1]) * (v[a + 2] + v[c + 2]); ny += (v[a + 2] - v[c + 2]) * (v[a] + v[c]); nz += (v[a] - v[c]) * (v[a + 1] + v[c + 1]); }
+      const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l; let d = nx * v[0] + ny * v[1] + nz * v[2]; if (nx * cx + ny * cy + nz * cz - d > 0) { nx = -nx; ny = -ny; nz = -nz; d = -d; } return [nx, ny, nz, d]; });
+    return { op: b.op, planes, bb: b.b, polys: b.p };
+  });
+  const inside = (B, x, y, z) => { const b = B.bb; if (x < b[0] - 1 || y < b[1] - 1 || z < b[2] - 1 || x > b[3] + 1 || y > b[4] + 1 || z > b[5] + 1) return false; for (const p of B.planes) if (p[0] * x + p[1] * y + p[2] * z - p[3] > 0) return false; return true; };
+  const BG = new Map(); Bs.forEach((B, i) => { for (let gx = Math.floor((B.bb[0] - 2) / 512); gx <= Math.floor((B.bb[3] + 2) / 512); gx++) for (let gy = Math.floor((B.bb[1] - 2) / 512); gy <= Math.floor((B.bb[4] + 2) / 512); gy++) { const k = gx * 4096 + gy; let l = BG.get(k); if (!l) BG.set(k, l = []); l.push(i); } });   /* (each 512-unit column of the map: the brushes in it, in order) */
+  const last = (x, y, z) => { const l = BG.get(Math.floor(x / 512) * 4096 + Math.floor(y / 512)); if (!l) return -1; for (let k = l.length - 1; k >= 0; k--) if (inside(Bs[l[k]], x, y, z)) return l[k]; return -1; };
+  const empty = (x, y, z) => { const i = last(x, y, z); return i >= 0 && Bs[i].op < 0; };
+  const out = {}, floors = [], walls = [];
+  const emit = (ti, A, Bv, C, nrm) => {
+    const g = out[ti] || (out[ti] = { p: [], t: [], n: [] });
+    for (const q of [A, Bv, C]) { g.p.push(q[0], q[1], q[2]); g.t.push(q[3], q[4]); g.n.push(nrm[0], nrm[1], nrm[2]); }
+    (nrm[2] > .55 ? floors : Math.abs(nrm[2]) < .55 ? walls : []).push([A, Bv, C]);
+  };
+  const mid = (a, b) => a.map((v, i) => (v + b[i]) / 2), len = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  Bs.forEach((B, bi) => B.polys.forEach(([ti, fl, v], pi) => {
+    if (fl & 1 || fl & 128) return;   // (invisible faces, and the sky)
+    const pl = B.planes[pi], n = [pl[0], pl[1], pl[2]], face = B.op < 0 ? n.map(c => -c) : n;
+    const vis = q => { const ix = q[0] - n[0] * 2, iy = q[1] - n[1] * 2, iz = q[2] - n[2] * 2; if (last(ix, iy, iz) !== bi) return false; return B.op < 0 ? !empty(q[0] + n[0] * 2, q[1] + n[1] * 2, q[2] + n[2] * 2) : empty(q[0] + n[0] * 2, q[1] + n[1] * 2, q[2] + n[2] * 2); };
+    const fine = (A, Bv, C) => { const e = Math.max(len(A, Bv), len(Bv, C), len(C, A)); if (e < 460) { emit(ti, A, Bv, C, face); return; } const ab = mid(A, Bv), bc = mid(Bv, C), ca = mid(C, A); fine(A, ab, ca); fine(ab, Bv, bc); fine(ca, bc, C); fine(ab, bc, ca); };   // (cut to a few metres, for the light)
+    const tri = (A, Bv, C, depth) => {
+      const c = [0, 1, 2, 3, 4].map(i => (A[i] + Bv[i] + C[i]) / 3), s = [c, mid(c, A), mid(c, Bv), mid(c, C)].map(vis);
+      if (s.every(x => x === s[0])) { if (s[0]) fine(A, Bv, C); return; }
+      if (depth > 6 || Math.max(len(A, Bv), len(Bv, C), len(C, A)) < 24) { if (s[0]) fine(A, Bv, C); return; }
+      const ab = mid(A, Bv), bc = mid(Bv, C), ca = mid(C, A); tri(A, ab, ca, depth + 1); tri(ab, Bv, bc, depth + 1); tri(ca, bc, C, depth + 1); tri(ab, bc, ca, depth + 1);
+    };
+    const P_ = []; for (let i = 0; i < v.length; i += 5) P_.push([v[i], v[i + 1], v[i + 2], v[i + 3], v[i + 4]]);
+    for (let i = 1; i < P_.length - 1; i++) tri(P_[0], P_[i], P_[i + 1], 0);
+  }));
+  return { out, floors, walls };
+}
+// a light's colour from Unreal's hue and saturation (0..255; 255 saturation is white)
+const utLightCol = (h, s) => new THREE.Color().setHSL(h / 255, 1 - s / 255, .5 + (s / 255) * .5);
+// the Mines of Moria on CTF-BridgeOfFate: its halls of arches and columns, its banners, its great bridges of rock over the chasm; Moria's goblins in its open halls,
+// from one base across the bridges to the other. Without the file the Mines keep their own caverns (mineLayout)
+async function loadMoriaUT() {
+  const U = await loadUTMap('bridgeoffate'); if (!U) return;
+  try { applyUTMines(LEVELS.find(L => L.theme === 'minekh'), U); } catch (e) { console.warn('Valinor: the Mines could not be built on CTF-BridgeOfFate:', e); }
+}
+function applyUTMines(L, U) {
+  const D = U.D, SC = UTM_SC, t0 = performance.now(), C = utCarve(D);
+  // the level's frame: Unreal's middle at s = x = 0, its lowest floor at 0
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, z0 = 1e9; for (const b of D.brushes) if (b.op < 0) { x0 = Math.min(x0, b.b[0]); x1 = Math.max(x1, b.b[3]); y0 = Math.min(y0, b.b[1]); y1 = Math.max(y1, b.b[4]); }
+  for (const [A, B_, Cc] of C.floors) z0 = Math.min(z0, A[2], B_[2], Cc[2]);
+  const ox = (x0 + x1) / 2, oy = (y0 + y1) / 2, oz = z0, lv = (X, Y, Z) => [(Y - oy) * SC, -(X - ox) * SC, (Z - oz) * SC];
+  const S0 = Math.floor((y0 - oy) * SC) - 4, S1 = Math.ceil((y1 - oy) * SC) + 4, X0 = Math.floor(-(x1 - ox) * SC) - 4, X1 = Math.ceil(-(x0 - ox) * SC) + 4;
+  // the floors: walkways (each face turned up, laid into metre squares)
+  const DK = newDeck(S0, X0, X1 - X0 + 1, S1 - S0 + 1);
+  // the blocking volumes (often smooth ramps laid over stairs): their tops are floor, their sides wall; and the tops of the map's meshes that are walked on (its bridges)
+  const volF = [], volW = [], meshF = [];
+  for (const bl of D.blocks) { if (!bl.p) continue; let cx = 0, cy = 0, cz = 0, n = 0; for (const [, , v] of bl.p) for (let i = 0; i < v.length; i += 5) { cx += v[i]; cy += v[i + 1]; cz += v[i + 2]; n++; } cx /= n; cy /= n; cz /= n;
+    for (const [, , v] of bl.p) { const P_ = []; for (let i = 0; i < v.length; i += 5) P_.push([v[i], v[i + 1], v[i + 2]]); let nx = 0, ny = 0, nz = 0; for (let i = 0; i < P_.length; i++) { const a = P_[i], c = P_[(i + 1) % P_.length]; nx += (a[1] - c[1]) * (a[2] + c[2]); ny += (a[2] - c[2]) * (a[0] + c[0]); nz += (a[0] - c[0]) * (a[1] + c[1]); }
+      const l = Math.hypot(nx, ny, nz) || 1, mx = P_.reduce((s, p) => s + p[0], 0) / P_.length, my = P_.reduce((s, p) => s + p[1], 0) / P_.length, mz = P_.reduce((s, p) => s + p[2], 0) / P_.length; if (nx * (mx - cx) + ny * (my - cy) + nz * (mz - cz) < 0) nz = -nz;
+      for (let i = 1; i < P_.length - 1; i++) (nz / l > .55 ? volF : Math.abs(nz / l) < .55 ? volW : []).push([P_[0], P_[i], P_[i + 1]]); } }
+  for (const m of D.placed) { if (/column|banner|vine|light|charger|symbol|teamicon|firepot|pillar/i.test(m[0])) continue; const pc = D.meshes[m[0]]; if (!pc) continue; const ax = utAxes(m[4], m[5], m[6]);
+    for (const [, v] of pc.g) for (let i = 0; i < v.length; i += 9) { const w = [0, 1, 2].map(k => { const X = v[i + k * 3] * m[7], Y = v[i + k * 3 + 1] * m[8], Z = v[i + k * 3 + 2] * m[9]; return [m[1] + X * ax[0][0] + Y * ax[1][0] + Z * ax[2][0], m[2] + X * ax[0][1] + Y * ax[1][1] + Z * ax[2][1], m[3] + X * ax[0][2] + Y * ax[1][2] + Z * ax[2][2]]; });
+      const a = w[0], b = w[2], c = w[1], e1 = [b[0] - a[0], b[2] - a[2], b[1] - a[1]], e2 = [c[0] - a[0], c[2] - a[2], c[1] - a[1]], ny = e1[2] * e2[0] - e1[0] * e2[2], nl = Math.hypot(e1[1] * e2[2] - e1[2] * e2[1], ny, e1[0] * e2[1] - e1[1] * e2[0]);   /* (in three's frame, as drawn: up is its y) */
+      if (nl > 1e-6 && ny / nl > .6) meshF.push(w); } }
+  for (const [A, B_, Cc] of [...C.floors, ...volF, ...meshF]) deckTri(DK, lv(A[0], A[1], A[2]), lv(B_[0], B_[1], B_[2]), lv(Cc[0], Cc[1], Cc[2]));
+  // the walls: what each metre square has of wall in it, high and low; a step's riser (lower than .7) is no wall, the walkway climbs it
+  const wc = new Map();   // (each metre square: its pieces of wall, as height ranges [low, high], those that touch joined)
+  for (const [A, B_, Cc] of [...C.walls, ...volW]) { const e = Math.max(Math.hypot(A[0] - B_[0], A[1] - B_[1], A[2] - B_[2]), Math.hypot(B_[0] - Cc[0], B_[1] - Cc[1], B_[2] - Cc[2]), Math.hypot(Cc[0] - A[0], Cc[1] - A[1], Cc[2] - A[2])), n = Math.max(1, Math.ceil(e / 20)), own = new Map();
+    for (let i = 0; i <= n; i++) for (let j = 0; j <= n - i; j++) { const a = i / n, b = j / n, c = 1 - a - b, p = lv(A[0] * a + B_[0] * b + Cc[0] * c, A[1] * a + B_[1] * b + Cc[1] * c, A[2] * a + B_[2] * b + Cc[2] * c), k = Math.round(p[0]) * 100003 + Math.round(p[1]); const w = own.get(k); if (!w) own.set(k, [Math.round(p[0]), Math.round(p[1]), p[2], p[2]]); else { w[2] = Math.min(w[2], p[2]); w[3] = Math.max(w[3], p[2]); } }
+    for (const [k, [s, x, lo, hi]] of own) { let c = wc.get(k); if (!c) wc.set(k, c = { s, x, r: [] }); let a = lo, b = hi; c.r = c.r.filter(r => { if (r[0] <= b + .15 && r[1] >= a - .15) { a = Math.min(a, r[0]); b = Math.max(b, r[1]); return false; } return true; }); c.r.push([a, b]); } }
+  const walls = []; for (const c of wc.values()) for (const [lo, hi] of c.r) if (hi - lo > .7) walls.push({ s0: c.s - .5, s1: c.s + .5, x0: c.x - .5, x1: c.x + .5, y0: lo, y1: hi, kind: 'wall', on: true });  // the map's columns are walls too
+  for (const m of D.placed) { if (!/column|Pillar/i.test(m[0])) continue; const pc = U.pieces[m[0]]; if (!pc) continue; const r = Math.max(pc.b[3] - pc.b[0], pc.b[4] - pc.b[1]) * Math.max(m[7], m[8]) * SC * .4, p = lv(m[1], m[2], m[3]); walls.push({ s0: p[0] - r, s1: p[0] + r, x0: p[1] - r, x1: p[1] + r, y0: p[2] + pc.b[2] * m[9] * SC, y1: p[2] + pc.b[5] * m[9] * SC, kind: 'wall', on: true }); }
+  const grid = new Map(); for (const b of walls) for (let s = Math.floor((b.s0 - 1) / 4); s <= Math.floor((b.s1 + 1) / 4); s++) for (let x = Math.floor((b.x0 - 1) / 4); x <= Math.floor((b.x1 + 1) / 4); x++) { const k = s * 100003 + x; let l = grid.get(k); if (!l) grid.set(k, l = []); l.push(b); }
+  // a flat floor far down, under the chasm (fall to it and you're put back where you last stood)
+  const lowY = -24, N = 9, T_ = { w: N, h: N, hs: new Float32Array(N * N).fill(lowY), cx: 4, cy: 4, sea: -999, sc: Math.max(S1 - S0, X1 - X0), g: new Array(N * N).fill('c') };
+  // where you start (a player start, the one furthest from the middle), and four squares to fight in: open halls, further and further from it, the last at the far end
+  const deckY = (s, x, y) => { const i = Math.round(x - DK.x0), j = Math.round(s - DK.s0); if (i < 0 || j < 0 || i >= DK.w || j >= DK.h) return NO_DECK; let b = NO_DECK; for (let q = 0; q < DECK_L; q++) { const v = DK.lay[(j * DK.w + i) * DECK_L + q]; if (v <= y + 1.2 && v > b) b = v; } return b; };
+  const wallAt = (s, x, y) => { const w = wc.get(Math.round(s) * 100003 + Math.round(x)); return !!w && w.r.some(r => r[1] - r[0] > .7 && r[1] > y + .3 && r[0] < y + 2.5); };
+  const open = (s, x, y, r) => { let ok = 0, n = 0; for (let a = 0; a < TAU; a += .5) for (const d of [r * .35, r * .7, r]) { n++; const ss = s + Math.cos(a) * d, xx = x + Math.sin(a) * d, g = deckY(ss, xx, y); if (Math.abs(g - y) < .8 && !wallAt(ss, xx, y)) ok++; } return ok / n; };
+  const starts = D.starts.map(p => lv(...p)).map(p => [p[0], p[1], deckY(p[0], p[1], p[2])]).filter(p => p[2] > NO_DECK);
+  const st = starts.sort((a, b) => Math.hypot(b[0], b[1]) - Math.hypot(a[0], a[1]))[0] || [0, 0, 0];
+  // how far each floor square is from the start on foot (up steps under a metre, down drops under four, never through a wall): the squares go in halls you can reach
+  const NL = DECK_L, dist = new Int32Array(DK.w * DK.h * NL).fill(-1), lay = DK.lay, layerOf = (k, y, up, down) => { let b = -1, bd = 1e9; for (let q = 0; q < NL; q++) { const v = lay[k * NL + q]; if (v <= NO_DECK) continue; const dy = v - y; if (dy <= up && dy >= -down && Math.abs(dy) < bd) { bd = Math.abs(dy); b = q; } } return b; };
+  // (search the floors from some squares: how many steps to each, up steps under 1.9 m (a jump), down drops under 5 m, never through a wall)
+  const bfs = src => { dist.fill(-1); const Q = src.slice(); for (const n of Q) dist[n] = 0; for (let h = 0; h < Q.length; h++) { const n = Q[h], k = n / NL | 0, y = lay[n], i = k % DK.w, j = k / DK.w | 0; for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= DK.w || jj >= DK.h) continue; const kk = jj * DK.w + ii, q = layerOf(kk, y, 1.9, 5); if (q < 0) continue; const nn = kk * NL + q; if (dist[nn] >= 0 || (!UT_NOWALL && wallAt(DK.s0 + jj, DK.x0 + ii, Math.min(y, lay[nn])))) continue; dist[nn] = dist[n] + 1; Q.push(nn); } } return Q; };
+  // the biggest stretch of floor you can walk, and the two ends of the longest walk across it: you start at one, the last fight is at the other
+  { let best = null; const seen = new Uint8Array(dist.length); for (let n = 0; n < lay.length; n += 7) { if (lay[n] <= NO_DECK || seen[n]) continue; const Q = bfs([n]); for (const m of Q) seen[m] = 1; if (!best || Q.length > best.length) best = Q; if (best.length > lay.length * .2) break; }
+    if (best) { let a = best[best.length - 1]; const Q2 = bfs([a]), b = Q2[Q2.length - 1]; const k = b / NL | 0; st[0] = DK.s0 + (k / DK.w | 0); st[1] = DK.x0 + k % DK.w; st[2] = lay[b]; bfs([b]); } }
+  if (new URLSearchParams(location.search).get('utreach') === '3') { const W = 300, cv = document.createElement('canvas'); cv.width = cv.height = W * 3; cv.style.cssText = 'position:fixed;left:0;top:0;z-index:99999;background:#000;width:900px;height:900px'; const g = cv.getContext('2d');
+    for (let j = 0; j < W; j++) for (let i = 0; i < W; i++) { const s = st[0] + (W / 2 - j), x = st[1] + (i - W / 2), ii = Math.round(x - DK.x0), jj = Math.round(s - DK.s0); if (ii < 0 || jj < 0 || ii >= DK.w || jj >= DK.h) continue; const k = jj * DK.w + ii; let reach = false, any = false; for (let q = 0; q < NL; q++) { if (lay[k * NL + q] > NO_DECK) any = true; if (dist[k * NL + q] >= 0) reach = true; } const w = wc.get(Math.round(s) * 100003 + Math.round(x)); g.fillStyle = reach ? '#2c2' : w && w.r.some(r => r[1] - r[0] > .7) ? '#c22' : any ? '#555' : '#000'; g.fillRect(i * 3, j * 3, 3, 3); }
+    g.fillStyle = '#ff0'; g.fillRect(W * 1.5 - 4, W * 1.5 - 4, 8, 8); addEventListener('load', () => document.body.appendChild(cv)); setTimeout(() => document.body.appendChild(cv), 3000); }
+  const walkD = (s, x, y) => { const i = Math.round(x - DK.x0), j = Math.round(s - DK.s0); if (i < 0 || j < 0 || i >= DK.w || j >= DK.h) return -1; const q = layerOf(j * DK.w + i, y, .5, .5); return q < 0 ? -1 : dist[(j * DK.w + i) * NL + q]; };
+  // (the start: the most open floor near that end of the walk; and the lowest floor you can walk to, under which a fall puts you back)
+  let lowWalk = 1e9, maxD = 0; for (let n = 0; n < dist.length; n++) if (dist[n] >= 0) { lowWalk = Math.min(lowWalk, lay[n]); maxD = Math.max(maxD, dist[n]); }
+  { let best = null, bs = -1; for (let n = 0; n < dist.length; n += 3) { if (dist[n] < 0 || dist[n] > maxD * .18) continue; const k = n / NL | 0, s = DK.s0 + (k / DK.w | 0), x = DK.x0 + k % DK.w, sc = open(s, x, lay[n], 6) - dist[n] / maxD * .3; if (sc > bs) { bs = sc; best = [s, x, lay[n]]; } } if (best) { st[0] = best[0]; st[1] = best[1]; st[2] = best[2]; } }  const cand = D.paths.map(p => lv(...p)).map(p => [p[0], p[1], deckY(p[0], p[1], p[2])]).filter(p => p[2] > NO_DECK).map(p => [...p, open(p[0], p[1], p[2], 8), walkD(p[0], p[1], p[2])]).filter(p => p[3] > .8 && p[4] > 0);
+  if (new URLSearchParams(location.search).get('utreach')) { let n = 0, all = 0; for (const v of dist) if (v >= 0) n++; for (const v of lay) if (v > NO_DECK) all++; console.log(`Mines: ${n} of ${all} floor squares reachable from the start (${st.map(v => v.toFixed(1))}), ${cand.length} open places to fight, furthest ${Math.max(0, ...cand.map(p => p[4]))} squares' walk`); }
+  const far = Math.max(...cand.map(p => p[4]), 40), picks = [];
+  for (const f of [.18, .45, .72, 1]) { let best = null, bd = 1e9; for (const p of cand) { const d = Math.abs(p[4] - far * f) + (picks.some(q => Math.hypot(q[0] - p[0], q[1] - p[1]) < 22) ? 1e5 : 0); if (d < bd) { bd = d; best = p; } } if (best) picks.push(best); }
+  const old = mineLayout().layout.plazas;
+  const plazas = picks.map((p, i) => ({ ...old[Math.min(i, old.length - 1)], s: p[0], x: p[1], y: p[2], fromY: p[2], r: i === picks.length - 1 ? 11 : 9.5, breach: [p[0] + 6, p[1]], bossTo: [p[0] + 3, p[1]], noAdds: true }));
+  if (plazas.length) { plazas.forEach((p, i) => { p.last = p.boss = i === plazas.length - 1; }); }
+  Object.assign(L, { field: [S0 + 3, S1 - 3, X0 + 3, X1 - 3], start: [st[0], st[1]], startY: st[2], startH: plazas.length ? Math.atan2(plazas[0].x - st[1], plazas[0].s - st[0]) : 0, deck: DK, terrain: T_, wgrid: grid, stepUp: true, camWalls: true, theme: 'mineut', utFall: lowWalk - 8,
+    layout: { blocks: [], plazas, ut: { U, C, lv, ox, oy, oz, SC } }, content() { mineUTContent(this); } });
+  console.log(`Valinor: the Mines on CTF-BridgeOfFate: ${Object.values(C.out).reduce((n, g) => n + g.p.length / 9, 0) | 0} faces, ${C.floors.length} floor, ${walls.length} walls, ${plazas.length} squares, built in ${(performance.now() - t0) | 0} ms`);
+}
+function mineUTContent(L) {
+  const Y = L.layout; for (const p of Y.plazas) for (const [a, k] of [[.8, 'b'], [2.7, 'q'], [4.7, 'b']]) { const s = p.s + Math.cos(a) * (p.r - 2), x = p.x + Math.sin(a) * (p.r - 2); addCrate(k, s, x, 0, p.y + 2); }
+}
+// the map's stone, its own pictures made brighter, each face lit by the map's own lights (baked in), and its meshes where it put them
+function buildMineUT(L, TH) {
+  const { U, C, lv, ox, oy, oz, SC } = L.layout.ut, D = U.D, first = scene.children.length, sky = TH.env, K = U.K;
+  const tone = [1.25, .78], AMB = new THREE.Color(.34, .32, .31);
+  // the lights: those near each point light it, by Unreal's falloff (radius in Unreal units is 25 to each of its LightRadius)
+  const LG = new Map(), lights = D.lights.map(([x, y, z, h, s, b, r]) => ({ x, y, z, c: utLightCol(h, s).multiplyScalar(clamp(b / 140, .2, 1.6)), R: Math.max(200, (r || 64) * 25) }));
+  for (const l of lights) { const k = Math.floor(l.x / 1024) * 1000 + Math.floor(l.y / 1024); let a = LG.get(k); if (!a) LG.set(k, a = []); a.push(l); }
+  const light = (x, y, z, nx, ny, nz, out) => { out.copy(AMB); const gx = Math.floor(x / 1024), gy = Math.floor(y / 1024); for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) { const a = LG.get((gx + i) * 1000 + gy + j); if (!a) continue; for (const l of a) { const dx = l.x - x, dy = l.y - y, dz = l.z - z, d = Math.hypot(dx, dy, dz); if (d > l.R) continue; const ndl = d > 1 ? Math.max(0, (dx * nx + dy * ny + dz * nz) / d) * .7 + .3 : 1, f = 1 - d / l.R; out.r += l.c.r * f * f * ndl * .5; out.g += l.c.g * f * f * ndl * .5; out.b += l.c.b * f * f * ndl * .5; } } out.r = Math.min(out.r, 1.25); out.g = Math.min(out.g, 1.2); out.b = Math.min(out.b, 1.2); return out; };
+  const col = new THREE.Color();
+  for (const [ti, g] of Object.entries(C.out)) {
+    const tn = D.tex[ti], img = U.img[tn], n = g.p.length / 3, pos = new Float32Array(n * 3), uv = new Float32Array(n * 2), cl = new Float32Array(n * 3), nr = new Float32Array(n * 3);
+    const w = img ? img.naturalWidth : 256, h = img ? img.naturalHeight : 256;
+    for (let i = 0; i < n; i += 3) {
+      const tri = [0, 1, 2].map(k => { const q = (i + k) * 3, p = lv(g.p[q], g.p[q + 1], g.p[q + 2]); return tw(p[0], p[1], p[2], new V3()); });
+      const nx = g.n[i * 3], ny = g.n[i * 3 + 1], nz = g.n[i * 3 + 2], want = new V3(nx, nz, ny), e1 = tri[1].clone().sub(tri[0]), e2 = tri[2].clone().sub(tri[0]), flip = e1.cross(e2).dot(want) < 0;
+      [0, flip ? 2 : 1, flip ? 1 : 2].forEach((k, o) => { const q = i + k, d = i + o; pos.set([tri[k].x, tri[k].y, tri[k].z], d * 3); uv.set([g.t[q * 2] / w, g.t[q * 2 + 1] / h], d * 2); nr.set([nx, nz, ny], d * 3); light(g.p[q * 3], g.p[q * 3 + 1], g.p[q * 3 + 2], nx, ny, nz, col); cl.set([col.r, col.g, col.b], d * 3); });
+    }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); geo.setAttribute('normal', new THREE.BufferAttribute(nr, 3)); geo.setAttribute('color', new THREE.BufferAttribute(cl, 3)); geo.computeBoundingSphere();
+    const t = img ? utTex(K, tn, tone) : TX.hdRock, m = ps1(new THREE.MeshLambertMaterial({ map: t, vertexColors: true }));
+    const me = new THREE.Mesh(geo, m); me.userData.keep = true; me.receiveShadow = true; scene.add(me);
+  }
+  // the meshes, each kind drawn at once wherever the map has it, turned and sized as there, lit by the lights round it
+  const byMesh = {}; for (const m of D.placed) (byMesh[m[0]] = byMesh[m[0]] || []).push(m);
+  const M4 = new THREE.Matrix4(), cx = new V3(), cy = new V3(), cz = new V3(), pp = new V3(), fires = [];
+  for (const [nm, list] of Object.entries(byMesh)) {
+    const pc = U.pieces[nm]; if (!pc) continue;
+    for (const q of pc.parts) {
+      const im = new THREE.InstancedMesh(q.geo, utMat(K, q.tex, { tone, rough: .8, bump: 1.2, env: .1 }), list.length);
+      list.forEach((m, i) => { const ax = utAxes(m[4], m[5], m[6]), p = lv(m[1], m[2], m[3]); tw(p[0], p[1], p[2], pp);
+        // (Unreal's axes in three's frame: its x as x, its z as y, its y as z; and the level's x runs the other way to Unreal's)
+        cx.set(ax[0][0], ax[0][2], ax[0][1]).multiplyScalar(m[7]); cy.set(ax[2][0], ax[2][2], ax[2][1]).multiplyScalar(m[9]); cz.set(ax[1][0], ax[1][2], ax[1][1]).multiplyScalar(m[8]);
+        M4.makeBasis(cx, cy, cz).setPosition(pp); im.setMatrixAt(i, M4); im.setColorAt(i, light(m[1], m[2], m[3] + 40, 0, 0, 1, col).clone().multiplyScalar(1.1));
+        if (/FirePot/i.test(nm) && q === pc.parts[0]) fires.push(pp.clone()); });
+      im.frustumCulled = false; im.userData.keep = true; scene.add(im);
+    }
+  }
+  for (const p of fires) { const g = glowSprite(0xffa040, 3.4, .8); g.position.copy(p).add(new V3(0, .9, 0)); scene.add(g); }
+  TH.fires = fires;
+  // glows at the brighter lights, so the halls shine as the map's do
+  lights.forEach((l, i) => { if (i % 4) return; const p = lv(l.x, l.y, l.z), g = glowSprite('#' + l.c.getHexString(), 3, .35); tw(p[0], p[1], p[2], g.position); scene.add(g); });
+  bakeScenery(scene.children.slice(first));
+}
+function updateMineUT(dt) {
+  if (!LV || LV.theme !== 'mineut' || state !== 'play') return; const TH = THEMES.mineut;
+  TH.airT = P.ground ? 0 : (TH.airT || 0) + dt;   /* (a fall into a hole the halls don't show a floor for, or to the bottom of the chasm: back to where you last stood) */
+  if (P.ground && P.y > LV.utFall) LV.utSafe = [P.s, P.x, P.y]; else if ((P.y < LV.utFall || TH.airT > 2.5) && LV.utSafe) { TH.airT = 0; [P.s, P.x, P.y] = LV.utSafe; P.vy = P.vs = P.vx = 0; banner('THE MINES OF MORIA: BACK FROM THE BRINK!', 1.6); }
+  for (const p of TH.fires || []) if (Math.random() < dt * 3 && p.distanceTo(tw(P.s, P.x, P.y)) < 40) bfire(p.clone().add(new V3(0, .7, 0)), rand(.5, .9), 1.4);
+  if (Math.random() < dt * 10) fx.spawn(...tw(P.s + rand(-12, 12), P.x + rand(-12, 12), P.y + rand(.5, 7)).toArray(), rand(-.15, .15), rand(-.1, .1), rand(-.15, .15), rand(2, 4), .05, .05, [1, .9, .7], [.6, .5, .35], 0, 0);
+}
+THEMES.mineut = natTheme({
+  wallTex: TX.hdRock, floorTex: TX.hdRock, tint: [.75, .75, .72], door: 0x6a6a7a,
+  env: { sky: [0x0a0806, 0x140e0a, 0x201810, 0x2a2016], fog: [30, 160], fogC: 0x1a120c, amb: [0x8a7a6a, .55], hemi: [0xd8c0a0, 0x3a2c1e, .4], sun: [0xffd8a0, .2], east: [0xffa060, .1], bloom: .35, sunDir: [10, 90, 20] },
+  orc: { sk: 0x8a907a, ska: 0xa0a488, ar: 0x2a2630, le: 0x3a2a1a, met: 0x1e1c22, sc: .85 },
+  scenery(L) { buildMineUT(L, this); },
+});
 // the Balrog in The Fall: his bones posed by hand each frame (no clip of his lies him out): flat on his back, wings spread wide to each side, arms flung out,
 // legs trailing, head up the screen looking at Gandalf; then the whole of him moved so his body's middle lies on the middle of the shaft
 const _fq = new THREE.Quaternion(), _fw = new THREE.Quaternion(), _fp = new THREE.Quaternion(), _f1 = new V3(), _f2 = new V3(), _f3 = new V3();
@@ -14096,7 +14292,7 @@ THEMES.rivfable = natTheme({
 });
 // boot: Oakvale, Rivendell's gorge, Mirkwood and the scenery models first if they're there (they change how levels are built), then everything else
 (async () => {
-await Promise.all([loadOakvale(), loadRivendell(), loadMirkwood(), loadProps(), loadUTKit('gondolin'), loadUTKit('rivendell')]);   // (each changes how its level is built)
+await Promise.all([loadOakvale(), loadRivendell(), loadMirkwood(), loadProps(), loadUTKit('gondolin'), loadUTKit('rivendell'), loadMoriaUT()]);   // (each changes how its level is built)
 { const before = new Set(scene.children); buildStatic(); for (const o of scene.children) if (!before.has(o)) o.userData.stat = true; }   // (the levels' scenery, not Gandalf or anything shared: see sceneryFor)
 renderer.shadowMap.enabled = !RETRO; moon.castShadow = !RETRO; softTex();
 setupEntities();
