@@ -2563,7 +2563,7 @@ function rivendellLayout() {
 // =====================================================================
 const BELV = [
   { loc: 'gondolin', name: 'GONDOLIN', sub: 'THE HIDDEN CITY OF TURGON · THE FALL', land: 'vale', mark: 'city', ground: 'meadow',
-    env: { sky: [0x4a8ad8, 0x8ac0f0, 0xf0f4ff, 0xfff0c8], fog: [120, 600], fogC: 0xd0e0f0, amb: [0xa0a8b8, .7], hemi: [0xeef4ff, 0x6a7a4a, .75], sun: [0xfff4e0, 1.2], east: [0xffe0b0, .2], cloud: 0xffffff, bloom: .3 },
+    env: { sky: [0x3a7ad8, 0x7ab4f0, 0xe8f0ff, 0xfff0c8], fog: [160, 700], fogC: 0xc8dcf4, amb: [0x98a4c0, .58], hemi: [0xeef4ff, 0x5a7a4a, .62], sun: [0xfff0d8, 1.08], east: [0xffd8a0, .22], cloud: 0xffffff, bloom: .22 },
     waves: [[['o', 'o', 'o', 'w']], [['o', 'M', 'w', 'w'], ['u', 'u', 'M']], [['R', 'o', 'o'], ['w', 'w', 'u']]], boss: ['B'], bossT: 'GOTHMOG, LORD OF BALROGS!', win: 'THE KING\'S TOWER HOLDS!' },
   { loc: 'nargo', name: 'NARGOTHROND', sub: 'FINROD\'S FORTRESS ABOVE THE NAROG', land: 'gorge', mark: 'gates', ground: 'grass',
     env: { sky: [0x3a5a8a, 0x7a9ac0, 0xd8e0e8, 0xffe0b0], fog: [90, 480], fogC: 0xb0c0c8, amb: [0x909aa8, .7], hemi: [0xdfe8f0, 0x4a5a3a, .7], sun: [0xfff0d8, 1.05], east: [0xffc890, .3], cloud: 0xf0f0f8, bloom: .3 },
@@ -2620,6 +2620,7 @@ function belGround(c, s, x) {
   return [n, 'g'];
 }
 function belLayout(c) {
+  if (c.loc === 'gondolin') return gondolinLayout(c);
   const N = BEL_N, C = BEL_C, hs = new Float32Array(N * N), g = new Array(N * N).fill('g');
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const [y, k] = belGround(c, C - j, C - i); hs[j * N + i] = y; g[j * N + i] = k; }
   const at = (s, x) => belGround(c, s, x)[0], dry = (s, x) => belGround(c, s, x)[1] !== 'w';
@@ -2631,6 +2632,61 @@ function belLayout(c) {
   const plazas = pts.slice(1).map(([s, x], i) => { const last = i === pts.length - 2, w = c.waves[Math.min(i, c.waves.length - 1)];
     return { s, x, y: Math.max(at(s, x), -.5), r: last ? 16 : 13, waves: last ? [...w, c.boss] : w, title: last ? c.bossT : c.name + ': THEY COME!', names: last ? [...w.map(() => 'MORE ARE COMING!'), c.bossT] : null, boss: last, last, breach: [s + 10, x], bossTo: [s + 6, x], bossHp: 900, noAdds: true }; });
   return { field: [-78, 78, -78, 78], start: pts[0], terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -1.2, g }, layout: { blocks: [], plazas, bel: c } };
+}
+// --- Gondolin, in full (buildGondolin dresses it): up the ravine of Orfalch Echor through the Seven Gates (of wood, stone, bronze, iron, silver, gold and steel),
+//     out over the green plain of Tumladen in the ring of the Encircling Mountains, up the Great Stair onto Amon Gwareth, in at the city gate between the towers
+//     of the wall and up through the white streets to the King's Square: Turgon's tower, the fountain, and Glingal and Belthil, the trees of gold and silver.
+//     RC, RR: the mountains' ring (its middle, the plain's radius); HS: the hill's middle; HR0, HR1: its foot and the top's edge (the wall), HY the city's
+//     height; KR, KY: the King's Square's terrace; GS0: where the Great Stair starts; RW: half the ravine's width; GATES: where the Seven Gates stand
+const GD = { N: 321, C: 160, RC: [-8, 0], RR: 112, HS: 48, HR0: 54, HR1: 42, HY: 24, KR: 20, KY: 29, GS0: -40, SW: 4.5, RW: 9, Y7: 12, GATES: [-152, -145, -138, -131, -124, -117, -110] };
+function gondolinGround(s, x) {
+  const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  const n = Math.sin(s * .07) * Math.cos(x * .06) * .9 + Math.sin(s * .19 + x * .13) * .35, rr = Math.hypot(s - GD.RC[0], x - GD.RC[1]), ang = Math.atan2(x, s);
+  // the Encircling Mountains: steep walls rising out of the plain, jagged along their tops
+  const jag = Math.abs(Math.sin(ang * 9 + 1)) * 14 + Math.abs(Math.sin(ang * 23)) * 6 + Math.sin(ang * 51) * 2.5;
+  let y = n * .6, k = 'g';
+  const mt = (64 + jag) * ss(GD.RR, GD.RR + 26, rr) + 10 * ss(GD.RR + 26, GD.RR + 50, rr);
+  // the ravine of Orfalch Echor cut through them from the south, climbing to the seventh gate; then the road falls away to the plain
+  const wob = Math.sin(s * .09) * 2.2, rx = Math.abs(x - wob), inRav = s < GD.GATES[6] + 2;
+  const floor = inRav ? lerp(4, GD.Y7, ss(-160, GD.GATES[6], s)) : GD.Y7 * ss(-78, GD.GATES[6] + 2, s);
+  if (inRav) { const cut = ss(GD.RW + 7, GD.RW, rx); y = lerp(Math.max(mt, floor + 44 + jag * .5), floor, cut); k = cut > .5 ? 'r' : 'c'; }
+  else {
+    const spur = floor * ss(GD.RW + 12 + (s - GD.GATES[6]) * .4, GD.RW + 2, rx);   // (the road down from the last gate, a long spur of the mountainside)
+    y = Math.max(y, mt, spur); if (mt > 6) k = 'c'; else if (spur > 1 && rx < GD.RW + 2) k = 'r';
+  }
+  // Amon Gwareth: steep sides, the city level on top, the King's Square raised in the middle (its stair to the south)
+  const rh = Math.hypot(s - GD.HS, x);
+  if (rh < GD.HR0) {
+    let hy;
+    if (rh > GD.HR1) { hy = GD.HY * ss(GD.HR0, GD.HR1, rh) + n * .4 * ss(GD.HR1, GD.HR0, rh); k = 'h'; }
+    else {
+      hy = GD.HY + (GD.KY - GD.HY) * ss(GD.KR + 1.2, GD.KR, rh); k = 'p';
+      const ks = GD.HS - GD.KR, ramp = Math.abs(x) < 3.2 && s > ks - 7 && s < ks + 1;   // (the stair up to the King's Square)
+      if (ramp) hy = lerp(GD.HY, GD.KY, clamp((s - (ks - 7)) / 7.6, 0, 1));
+    }
+    y = Math.max(y, hy);
+  }
+  // the Great Stair: a causeway up the south face of the hill to the city gate
+  const st1 = GD.HS - GD.HR1 + .5;
+  if (s > GD.GS0 - 2 && s < st1 + 1 && Math.abs(x) < GD.SW + 3) {
+    const sy = GD.HY * clamp((s - GD.GS0) / (st1 - GD.GS0), 0, 1), side = ss(GD.SW + 2.5, GD.SW, Math.abs(x)) * ss(GD.GS0 - 2, GD.GS0, s);
+    const v = lerp(y, Math.max(y, sy), side); if (v > y + .01 || Math.abs(x) < GD.SW) { y = Math.max(y, v); if (Math.abs(x) < GD.SW + .5) k = 's'; }
+  }
+  return [y, k];
+}
+function gondolinLayout(c) {
+  const N = GD.N, C = GD.C, hs = new Float32Array(N * N), g = new Array(N * N);
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const [y, k] = gondolinGround(C - j, C - i); hs[j * N + i] = y; g[j * N + i] = k; }
+  const at = (s, x) => gondolinGround(s, x)[0], w = c.waves;
+  const P = (s, x, r, i, o = {}) => ({ s, x, y: at(s, x), r, waves: w[i], title: c.name + ': THEY COME!', breach: [s + 10, x], bossTo: [s + 6, x], bossHp: 900, noAdds: true, ...o });
+  const ks = GD.HS - 4;
+  const plazas = [
+    P((GD.GATES[2] + GD.GATES[3]) / 2, 0, 10, 0, { title: 'THE SEVEN GATES: ORCS IN THE WAY!', breach: [GD.GATES[3] + 4, 0] }),
+    P(-62, 14, 15, 1, { title: 'TUMLADEN: THE HOST OF MORGOTH!', breach: [-50, 40] }),
+    P(GD.HS - 30, 0, 9, 2, { title: 'THE CITY GATE: THEY ARE OVER THE WALL!', breach: [GD.HS - 24, 14] }),
+    { s: ks, x: 0, y: GD.KY, r: 13, waves: [w[2][w[2].length - 1], c.boss], title: 'THE KING\'S SQUARE: THE FALL OF GONDOLIN!', names: ['THE KING\'S SQUARE: THE FALL OF GONDOLIN!', c.bossT], boss: true, last: true, breach: [GD.HS + 13, 9], bossTo: [GD.HS + 2, 4], bossHp: 1100, noAdds: true },
+  ];
+  return { field: [-158, 158, -158, 158], start: [-157, 0], terrain: { w: N, h: N, hs, cx: C, cy: C, sea: -99, g }, layout: { blocks: [], plazas, bel: c, gondolin: true } };
 }
 const USTAIR = { FLIGHTS: 6, STEPS: 30, RISE: 7, X: 18, LAND: 23 }, OSG = { TOP: 30, R: 8.6 };   // (the Stairs of Cirith Ungol's size; Osgiliath's tower)
 const RACE_FORD = 520, RACE_END = 572;
@@ -9048,6 +9104,7 @@ function updateWrath(dt) {
 }
 // landmarks: each made of plain shapes, white stone and gold for the Elves, dark iron for Angband, carved grey rock for the Dwarves
 function belBuild(L, TH) {
+  if (L.layout.gondolin) return buildGondolin(L, TH);
   const c = L.layout.bel, T_ = L.terrain, first = scene.children.length, sky = TH.env, at = (s, x) => terrainAt(s, x, true), B = L.layout.blocks;
   const tex = TX[c.ground] || TX.grass, gcol = { meadow: [.7, .82, .55], grass: [.62, .78, .5], lush: [.55, .74, .45], lavaRock: [.42, .34, .32], plains: [.72, .74, .62], moss: [.6, .7, .58], rock: [.66, .66, .64] }[c.ground] || [.7, .8, .6];
   groundMesh(T_, tex, (k, sl, y) => k === 'c' || sl > 1.6 ? (c.land === 'fire' ? [.22, .16, .15] : c.snow && y > 30 ? [.95, .97, 1] : [.56, .56, .58]) : k === 'w' ? [.5, .45, .35] : gcol, 6);
@@ -9135,10 +9192,250 @@ function belBuild(L, TH) {
 function updateBel(dt) {
   if (!LV || !LV.layout || !LV.layout.bel || state === 'map' || state === 'title') return; const c = LV.layout.bel, TH = THEMES[LV.theme];
   if (TH.flow) { TH.flow.offset.x += dt * .01; TH.flow.offset.y += dt * .006; }
+  if (LV.layout.gondolin) updateGondolin(dt, TH);
   if (c.land === 'fire' && Math.random() < dt * 14) bfire(tw(P.s + rand(-30, 30), P.x + rand(-30, 30), landAt(P.s, P.x) + rand(0, 1)), rand(1, 2), 2);
   if (c.land === 'lake' && Math.random() < dt * 6) smoke.spawn(...tw(P.s + rand(-30, 30), P.x + rand(-30, 30), landAt(P.s, P.x) + rand(.2, 2)).toArray(), rand(-.2, .2), .05, rand(-.2, .2), rand(6, 10), 5, 12, [.8, .82, .84], [.9, .9, .92], 0, .15);   // (the mist of Hithlum)
 }
 BELV.forEach(c => { THEMES['bel_' + c.loc] = natTheme({ wallTex: TX.rock, floorTex: TX.grass, tint: [1, 1, 1], door: 0x8a6a4a, env: c.env, orc: MT_ORC, scenery(L) { belBuild(L, this); } }); });
+// =====================================================================
+//  UNREAL TOURNAMENT 2004 KITS (only on your own computer): levels/ut/<kit>.json and textures/ut/*.png, made by bfme\tools\Prep-UTKit.ps1 with UT2004's own
+//  UCC.exe: the game's static meshes (pillars, walls, towers, arches, statues, cliffs, trees) with their own pictures, re-toned to Valinor's bright look.
+//  Levels place them with utPut; without the kit each piece is a plain block its size, so the level still stands online.
+// =====================================================================
+const UTK = {}, UT_SC = 1 / 50;   // (Unreal units to metres: a UT2004 player stands 88 high)
+let UT_SKY = null;
+const UT_MASK = /leaf|leav|plant|vine|fern|grass|bush|branch|cattail|cedar/i, UT_TEX = new Map(), UT_MAT = new Map();
+async function loadUTKit(kit) {
+  if (!LOCAL_ASSETS || new URLSearchParams(location.search).get('layout') === 'classic') return null;   // (?layout=classic: the levels as they're built online)
+  const r = await fetch(`levels/ut/${kit}.json`).catch(() => null); if (!r || !r.ok) return null;
+  let K; try { K = await r.json(); } catch (e) { console.warn(`Valinor: levels/ut/${kit}.json is there but could not be read:`, e.message); return null; }
+  const imgs = await Promise.all(K.tex.map(n => loadImage(`textures/ut/${n}.png`).catch(() => null))), pieces = {};
+  for (const [name, m] of Object.entries(K.meshes)) {
+    const parts = [];
+    for (const [ti, v, u] of m.g) {
+      const n = v.length / 3, pos = new Float32Array(v.length), uv = new Float32Array(n * 2);
+      for (let q = 0; q < n; q++) { const c = q - q % 3 + [0, 2, 1][q % 3]; pos[c * 3] = v[q * 3] * UT_SC; pos[c * 3 + 1] = v[q * 3 + 2] * UT_SC; pos[c * 3 + 2] = v[q * 3 + 1] * UT_SC; uv[c * 2] = u[q * 2]; uv[c * 2 + 1] = u[q * 2 + 1]; }   // (Unreal's x, y across and z up to three's x, y up and z; its triangles wound the other way)
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.computeVertexNormals(); g.computeBoundingSphere();
+      parts.push({ geo: g, tex: ti >= 0 ? K.tex[ti] : null });
+    }
+    pieces[name.split('.').pop()] = { parts, b: m.b.map(v => v * UT_SC) };
+  }
+  console.log(`Valinor: ${Object.keys(pieces).length} Unreal Tournament 2004 pieces for ${kit} (levels/ut/${kit}.json)`);
+  return UTK[kit] = { pieces, img: Object.fromEntries(K.tex.map((n, i) => [n, imgs[i]])) };
+}
+// a kit's picture, re-toned ([saturation, gamma]: toneCanvas) and tiled
+function utTex(K, name, tone) {
+  const key = name + '|' + (tone || ''); if (UT_TEX.has(key)) return UT_TEX.get(key);
+  const img = K && K.img[name]; if (!img) return null;
+  const c = mkCanvas(img.naturalWidth, img.naturalHeight, g => g.drawImage(img, 0, 0)); if (tone) toneCanvas(c, tone[0], tone[1]);
+  const t = worldTex(new THREE.CanvasTexture(c)); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.magFilter = THREE.LinearFilter; UT_TEX.set(key, t); return t;
+}
+// the material for one of a piece's pictures, by its look: { mat } as it is, or { tex (another picture instead), tone, color, rough, bump, env, metal, emissive };
+// look may be a function of the picture's name. Leaves and grass are cut out of their pictures, both sides drawn
+function utMat(K, tn, look) {
+  const o = typeof look === 'function' ? look(tn || '') : look; if (o.mat) return o.mat;
+  const pic = o.tex || tn, key = pic + '|' + JSON.stringify(o); if (UT_MAT.has(key)) return UT_MAT.get(key);
+  const t = pic && utTex(K, pic, o.tone), cut = pic && UT_MASK.test(pic); let m;
+  if (!t) m = lam(o.color ?? 0xf4f0e8);
+  else if (cut) m = ps1(new THREE.MeshLambertMaterial({ map: t, color: o.color ?? 0xffffff, emissive: o.emissive || 0, alphaTest: .45, side: THREE.DoubleSide }));
+  else { m = surf(t, { sky: UT_SKY, color: o.color ?? 0xffffff, rough: o.rough ?? .7, bump: o.bump ?? 1.5, env: o.env ?? .25, metal: o.metal, tri: o.tri }); if (o.emissive) m.emissive.setHex(o.emissive); }
+  UT_MAT.set(key, m); return m;
+}
+// ground that turns to rock where it's steep: the grass picture on the level ground, the rock laid on by where it is in the world (from all three sides) on slopes and cliffs
+function slopeGround(t, rockT, k = 1 / 9, snowY = 1e4) {
+  const m = new THREE.MeshLambertMaterial({ map: t, vertexColors: true }), rt = rockT.clone(); rt.needsUpdate = true; rt.wrapS = rt.wrapT = THREE.RepeatWrapping;
+  m.onBeforeCompile = sh => {
+    ps1Compile(sh); sh.uniforms.rockMap = { value: rt };
+    sh.vertexShader = 'varying vec3 vWP;\nvarying vec3 vWN;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n vWP = (modelMatrix * vec4(transformed, 1.0)).xyz; vWN = normalize(mat3(modelMatrix) * objectNormal);');
+    sh.fragmentShader = 'uniform sampler2D rockMap;\nvarying vec3 vWP;\nvarying vec3 vWN;\n' + sh.fragmentShader.replace('#include <map_fragment>', `
+      vec4 texelColor = mapTexelToLinear(texture2D(map, vUv));
+      vec3 bw = pow(abs(vWN), vec3(4.0)); bw /= (bw.x + bw.y + bw.z);
+      vec4 rk = texture2D(rockMap, vWP.zy * ${k.toFixed(4)}) * bw.x + texture2D(rockMap, vWP.xz * ${k.toFixed(4)}) * bw.y + texture2D(rockMap, vWP.xy * ${k.toFixed(4)}) * bw.z;
+      texelColor = mix(texelColor, mapTexelToLinear(rk), smoothstep(.82, .62, vWN.y));
+      texelColor.rgb = mix(texelColor.rgb, vec3(1.05, 1.07, 1.1) * (.82 + .18 * rk.r), smoothstep(${snowY.toFixed(1)}, ${(snowY + 9).toFixed(1)}, vWP.y + rk.g * 6.0) * (.55 + .45 * smoothstep(.3, .8, vWN.y)));   /* (snow on the heights) */
+      diffuseColor *= texelColor;`);
+  };
+  m.customProgramCacheKey = () => 'slope' + k + '|' + snowY; return m;
+}
+// sizes (Unreal units: min x, y, z, max x, y, z) of the pieces levels use, for the plain blocks drawn without the kit
+const UT_BOX = { WallI: [-256, -256, 0, 256, 256, 960], WallCub: [-512, -512, 0, 512, 512, 960], WallRound: [0, -1024, 0, 392, -473, 960], RoofRound: [-384, -384, 0, 384, 384, 432],
+  PillarBig: [-144, -144, -528, 144, 144, 304], PilL1: [-16, -36, -136, 16, 36, 136], PilUp: [-224, -224, -144, 224, 224, 112], EgyptPillar_02: [-384, -384, 0, 384, 384, 656], ObeliskLittle: [-176, -176, 0, 176, 176, 824],
+  Sig: [-152, -248, 0, 152, 248, 600], MiscStatue02BA: [-59, -44, -238, 59, 44, 252], MiscStatue01BA: [-33, -46, -196, 33, 46, 196], Brazier01BA: [-76, -62, -16, 72, 66, 43], WallN: [-256, -256, 0, 256, 256, 1216] };
+// a piece at s, x, y facing h, scaled (a number, or [across, up, along]); look: utMat's; blocks: push its footprint there as a wall
+function utPut(K, name, s, x, y, h = 0, sc = 1, look = {}, blocks = null) {
+  const g = new THREE.Group(); place(g, s, x, y, h); if (Array.isArray(sc)) g.scale.set(sc[0], sc[1], sc[2]); else g.scale.setScalar(sc); scene.add(g);
+  const p = K && K.pieces[name], b = p ? p.b : (UT_BOX[name] || [-100, -100, 0, 100, 100, 200]).map(v => v * UT_SC);
+  if (p) for (const q of p.parts) g.add(new THREE.Mesh(q.geo, utMat(K, q.tex, look)));
+  else if (!/Tree|Fern|Plant|Grass|Vine|Leaves/.test(name)) { const o = typeof look === 'function' ? look('') : look; part(GEO_BOX, o.mat || lam(o.color ?? 0xf4f0e8), g, (b[0] + b[3]) / 2, (b[2] + b[5]) / 2, (b[1] + b[4]) / 2, b[3] - b[0], b[5] - b[2], b[4] - b[1]); }
+  if (blocks) {
+    g.updateMatrixWorld(true); let s0 = 1e9, s1 = -1e9, x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+    for (let k = 0; k < 8; k++) { _a.set(b[k & 1 ? 3 : 0], b[k & 2 ? 5 : 2], b[k & 4 ? 4 : 1]).applyMatrix4(g.matrixWorld); const ls = _a.z - CZ, lx = CX + R - _a.x; s0 = Math.min(s0, ls); s1 = Math.max(s1, ls); x0 = Math.min(x0, lx); x1 = Math.max(x1, lx); y0 = Math.min(y0, _a.y - Y0); y1 = Math.max(y1, _a.y - Y0); }
+    const sh = blocks.shrink || 0; blocks.push([s0 + sh, s1 - sh, x0 + sh, x1 - sh, y1, 'wall', y0 - 2]);
+  }
+  return g;
+}
+// a round tower of Unreal's curved wall pieces (sixteen to a ring), r its radius, one storey of height hh for each in rings: [[r, hh], ...]; returns the top's height
+function utTower(K, s, x, y, rings, look, blocks) {
+  let yy = y;
+  for (const [r, hh] of rings) { const k = r / (1024 * UT_SC), ky = hh / (960 * UT_SC); for (let q = 0; q < 16; q++) utPut(K, 'WallRound', s, x, yy, q / 16 * TAU, [k, ky, k], look); yy += hh; }
+  if (blocks) { const r = rings[0][0] * .8; blocks.push([s - r, s + r, x - r, x + r, yy, 'wall', y - 2]); }
+  return yy;
+}
+// =====================================================================
+//  GONDOLIN (see gondolinLayout): white marble and gold from UT2004's Barrens and Crossfire stonework, Arborea's and Antalus's rocks and trees
+// =====================================================================
+const GD_GATES = [['WOOD', 0x9a6438, .1, .85], ['STONE', 0xc8c4bc, 0, .9], ['BRONZE', 0xd08a48, .8, .35], ['IRON', 0x5a6068, .7, .45], ['SILVER', 0xeef2fa, .95, .2], ['GOLD', 0xffc23a, .85, .25], ['STEEL', 0xa8c4e8, .9, .25]];
+const GD_HOUSES = [0x3a6ad8, 0x2aa8e8, 0xfafafa, 0xe8f4ff, 0x2fb04a, 0xffc828, 0x2ad0d8, 0xe0a020, 0xe0402a, 0x8a6a4a, 0x7a4ad8];   // (the banners of the Houses: the Swallow, the Heavenly Arch, the Pillar, the Tower of Snow, the Tree, the Golden Flower, the Fountain, the Harp, the Hammer of Wrath, the Mole, and the King's)
+function buildGondolin(L, TH) {
+  const Y = L.layout, T_ = L.terrain, first = scene.children.length, sky = TH.env, at = (s, x) => terrainAt(s, x, true), B = Y.blocks, K = UTK.gondolin || null;
+  UT_SKY = sky;
+  const ss = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  // --- the looks: Barrens' sandstone become white marble (its picture-writing swapped for plain stone), its gold kept gold; Arborea's rock pale and clean, its leaves bright
+  const envT = skyEnv(sky), metal = (c, me, ro, em = 0) => { const m = new THREE.MeshStandardMaterial({ color: c, metalness: me, roughness: ro, emissive: em }); if (envT) { m.envMap = envT; m.envMapIntensity = 1.1; } return ps1(m); };
+  const GOLD = K && K.img['BarrensArchitecture.Base.gold01'] ? (() => { const m = surf(utTex(K, 'BarrensArchitecture.Base.gold01', [1.3, .8]), { sky, color: 0xffeab0, rough: .32, metal: .45, bump: .6, env: .9 }); m.emissive.setHex(0x5a3a00); return m; })() : metal(0xffc23a, .5, .3, 0x5a3a00);
+  const MARBLE = { tone: [.16, .62], color: 0xf6f1e8, rough: .45, bump: 1.3, env: .35 };
+  const marble = tn => /gold/i.test(tn) ? { mat: GOLD } : /wal03BA|bdr0|deco0|wal04BA|wal06BAb|bas15|bdr05/i.test(tn) ? { ...MARBLE, tex: 'BarrensArchitecture.Base.base01BO' } : MARBLE;
+  const ROCK = { tone: [.6, .78], color: 0xdcd6cc, rough: .95, bump: 3, env: .05 }, GREEN = { tone: [1.45, .72], rough: .9, bump: 1.2, env: .05 };
+  const plantLook = tn => /bark|trunk/i.test(tn) ? { tone: [1.1, .7], color: 0xd8c8b0, rough: .95, bump: 2 } : GREEN;
+  const wallT = K ? utTex(K, 'BarrensArchitecture.Walls.wal02BA', MARBLE.tone) : TX.marble, plainT = K ? utTex(K, 'BarrensArchitecture.Base.base01BO', MARBLE.tone) : TX.marble;
+  const paveT = K ? utTex(K, 'BarrensArchitecture.Floors.flr02BA', [.5, .6]) : TX.marble;
+  const white = surf(wallT, { sky, color: 0xfffdf8, rough: .45, bump: 1.1, env: .4, tri: 4 }), whiteP = surf(plainT, { sky, color: 0xfffdf8, rough: .5, bump: 1, env: .35, tri: 3 });
+  const pave = surf(paveT, { sky, color: 0xe4def0, rough: .35, bump: 1.4, env: .45, tri: 2.5 });
+  const roofs = [lam(0x3a66d0), lam(0x2a8a9a), GOLD, lam(0x4a86e8), lam(0x5a72c0)];
+  // --- the ground: the bright meadow of Tumladen, pale rock and snow on the mountains, the white road and stair, the city's paving laid over its levels
+  const rockT = K ? utTex(K, 'AntalusTextures.All.AntStoneb', [.55, .72]) : TX.rock;
+  groundMesh(T_, TX.meadow, (k, sl, y) => k === 'c' ? (y > 44 ? [1.08, 1.08, 1.1] : [.74, .78, .84]) : k === 'r' ? [.86, .82, .74] : k === 's' || k === 'p' ? [.95, .95, .92] : k === 'h' ? (sl > 1.1 ? [.8, .82, .86] : [.66, .84, .46]) : [.74, .9, .52], 6, t => slopeGround(t, rockT, 1 / 9, 46));
+  wideFloor(TX.meadow, 0x8a9a7a, 90, -3, 900);
+  { const ring = new THREE.Mesh(new THREE.RingGeometry(GD.KR + 1.2, GD.HR1 + .4, 128, 4), pave); ring.rotation.x = -Math.PI / 2; tw(GD.HS, 0, GD.HY + .05, ring.position); ring.userData.keep = true; scene.add(ring);
+    const sq = new THREE.Mesh(new THREE.CircleGeometry(GD.KR + .2, 96), pave); sq.rotation.x = -Math.PI / 2; tw(GD.HS, 0, GD.KY + .05, sq.position); sq.userData.keep = true; scene.add(sq);
+    if (K) { const sun = new THREE.Mesh(new THREE.CircleGeometry(4.5, 48), surf(utTex(K, 'BarrensArchitecture.Ceilings.cel04BA', [.35, .6]), { sky, color: 0xfff4d8, rough: .4, bump: 1.4, env: .5 })); sun.rotation.x = -Math.PI / 2; tw(GD.HS - 4, 0, GD.KY + .07, sun.position); sun.userData.keep = true; scene.add(sun); } }   // (a sun of gold and white in the paving, where Gothmog is fought)
+  // --- the road from the last gate across the plain to the foot of the Great Stair, white flags along it
+  { const pos = [], uv = [], idx = []; let n = 0; for (let s = -160; s <= GD.GS0 + .5; s += 1) { const xc = s < GD.GATES[6] + 2 ? Math.sin(s * .09) * 2.2 : 0, hw = s < GD.GATES[6] + 2 ? 3.4 : 2.8; for (const d of [-hw, hw]) { const p = tw(s, xc + d, at(s, xc + d) + .07); pos.push(p.x, p.y, p.z); uv.push(d > 0 ? 1 : 0, s / 5); } if (n) idx.push((n - 1) * 2, n * 2, (n - 1) * 2 + 1, (n - 1) * 2 + 1, n * 2, n * 2 + 1); n++; }
+    const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); rg.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); rg.setIndex(idx); rg.computeVertexNormals(); const rm = new THREE.Mesh(rg, surf(paveT, { sky, color: 0xf2ecf8, rough: .4, bump: 1.2, env: .4, tri: 3, side: THREE.DoubleSide })); rm.userData.keep = true; scene.add(rm); }   // (the road, a paved ribbon over the ground)
+  // --- the Seven Gates up the ravine, each of its own metal: two great pillars, a lintel, doors thrown open, a crest, fire burning on top
+  GD.GATES.forEach((s, k) => {
+    const [nm, col, me, ro] = GD_GATES[k], wob = Math.sin(s * .09) * 2.2, y = at(s, wob), M = k === 0 ? surf(TX.planks, { sky, color: 0xc08848, rough: .8, bump: 1.2, env: .05 }) : k === 1 ? whiteP : k === 5 ? GOLD : metal(col, me, ro, k === 6 ? 0x081420 : 0);
+    const mlook = tn => /gold/i.test(tn) ? { mat: GOLD } : { mat: M }, w = GD.RW - .3;
+    for (const sx of [-1, 1]) {
+      utPut(K, 'EgyptPillar_02', s, wob + sx * w, y - .5, 0, [.3, .8, .3], marble, B);
+      const br = utPut(K, 'Brazier01BA', s, wob + sx * w, y + 10, 0, 2.2, { mat: M }); const fl = glowSprite(0xffb040, 5, .8); tw(s, wob + sx * w, y + 11.6, fl.position); scene.add(fl);
+      const d = new THREE.Group(); place(d, s + 2.6, wob + sx * (w - 2.2), y, sx * 1.25); scene.add(d); part(GEO_BOX, M, d, 0, 4.1, 0, .35, 8.2, 4.6); part(GEO_BOX, GOLD, d, 0, 4.1, 0, .45, .4, 4.7);   // (the doors, swung back)
+    }
+    const q = tw(s, wob, y + 10); part(GEO_BOX, M, scene, q.x, q.y, q.z, 2 * w + 4.6, 2.4, 3.2); part(GEO_BOX, k === 5 ? whiteP : GOLD, scene, q.x, q.y + 1.3, q.z, 2 * w + 4.6, .35, 3.4);
+    utPut(K, 'Sig', s, wob, y + 11.2, 0, .32, { mat: M });
+  });
+  // --- the ravine's walls: Arborea's cliffs along both sides, boulders and ferns at their feet
+  for (let s = -160; s < GD.GATES[6] + 6; s += 6.5) for (const sx of [-1, 1]) {
+    const wob = Math.sin(s * .09) * 2.2, x = wob + sx * (GD.RW + 9 + Math.random() * 1.5), n = 1 + Math.abs((s * 7 + sx * 3) | 0) % 6;
+    utPut(K, 'cliffwall0' + n, s, x, at(s, wob) - 3, sx > 0 ? Math.PI / 2 : -Math.PI / 2, [.9, 1.5 + Math.random() * .5, .9], ROCK);
+    if (Math.random() < .6) utPut(K, 'littlerock01', s + rand(-2, 2), wob + sx * (GD.RW - 1), at(s, wob) - .6, rand(0, TAU), rand(.3, .55), ROCK);
+    if (Math.random() < .7) utPut(K, Math.random() < .5 ? 'AbFernA' : 'AbPlantA', s + rand(-3, 3), wob + sx * (GD.RW - 1.5), at(s, wob), rand(0, TAU), rand(1, 1.6), GREEN);
+  }
+  // --- the Encircling Mountains' feet: great cliffs all round the plain, broken by the ravine
+  /* (the mountains' own rock and snow: see slopeGround) */
+  // --- Tumladen: groves of pines and broad trees, boulders, flowers in drifts, tall grass (kept off the road, the stair, the squares and the hill)
+  const clear = (s, x, r) => Math.abs(x) < 7 + r && s > GD.GATES[6] && s < GD.GS0 + 4 || Math.abs(x) < GD.SW + 4 + r && s > GD.GS0 - 5 && s < 12 || Math.hypot(s - GD.HS, x) < GD.HR0 + 3 + r || Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 2 + r) || Math.hypot(s - GD.RC[0], x - GD.RC[1]) > GD.RR - 2;
+  const treeN = [['AntTree', 1], ['AntTreeb', 1], ['AntTreeSmallGroup', 1], ['AntTwoTrees', 1.1], ['AbTreeB', .24], ['AbTreeG', .22], ['AntTreeSmall', 1.5]], groves = [];
+  for (let k = 0; k < 14; k++) { const a = rand(0, TAU), r = rand(30, GD.RR - 14); groves.push([GD.RC[0] + Math.cos(a) * r, GD.RC[1] + Math.sin(a) * r, rand(8, 16)]); }
+  let nt = 0; for (const [gs, gx, gr] of groves) for (let k = 0; k < 12 && nt < 150; k++) { const s = gs + rand(-gr, gr), x = gx + rand(-gr, gr); if (clear(s, x, 2)) continue; const [n, tk] = treeN[(k + Math.abs(gs | 0)) % treeN.length]; utPut(K, n, s, x, at(s, x) - .2, rand(0, TAU), rand(.85, 1.25) * tk, plantLook); if (!K) { const q = tw(s, x, at(s, x)); part(GEO.cyl, lam(0x6a5038), scene, q.x, q.y + 2.5, q.z, .3, 5, .3); part(GEO.cone, lam(0x2e8a3c), scene, q.x, q.y + 6.5, q.z, 2.2, 7, 2.2); } B.push([s - .5, s + .5, x - .5, x + .5, at(s, x) + 8, 'wall', at(s, x) - 2]); nt++; }
+  for (let k = 0; k < 40; k++) { const a = rand(0, TAU), r = rand(GD.RR - 16, GD.RR - 4), s = GD.RC[0] + Math.cos(a) * r, x = GD.RC[1] + Math.sin(a) * r; if (Math.abs(angDiff(a, Math.PI)) < .2) continue; utPut(K, ['ARockBunchedA', 'ARockBunchedAHigh', 'AntRockAHigh', 'littlerock01'][k % 4], s, x, at(s, x) - .6, rand(0, TAU), rand(.5, 1), k % 4 < 2 ? GREEN : ROCK); }
+  { const tufts = [], blooms = [], grass = [], FL = [0xffe040, 0xff6aa0, 0xffffff, 0x7ac0ff, 0xff8a30, 0xc890ff];
+    for (let k = 0; k < 12000; k++) { const s = rand(-118, 104), x = rand(-110, 110); if (clear(s, x, 0)) continue; const p = tw(s, x, at(s, x)), d = Math.sin(s * .05) * Math.cos(x * .06) + Math.sin(s * .13 + x * .08) * .5;
+      if (d > .55) blooms.push([p.x, p.y + .25, p.z, rand(.12, .2), 0, FL[Math.abs((s * .3 + x * .2) | 0) % FL.length]]); else if (k % 3) tufts.push([p.x, p.y, p.z, rand(.9, 1.6), rand(0, TAU), 0xffffff, rand(.9, 1.15)]); else grass.push([p.x, p.y, p.z, rand(.8, 1.3), rand(0, TAU)]); }
+    scatter(tuftGeo(), lam(0xffffff, { vc: true, side: THREE.DoubleSide }), tufts, true); scatter(new THREE.IcosahedronGeometry(1, 0), lam(0xffffff, { emissive: 0x202020 }), blooms, true);
+    const gt = K && utTex(K, 'TowerTerrain.General.TowerGrassA_t', [1.5, .75]);
+    if (gt) { const gm = ps1(new THREE.MeshLambertMaterial({ map: gt, color: 0xc8f0a0, alphaTest: .45, side: THREE.DoubleSide })), gg = new THREE.PlaneGeometry(1, 1).translate(0, .5, 0), gi = new THREE.InstancedMesh(gg, gm, grass.length * 2), Q = new THREE.Quaternion(), S3 = new V3(), P3 = new V3();
+      grass.forEach((d, i) => { for (let c = 0; c < 2; c++) { Q.setFromAxisAngle(UPV, d[4] + c * Math.PI / 2); _m4.compose(P3.set(d[0], d[1], d[2]), Q, S3.set(d[3] * 1.3, d[3], 1)); gi.setMatrixAt(i * 2 + c, _m4); } }); gi.frustumCulled = false; scene.add(gi); } }
+  // --- the Great Stair: white steps up a causeway faced with marble, a rail of posts, statues of the Elf-lords on plinths, fire in bowls
+  { const st1 = GD.HS - GD.HR1 + .5, n = 60, run = (st1 - GD.GS0) / n;
+    for (let i = 0; i < n; i++) { const s = GD.GS0 + (i + .5) * run, y = GD.HY * (i + 1) / n, q = tw(s, 0, y - .25); part(GEO_BOX, whiteP, scene, q.x, q.y, q.z, GD.SW * 2, .5, run + .02); part(GEO_BOX, white, scene, q.x, q.y + .2, q.z - run * .45, GD.SW * 2 + .05, .12, .14); }
+    for (const sx of [-1, 1]) {
+      for (let s = GD.GS0; s < st1; s += 3) { const y = GD.HY * clamp((s - GD.GS0) / (st1 - GD.GS0), 0, 1), g0 = at(s, sx * (GD.SW + 2.5)), q = tw(s, sx * (GD.SW + .35), (y + g0) / 2 - .5); part(GEO_BOX, white, scene, q.x, q.y, q.z, .7, y - g0 + 1, 3.02); utPut(K, 'PilL1', s, sx * (GD.SW + .35), y + 1.1, 0, .4, marble); }
+      const rl = tw((GD.GS0 + st1) / 2, sx * (GD.SW + .35), GD.HY / 2 + 2), rail = part(GEO_BOX, GOLD, scene, rl.x, rl.y, rl.z, .22, .16, Math.hypot(st1 - GD.GS0, GD.HY) + .4); rail.rotation.x = -Math.atan2(GD.HY, st1 - GD.GS0);
+      for (let k = 0; k < 4; k++) { const s = GD.GS0 + 5 + k * 12, y = GD.HY * clamp((s - GD.GS0) / (st1 - GD.GS0), 0, 1); const q = tw(s, sx * (GD.SW + 1.6), y); part(GEO_BOX, whiteP, scene, q.x, q.y + .5, q.z, 2.2, 1, 2.2); utPut(K, k % 2 ? 'MiscStatue02BA' : 'MiscStatue01BA', s, sx * (GD.SW + 1.6), y + 1 + (k % 2 ? 238 : 196) * UT_SC * 1.3, sx > 0 ? -Math.PI / 2 : Math.PI / 2, 1.3, marble); }
+    }
+    for (const sx of [-1, 1]) { utPut(K, 'Brazier01BA', GD.GS0 - 1, sx * (GD.SW + 1), at(GD.GS0 - 1, sx * (GD.SW + 1)) + 1.2, 0, 2.4, { mat: GOLD }); const f = glowSprite(0xffb040, 4, .8); tw(GD.GS0 - 1, sx * (GD.SW + 1), at(GD.GS0 - 1, sx * (GD.SW + 1)) + 2.6, f.position); scene.add(f); }
+  }
+  // --- the city wall round the top of the hill: Crossfire's carved wall blocks, white, with round towers and their golden domes, banners of the Houses flying; the gate to the south
+  const WR = GD.HR1 - .4, NW = 34, gateA = Math.PI;
+  for (let k = 0; k < NW; k++) {
+    const a = k / NW * TAU, s = GD.HS + Math.cos(a) * WR, x = Math.sin(a) * WR; if (Math.abs(angDiff(a, gateA)) < .12) continue;
+    utPut(K, 'WallI', s, x, GD.HY - 3, a + Math.PI, [TAU * WR / NW / 10.24 + .03, 10.5 / 19.2, .22], marble);
+    for (const d of [-2.6, 0, 2.6]) { const bs = s - Math.sin(a) * d, bx = x + Math.cos(a) * d; B.push([bs - 1.4, bs + 1.4, bx - 1.4, bx + 1.4, GD.HY + 7.5, 'wall', GD.HY - 30]); }
+  }
+  for (let k = 0; k < 12; k++) {
+    const a = (k + .5) / 12 * TAU + .04; if (Math.abs(angDiff(a, gateA)) < .3) continue;
+    const s = GD.HS + Math.cos(a) * (WR + .6), x = Math.sin(a) * (WR + .6), top = utTower(K, s, x, GD.HY - 3, [[3.2, 5], [3.2, 5], [2.8, 4]], marble, B);
+    utPut(K, 'RoofRound', s, x, top, 0, [.46, .22, .46], marble); spire(s, x, top + 1.9, 3.6, 8, k % 2 ? roofs[0] : GOLD); flagPole(s, x, top + 11.5, GD_HOUSES[k % GD_HOUSES.length]);
+  }
+  // the gate: two great towers, a gilded arch between them, the doors of steel thrown open
+  { const s = GD.HS - WR, gw = 5.2;
+    for (const sx of [-1, 1]) { const top = utTower(K, s, sx * (gw + 3.4), GD.HY - 3, [[4, 6], [4, 6], [3.4, 5]], marble, B); utPut(K, 'RoofRound', s, sx * (gw + 3.4), top, 0, [.58, .25, .58], marble); spire(s, sx * (gw + 3.4), top + 2.2, 4.4, 10, roofs[0]); flagPole(s, sx * (gw + 3.4), top + 14, 0xfafafa); longBanner(s - 4.2, sx * (gw + 3.4), top - 2, 9, GD_HOUSES[10]); }
+    const q = tw(s, 0, GD.HY + 8.5); part(GEO_BOX, white, scene, q.x, q.y, q.z, gw * 2 + 2, 3, 3); part(GEO_BOX, GOLD, scene, q.x, q.y - 1.6, q.z - 1.55, gw * 2 + 2, .4, .2); utPut(K, 'Sig', s - 1, 0, GD.HY + 10, 0, .38, marble);
+    const stl = metal(0xa8c4e8, .9, .25, 0x081420); for (const sx of [-1, 1]) { const d = new THREE.Group(); place(d, s + 2.4, sx * (gw - .2), GD.HY, sx * 1.3); scene.add(d); part(GEO_BOX, stl, d, 0, 3.6, 0, .3, 7.2, 5); part(GEO_BOX, GOLD, d, 0, 3.6, 0, .4, .3, 5.1); } }
+  // --- the houses of the city on the ring inside the wall: white blocks carved with friezes under roofs of blue and gold, round towers among them, streets running out from the square
+  { const lots = [];
+    for (let ring = 0; ring < 3; ring++) { const r = GD.KR + 5 + ring * 5.6, n = Math.floor(TAU * r / 7.4); for (let k = 0; k < n; k++) { const a = (k + ring * .5) / n * TAU, s = GD.HS + Math.cos(a) * r, x = Math.sin(a) * r;
+      if (Math.abs(angDiff(a, gateA)) < .32 || [0, 1.57, 4.71, 2.36, 3.93, .78, 5.5].some(st => Math.abs(angDiff(a, st)) < .07) || Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 2.5)) continue; lots.push([s, x, a, r, k]); } }
+    lots.forEach(([s, x, a, r, k], i) => {
+      const kind = (i * 7 + k) % 9, hh = 4.4 + (i * 13 % 5) * .7;
+      if (kind === 0) { const top = utTower(K, s, x, GD.HY - .2, [[2.2, hh], [1.9, 3.5]], marble, B); spire(s, x, top, 2.4, 5, i % 2 ? GOLD : roofs[3]); return; }
+      const w = 4.6 + (i % 3) * .5; utPut(K, kind === 1 ? 'WallN' : 'WallCub', s, x, GD.HY - .2, a, [w / (kind === 1 ? 10.24 : 20.48), hh / (kind === 1 ? 24.3 : 19.2), w / (kind === 1 ? 10.24 : 20.48)], marble);
+      B.push([s - w / 2 + .3, s + w / 2 - .3, x - w / 2 + .3, x + w / 2 - .3, GD.HY + hh, 'wall', GD.HY - 2]);
+      const rf = new THREE.Mesh(new THREE.ConeGeometry(w * .78, w * .55, 4), roofs[(i * 3 + kind) % roofs.length]); place(rf, s, x, GD.HY - .2 + hh + w * .27, a + Math.PI / 4); scene.add(rf);
+      if (i % 5 === 0) longBanner(s - Math.cos(a) * (w / 2 + .1), x - Math.sin(a) * (w / 2 + .1), GD.HY + hh - .3, 3, GD_HOUSES[i % 10]);
+    });
+    for (let k = 0; k < 18; k++) { const a = rand(0, TAU), r = rand(GD.KR + 3, GD.HR1 - 3), s = GD.HS + Math.cos(a) * r, x = Math.sin(a) * r; if (Math.abs(angDiff(a, gateA)) < .3 || lots.some(l => Math.hypot(l[0] - s, l[1] - x) < 4) || Y.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 1)) continue; utPut(K, 'AbTreeA', s, x, GD.HY, rand(0, TAU), .8, plantLook); }
+  }
+  // --- the King's Square: its terrace wall and stair, a ring of great pillars, the fountain, Glingal and Belthil, and Turgon's tower over all
+  for (let k = 0; k < 28; k++) { const a = k / 28 * TAU, s = GD.HS + Math.cos(a) * (GD.KR + .6), x = Math.sin(a) * (GD.KR + .6); if (Math.abs(angDiff(a, gateA)) < .14) continue;
+    utPut(K, 'WallI', s, x, GD.HY - .5, a + Math.PI, [TAU * (GD.KR + .6) / 28 / 10.24 + .04, (GD.KY - GD.HY + 1.6) / 19.2, .1], marble); for (const d of [-1.6, 0, 1.6]) { const bs = s - Math.sin(a) * d, bx = x + Math.cos(a) * d; B.push([bs - .8, bs + .8, bx - .8, bx + .8, GD.KY + 1, 'wall', GD.HY - 2]); }
+    if (k % 2 === 0) utPut(K, 'PilL1', s, x, GD.KY + 1.4, a, .45, marble); }
+  for (let k = 0; k < 16; k++) { const a = (k + .5) / 16 * TAU, s = GD.HS + Math.cos(a) * (GD.KR - 2), x = Math.sin(a) * (GD.KR - 2); if (Math.abs(angDiff(a, gateA)) < .25 || Math.abs(angDiff(a, 0)) < .3) continue; utPut(K, 'PillarBig', s, x, GD.KY + 528 * UT_SC * .44, a, .44, marble, Object.assign(B, { shrink: .4 })); }
+  B.shrink = 0;
+  // the fountain: a broad basin, a pillar with a golden bowl on it, the water leaping up and falling back in spray
+  { const fs = GD.HS + 6, q = tw(fs, 0, GD.KY); const lip = new THREE.Mesh(new THREE.TorusGeometry(4.2, .45, 10, 48), white); lip.rotation.x = Math.PI / 2; lip.position.set(q.x, q.y + .55, q.z); scene.add(lip);
+    const wt = TX.sea.clone(); wt.needsUpdate = true; wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(3, 3); TH.flow = wt; const wm = new THREE.MeshPhongMaterial({ map: wt, color: 0x6ad8ff, emissive: 0x0a3a5a, specular: 0xffffff, shininess: 80, transparent: true, opacity: .88 });
+    const pool = new THREE.Mesh(new THREE.CircleGeometry(4, 40), wm); pool.rotation.x = -Math.PI / 2; pool.position.set(q.x, q.y + .7, q.z); pool.userData.keep = true; scene.add(pool);
+    utPut(K, 'PilUp', fs, 0, GD.KY + 144 * UT_SC * .42, 0, .42, marble); utPut(K, 'Brazier01BA', fs, 0, GD.KY + 2.4, 0, 1.4, { mat: GOLD });
+    const jet = new THREE.Mesh(new THREE.CylinderGeometry(.12, .35, 6, 12, 1, true), new THREE.MeshBasicMaterial({ color: 0xc8f4ff, transparent: true, opacity: .55, depthWrite: false })); jet.position.set(q.x, q.y + 6, q.z); jet.userData.keep = true; scene.add(jet);
+    B.push([fs - 4.4, fs + 4.4, -4.4, 4.4, GD.KY + 1, 'wall', GD.KY - 2]); TH.gdFount = { s: fs, x: 0, y: GD.KY, jet }; }
+  // Glingal and Belthil: Arborea's broad tree, its leaves of light, gold and silver, in marble planters, glowing
+  TH.gdTrees = [];
+  for (const [sx, col, em] of [[-1, 0xffd040, 0x8a5a00], [1, 0xc8dcff, 0x3a4a7a]]) {
+    const s = GD.HS + 6, x = sx * 10, q = tw(s, x, GD.KY); part(new THREE.CylinderGeometry(2.6, 2.8, 1, 24), white, scene, q.x, q.y + .5, q.z);
+    const lk = tn => /bark|trunk/i.test(tn) ? { tone: [.3, .6], color: sx < 0 ? 0xf0e0c0 : 0xf4f4ff, rough: .6, bump: 1.5 } : { tone: [.2, .6], color: col, emissive: em };
+    utPut(K, 'AbTreeA', s, x, GD.KY + .9, sx * .8, 1.9, lk);
+    if (!K) { part(GEO.cyl, lam(0xf0e8d8), scene, q.x, q.y + 4, q.z, .5, 7, .5); part(GEO.ico, lam(col, { emissive: em }), scene, q.x, q.y + 9, q.z, 4.5, 3.5, 4.5); }
+    for (let k = 0; k < 4; k++) { const g = glowSprite(col, rand(5, 8), .45); g.position.set(q.x + rand(-2.5, 2.5), q.y + rand(7, 12), q.z + rand(-2.5, 2.5)); scene.add(g); }
+    B.push([s - 2.6, s + 2.6, x - 2.6, x + 2.6, GD.KY + 1, 'wall', GD.KY - 2]); TH.gdTrees.push({ s, x, y: GD.KY, col });
+  }
+  // Turgon's tower: storeys of curved white wall narrowing as they rise, a golden dome and spire, the King's banners hanging from it, a light at its top
+  { const ts = GD.HS + 14, top = utTower(K, ts, 0, GD.KY, [[5.6, 9], [4.8, 9], [4, 9], [3.2, 9], [2.6, 7]], marble, B);
+    for (const yy of [GD.KY + 9, GD.KY + 18, GD.KY + 27, GD.KY + 36]) { const q = tw(ts, 0, yy); const band = new THREE.Mesh(new THREE.TorusGeometry(yy < GD.KY + 10 ? 5.6 : yy < GD.KY + 19 ? 4.8 : yy < GD.KY + 28 ? 4 : 3.2, .3, 8, 48), GOLD); band.rotation.x = Math.PI / 2; band.position.copy(q); scene.add(band); }
+    utPut(K, 'RoofRound', ts, 0, top, 0, [.42, .9, .42], { mat: GOLD }); const sp = tw(ts, 0, top + 9.5); part(new THREE.ConeGeometry(.9, 9, 12), GOLD, scene, sp.x, sp.y, sp.z);
+    const star = glowSprite(0xfff4c0, 16, .85); tw(ts, 0, top + 15, star.position); scene.add(star); TH.gdStar = star;
+    for (const a of [-.5, .5, Math.PI - .5, Math.PI + .5]) longBanner(ts - Math.cos(a) * 5.8, Math.sin(a) * 5.8, GD.KY + 26, 14, a > 2 ? 0xfafafa : GD_HOUSES[10]);
+    const dq = tw(ts - 5.7, 0, GD.KY + 2.6); part(GEO_BOX, GOLD, scene, dq.x, dq.y, dq.z, 3, 5.2, .4); }
+  // banners on poles round the square, the colours of the Houses
+  for (let k = 0; k < 10; k++) { const a = (k + .5) / 10 * TAU + .3; if (Math.abs(angDiff(a, gateA)) < .3) continue; flagPole(GD.HS + Math.cos(a) * (GD.KR - .5), Math.sin(a) * (GD.KR - .5), GD.KY + 7, GD_HOUSES[k]); }
+  function spire(s, x, y, r, h, m) { const q = tw(s, x, y); part(new THREE.ConeGeometry(r, h, 20), m, scene, q.x, q.y + h / 2, q.z); part(GEO.sph, GOLD, scene, q.x, q.y + h + .25, q.z, r * .1 + .1, r * .1 + .1, r * .1 + .1); }
+  function flagPole(s, x, y, col) { const q = tw(s, x, y); part(GEO.cyl, GOLD, scene, q.x, q.y - 2, q.z, .09, 4.2, .09); const f = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.4), lam(col, { side: THREE.DoubleSide, emissive: 0x141414 })); f.position.set(q.x, q.y - .8, q.z + 1.25); f.rotation.y = Math.PI / 2; f.userData.keep = true; scene.add(f); (TH.gdFlags = TH.gdFlags || []).push(f); }
+  function longBanner(s, x, y, len, col) { const q = tw(s, x, y), g = new THREE.Group(); g.position.copy(q); g.rotation.y = Math.atan2(q.x - tw(GD.HS, 0, 0).x, q.z - tw(GD.HS, 0, 0).z); scene.add(g); part(new THREE.PlaneGeometry(2, len).translate(0, -len / 2, 0), lam(col, { side: THREE.DoubleSide, emissive: 0x101010 }), g, 0, 0, .3); part(GEO_BOX, GOLD, g, 0, 0, .3, 2.3, .18, .18); part(new THREE.ConeGeometry(1, .8, 3).rotateZ(Math.PI), lam(col, { side: THREE.DoubleSide }), g, 0, -len - .35, .3, 1, 1, .05); }
+  // --- smoke rising far off over the north of the city, where the dragons of Morgoth are already in it
+  TH.gdSmoke = [[GD.HS + 30, -24], [GD.HS + 26, 30], [GD.HS + 36, 6]];
+  bakeScenery(scene.children.slice(first));
+}
+function updateGondolin(dt, TH) {
+  const F = TH.gdFount;
+  if (F) { F.jet.scale.y = 1 + Math.sin(T * 6) * .06; const p = tw(F.s, F.x, F.y + 9); if (Math.random() < dt * 30) fx.spawn(p.x + rand(-.2, .2), p.y, p.z + rand(-.2, .2), rand(-2.4, 2.4), rand(1, 3), rand(-2.4, 2.4), rand(.9, 1.4), .22, .08, [.85, .97, 1], [.5, .8, 1], 9, .4); }
+  for (const t of TH.gdTrees || []) if (Math.random() < dt * 6) { const p = tw(t.s + rand(-4, 4), t.x + rand(-4, 4), t.y + rand(7, 13)); const c = new THREE.Color(t.col); fx.spawn(p.x, p.y, p.z, rand(-.3, .3), rand(-.6, -.2), rand(-.3, .3), rand(2.5, 4), .2, .05, [c.r, c.g, c.b], [1, 1, 1], 0, .5); }
+  if (TH.gdStar) TH.gdStar.material.opacity = .7 + Math.sin(T * 2.2) * .15;
+  for (const f of TH.gdFlags || []) f.rotation.x = Math.sin(T * 3 + f.position.x) * .12;
+  for (const [s, x] of TH.gdSmoke || []) if (Math.random() < dt * 3) smoke.spawn(...tw(s + rand(-2, 2), x + rand(-2, 2), GD.HY + 4).toArray(), rand(-.3, .3), rand(2, 3.5), rand(-.3, .3), rand(5, 8), 2.5, 9, [.5, .48, .46], [.8, .8, .82], -.2, .1);
+  // the names of the Seven Gates, as you pass through each
+  if (state === 'play') { const k = GD.GATES.findIndex(s => P.s > s && P.s < s + 3); if (k >= 0 && TH.gdGate !== k) { TH.gdGate = k; banner(`THE SEVEN GATES: THE GATE OF ${GD_GATES[k][0]}`, 2.2); if (k === 6) setTimeout(() => banner('TUMLADEN: THE HIDDEN CITY OF GONDOLIN', 3), 2400); } }
+}
 function resetWrath() { Object.assign(WR, { ang: 0, rad: 88, y: WR_C.Y, vr: 0, vy: 0, rollT: 0, rollCD: 0, shotCD: 0, said: 0, won: false, boss: null, bolts: [] }); }
 // --- The Watcher in the Water: before the Doors of Durin, by moonlight, on the paved shore of the black lake. It bursts up through the stones into a crater of broken slabs and
 //     churning water, as Battle for Middle-earth's Watcher does: only the top of its head out of the pool, its long tentacles sprawling out over the shore on every side. It's
@@ -13751,7 +14048,7 @@ THEMES.rivfable = natTheme({
 });
 // boot: Oakvale, Rivendell's gorge, Mirkwood and the scenery models first if they're there (they change how levels are built), then everything else
 (async () => {
-await Promise.all([loadOakvale(), loadRivendell(), loadMirkwood(), loadProps()]);   // (each changes how its level is built)
+await Promise.all([loadOakvale(), loadRivendell(), loadMirkwood(), loadProps(), loadUTKit('gondolin')]);   // (each changes how its level is built)
 { const before = new Set(scene.children); buildStatic(); for (const o of scene.children) if (!before.has(o)) o.userData.stat = true; }   // (the levels' scenery, not Gandalf or anything shared: see sceneryFor)
 renderer.shadowMap.enabled = !RETRO; moon.castShadow = !RETRO; softTex();
 setupEntities();
