@@ -1978,7 +1978,7 @@ function applyEnv(e) {
 }
 function buildStatic() {
   initCrateMats(); buildCity();
-  for (const L of LEVELS) { setFrame(L); buildL = L; L.torches = []; END_S = CIRC - 16; buildRing(L, true); if (L.theme) THEMES[L.theme].scenery(L); }
+  for (const L of LEVELS) { setFrame(L); buildL = L; L.torches = []; END_S = CIRC - 16; buildRing(L, true); if (L.theme && !L.utLazy) THEMES[L.theme].scenery(L); }   // (a place on a whole UT2004 map is built when you first go there)
   solids.length = 0; spikes.length = 0;
   for (const k in THEMES) {
     const TH = THEMES[k]; if (k === 'mt') continue;
@@ -3206,11 +3206,12 @@ function loadLevel(li) {
 }
 function newGame(li) {
   Object.assign(gs, { apples: 0, lives: 10, rockets: 8, phial: 0, superT: 0 });
+  if (utLazyFirst(li, () => newGame(li))) return;   // (a place on a whole UT2004 map: built first, then begun)
   loadLevel(li); respawn(true); levelCard();
 }
 function nextLevel() {
   if (!LEVELS[LI + 1] || LEVELS[LI + 1].loc !== LV.loc) { backToMap(LV.loc); return; }
-  showScreen(null); loadLevel(LI + 1); respawn(true); levelCard(); hudT = 4;
+  showScreen(null); if (utLazyFirst(LI + 1, () => { loadLevel(LI + 1); respawn(true); levelCard(); hudT = 4; })) return; loadLevel(LI + 1); respawn(true); levelCard(); hudT = 4;
 }
 function levelCard() { banner(LV.name, 2.4, true); }
 function restoreCrate(c) { c.alive = true; c.y = c.y0; c.bounces = 0; c.fuse = 0; c.brokenT = -1; c.vy = 0; c.squash = 0; c.box.on = true; c.mesh.visible = true; if (c.type === 't') c.mesh.material = CRATE_MATS.t[0]; syncCrate(c); }
@@ -10063,7 +10064,7 @@ function rivContent(L) {
   const P_ = Y.peaks; [['c', 0, 5, 3], ['q', 1, 5, -3], ['b', 2, -5, 4], ['r', 3, -9, 8], ['c', 3, -9, -8], ['p', 4, 4, 4], ['q', 5, -4, 4], ['l', 6, -5, -4], ['b', 7, -5, 4], ['c', 8, -5, 5]].forEach(([k, pi, ds, dx]) => addCrate(k, P_[pi][0] + ds, P_[pi][1] + dx, 0, P_[pi][3] + 2));
 }
 function buildRivKH(L, TH) {
-  const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
+  if (L.layout.ut) { buildDwarrowdelf(L, TH); buildUTTerrain(L, TH); utFalls(L, TH, 20); return; }   // (Rivendell on the whole of CTF-MoonDragon: see UT_PLACES)  const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
   const grd = surf(TX.rock, { sky, vc: true, rough: .95, bump: 4, env: .04, tri: 3 }), rep = (t, a, b) => { const c = t.clone(); c.needsUpdate = true; c.wrapS = c.wrapT = THREE.RepeatWrapping; c.repeat.set(a, b); return c; };
   groundMesh(T_, TX.rock, (k, sl, y) => k === 'g' ? (sl < .6 ? [.42, .62, .46] : [.5, .55, .56]) : [.42 + clamp(y / 80, 0, .14), .42 + clamp(y / 80, 0, .14), .5 + clamp(y / 80, 0, .14)], 6, () => grd);
   const pale = surf(TX.marble, { sky, color: 0xe8e8f4, rough: .55, bump: 1.4, env: .55, tri: 3 }), paleD = surf(TX.marble, { sky, color: 0xb8bcd0, rough: .6, bump: 1.4, env: .45, tri: 3 }), goldM = lam(0xd8b060, { emissive: 0x3a2806 }), roofM = surf(TX.hdPlate || TX.marble, { sky, color: 0x4a7a7a, rough: .4, bump: 1, env: .8, side: THREE.DoubleSide }), roofG = lam(0xb89040, { emissive: 0x2a1c04, side: THREE.DoubleSide }), glassM = new THREE.MeshBasicMaterial({ color: 0xffd890 });
@@ -10126,7 +10127,7 @@ function buildRivKH(L, TH) {
 function updateRivKH(dt) {
   if (!LV || LV.theme !== 'rivkh' || state === 'map' || state === 'title') { for (const l of THEMES.rivkh.lan || []) l.sp.visible = false; return; } const TH = THEMES.rivkh;
   if (TH.waterTex) TH.waterTex.offset.y += dt * .5; if (TH.mistT) { TH.mistT.offset.x += dt * .004; TH.mistT.offset.y += dt * .002; }
-  for (const l of TH.lan) { l.sp.visible = true; l.y += l.v * dt; if (l.y > 70) l.y = -8; tw(l.s + Math.sin(T * .3 + l.ph) * 2, l.x + Math.cos(T * .27 + l.ph) * 2, l.y, l.sp.position); }
+  for (const l of TH.lan || []) { l.sp.visible = true; l.y += l.v * dt; if (l.y > 70) l.y = -8; tw(l.s + Math.sin(T * .3 + l.ph) * 2, l.x + Math.cos(T * .27 + l.ph) * 2, l.y, l.sp.position); }
   for (const [s, x, y, w] of TH.mists || []) if (Math.hypot(s - P.s, x - P.x) < 70 && Math.random() < dt * 3) smoke.spawn(...tw(s + rand(-.5, .5), x + rand(-w / 2, w / 2), y).toArray(), rand(-.4, .4), rand(.4, 1.2), rand(-.4, .4), rand(2.5, 4), 2, 6, [.75, .8, .92], [.9, .93, 1], 0, .2);
 }
 THEMES.rivkh = natTheme({
@@ -11569,6 +11570,8 @@ THEMES.minekh = natTheme({
 //  open space from solid (by the brushes in their own order: the last one round a point says whether it's carved out or filled), cut finer where that changes
 //  across it. Its floors become walkways, its walls walls (in WGRID); its static meshes stand where the map put them, its lights are baked into the stone.
 // =====================================================================
+// (the pieces of UT2004's far future left out of Middle-earth: machines, tech, pipes, crates and containers, vehicles and their pads)
+const UT_SCIFI = /(^|\.)(SG_LO_meshes|X_SG_LO_meshes|XGame_rc|Plutonic_BP2_static|X_SC-MechBase1|X_SC-NewMech1|skyline-meshes-epic|AS_Decos|AS_Vehicles_SM|ShiptechHardware|HumanoidHardware|AlienTech|AW-Tech|X_AW-Tech|AW-MechMeshes|X_AW-MechMeshes|cp_Mechstaticpack1|Industrial_Static|Pipe_Static|Pipe_staticmeshes|JumpShipObjects|2k4ChargerMeshes|ONSWeapons-SM|ONSFullStaticMeshes|VehicleMeshes|Egypt_techmeshes_Epic|CP_UT2K3_TechSetMesh1)\.|mech|tech|container|antenna|generator|monitor|console|charger|turret|vehicle/i;
 const UTM = {}, UTM_SC = 1 / 50, UTH_S = -700, UT_NOWALL = new URLSearchParams(location.search).get('utreach') === '2';
 async function loadUTMap(name) {
   if (!LOCAL_ASSETS || new URLSearchParams(location.search).get('layout') === 'classic') return null;
@@ -11638,15 +11641,17 @@ async function loadMoriaUT() {
   try { { const L = LEVELS.find(L => L.theme === 'khazad'); let xf = null; try { xf = JSON.parse(localStorage.getItem('utJoin:' + U.D.name + ':' + U.D.brushes.length)); } catch (e) { } applyUTMines(L, U, { join: [-25, 0, 0], xf, keepBoss: true, name: 'the Dwarrowdelf, the halls before the Bridge of Khazad-dûm' }); } } catch (e) { console.warn('Valinor: the halls before the Bridge of Khazad-dûm could not be built on CTF-BridgeOfFate:', e); }
 }
 function applyUTMines(L, U, opt = { shift: UTH_S, gate: true, keepBoss: true, name: 'the Dwarrowdelf before the Bridge of Khazad-dûm' }) {   /* (also a whole outdoor map: opt.terrain, and no gate; see applyUTMap) */
-  const D = U.D, SC = UTM_SC, t0 = performance.now(), C = utCarve(D), tC = performance.now(), SH = opt.shift || 0, TR = (D.terrains || []).length && opt.terrain ? D.terrains : [];
+  const D = U.D, SC = UTM_SC, t0 = performance.now(), C = utCarve(D), tC = performance.now(), SH = opt.shift || 0, TR = opt.terrain ? (D.terrains || []).filter(T => Math.abs(T.sc[0]) < 1000) : [];   /* (not a far-off backdrop terrain) */
   // the level's frame: Unreal's middle at s = x = 0, its lowest floor at 0
   let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, z0 = 1e9; if (TR.length) for (const T of TR) { x0 = Math.min(x0, T.loc[0] - T.w / 2 * T.sc[0]); x1 = Math.max(x1, T.loc[0] + T.w / 2 * T.sc[0]); y0 = Math.min(y0, T.loc[1] - T.h / 2 * T.sc[1]); y1 = Math.max(y1, T.loc[1] + T.h / 2 * T.sc[1]); for (const v of T.hs) z0 = Math.min(z0, v); }
   else for (const b of D.brushes) if (b.op < 0) { x0 = Math.min(x0, b.b[0]); x1 = Math.max(x1, b.b[3]); y0 = Math.min(y0, b.b[1]); y1 = Math.max(y1, b.b[4]); }
+  if (opt.crop) { const ps = D.paths.length ? D.paths : D.starts; let cx = 0, cy = 0; for (const p of ps) { cx += p[0]; cy += p[1]; } cx /= ps.length; cy /= ps.length; const half = opt.crop / 2 / SC; x0 = Math.max(x0, cx - half); x1 = Math.min(x1, cx + half); y0 = Math.max(y0, cy - half); y1 = Math.min(y1, cy + half); }   // (a great outdoor map: its busiest part, where its bots walk)
   for (const [A, B_, Cc] of C.floors) z0 = Math.min(z0, A[2], B_[2], Cc[2]);
   const ox = (x0 + x1) / 2, oy = (y0 + y1) / 2, oz = z0, XF = opt.xf, XC = XF ? Math.cos(XF.th) : 1, XS = XF ? Math.sin(XF.th) : 0, lv = XF ? (X, Y, Z) => { const ds = (Y - oy) * SC - XF.g[0], dx = -(X - ox) * SC - XF.g[1]; return [ds * XC - dx * XS + XF.to[0], ds * XS + dx * XC + XF.to[1], (Z - oz) * SC - XF.g[2] + XF.to[2]]; } : (X, Y, Z) => [(Y - oy) * SC + SH, -(X - ox) * SC, (Z - oz) * SC];   /* (the Dwarrowdelf: turned and moved so its far door opens on the bridge's ledge) */
-  const cut = XF ? (X, Y, Z) => lv(X, Y, Z)[0] > XF.to[0] + .5 : () => false;   /* (and nothing of the map past that door) */
-  if (XF) { const keep = tri => !tri.some(q => cut(q[0], q[1], q[2])); C.floors = C.floors.filter(keep); C.walls = C.walls.filter(keep); for (const g of Object.values(C.out)) { const p = [], tt = [], n = []; for (let i = 0; i < g.p.length; i += 9) { if (cut(g.p[i], g.p[i + 1], g.p[i + 2]) || cut(g.p[i + 3], g.p[i + 4], g.p[i + 5]) || cut(g.p[i + 6], g.p[i + 7], g.p[i + 8])) continue; p.push(...g.p.slice(i, i + 9)); tt.push(...g.t.slice(i / 3 * 2, i / 3 * 2 + 6)); n.push(...g.n.slice(i, i + 9)); } g.p = p; g.t = tt; g.n = n; } }
   const BC = [[x0, y0], [x1, y0], [x0, y1], [x1, y1]].map(([X, Y]) => lv(X, Y, oz)), S0 = Math.floor(Math.min(...BC.map(p => p[0]))) - 4, S1 = Math.ceil(Math.max(...BC.map(p => p[0]))) + 4, X0 = Math.floor(Math.min(...BC.map(p => p[1]))) - 4, X1 = Math.ceil(Math.max(...BC.map(p => p[1]))) + 4;
+  // what's kept of the map: not past the door on to the bridge (the Dwarrowdelf), not outside the crop (a great outdoor map: its busiest part)
+  const cut = (X, Y, Z) => { const q = lv(X, Y, Z); return (XF && q[0] > XF.to[0] + .5) || (opt.crop && (q[0] < S0 + 3 || q[0] > S1 - 3 || q[1] < X0 + 3 || q[1] > X1 - 3)); };
+  if (XF || opt.crop) { const keep = tri => !tri.some(q => cut(q[0], q[1], q[2])); C.floors = C.floors.filter(keep); C.walls = C.walls.filter(keep); for (const g of Object.values(C.out)) { const p = [], tt = [], n = []; for (let i = 0; i < g.p.length; i += 9) { if (cut(g.p[i], g.p[i + 1], g.p[i + 2]) || cut(g.p[i + 3], g.p[i + 4], g.p[i + 5]) || cut(g.p[i + 6], g.p[i + 7], g.p[i + 8])) continue; p.push(...g.p.slice(i, i + 9)); tt.push(...g.t.slice(i / 3 * 2, i / 3 * 2 + 6)); n.push(...g.n.slice(i, i + 9)); } g.p = p; g.t = tt; g.n = n; } }
   // the floors: walkways (each face turned up, laid into metre squares)
   const DK = newDeck(S0, X0, X1 - X0 + 1, S1 - S0 + 1);
   // the blocking volumes (often smooth ramps laid over stairs): their tops are floor, their sides wall; and the tops of the map's meshes that are walked on (its bridges)
@@ -11655,7 +11660,7 @@ function applyUTMines(L, U, opt = { shift: UTH_S, gate: true, keepBoss: true, na
     for (const [, , v] of bl.p) { const P_ = []; for (let i = 0; i < v.length; i += 5) P_.push([v[i], v[i + 1], v[i + 2]]); let nx = 0, ny = 0, nz = 0; for (let i = 0; i < P_.length; i++) { const a = P_[i], c = P_[(i + 1) % P_.length]; nx += (a[1] - c[1]) * (a[2] + c[2]); ny += (a[2] - c[2]) * (a[0] + c[0]); nz += (a[0] - c[0]) * (a[1] + c[1]); }
       const l = Math.hypot(nx, ny, nz) || 1, mx = P_.reduce((s, p) => s + p[0], 0) / P_.length, my = P_.reduce((s, p) => s + p[1], 0) / P_.length, mz = P_.reduce((s, p) => s + p[2], 0) / P_.length; if (nx * (mx - cx) + ny * (my - cy) + nz * (mz - cz) < 0) nz = -nz;
       for (let i = 1; i < P_.length - 1; i++) (nz / l > .55 ? volF : Math.abs(nz / l) < .55 ? volW : []).push([P_[0], P_[i], P_[i + 1]]); } }
-  for (const m of D.placed) { if (/column|banner|vine|light|charger|symbol|teamicon|firepot|pillar/i.test(m[0])) continue; const pc = D.meshes[m[0]]; if (!pc) continue; const ax = utAxes(m[4], m[5], m[6]);
+  for (const m of D.placed) { if (/column|banner|vine|light|charger|symbol|teamicon|firepot|pillar/i.test(m[0]) || UT_SCIFI.test(m[0])) continue; const pc = D.meshes[m[0]]; if (!pc) continue; const ax = utAxes(m[4], m[5], m[6]);
     for (const [, v] of pc.g) for (let i = 0; i < v.length; i += 9) { const w = [0, 1, 2].map(k => { const X = v[i + k * 3] * m[7], Y = v[i + k * 3 + 1] * m[8], Z = v[i + k * 3 + 2] * m[9]; return [m[1] + X * ax[0][0] + Y * ax[1][0] + Z * ax[2][0], m[2] + X * ax[0][1] + Y * ax[1][1] + Z * ax[2][1], m[3] + X * ax[0][2] + Y * ax[1][2] + Z * ax[2][2]]; });
       const a = w[0], b = w[2], c = w[1], e1 = [b[0] - a[0], b[2] - a[2], b[1] - a[1]], e2 = [c[0] - a[0], c[2] - a[2], c[1] - a[1]], ny = e1[2] * e2[0] - e1[0] * e2[2], nl = Math.hypot(e1[1] * e2[2] - e1[2] * e2[1], ny, e1[0] * e2[1] - e1[1] * e2[0]);   /* (in three's frame, as drawn: up is its y) */
       if (nl > 1e-6 && ny / nl > .6) meshF.push(w); } }
@@ -11694,17 +11699,23 @@ function applyUTMines(L, U, opt = { shift: UTH_S, gate: true, keepBoss: true, na
   const walkD = (s, x, y) => { const i = Math.round(x - DK.x0), j = Math.round(s - DK.s0); if (i < 0 || j < 0 || i >= DK.w || j >= DK.h) return -1; const q = layerOf(j * DK.w + i, y, .5, .5); return q < 0 ? -1 : dist[(j * DK.w + i) * NL + q]; };
   // (the start: the most open floor near that end of the walk; and the lowest floor you can walk to, under which a fall puts you back)
   let lowWalk = 1e9, maxD = 0; for (let n = 0; n < dist.length; n++) if (dist[n] >= 0) { lowWalk = Math.min(lowWalk, lay[n]); maxD = Math.max(maxD, dist[n]); }
-  { let best = null, bs = -1; for (let n = 0; n < dist.length; n += 3) { if (dist[n] < 0 || dist[n] > maxD * .18) continue; const k = n / NL | 0, s = DK.s0 + (k / DK.w | 0), x = DK.x0 + k % DK.w, sc = open(s, x, lay[n], 6) - dist[n] / maxD * .3; if (sc > bs) { bs = sc; best = [s, x, lay[n]]; } } if (best) { st[0] = best[0]; st[1] = best[1]; st[2] = best[2]; } }  const cand = D.paths.map(p => lv(...p)).map(p => [p[0], p[1], deckY(p[0], p[1], p[2])]).filter(p => p[2] > NO_DECK).map(p => [...p, open(p[0], p[1], p[2], 8), walkD(p[0], p[1], p[2])]).filter(p => p[3] > .8 && p[4] > 0);
+  { let best = null, bs = -1; for (let n = 0; n < dist.length; n += 3) { if (dist[n] < 0 || dist[n] > maxD * .18) continue; const k = n / NL | 0, s = DK.s0 + (k / DK.w | 0), x = DK.x0 + k % DK.w, sc = open(s, x, lay[n], 6) - dist[n] / maxD * .3; if (sc > bs) { bs = sc; best = [s, x, lay[n]]; } } if (best) { st[0] = best[0]; st[1] = best[1]; st[2] = best[2]; } }  let cand = D.paths.map(p => lv(...p)).map(p => [p[0], p[1], deckY(p[0], p[1], p[2])]).filter(p => p[2] > NO_DECK).map(p => [...p, open(p[0], p[1], p[2], 8), walkD(p[0], p[1], p[2])]).filter(p => p[4] > 0); { const good = cand.filter(p => p[3] > .8), fair = cand.filter(p => p[3] > .45 && p[3] <= .8); cand = good.length >= 3 ? good : [...good, ...fair]; }   /* (open places to fight; on a tight map, the most open there are) */
   if (new URLSearchParams(location.search).get('utreach')) { let n = 0, all = 0; for (const v of dist) if (v >= 0) n++; for (const v of lay) if (v > NO_DECK) all++; console.log(`Dwarrowdelf: ${n} of ${all} floor squares reachable from the start (${st.map(v => v.toFixed(1))}), ${cand.length} open places to fight, furthest ${Math.max(0, ...cand.map(p => p[4]))} squares' walk`); }
   const far = Math.max(...cand.map(p => p[4]), 40), picks = [];
   for (const f of [.3, .65, .95]) { let best = null, bd = 1e9; for (const p of cand) { const d = Math.abs(p[4] - far * f) + (picks.some(q => Math.hypot(q[0] - p[0], q[1] - p[1]) < 22) ? 1e5 : 0); if (d < bd) { bd = d; best = p; } } if (best) picks.push(best); }
-  const old = L.layout.plazas, plazas = opt.keepBoss ? [...picks.map((p, i) => ({ ...old[Math.min(i, old.length - 2)], s: p[0], x: p[1], y: p[2], fromY: p[2], r: 9.5, breach: [p[0] + 6, p[1]], bossTo: [p[0] + 3, p[1]], noAdds: true, open: true })), old[old.length - 1]]
+  const old = L.layout.plazas, plazas = opt.fellow ? [] : opt.keepBoss ? [...picks.map((p, i) => ({ ...old[Math.min(i, old.length - 2)], s: p[0], x: p[1], y: p[2], fromY: p[2], r: 9.5, breach: [p[0] + 6, p[1]], bossTo: [p[0] + 3, p[1]], noAdds: true, open: true })), old[old.length - 1]]
     : picks.map((p, i) => ({ ...old[Math.min(i, old.length - 1)], s: p[0], x: p[1], y: p[2], fromY: p[2], r: i === picks.length - 1 ? 13 : 10.5, breach: [p[0] + 7, p[1]], bossTo: [p[0] + 4, p[1]], noAdds: true }));
   if (opt.join && !XF) { let cs = 0, cx = 0; for (const n of best) { const k = n / NL | 0; cs += DK.s0 + (k / DK.w | 0); cx += DK.x0 + k % DK.w; } cs /= best.length; cx /= best.length; let bd = -1, g = null; for (let n = 0; n < dist.length; n += 2) if (dist[n] > bd) { bd = dist[n]; const k = n / NL | 0; g = [DK.s0 + (k / DK.w | 0), DK.x0 + k % DK.w, lay[n]]; }
     const xf = { g, th: Math.PI - Math.atan2(cx - g[1], cs - g[0]), to: opt.join }; try { localStorage.setItem('utJoin:' + D.name + ':' + D.brushes.length, JSON.stringify(xf)); } catch (e) { } return applyUTMines(L, U, { ...opt, xf }); }   // (first time: where its far end is, and which way to turn it so the halls lie behind it; kept for next time)
   let gate = null; if (opt.gate) { let bd = -1; for (let n = 0; n < dist.length; n += 2) if (dist[n] > bd) { bd = dist[n]; const k = n / NL | 0; gate = [DK.s0 + (k / DK.w | 0), DK.x0 + k % DK.w, lay[n]]; } }   // (the dwarven gate on to the bridge: the far end of the walk)
-  const kc = L.content; Object.assign(L, { field: opt.gate || opt.join ? [S0 + 3, Math.max(S1 - 3, L.field[1]), Math.min(X0 + 3, L.field[2]), Math.max(X1 - 3, L.field[3])] : [S0 + 3, S1 - 3, X0 + 3, X1 - 3], start: [st[0], st[1]], startY: st[2], startH: Math.atan2(plazas[0].x - st[1], plazas[0].s - st[0]), deck: DK, wgrid: grid, stepUp: true, camWalls: true, utFall: TR.length ? -1e4 : lowWalk - 8, ...(TR.length ? { terrain: T_, noFloor: false } : {}),
-    ...(XF ? { utZone: XF.to[0] + .5 } : {}), layout: { ...L.layout, blocks: opt.join ? L.layout.blocks.filter(b => b[0] >= -24.5) : opt.gate ? L.layout.blocks : [], walls: opt.join ? [] : L.layout.walls, pil: opt.join ? [] : L.layout.pil, plazas, utGate: gate, utDoor: XF ? XF.to : null, ut: { U, C, lv, ox, oy, oz, SC, TR, dark: opt.dark, cut, th: XF ? XF.th : 0 } }, content() { if (opt.gate || opt.join) kc.call(this); mineUTContent(this); } });
+  if (opt.fellow) { let best = null, bs = -1; for (const p of D.starts) { const q = lv(...p), y = deckY(q[0], q[1], q[2] + .5); if (y <= NO_DECK || walkD(q[0], q[1], y) < 0) continue; const o = open(q[0], q[1], y, 6); if (o > bs) { bs = o; best = [q[0], q[1], y]; } } if (!best) { const dens = new Map(); for (const m of D.placed) { const q = lv(m[1], m[2], m[3]), k = Math.floor(q[0] / 12) * 1000 + Math.floor(q[1] / 12); dens.set(k, (dens.get(k) || 0) + 1); } for (let n = 0; n < dist.length; n += 5) { if (dist[n] < 0) continue; const k = n / NL | 0, s = DK.s0 + (k / DK.w | 0), x = DK.x0 + k % DK.w; let c = 0; for (let a = -2; a <= 2; a++) for (let b2 = -2; b2 <= 2; b2++) c += dens.get((Math.floor(s / 12) + a) * 1000 + Math.floor(x / 12) + b2) || 0; if (c > bs && open(s, x, lay[n], 4) > .6) { bs = c; best = [s, x, lay[n]]; } } }   /* (or, if none of them can be walked to, among its buildings: the busiest part you can reach) */ if (best) { st[0] = best[0]; st[1] = best[1]; st[2] = best[2]; } }   // (start where the map starts its players: in its temple halls)
+  if (opt.fog && THEMES[L.theme]) THEMES[L.theme].env.fog = opt.fog;
+  let fellow = null; if (opt.fellow) {   // (the Fellowship, spread as far apart as they can be over the floor you can reach, each somewhere open)
+    const pts = []; for (let n = 0; n < dist.length; n += 7) { if (dist[n] < 0) continue; const k = n / NL | 0; pts.push([DK.s0 + (k / DK.w | 0), DK.x0 + k % DK.w, lay[n]]); }
+    const got = [st.slice()]; for (let q = 0; q < 8 && pts.length; q++) { let best = null, bd = -1; for (let i = 0; i < pts.length; i += 3) { const p = pts[i], d = Math.min(...got.map(g => Math.hypot(g[0] - p[0], g[1] - p[1]) + Math.abs(g[2] - p[2]))); if (d > bd && open(p[0], p[1], p[2], 3) > .6) { bd = d; best = p; } } if (!best) break; got.push(best); }
+    fellow = got.slice(1).map((p, i) => [...[['frodo', 'FRODO'], ['sam', 'SAM'], ['merry', 'MERRY'], ['pippin', 'PIPPIN'], ['aragorn', 'ARAGORN'], ['legolas', 'LEGOLAS'], ['gimli', 'GIMLI'], ['boromir', 'BOROMIR']][i], p[0], p[1], p[2]]); }
+  const kc = L.content; Object.assign(L, { field: opt.gate || opt.join ? [S0 + 3, Math.max(S1 - 3, L.field[1]), Math.min(X0 + 3, L.field[2]), Math.max(X1 - 3, L.field[3])] : [S0 + 3, S1 - 3, X0 + 3, X1 - 3], start: [st[0], st[1]], startY: st[2], startH: plazas.length ? Math.atan2(plazas[0].x - st[1], plazas[0].s - st[0]) : 0, deck: DK, wgrid: grid, stepUp: true, camWalls: true, utFall: TR.length ? -1e4 : lowWalk - 8, ...(TR.length || !(opt.gate || opt.join) ? { terrain: T_, noFloor: false } : {}),
+    ...(XF ? { utZone: XF.to[0] + .5 } : {}), layout: { ...L.layout, blocks: opt.join ? L.layout.blocks.filter(b => b[0] >= -24.5) : opt.gate ? L.layout.blocks : [], walls: opt.join ? [] : L.layout.walls, pil: opt.join ? [] : L.layout.pil, plazas, utGate: gate, utDoor: XF ? XF.to : null, ...(fellow ? { fellowship: fellow } : {}), ut: { U, C, lv, ox, oy, oz, SC, TR, dark: opt.dark, cut, th: XF ? XF.th : 0 } }, content() { if (opt.gate || opt.join) kc.call(this); mineUTContent(this); } });
   console.log(`Valinor: ${opt.name}, on ${D.name}: ${Object.values(C.out).reduce((n, g) => n + g.p.length / 9, 0) | 0} faces, ${C.floors.length} floor, ${walls.length} walls, ${plazas.length} squares, built in ${(performance.now() - t0) | 0} ms (carving ${(tC - t0) | 0}, floors ${(tD - tC) | 0}, walls ${(tW - tD) | 0})`);
 }
 // a map's terrains as the level's ground: its heights sampled to the metre squares (where terrains overlap, the higher)
@@ -11721,51 +11732,78 @@ function utTerrainGrid(TR, S0, S1, X0, X1, ox, oy, oz, SC, SH) {
 function utWithGround(DK, T_) { const D2 = { ...DK, lay: DK.lay.slice(), top: DK.top.slice() }; for (let j = 0; j < DK.h; j++) for (let i = 0; i < DK.w; i++) { const s = DK.s0 + j, x = DK.x0 + i, ti = T_.cx - x, tj = T_.cy - s; if (ti < 0 || tj < 0 || ti >= T_.w || tj >= T_.h) continue; const y = T_.hs[tj * T_.w + ti]; if (y > -29) deckPut(D2, j * DK.w + i, y); } return D2.lay; }
 // the terrain drawn as Unreal paints it: each layer's picture tiled as the map sets it, laid over the ones under it as its own painted map says, lit by the map's lights
 function buildUTTerrain(L, TH) {
-  const { U, TR, ox, oy, oz, SC, light } = L.layout.ut, T_ = L.terrain, T0 = TR[0], K = U.K, W = T_.w, H = T_.h;
-  const pos = new Float32Array(W * H * 3), uu = new Float32Array(W * H * 2), col = new Float32Array(W * H * 3), idx = [], c = new THREE.Color(), hs = T_.hs;
+  const { U, TR, ox, oy, oz, SC, light } = L.layout.ut, T_ = L.terrain, K = U.K, W = T_.w, H = T_.h;
+  const pos = new Float32Array(W * H * 3), uu = new Float32Array(W * H * 2), col = new Float32Array(W * H * 3), idx = TR.map(() => []), c = new THREE.Color(), hs = T_.hs, own = new Int8Array(W * H).fill(-1);
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
     const k = j * W + i, s = T_.cy - j, x = T_.cx - i, y = hs[k], p = tw(s, x, y, _a); pos.set([p.x, p.y, p.z], k * 3); const X = ox - x / SC, Y = oy + s / SC; uu.set([X, Y], k * 2);
+    own[k] = TR.findIndex(T => { const fi = (X - T.loc[0]) / T.sc[0] + T.w / 2, fj = (Y - T.loc[1]) / T.sc[1] + T.h / 2; return fi >= 0 && fj >= 0 && fi <= T.w - 1 && fj <= T.h - 1; });   // (which terrain this square is: each paints its own)
     const dx = (hs[k + (i < W - 1 ? 1 : 0)] - hs[k - (i > 0 ? 1 : 0)]), ds = (hs[k - (j > 0 ? W : 0)] - hs[k + (j < H - 1 ? W : 0)]), nl = Math.hypot(dx, ds, 2);
     if (light) light(X, Y, y / SC + oz + 30, dx / nl, ds / nl, 2 / nl, c); else c.setRGB(1, 1, 1); col.set([c.r, c.g, c.b], k * 3);
-    if (i < W - 1 && j < H - 1 && y > -29 && hs[k + 1] > -29 && hs[k + W] > -29 && hs[k + W + 1] > -29) idx.push(k, k + 1, k + W, k + 1, k + W + 1, k + W);
   }
-  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('aUU', new THREE.BufferAttribute(uu, 2)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.setIndex(idx); geo.computeVertexNormals();
-  const LY = T0.layers.slice(0, 4), black = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, THREE.RGBAFormat); black.needsUpdate = true;
-  const tl = LY.map(l => { const t = utTex(K, U.D.tex[l.t], [1.3, .75]); return t || TX.grass; }), ta = LY.map(l => { const d = new Uint8Array(l.w * l.h * 4); for (let q = 0; q < l.a.length; q++) d[q * 4] = d[q * 4 + 1] = d[q * 4 + 2] = d[q * 4 + 3] = l.a[q]; const t = new THREE.DataTexture(d, l.w, l.h, THREE.RGBAFormat); t.magFilter = t.minFilter = THREE.LinearFilter; t.needsUpdate = true; return t; });
-  while (tl.length < 4) { tl.push(tl[0]); ta.push(black); }
-  const m = new THREE.MeshLambertMaterial({ vertexColors: true });
-  m.onBeforeCompile = sh => {
-    ps1Compile(sh); for (let q = 0; q < 4; q++) { sh.uniforms['tL' + q] = { value: tl[q] }; sh.uniforms['tA' + q] = { value: ta[q] }; sh.uniforms['sL' + q] = { value: new THREE.Vector2(LY[q] ? LY[q].u : 1, LY[q] ? LY[q].v : 1) }; }
-    sh.uniforms.uTA = { value: new THREE.Vector4(T0.loc[0] - T0.w / 2 * T0.sc[0], T0.loc[1] - T0.h / 2 * T0.sc[1], T0.w * T0.sc[0], T0.h * T0.sc[1]) };
-    sh.vertexShader = 'attribute vec2 aUU;\nvarying vec2 vUU;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vUU = aUU;');
-    sh.fragmentShader = 'uniform sampler2D tL0, tL1, tL2, tL3, tA0, tA1, tA2, tA3;\nuniform vec2 sL0, sL1, sL2, sL3;\nuniform vec4 uTA;\nvarying vec2 vUU;\n' + sh.fragmentShader.replace('#include <map_fragment>', `
-      vec2 at = (vUU - uTA.xy) / uTA.zw;
-      vec3 cc = texture2D(tL0, vUU * sL0).rgb;
-      cc = mix(cc, texture2D(tL1, vUU * sL1).rgb, texture2D(tA1, at).r);
-      cc = mix(cc, texture2D(tL2, vUU * sL2).rgb, texture2D(tA2, at).r);
-      cc = mix(cc, texture2D(tL3, vUU * sL3).rgb, texture2D(tA3, at).r);
-      diffuseColor.rgb *= cc;`);
-  };
-  m.customProgramCacheKey = () => 'utTerrain';
-  const me = new THREE.Mesh(geo, m); me.receiveShadow = true; me.userData.keep = true; scene.add(me);
-}
-// whole outdoor UT2004 maps as places in Beleriand (only on your own computer: Prep-UTLevel.ps1): the map's ground, its buildings carved from its brushes, its meshes
+  for (let j = 0; j < H - 1; j++) for (let i = 0; i < W - 1; i++) { const k = j * W + i; if (own[k] < 0 || hs[k] < -29 || hs[k + 1] < -29 || hs[k + W] < -29 || hs[k + W + 1] < -29) continue; idx[own[k]].push(k, k + 1, k + W, k + 1, k + W + 1, k + W); }
+  const black = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, THREE.RGBAFormat); black.needsUpdate = true;
+  TR.forEach((T0, ti) => {
+    if (!idx[ti].length) return;
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('aUU', new THREE.BufferAttribute(uu, 2)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.setIndex(idx[ti]); geo.computeVertexNormals();
+    const LY = T0.layers.slice(0, 4);
+    const tl = LY.map(l => utTex(K, U.D.tex[l.t], [1.3, .75]) || TX.grass), ta = LY.map(l => { const d = new Uint8Array(l.w * l.h * 4); for (let q = 0; q < l.a.length; q++) d[q * 4] = d[q * 4 + 1] = d[q * 4 + 2] = d[q * 4 + 3] = l.a[q]; const t = new THREE.DataTexture(d, l.w, l.h, THREE.RGBAFormat); t.magFilter = t.minFilter = THREE.LinearFilter; t.needsUpdate = true; return t; });
+    if (!tl.length) { tl.push(TX.grass); ta.push(black); } while (tl.length < 4) { tl.push(tl[0]); ta.push(black); }
+    const m = new THREE.MeshLambertMaterial({ vertexColors: true });
+    m.onBeforeCompile = sh => {
+      ps1Compile(sh); for (let q = 0; q < 4; q++) { sh.uniforms['tL' + q] = { value: tl[q] }; sh.uniforms['tA' + q] = { value: ta[q] }; sh.uniforms['sL' + q] = { value: new THREE.Vector2(LY[q] ? LY[q].u : 1, LY[q] ? LY[q].v : 1) }; }
+      sh.uniforms.uTA = { value: new THREE.Vector4(T0.loc[0] - T0.w / 2 * T0.sc[0], T0.loc[1] - T0.h / 2 * T0.sc[1], T0.w * T0.sc[0], T0.h * T0.sc[1]) };
+      sh.vertexShader = 'attribute vec2 aUU;\nvarying vec2 vUU;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vUU = aUU;');
+      sh.fragmentShader = 'uniform sampler2D tL0, tL1, tL2, tL3, tA0, tA1, tA2, tA3;\nuniform vec2 sL0, sL1, sL2, sL3;\nuniform vec4 uTA;\nvarying vec2 vUU;\n' + sh.fragmentShader.replace('#include <map_fragment>', `
+        vec2 at = (vUU - uTA.xy) / uTA.zw;
+        vec3 cc = texture2D(tL0, vUU * sL0).rgb;
+        cc = mix(cc, texture2D(tL1, vUU * sL1).rgb, texture2D(tA1, at).r);
+        cc = mix(cc, texture2D(tL2, vUU * sL2).rgb, texture2D(tA2, at).r);
+        cc = mix(cc, texture2D(tL3, vUU * sL3).rgb, texture2D(tA3, at).r);
+        diffuseColor.rgb *= cc;`);
+    };
+    m.customProgramCacheKey = () => 'utTerrain';
+    const me = new THREE.Mesh(geo, m); me.receiveShadow = true; me.userData.keep = true; scene.add(me);
+  });
+}// waterfalls wherever a map's ground falls away in a cliff: white water down the drop, spray where it lands (as many as n, spread out)
+function utFalls(L, TH, n) {
+  const T_ = L.terrain, W = T_.w, H = T_.h, hs = T_.hs, cand = [];
+  for (let j = 2; j < H - 2; j += 2) for (let i = 2; i < W - 2; i += 2) { const k = j * W + i, y = hs[k]; if (y < -29) continue; for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const y2 = hs[k + dj * 2 * W + di * 2]; if (y2 > -29 && y - y2 > 9) cand.push({ s: T_.cy - j, x: T_.cx - i, y, drop: y - y2, a: Math.atan2(-di, -dj) }); } }
+  cand.sort((p, q) => q.drop - p.drop); const got = []; for (const c of cand) { if (got.length >= n) break; if (got.some(g => Math.hypot(g.s - c.s, g.x - c.x) < 22)) continue; got.push(c); }
+  const wt = TH.waterTex || (TH.waterTex = (() => { const t = TX.sea.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 5); return t; })()), fm = new THREE.MeshBasicMaterial({ map: wt, color: 0xf4faff, transparent: true, opacity: .85, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending });
+  TH.mists = TH.mists || [];
+  for (const c of got) { const w = rand(3, 6), s = c.s + Math.cos(c.a) * 1.2, x = c.x + Math.sin(c.a) * 1.2, m = new THREE.Mesh(new THREE.PlaneGeometry(w, c.drop + 2), fm); m.position.copy(tw(s, x, c.y - c.drop / 2)); m.rotation.y = -c.a; m.userData.keep = true; scene.add(m); TH.mists.push([s + Math.cos(c.a) * 2, x + Math.sin(c.a) * 2, c.y - c.drop, w]); }
+}// whole outdoor UT2004 maps as places in Beleriand (only on your own computer: Prep-UTLevel.ps1): the map's ground, its buildings carved from its brushes, its meshes
 // where it put them, the place's own foes in three of its open places, the last at the far end of the longest walk
-const UT_PLACES = [['menegroth', 'lostfaith', 'Menegroth']];
-async function loadUTPlaces() {
-  for (const [loc, file, name] of UT_PLACES) { const U = await loadUTMap(file); if (!U) continue; try { applyUTMines(LEVELS.find(L => L.loc === loc), U, { terrain: true, name }); } catch (e) { console.warn(`Valinor: ${name} could not be built on ${file}:`, e); } }
+const UT_PLACES = [['menegroth', 'lostfaith', 'Menegroth'], ['riv', 'moondragon', 'Rivendell', { fellow: true, theme: 'rivkh', fog: [90, 620] }],
+  ['nargo', 'adara', 'Nargothrond', { crop: 440 }], ['angband', 'magma', 'Angband'], ['tolsirion', 'goopgod', 'Tol Sirion'], ['himring', 'calandras', 'Himring'], ['hithlum', 'grassyknoll', 'Hithlum', { crop: 440 }],
+  ['vinyamar', 'desertisle', 'Vinyamar'], ['nogrod', 'antalus', 'Nogrod'], ['belegost', 'frostbite', 'Belegost', { crop: 440 }], ['falas', 'serenity', 'Eglarest', { crop: 440 }], ['balar', 'islandhop', 'Balar', { crop: 440 }], ['sirion', 'dria', 'The Havens of Sirion', { crop: 440 }]];
+async function loadUTPlaces() {   // (each built when you first go there: see utLazyFirst; here, only whether its file is there)
+  if (!LOCAL_ASSETS || new URLSearchParams(location.search).get('layout') === 'classic') return;
+  await Promise.all(UT_PLACES.map(async ([loc, file, name, more]) => { const r = await fetch(`levels/ut/${file}.json`, { method: 'HEAD' }).catch(() => null); if (!r || !r.ok) return; const L = LEVELS.find(L => L.loc === loc && (!more || !more.theme || L.theme === more.theme)); if (L) L.utLazy = { file, name, more: more || {} }; }));
+}
+// the first time you go to a place built on a whole UT2004 map: the map is read, carved and dressed then (a few seconds), and the level starts
+function utLazyFirst(li, then) {
+  const L = LEVELS[li], Z = L.utLazy; if (!Z || Z.done) return false; if (Z.busy) return true; Z.busy = true; banner(`${Z.name.toUpperCase()}: THE WAY IS BEING MADE...`, 30, true);
+  setTimeout(async () => {
+    const U = await loadUTMap(Z.file), keep = { ...L, layout: L.layout }, ok = () => Z.more.fellow ? (L.layout.fellowship || []).length >= 4 : L.layout.plazas.length >= 1;
+    if (U) try { applyUTMines(L, U, { terrain: true, name: Z.name, ...Z.more }); if (!ok()) throw new Error('nowhere to fight on the floor it can walk'); } catch (e) { console.warn(`Valinor: ${Z.name} could not be built on ${Z.file}, so it keeps its own:`, e.message); for (const k of Object.keys(L)) if (!(k in keep)) delete L[k]; Object.assign(L, keep); }   /* (a map that doesn't work out: the place as it was) */
+    setFrame(L); buildL = L; const before = new Set(scene.children); if (L.theme) THEMES[L.theme].scenery(L); for (const o of scene.children) if (!before.has(o)) o.userData.stat = true;
+    Z.done = true; banner('', .01, true); then();
+  }, 30);
+  return true;
 }
 function mineUTContent(L) {
-  const Y = L.layout; for (const p of Y.plazas) if (!Y.utGate || p.s < UTH_S / 2) for (const [a, k] of [[.8, 'b'], [2.7, 'q'], [4.7, 'b']]) { const s = p.s + Math.cos(a) * (p.r - 2), x = p.x + Math.sin(a) * (p.r - 2); addCrate(k, s, x, 0, p.y + 2); }
+  const Y = L.layout; for (const f of Y.fellowship || []) addCrate(['b', 'q', 'c'][Math.random() * 3 | 0], f[2] + 2, f[3] + 1, 0, f[4] + 2);   // (a crate by each of the Fellowship)
+  for (const p of Y.plazas) if (!Y.utGate || p.s < UTH_S / 2) for (const [a, k] of [[.8, 'b'], [2.7, 'q'], [4.7, 'b']]) { const s = p.s + Math.cos(a) * (p.r - 2), x = p.x + Math.sin(a) * (p.r - 2); addCrate(k, s, x, 0, p.y + 2); }
 }
 // the map's stone, its own pictures made brighter, each face lit by the map's own lights (baked in), and its meshes where it put them
 function buildDwarrowdelf(L, TH) {
   const { U, C, lv, ox, oy, oz, SC, cut, th } = L.layout.ut, D = U.D, first = scene.children.length, sky = TH.env, K = U.K, RC = Math.cos(th || 0), RS = Math.sin(th || 0), rot = v => v.set(RC * v.x - RS * v.z, v.y, RS * v.x + RC * v.z);   /* (the halls turned to meet the bridge: their faces' and meshes' directions turned with them) */
-  const out_ = (L.layout.ut.TR || []).length, tone = out_ ? [1.35, .72] : [1.2, .82], AMB = out_ ? new THREE.Color(.66, .64, .6) : new THREE.Color(.17, .16, .16);   /* (outdoors bright; down in the mines darker, pools of light from its lamps and deep shadow between) */
+  const out_ = (L.layout.ut.TR || []).length, tone = out_ ? [1.35, .72] : [1.2, .82], AMB = out_ ? new THREE.Color(.56, .55, .52) : new THREE.Color(.17, .16, .16);   /* (outdoors bright; down in the mines darker, pools of light from its lamps and deep shadow between) */
   // the lights: those near each point light it, by Unreal's falloff (radius in Unreal units is 25 to each of its LightRadius)
   const LG = new Map(), lights = D.lights.map(([x, y, z, h, s, b, r]) => ({ x, y, z, c: utLightCol(h, s).multiplyScalar(clamp(b / 140, .2, 1.6)), R: Math.max(200, (r || 64) * 25) }));
   for (const l of lights) { const k = Math.floor(l.x / 1024) * 1000 + Math.floor(l.y / 1024); let a = LG.get(k); if (!a) LG.set(k, a = []); a.push(l); }
-  const light = (x, y, z, nx, ny, nz, out) => { out.copy(AMB); const gx = Math.floor(x / 1024), gy = Math.floor(y / 1024); for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) { const a = LG.get((gx + i) * 1000 + gy + j); if (!a) continue; for (const l of a) { const dx = l.x - x, dy = l.y - y, dz = l.z - z, d = Math.hypot(dx, dy, dz); if (d > l.R) continue; const ndl = d > 1 ? Math.max(0, (dx * nx + dy * ny + dz * nz) / d) * .7 + .3 : 1, f = 1 - d / l.R; const kk = out_ ? .45 : .85; out.r += l.c.r * f * f * ndl * kk; out.g += l.c.g * f * f * ndl * kk; out.b += l.c.b * f * f * ndl * kk; } } out.r = Math.min(out.r, 1.25); out.g = Math.min(out.g, 1.2); out.b = Math.min(out.b, 1.2); return out; };
+  const light = (x, y, z, nx, ny, nz, out) => { out.copy(AMB); const gx = Math.floor(x / 1024), gy = Math.floor(y / 1024); for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) { const a = LG.get((gx + i) * 1000 + gy + j); if (!a) continue; for (const l of a) { const dx = l.x - x, dy = l.y - y, dz = l.z - z, d = Math.hypot(dx, dy, dz); if (d > l.R) continue; const ndl = d > 1 ? Math.max(0, (dx * nx + dy * ny + dz * nz) / d) * .7 + .3 : 1, f = 1 - d / l.R; const kk = out_ ? .3 : .85; out.r += l.c.r * f * f * ndl * kk; out.g += l.c.g * f * f * ndl * kk; out.b += l.c.b * f * f * ndl * kk; } } const cap = out_ ? .95 : 1.2; out.r = Math.min(out.r, cap); out.g = Math.min(out.g, cap); out.b = Math.min(out.b, cap); return out; };
   L.layout.ut.light = light; const col = new THREE.Color();
   for (const [ti, g] of Object.entries(C.out)) {
     const tn = D.tex[ti], img = U.img[tn], n = g.p.length / 3, pos = new Float32Array(n * 3), uv = new Float32Array(n * 2), cl = new Float32Array(n * 3), nr = new Float32Array(n * 3);
@@ -11780,7 +11818,7 @@ function buildDwarrowdelf(L, TH) {
     const me = new THREE.Mesh(geo, m); me.userData.keep = true; me.receiveShadow = true; scene.add(me);
   }
   // the meshes, each kind drawn at once wherever the map has it, turned and sized as there, lit by the lights round it
-  const byMesh = {}; for (const m of D.placed) if (!cut || !cut(m[1], m[2], m[3])) (byMesh[m[0]] = byMesh[m[0]] || []).push(m);
+  const byMesh = {}; for (const m of D.placed) if ((!cut || !cut(m[1], m[2], m[3])) && !UT_SCIFI.test(m[0])) (byMesh[m[0]] = byMesh[m[0]] || []).push(m);
   const M4 = new THREE.Matrix4(), cx = new V3(), cy = new V3(), cz = new V3(), pp = new V3(), fires = [];
   for (const [nm, list] of Object.entries(byMesh)) {
     const pc = U.pieces[nm]; if (!pc) continue;
