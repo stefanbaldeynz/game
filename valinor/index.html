@@ -10136,7 +10136,7 @@ function buildRivKH(L, TH) {
     if (b.kind === 'pav') { part(new THREE.CylinderGeometry(b.r + .7, b.r + 1, .45, 18), paleD, g, 0, .22, 0); if (has('pillar01')) { for (let k = 0; k < 8; k++) { const a = k / 8 * TAU; utAdd(g, K, 'pillar01', Math.cos(a) * b.r, .45, Math.sin(a) * b.r, -a, [1.4, 4.05 / 5.12, 1.4], MD); if (has('lampion01')) { utAdd(g, K, 'lampion01', Math.cos(a + .39) * (b.r + .9), 3.6, Math.sin(a + .39) * (b.r + .9), 0, 2.4, MD); const gl = glowSprite(0xff8a50, 2.4, .6); gl.position.set(Math.cos(a + .39) * (b.r + .9), 3.8, Math.sin(a + .39) * (b.r + .9)); g.add(gl); } } part(new THREE.TorusGeometry(b.r, .12, 6, 24), lam(0xc8322a, { emissive: 0x2a0402 }), g, 0, 4.45, 0).rotation.x = Math.PI / 2; } else colonnade(g, b.r, 4, 10, .45); sweep(g, 0, 4.5, 0, b.r + 1.4, 3.2); lamp(g, 0, 3.4, 0, 4); }
     if (b.kind === 'tower') { part(new THREE.CylinderGeometry(1.5, 1.9, b.h, 12), pale, g, 0, b.h / 2, 0); for (let k = 1; k * 4.2 < b.h; k++) { part(new THREE.CylinderGeometry(2, 2, .18, 14), goldM, g, 0, k * 4.2, 0); for (let q = 0; q < 6; q++) { const a = q / 6 * TAU + k; part(GEO_BOX, glassM, g, Math.cos(a) * 1.72, k * 4.2 - 1.6, Math.sin(a) * 1.72, .35, .9, .35); } } colonnade(g, 1.9, 2.8, 8, b.h); if (has('roundedtower01')) utAdd(g, K, 'roundedtower01', 0, b.h + 2.75 + 72 * UT_SC * .9, 0, b.s, .9, MD); else sweep(g, 0, b.h + 2.8, 0, 3.2, 3.6); lamp(g, 0, b.h + 1.8, 0, 4); }   /* (a MoonDragon pagoda for its crown) */
     if (b.kind === 'house') rivHall(g, UTK.rivendell || null, sweep, pale, paleD, sky);   // (Elrond's house: see rivHall)
-    if (b.kind === 'gate' && has('torii02')) { utAdd(g, K, 'torii02', 0, 128 * UT_SC * .55, 0, 0, .55, MD); for (const sx of [-1, 1]) { const gl = glowSprite(0xff9a60, 4, .7); gl.position.set(sx * 4.6, 5.5, 0); g.add(gl); } }
+    if (b.kind === 'gate' && has('torii02')) { utAdd(g, K, 'torii02', 448 * UT_SC * .55, 128 * UT_SC * .55, 0, 0, .55, MD); for (const sx of [-1, 1]) { const gl = glowSprite(0xff9a60, 4, .7); gl.position.set(sx * 4.6, 5.5, 0); g.add(gl); } }
     else if (b.kind === 'gate') { for (const sx of [-1, 1]) { part(new THREE.CylinderGeometry(.42, .6, 8, 10), pale, g, sx * 3.6, 4, 0); sweep(g, sx * 3.6, 8, 0, 1.3, 1.5, 8); lamp(g, sx * 3.6, 6.8, 0, 3); } part(new THREE.TorusGeometry(3.6, .26, 7, 20, Math.PI), pale, g, 0, 8, 0).scale.y = .55; part(GEO_BOX, goldM, g, 0, 8, 0, 7.6, .25, .35); }
     if (b.kind === 'shrine') { part(new THREE.CylinderGeometry(6.6, 7, .7, 22), paleD, g, 0, .35, 0); part(new THREE.CylinderGeometry(5, 5.2, .4, 22), pale, g, 0, .9, 0); colonnade(g, 4.6, 6.2, 12, 1.1); sweep(g, 0, 7.3, 0, 6.2, 5); part(GEO_BOX, paleD, g, 0, 1.6, 0, 3, 1.1, 1); const glw = glowSprite(0xbfd8ff, 7, .7); glw.position.set(0, 3.4, 0); g.add(glw); const sw = part(GEO_BOX, lam(0xd8e0f0, { emissive: 0x2a3040 }), g, 0, 2.9, 0, .1, 1.7, .03); if (has('minaret02')) for (const sx of [-1, 1]) { utAdd(g, K, 'minaret02', sx * 8.4, -16 * UT_SC * 2.6, 2, 0, 2.6, { ...MD, tone: [1.4, .6], emissive: 0x2a1a00 }); const gl = glowSprite(0xffd890, 5, .5); gl.position.set(sx * 8.4, 9.6, 2); g.add(gl); } }
   }
@@ -11695,8 +11695,7 @@ const utLightCol = (h, s) => new THREE.Color().setHSL(h / 255, 1 - s / 255, .5 +
 // the Dwarrowdelf on CTF-BridgeOfFate, the halls you come through to the Bridge of Khazad-dûm: its halls of arches and columns and banners, set far off from the bridge's own
 // chamber; goblins in three of them, and at the far end a dwarven gate that brings you out on the ledge before the bridge. Without the file the level starts in its own halls
 async function loadMoriaUT() {
-  const U = await loadUTMap('bridgeoffate'); if (!U) return;
-  try { { const L = LEVELS.find(L => L.theme === 'khazad'); let xf = null; try { xf = JSON.parse(localStorage.getItem('utJoin:' + U.D.name + ':' + U.D.brushes.length)); } catch (e) { } applyUTMines(L, U, { join: [-25, 0, 0], xf, keepBoss: true, name: 'the Dwarrowdelf, the halls before the Bridge of Khazad-dûm' }); } } catch (e) { console.warn('Valinor: the halls before the Bridge of Khazad-dûm could not be built on CTF-BridgeOfFate:', e); }
+  await loadUTMap('bridgeoffate');   // (its stone, its pieces and its light, for the Bridge's own halls: see buildKhazadUT)
 }
 function applyUTMines(L, U, opt = { shift: UTH_S, gate: true, keepBoss: true, name: 'the Dwarrowdelf before the Bridge of Khazad-dûm' }) {   /* (also a whole outdoor map: opt.terrain, and no gate; see applyUTMap) */
   const D = U.D, SC = UTM_SC, t0 = performance.now(), C = utCarve(D), tC = performance.now(), SH = opt.shift || 0, TR = opt.terrain ? (D.terrains || []).filter(T => Math.abs(T.sc[0]) < 1000) : [];   /* (not a far-off backdrop terrain) */
@@ -12916,38 +12915,98 @@ THEMES.isen = natTheme({
 function khazadLayout() {
   // the way in: a colossal pillared hall, a gateway, a second great round chamber, another gateway, then the ledge and the abyss with the bridge across it
   const plazas = [
-    { s: -104, x: 0, y: 0, r: 13, waves: [['o', 'o', 'o', 'o'], ['a', 'o', 'o', 'u'], ['s', 'o', 'a', 'o']], names: ['', 'CROSSBOWS AMONG THE PILLARS!', 'SHIELDS!'], title: 'THE HALLS OF DWARROWDELF' },
-    { s: -49, x: 0, y: 0, r: 11, waves: [['o', 'o', 'u', 'a'], ['p', 'o', 'u', 'a', 'o']], names: ['', 'PIKES!'], title: 'THE FIRST DEEP' },
-    { s: -14, x: 0, y: 0, r: 8.5, waves: [['o', 'o', 'o', 'o'], ['o', 'o', 'u', 'o', 'o']], title: 'THE GOBLINS OF MORIA' },
+    { s: -104, x: 0, y: 0, r: 13, waves: [['o', 'o', 'o', 'o'], ['a', 'o', 'o', 'u'], ['s', 'o', 'a', 'o']], names: ['', 'CROSSBOWS AMONG THE PILLARS!', 'SHIELDS!'], title: 'THE HALLS OF DWARROWDELF', noAdds: true, open: true },
+    { s: -49, x: 0, y: 0, r: 11, waves: [['o', 'o', 'u', 'a'], ['p', 'o', 'u', 'a', 'o']], names: ['', 'PIKES!'], title: 'THE FIRST DEEP', noAdds: true, open: true },
+    { s: -14, x: 0, y: 0, r: 8.5, waves: [['o', 'o', 'o', 'o'], ['o', 'o', 'u', 'o', 'o']], title: 'THE GOBLINS OF MORIA', noAdds: true, open: true },
     { s: 40, x: 0, y: 0, r: 10, waves: [['B']], title: "DURIN'S BANE!", boss: true, last: true, breach: [57, 0], bossTo: [54, 0], bossHp: 900, noAdds: true,
       bound: (s, x) => s > 31 && s < 57.5 && Math.abs(x) < .6 },   // (he stands on the bridge itself, and comes along it at you)
   ];
   const WH = 40, walls = [
-    [-136, -132, -30, 30], [-132, -80, 26, 30], [-132, -80, -30, -26], [-82, -80, 5.5, 26], [-82, -80, -26, -5.5], [-80, -68, 5.5, 30], [-80, -68, -30, -5.5],
-    [-70, -68, 5.5, 20], [-70, -68, -20, -5.5], [-68, -30, 20, 30], [-68, -30, -30, -20], [-30, -28, 5.5, 20], [-30, -28, -20, -5.5], [-28, -24, 5.5, 30], [-28, -24, -30, -5.5],
+    [-136, -132, -30, 30], [-132, -80, 26, 30], [-132, -80, -30, -26], [-82, -80, 10.5, 26], [-82, -80, -26, -10.5], [-80, -68, 10.5, 30], [-80, -68, -30, -10.5],
+    [-68, -30, 20, 30], [-68, -30, -30, -20], [-30, -24, 17, 30], [-30, -24, -30, -17],   // (the chamber's north face stands wide open on the ledge: the bridge is in sight all down the halls)
   ], pil = [], blocks = walls.map(w => [w[0], w[1], w[2], w[3], WH, 'wall', -9]);
   for (let s = -126; s <= -86; s += 13.3) for (const x of [-12, 12]) pil.push([s, x, 2.4]);
   for (let k = 0; k < 8; k++) { const a = (k + .5) / 8 * TAU; if (Math.abs(Math.cos(a)) > .92) continue; pil.push([-49 + Math.cos(a) * 14.5, Math.sin(a) * 14.5, 1.9]); }
   for (const [s, x, r] of pil) blocks.push([s - r * .8, s + r * .8, x - r * .8, x + r * .8, WH, 'wall', -9]);
-  for (const sd of [-1, 1]) { blocks.push([-24, -2, sd > 0 ? 11 : -12, sd > 0 ? 12 : -11, 3, 'wall', -9], [58, 82, sd > 0 ? 11 : -12, sd > 0 ? 12 : -11, 3, 'wall', -9]); }
+  for (const sd of [-1, 1]) { blocks.push([-24, -2, sd > 0 ? 16 : -17, sd > 0 ? 17 : -16, 3, 'wall', -9], [58, 82, sd > 0 ? 11 : -12, sd > 0 ? 12 : -11, 3, 'wall', -9]); }
   return { field: [-136, 82, -30, 30], start: [-129, 0], noFloor: true, camBlocks: true, layout: { blocks, walls, pil, plazas } };
 }
 function khazadContent(L) {
   const Y = L.layout;
   Y.segSol = []; for (let s = -2; s < 58; s++) Y.segSol.push({ s, b: solid(s, s + 1, -1.6, 1.6, -6, 0, 'floor') });   // (the bridge, a metre at a time: it breaks)
-  if (Y.ut) solid(-26, -2, -12, 12, -8, 0, 'floor'); else { solid(-136, -2, -12, 12, -8, 0, 'floor'); solid(-136, -24, -30, -12, -8, 0, 'floor'); solid(-136, -24, 12, 30, -8, 0, 'floor'); } solid(58, 82, -12, 12, -8, 0, 'floor');
+  if (Y.ut) solid(-26, -2, -12, 12, -8, 0, 'floor'); else { solid(-136, -2, -17, 17, -8, 0, 'floor'); solid(-136, -24, -30, -17, -8, 0, 'floor'); solid(-136, -24, 17, 30, -8, 0, 'floor'); } solid(58, 82, -12, 12, -8, 0, 'floor');
   solid(-2, 58, 1.6, 2.4, -6, 2.6, 'wall'); solid(-2, 58, -2.4, -1.6, -6, 2.6, 'wall');   // (no rails on the bridge, but you can't step off it)
   for (const g of THEMES.khazad.segs || []) { g.m.position.copy(g.p); g.m.rotation.copy(g.r); g.vy = 0; g.fall = false; g.m.visible = true; }
   for (const [k, s, x] of [['b', -122, 20], ['q', -122, -20], ['b', -90, 20], ['su', -90, -20], ['q', -60, 13], ['b', -60, -13], ['su', -38, 13], ['b', -20, 7], ['q', -20, -7], ['su', -8, 8], ['b', -8, -8]]) addCrate(k, s, x, 0, 4);
   if (!Y.ut) { for (let s = -128; s < -84; s += 5) addApple(s, 0, .8); for (let s = -76; s < -28; s += 5) addApple(s, 0, .8); }
   for (let s = 2; s < 28; s += 3) addApple(s, 0, .8);
 }
+// the Bridge of Khazad-dûm in CTF-BridgeOfFate's stone and light (only on your own computer: levels/ut/bridgeoffate.json): the same halls and fights, their floors and walls in the
+// map's pictures, its great pillars, arches and lamps, the one bridge in the shape of its own, and its pillars and cliffs standing in the abyss. The light is baked into every
+// face as Unreal bakes it, from lamps of the map's own two colours (amber lamplight, deep blue from above), in its own warm grey fog
+function buildKhazadUT(L, TH, U) {
+  const first = scene.children.length, Y = L.layout, K = { img: U.img, pieces: {} }, sky = TH.env;
+  for (const n in U.pieces) { const p = U.pieces[n]; K.pieces[n.split('.').pop()] = { parts: p.parts, b: p.b.map(v => v * UTM_SC) }; }
+  const A_ = 'ArboreaArchitecture.', WALL = A_ + 'Walls.wal44ar', FLR = A_ + 'Floors.flr51ar', BASE = A_ + 'Bases.bas04ar', TRIM = A_ + 'Bases.wal12ar', tone = [1.2, .82];
+  Object.assign(TH.env, { fog: [30, 200], fogC: 0x302e38 }); const amber = utLightCol(32, 96), blue = utLightCol(176, 192), AMB = new THREE.Color(.2, .185, .18);
+  const LT = []; const lamp = (s, x, y, b = .62, R = 15.5) => LT.push({ s, x, y, c: amber.clone().multiplyScalar(b), R }), fill = (s, x, y, b = .5, R = 34) => LT.push({ s, x, y, c: blue.clone().multiplyScalar(b), R });
+  const lamps = []; for (const [s, x, r] of Y.pil) { const a = s > -70 ? Math.atan2(-x, -49 - s) : x > 0 ? -Math.PI / 2 : Math.PI / 2; lamps.push([s + Math.cos(a) * (r + .5), x + Math.sin(a) * (r + .5), 5, a]); }
+  for (const s of [-129, -112.7, -99.3, -86]) for (const x of [-25.6, 25.6]) lamps.push([s, x, 6, x > 0 ? -Math.PI / 2 : Math.PI / 2]);
+  for (const x of [-10.2, 10.2]) lamps.push([-74, x, 5, x > 0 ? -Math.PI / 2 : Math.PI / 2]); for (const x of [-15.5, 15.5]) for (const s of [-20, -6]) lamps.push([s, x, 3.2, 0]); for (const x of [-9, 9]) for (const s of [62, 76]) lamps.push([s, x, 3.2, 0]);
+  for (const [s, x, y] of lamps) lamp(s, x, y); lamp(-49, 0, 1.5, 1.1, 22);
+  for (let s = -128; s <= -86; s += 14) fill(s, 0, 26); fill(-49, 0, 28, .6); for (let s = -20; s <= 84; s += 13) { fill(s, 0, 26, .6, 46); fill(s, 34, -8, .5, 44); fill(s, -34, -8, .5, 44); } for (let s = 0; s < 60; s += 15) LT.push({ s, x: 0, y: -62, c: new THREE.Color(1, .32, .08), R: 70 });
+  const C = new THREE.Color(), light = (s, x, y, nx, ny, ns) => { C.copy(AMB); for (const l of LT) { const ds = l.s - s, dx = l.x - x, dy = l.y - y; if (ds > l.R || ds < -l.R || dx > l.R || dx < -l.R || dy > l.R || dy < -l.R) continue; const d = Math.hypot(ds, dx, dy); if (d > l.R) continue; const n = d > .5 ? Math.max(0, (ds * ns + dx * nx + dy * ny) / d) * .7 + .3 : 1, f = 1 - d / l.R, k = f * f * n * 1.35; C.r += l.c.r * k; C.g += l.c.g * k; C.b += l.c.b * k; } C.r = Math.min(C.r, 1.25); C.g = Math.min(C.g, 1.25); C.b = Math.min(C.b, 1.25); return C; };
+  // faces, gathered by picture
+  const BUF = {}, buf = n => BUF[n] || (BUF[n] = { p: [], u: [], c: [] }), v3 = new V3();
+  const vert = (B, s, x, y, u, v, nx, ny, ns) => { const q = tw(s, x, y, v3); B.p.push(q.x, q.y, q.z); B.u.push(u, v); const c = light(s, x, y, nx, ny, ns); B.c.push(c.r, c.g, c.b); };
+  // a flat face in squares of about 2 m: from a corner [s, x, y] along A and along B, facing n ([s, x, y])
+  const face = (tex, o, A, B, n, rep = 5.12) => { const la = Math.hypot(...A), lb = Math.hypot(...B), na = Math.max(1, Math.ceil(la / 2)), nb = Math.max(1, Math.ceil(lb / 2)), G = buf(tex), pt = (i, j) => [0, 1, 2].map(k => o[k] + A[k] * i / na + B[k] * j / nb);
+    for (let i = 0; i < na; i++) for (let j = 0; j < nb; j++) for (const [a, b] of [[0, 0], [1, 0], [0, 1], [1, 0], [1, 1], [0, 1]]) { const q = pt(i + a, j + b); vert(G, q[0], q[1], q[2], (i + a) / na * la / rep, (j + b) / nb * lb / rep, n[1], n[2], n[0]); } };
+  const box = (tex, s0, s1, x0, x1, y0, y1, topTex) => { face(tex, [s0, x0, y0], [0, x1 - x0, 0], [0, 0, y1 - y0], [-1, 0, 0]); face(tex, [s1, x0, y0], [0, x1 - x0, 0], [0, 0, y1 - y0], [1, 0, 0]); face(tex, [s0, x0, y0], [s1 - s0, 0, 0], [0, 0, y1 - y0], [0, -1, 0]); face(tex, [s0, x1, y0], [s1 - s0, 0, 0], [0, 0, y1 - y0], [0, 1, 0]); face(topTex || tex, [s0, x0, y1], [s1 - s0, 0, 0], [0, x1 - x0, 0], [0, 0, 1]); face(tex, [s0, x0, y0], [s1 - s0, 0, 0], [0, x1 - x0, 0], [0, 0, -1]); };
+  // one of the map's pieces, its light baked where it stands (its foot at y; sc: across, up, along)
+  const O3 = new THREE.Object3D(), nv = new V3(); const piece = (name, s, x, y, h, sc, rename) => { const p = K.pieces[name]; if (!p) return; const S3 = Array.isArray(sc) ? sc : [sc, sc, sc]; tw(s, x, y - p.b[2] * S3[1], O3.position); O3.rotation.set(0, h, 0); O3.scale.set(...S3); O3.updateMatrix(); const nm = new THREE.Matrix3().getNormalMatrix(O3.matrix);
+    for (const q of p.parts) { const P0 = q.geo.attributes.position, N0 = q.geo.attributes.normal, U0 = q.geo.attributes.uv, G = buf(rename || q.tex); for (let i = 0; i < P0.count; i++) { v3.fromBufferAttribute(P0, i).applyMatrix4(O3.matrix); nv.fromBufferAttribute(N0, i).applyMatrix3(nm).normalize(); const X = v3.x, Yy = v3.y, Z = v3.z; G.p.push(X, Yy, Z); G.u.push(U0.getX(i), U0.getY(i)); const c = light(Z - CZ, CX + R - X, Yy - Y0, -nv.x, nv.y, nv.z); G.c.push(c.r, c.g, c.b); } } };
+  // the halls: floors laid in the map's flags with a dark border, walls with a plinth, a ceiling lost in shadow
+  face(FLR, [-132, -26, 0], [52, 0, 0], [0, 52, 0], [0, 0, 1], 5.12); face(FLR, [-80, -10.5, 0], [12, 0, 0], [0, 21, 0], [0, 0, 1]); face(FLR, [-68, -20, 0], [44, 0, 0], [0, 40, 0], [0, 0, 1]); box(WALL, -24, -2, -17, 17, -30, 0, FLR); box(WALL, 58, 82, -12, 12, -30, 0, FLR);
+  for (const x of [-12, 12]) face(BASE, [-132, x - 2.8, .012], [52, 0, 0], [0, 5.6, 0], [0, 0, 1], 2.56);   // (a border down each line of pillars)
+  for (const [s0, s1, x0, x1] of Y.walls) { box(WALL, s0, s1, x0, x1, 0, 38); box(BASE, s0 - .25, s1 + .25, x0 - .25, x1 + .25, 0, 2.2); box(TRIM, s0 - .2, s1 + .2, x0 - .2, x1 + .2, 11, 12); }
+  for (const [s0, s1, hw] of [[-136, -80, 30], [-80, -68, 12], [-68, -24, 22]]) face(WALL, [s0, -hw, 36], [s1 - s0, 0, 0], [0, hw * 2, 0], [0, 0, -1]);
+  box(WALL, -82, -68, -10.5, 10.5, 17, 38); box(WALL, -30, -24, -17, 17, 25, 38);   // (over the passage and the great north opening)
+  for (const s of [-81.6, -68.4]) piece('ArchA', s, 0, 0, 0, [32 / 15.36, 18 / 32, 1], TRIM); for (const s of [-29.6, -24.6]) piece('ArchA', s, 0, 0, 0, [52 / 15.36, 27 / 32, 1.2], TRIM);
+  // the pillars, the arches from each to the next, the lamps
+  for (const [s, x, r] of Y.pil) { piece('PillarG1', s, x, 0, 0, [r * 2.05 / 11.5, 36 / 53.8, r * 2.05 / 11.5]); box(BASE, s - r * 1.15, s + r * 1.15, x - r * 1.15, x + r * 1.15, 0, .5); }
+  for (let s = -126; s <= -86; s += 13.3) piece('ArchA', s, 0, 4, 0, [30 / 15.36, 1, 1.4], TRIM);
+  for (let s = -119.35; s <= -92; s += 13.3) for (const x of [-12, 12]) piece('ArchA', s, x, 8, Math.PI / 2, [16 / 15.36, .8, 1], TRIM);
+  for (const s of [-119.4, -106.1, -92.8]) for (const x of [-25.4, 25.4]) piece('PillarG2', s, x, 0, x > 0 ? -Math.PI / 2 : Math.PI / 2, [.8, 2.2, .7]);
+  for (const [s, x, y, a] of lamps) { if (s > -24) { piece('PillarG2', s, x, 0, 0, [.32, .24, .5]); } else piece('Misclight01AR', s, x, y, a, .8); const g = glowSprite('#' + amber.getHexString(), 3.6, .6); tw(s, x, y + 1, g.position); scene.add(g); }
+  for (const [s0, s1, hw] of [[-24, -2, 16.5], [58, 82, 11.5]]) for (const sd of [-1, 1]) { box(BASE, s0, s1, sd * hw - .5, sd * hw + .5, 0, 1.2); for (let s = s0 + 1.3; s < s1; s += 3.4) piece('colAcolumn05AR', s, sd * hw, 1.2, 0, [.4, .5, .4]); }
+  // the abyss: the map's great pillars rising out of it past sight, its cliffs to either side
+  for (let s = -10; s <= 84; s += 23) for (const x of [-24, 24, -47, 47]) for (const y of [-64, -10.2]) piece('PillarG1', s + (Math.abs(x) > 30 ? 11 : 0), x, y, 0, [.72, 1, .72]);
+  for (const sd of [-1, 1]) for (const s of [-10, 90]) piece('Terrain_Sides_G2', s, sd * 92, -95, Math.PI / 2, [.45, .62, sd * .3]);
+  box(WALL, 82, 86, -60, 60, -30, 60); box(WALL, -24.2, -23.8, -70, -17, -60, 40); box(WALL, -24.2, -23.8, 17, 70, -60, 40);
+  for (const n in BUF) { const B = BUF[n], g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(B.p, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(B.u, 2)); g.setAttribute('color', new THREE.Float32BufferAttribute(B.c, 3)); const t = utTex(K, n, tone); const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: t || TX.hdStone, vertexColors: true, side: THREE.DoubleSide })); m.frustumCulled = false; m.userData.keep = true; scene.add(m); }
+  // the bridge, the map's own in shape: its arch, levelled along the top to fight on and made narrow, a metre at a time (it breaks)
+  TH.segs = []; const segT = {}, BR = K.pieces.Bridge2 || K.pieces.BridgeG2, tris = []; if (BR) for (const q of BR.parts) { const p = q.geo.attributes.position; for (let i = 0; i < p.count; i += 3) tris.push([0, 1, 2].map(k => { const al = p.getZ(i + k), u = Math.min(1, Math.abs(al) / 30); let ac = p.getX(i + k) * .42, y = p.getY(i + k) - 4.75 * (1 - u * u * u); if (y > -1.1) y = 0; return [al + 28, ac, Math.min(0, y)]; })); }
+  const cutT = (a, b, c, d = 0) => { const l = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]); if (d < 6 && Math.max(l(a, b), l(b, c), l(c, a)) > 1.3) { const m = (p, q) => p.map((v, k) => (v + q[k]) / 2), ab = m(a, b), bc = m(b, c), ca = m(c, a); cutT(a, ab, ca, d + 1); cutT(ab, b, bc, d + 1); cutT(ca, bc, c, d + 1); cutT(ab, bc, ca, d + 1); return; } const s = clamp(Math.floor((a[0] + b[0] + c[0]) / 3), -2, 57); (segT[s] = segT[s] || []).push(a, b, c); };
+  for (const T3 of tris) cutT(...T3); const bt = utTex(K, TRIM, tone) || TX.hdStone, bm = new THREE.MeshBasicMaterial({ map: bt, vertexColors: true, side: THREE.DoubleSide });
+  for (let s = -2; s < 58; s++) { const G = { p: [], u: [], c: [] }, o = tw(s + .5, 0, 0, new V3()), add = (a, b, c) => { const e1 = [0, 1, 2].map(k => b[k] - a[k]), e2 = [0, 1, 2].map(k => c[k] - a[k]), n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]], l = Math.hypot(...n) || 1, sg = n[2] < 0 && a[2] > -.2 ? -1 : 1; for (const q of [a, b, c]) { tw(q[0], q[1], q[2], v3); G.p.push(v3.x - o.x, v3.y - o.y, v3.z - o.z); const flat = Math.abs(n[2]) / l > .6; G.u.push(flat ? q[1] / 3.2 : q[0] / 3.2, flat ? q[0] / 3.2 : q[2] / 3.2); const k = light(q[0], q[1], q[2] + .3, sg * n[1] / l, sg * n[2] / l, sg * n[0] / l); G.c.push(k.r * 1.15, k.g * 1.15, k.b * 1.15); } };
+    const B = (x0, x1, y0, y1) => { const P8 = (i, j, k) => [s + i * 1.02, j ? x1 : x0, k ? y1 : y0]; for (const [a, b, c, d] of [[P8(0, 0, 1), P8(1, 0, 1), P8(1, 1, 1), P8(0, 1, 1)], [P8(0, 0, 0), P8(1, 0, 0), P8(1, 1, 0), P8(0, 1, 0)], [P8(0, 0, 0), P8(1, 0, 0), P8(1, 0, 1), P8(0, 0, 1)], [P8(0, 1, 0), P8(1, 1, 0), P8(1, 1, 1), P8(0, 1, 1)], [P8(0, 0, 0), P8(0, 1, 0), P8(0, 1, 1), P8(0, 0, 1)], [P8(1, 0, 0), P8(1, 1, 0), P8(1, 1, 1), P8(1, 0, 1)]]) { add(a, b, c); add(a, c, d); } };
+    B(-1.62, 1.62, -.75, 0); B(-1.8, -1.6, -1, .12); B(1.6, 1.8, -1, .12); const L_ = segT[s] || []; for (let i = 0; i < L_.length; i += 3) add(L_[i], L_[i + 1], L_[i + 2]);
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(G.p, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(G.u, 2)); g.setAttribute('color', new THREE.Float32BufferAttribute(G.c, 3)); const m = new THREE.Mesh(g, bm); m.position.copy(o); m.userData.keep = true; scene.add(m); TH.segs.push({ m, s, p: m.position.clone(), r: m.rotation.clone(), vy: 0 }); }
+  // the hearth in the round chamber, shafts of cold light from above, fires far below, braziers
+  { const q = tw(-49, 0, .03), r0 = part(new THREE.RingGeometry(3.4, 5.6, 28), lam(0x3a3630), scene, q.x, q.y, q.z); r0.rotation.x = -Math.PI / 2; const h = part(new THREE.CircleGeometry(3.4, 24), new THREE.MeshBasicMaterial({ color: 0xff7a20 }), scene, q.x, q.y + .01, q.z); h.rotation.x = -Math.PI / 2; const gh = glowSprite(0xff7a20, 14, .6); gh.position.set(q.x, 1, q.z); scene.add(gh); TH.hearth = [-49, 0]; }
+  for (const [s, x, w, op] of [[-106, 19, 4, .05], [-92.9, -19, 4, .05], [-49, 12, 3.5, .05], [-49, -12, 3.5, .05], [28, 14, 7, .05]]) { const m = new THREE.Mesh(new THREE.ConeGeometry(w, 36, 12, 1, true), new THREE.MeshBasicMaterial({ color: 0x8ab0ff, transparent: true, opacity: op, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide })); tw(s, x, 17.8, m.position); m.userData.keep = true; scene.add(m); }
+  for (let k = 0; k < 16; k++) { const g = glowSprite(0xff4a10, rand(40, 80), .4); tw(rand(-10, 80), rand(-40, 40), rand(-90, -60), g.position); g.userData.keep = true; g.material.fog = false; scene.add(g); }
+  TH.braz = []; for (const [s, x] of [[-129, 8], [-129, -8], [-84, 8], [-84, -8], [-64, 15], [-64, -15], [-34, 15], [-34, -15], [-4, 5], [-4, -5], [60, 4], [60, -4]]) { const p = tw(s, x, 0); part(new THREE.CylinderGeometry(.55, .35, 1.3, 8), lam(0x2a2226), scene, p.x, .65, p.z); const gl = glowSprite(0xff8a30, 5, .65); gl.position.set(p.x, 1.8, p.z); scene.add(gl); TH.braz.push([s, x]); }
+  { const d = new THREE.Mesh(GEO_BOX, lam(0x050405)); tw(81.9, 0, 4, d.position); d.scale.set(6, 8, .3); scene.add(d); }
+  bakeScenery(scene.children.slice(first));
+}
 function buildKhazad(L, TH) {
-  if (L.layout.ut) buildDwarrowdelf(L, TH);
+  if (UTM.bridgeoffate && UTM.bridgeoffate.pieces) { buildKhazadUT(L, TH, UTM.bridgeoffate); return; }
   const first = scene.children.length, sky = TH.env, Y = L.layout;
   const rock = surf(TX.hdRock, { sky, color: 0x4a4a54, rough: .7, bump: 2.6, env: .3, tri: 4 }), stone = surf(TX.hdStone, { sky, color: 0x77727e, rough: .6, bump: 3, env: .4, tri: 2.2 }), stoneL = surf(TX.hdStone, { sky, color: 0x9a96a2, rough: .55, bump: 3, env: .45, tri: 2.2 }), iron = lam(0x1a1a20), flag = surf(TX.hdFlag || TX.hdStone, { sky, color: 0x8a8690, rough: .45, bump: 2.5, env: .6, tri: 3 });
   // the floors of the halls, polished by the feet of dwarves; the two ledges falling away into the dark
-  for (const [s0, s1, x0, x1] of [...(Y.ut ? [] : [[-136, -24, -30, 30]]), [-24, -2, -12, 12], [58, 82, -12, 12]]) { const m = new THREE.Mesh(GEO_BOX, s0 < -30 ? flag : rock); tw((s0 + s1) / 2, (x0 + x1) / 2, -14, m.position); m.scale.set(x1 - x0, 28, s1 - s0); scene.add(m); }
+  for (const [s0, s1, x0, x1] of [...(Y.ut ? [] : [[-136, -24, -30, 30]]), [-24, -2, -17, 17], [58, 82, -12, 12]]) { const m = new THREE.Mesh(GEO_BOX, s0 < -30 ? flag : rock); tw((s0 + s1) / 2, (x0 + x1) / 2, -14, m.position); m.scale.set(x1 - x0, 28, s1 - s0); scene.add(m); }
   // the walls, sheer into the dark, a band of carved lozenges and a line of cold blue runes along them
   const band = (() => { const t = mkTex(256, 64, c => { c.fillStyle = '#16161e'; c.fillRect(0, 0, 256, 64); c.strokeStyle = '#6a6a78'; c.lineWidth = 3; for (let i = 0; i < 8; i++) { const x = i * 32 + 16; c.beginPath(); c.moveTo(x, 6); c.lineTo(x + 13, 32); c.lineTo(x, 58); c.lineTo(x - 13, 32); c.closePath(); c.stroke(); } c.strokeStyle = '#7ad0ff'; c.lineWidth = 2; c.shadowColor = '#4ab0ff'; c.shadowBlur = 6; for (let i = 0; i < 8; i++) { const x = i * 32 + 16; c.beginPath(); c.moveTo(x, 22); c.lineTo(x, 42); c.moveTo(x - 5, 26); c.lineTo(x + 5, 38); c.stroke(); } }); t.magFilter = THREE.LinearFilter; return t; })();
   const bandM = new THREE.MeshBasicMaterial({ map: band });
@@ -12964,7 +13023,7 @@ function buildKhazad(L, TH) {
   if (!Y.ut) for (const s of [-119.5, -106.2, -92.9]) { statue(s, 24.8, -Math.PI / 2); statue(s, -24.8, Math.PI / 2); }
   // the gateways: tall arched portals between the halls
   const gate = (s, hw, h) => { const g = new THREE.Group(); place(g, s, 0, 0); scene.add(g); for (const sx of [-1, 1]) { part(GEO_BOX, stoneL, g, sx * (hw + 1), h / 2, 0, 2, h, 2.6); part(GEO_BOX, stone, g, sx * (hw + 1), .5, 0, 2.8, 1, 3.2); } const a = part(new THREE.TorusGeometry(hw + .5, 1, 8, 20, Math.PI), stoneL, g, 0, h, 0); part(GEO_BOX, stone, g, 0, h + hw + 2.4, 0, hw * 2 + 8, 3, 2.6); const gl = part(GEO_BOX, new THREE.MeshBasicMaterial({ color: 0x7ad0ff }), g, 0, h + hw + 1.2, 1.32, 2, .3, .06); };
-  if (!Y.ut) { gate(-80.5, 5, 10); gate(-68.5, 5, 10); gate(-29, 5, 11); gate(-25, 5, 11); } gate(-.6, 8, 12);
+  if (!Y.ut) { gate(-80.5, 10, 12); gate(-68.5, 10, 12); } gate(-.6, 8, 12);
   // the round chamber: a ring of steps sunk round a hearth of old fire in the floor, galleries high on its walls
   if (!Y.ut) { const q = tw(-49, 0, .02); const r0 = part(new THREE.RingGeometry(3.4, 5.6, 28), lam(0x2a2a30), scene, q.x, q.y, q.z); r0.rotation.x = -Math.PI / 2; const h = part(new THREE.CircleGeometry(3.4, 24), new THREE.MeshBasicMaterial({ color: 0xff7a20 }), scene, q.x, q.y + .01, q.z); h.rotation.x = -Math.PI / 2; const gh = glowSprite(0xff7a20, 14, .6); gh.position.set(q.x, 1, q.z); scene.add(gh); TH.hearth = [-49, 0];
     for (const yb of [14, 24]) for (let k = 0; k < 24; k++) { const a = k / 24 * TAU, s = -49 + Math.cos(a) * 18.5, x = Math.sin(a) * 18.5, p = tw(s, x, yb); part(GEO_BOX, stone, scene, p.x, p.y, p.z, 5.2, .7, 3).rotation.y = -a; if (k % 2) { const r = tw(-49 + Math.cos(a) * 17, Math.sin(a) * 17, yb + 1); part(GEO_BOX, stoneL, scene, r.x, r.y, r.z, .4, 1.6, .4); } } }
