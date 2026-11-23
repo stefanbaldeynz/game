@@ -2598,10 +2598,10 @@ const BELV = [
     waves: [[['E', 'E']], [['s', 'u', 'E']], [['p', 'p', 'u'], ['E', 'H', 'H']]], boss: ['L', 'E', 'E'], bossT: 'THE SONS OF FËANOR COME FOR THE SILMARIL!', win: 'ELWING FLIES WITH THE SILMARIL!' },
   { loc: 'balar', name: 'BALAR', sub: 'THE ISLE OF CÍRDAN IN THE BAY', land: 'isle', mark: 'haven', ground: 'meadow', big: true,
     env: { sky: [0x3a80c0, 0x90c8e8, 0xf0f8ff, 0xfff0d0], fog: [120, 620], fogC: 0xd0e4f0, amb: [0xa8b0b8, .7], hemi: [0xeef6ff, 0x6a6a4a, .7], sun: [0xfff6e8, 1.1], east: [0xffe0c0, .2], cloud: 0xffffff, bloom: .3 },
-    waves: [[['Raider', 'Raider']], [['Raider', 'Raider Bomber', 'Raider']], [['Raider', 'Raider', 'Raider Bomber']]], boss: ['Kahn'], bossT: 'CORSAIRS ON THE ISLE!', win: 'BALAR IS SAFE!' },
+    waves: [[['Raider', 'Raider']], [['Raider', 'Raider', 'Raider']], [['Raider', 'Raider', 'Raider']]], boss: ['Kahn'], bossT: 'CORSAIRS ON THE ISLE!', win: 'BALAR IS SAFE!' },
   { loc: 'nogrod', name: 'NOGROD', sub: 'THE DWARF-CITY IN THE BLUE MOUNTAINS', land: 'mount', mark: 'dwarfgate', ground: 'rock',
     env: { sky: [0x4a6a90, 0x8aa8c8, 0xd8e0e8, 0xf0d8b0], fog: [90, 480], fogC: 0xb0bcc8, amb: [0x9098a4, .7], hemi: [0xdfe8f4, 0x4a4a40, .7], sun: [0xfff0dc, 1], east: [0xffc890, .3], cloud: 0xf0f0f8, bloom: .3 },
-    waves: [[['o', 'o', 'M']], [['Forest Troll']], [['o', 'w', 'w', 'u'], ['R', 'o', 'o']]], boss: ['Chain Troll', 'o', 'o'], bossT: 'A TROLL AT THE DWARF-GATE!', win: 'THE GATES OF NOGROD HOLD!' },
+    waves: [[['o', 'o', 'M']], [['Troll']], [['o', 'w', 'w', 'u'], ['R', 'o', 'o']]], boss: ['Troll', 'o', 'o'], bossT: 'A TROLL AT THE DWARF-GATE!', win: 'THE GATES OF NOGROD HOLD!' },
   { loc: 'belegost', name: 'BELEGOST', sub: 'THE GREAT FORTRESS OF THE DWARVES', land: 'mount', mark: 'dwarfgate', ground: 'rock', snow: true,
     env: { sky: [0x6a80a0, 0xa8bcd0, 0xe8eef4, 0xf0e8d8], fog: [80, 440], fogC: 0xc8d0dc, amb: [0x9ca4b0, .75], hemi: [0xe8f0f8, 0x5a5a50, .7], sun: [0xf8f8ff, 1], east: [0xe0d0c0, .2], cloud: 0xffffff, bloom: .25 },
     waves: [[['o', 'o', 'o', 'w']], [['Rock Giant']], [['R', 'u', 'u'], ['w', 'w', 'M', 'M']]], boss: ['A', 'o', 'w'], bossT: 'MORGOTH\'S HOST AT BELEGOST!', win: 'BELEGOST HOLDS!' },
@@ -3374,7 +3374,7 @@ function readInput() {
   inp.guardP = !!(hit.KeyE || hit.TGuard || pad.guardP); inp.reactP = !!(hit.KeyR || hit.TReact || pad.reactP);   // Edoras: guard (or roll), and the reaction command
   inp.driveP = !!(hit.KeyQ || hit.TDrive || pad.driveP);   // (and the drive form)
   if (AUTOFIGHT && LV && LV.kh) { const u = URUKS.find(o => ukLive(o) && o.state !== 'spawn'); WALKTO = u ? [u.s, u.x] : AUTOFIGHT.next(); if (LV.theme === 'minekh' && P.s < -6 && WALKTO[0] > -6) WALKTO = P.s < -20 && Math.abs(P.x) > 1 ? [-22, 0] : [-5, 0]; if (u && Math.hypot(u.s - P.s, u.x - P.x) < 4 + (u.boss ? u.r : 0) && T % .3 < .02 && !KH.sub && KH.cur === 0) hit.KeyK = true; if (u && KH.mp >= 25 && T % 3 < .02) hit.KeyF = true; if (KH.react) hit.KeyR = true; if (KH.drive >= 100) hit.TDrive = true; }   // testing: &autofight=1
-  if (AUTOK && LV && (LV.khl || LV.bow) && T % .35 < .02) hit.KeyK = true;   // (testing: &autok=1 attacks every moment; on the ramparts it looses arrows, aimed for it)
+  if (AUTOK && LV && (LV.khl || LV.bow || LV.wrath) && T % .35 < .02) hit.KeyK = true;   // (testing: &autok=1 attacks every moment; on the ramparts it looses arrows, aimed for it)
   inp.spinP = inp.spinP || !!hit.KeyJ; inp.fireP = inp.fireP || !!hit.KeyF; inp.reactP = inp.reactP || !!hit.KeyR; inp.driveP = inp.driveP || !!hit.KeyQ;
   if (khOn()) {   // the Kingdom Hearts levels: W A S D move; K does the command chosen on the menu (attack); L jumps; J dodges; Space guards;
     // I is the reaction command; F casts Thunder and H Fire; Q and E (or the arrows, or the mouse wheel) move up and down the menu, and
@@ -3475,7 +3475,7 @@ let cratesDirty = 0;
 function bounce(v) { P.vy = inp.jump ? v * 1.22 : v; P.ground = false; P.jumpHeld = inp.jump; P.coyote = 0; P.dbl = false; }
 function updatePlayer(dt) {
   if (LV.flight) { eagleMove(dt); return; }
-  if (LV.wrath) { wrathMove(dt); return; }   // (Vingilot, round Ancalagon)   // (The Escape: on Thorondor's back)
+  if (LV.wrath) { wrathMove(dt); P.invT -= dt; if (khOn()) khInput(dt); return; }   // (Vingilot, round Ancalagon: attack, magic and guard still go through the Kingdom Hearts commands, which turn them into the Silmaril and the roll)
   if (LV.deeping && !DEEP.blown) { inp.x = inp.z = 0; inp.spinP = false; }   // (the Deeping Wall's scene: hands off until it goes up)
   if (LV.bow && BOW.aim) { const sp_ = LV.bowU ? .95 : 1.4; BOW.cx = clamp(BOW.cx + inp.x * sp_ * dt, -.97, .97); BOW.cy = clamp(BOW.cy + inp.z * sp_ * dt, -.7, .94); inp.x = inp.z = 0; }   // (taking aim: W A S D move the sight, and Gandalf stands)
   let ix = inp.x, iz = inp.z;
@@ -5663,7 +5663,7 @@ function updateCamera(dt) {
   if (LV.roam && !LV.duel) {
     if (LV.wrath) {   // (behind Vingilot and out a little from the ring it flies, Ancalagon in view across it)
       const [s, x] = wrPos(), ts = -Math.sin(WR.ang), tx = Math.cos(WR.ang), os = Math.cos(WR.ang), ox = Math.sin(WR.ang), b = WR.boss && !WR.boss.gone ? WR.boss : null;
-      _a.copy(tw(s - ts * 22 + os * 30, x - tx * 22 + ox * 30, WR.y + 14)); _b.copy(tw(s + ts * 22, x + tx * 22, WR.y + 1)).lerp(b ? tw(b.s, b.x, b.y + 60) : tw(0, 0, WR_C.Y), .5);   /* (well out from the ring: he's as big as a mountain, his chest and head in view) */
+      _a.copy(tw(s + os * 44, x + ox * 44, WR.y + 21)); _b.copy(tw(s, x, WR.y + 3)).lerp(b ? tw(b.s, b.x, b.y + 62) : tw(0, 0, WR_C.Y), .62);   /* (out behind the ship, looking in at him across it, the Genie Jafar way: A and D are left and right on the screen; he's as big as a mountain, his chest and head in view) */ void ts; void tx;
       if (cam.snap) { cam.wp.copy(_a); cam.wl.copy(_b); cam.snap = false; } const k = 1 - Math.exp(-6 * dt); cam.wp.lerp(_a, k); cam.wl.lerp(_b, k); camera.position.copy(cam.wp);
       const sh = cam.shake; cam.shake = Math.max(0, cam.shake - dt * 2.2); camera.position.add(_a.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(sh * .5)); camera.lookAt(cam.wl); return;
     }
@@ -8953,7 +8953,7 @@ THEMES.eaglelv = natTheme({
 });
 // =====================================================================
 //  THE WAR OF WRATH: Ancalagon the Black, greatest of the winged dragons, over Thangorodrim, and you aboard Vingilot with Eärendil, the Silmaril on his brow.
-//  The ship circles the dragon on its own: W and S climb and dive, A and D steer in towards him or out away; guard rolls the ship out of harm's way.
+//  A and D fly the ship round the dragon, left and right as you see it; W and S climb and dive; guard rolls the ship sideways out of harm's way.
 //  Attack looses bolts of the Silmaril's light at him (his head, while he gathers fire to breathe, takes three times the harm); magic, a great beam.
 //  He breathes fire sweeping round after you (climb or dive out of it), hurls burning bolts that home on you (shoot them down), beats his wings in a
 //  shockwave rolling out at his own height (go over or under it), and at the last he dives through the ring you fly. Three bars of him; then he falls.
@@ -9080,7 +9080,7 @@ function anFireball(b) {
 // a bolt of the Silmaril's light from Eärendil's brow: it flies at the dragon, and burns his head if it's open and gathering fire
 function wrathShoot(big) {
   if (WR.shotCD > 0) return; WR.shotCD = big ? .8 : .16; const b = WR.boss; if (!b || !ukLive(b)) return;
-  const sh = THEMES.wrath.ship, from = sh.star.getWorldPosition(new V3()); S.zap();
+  const sh = THEMES.wrath.ship, from = sh ? sh.star.getWorldPosition(new V3()) : tw(P.s, P.x, P.y + 2); S.zap();   // (the ship's made as it's first drawn)
   // aim: a burning bolt near the ship first, then his head if he's gathering fire, else his body
   const bolt = WR.bolts.filter(q => !q.dead).sort((p, q) => p.g.position.distanceTo(from) - q.g.position.distanceTo(from))[0], head = b.charging, aimAt = () => bolt && !bolt.dead && bolt.g.position.distanceTo(from) < 60 ? bolt.g.position.clone() : head ? drMouth(b) : b.m.root.getWorldPosition(new V3()).add(new V3(0, 14, 0));
   const g = glowSprite(0xe0f0ff, big ? 7 : 2.6, 1); g.position.copy(from); g.material.map = vfxTex('star');
@@ -9092,13 +9092,14 @@ function wrathShoot(big) {
 }
 function wrathMove(dt) {
   if (!WR.boss || WR.boss.gone && !WR.won) { WR.boss = null; if (!WR.won) spawnAncalagon(); }
-  const spin = .22; WR.spin = 1; WR.ang += spin * dt * (88 / WR.rad); WR.rollT -= dt; WR.rollCD -= dt; WR.shotCD -= dt;
-  WR.vr = damp(WR.vr, -inp.x * 26, 4, dt); WR.vy = damp(WR.vy, inp.z * 22, 5, dt);
+  // A and D fly the ship round him, left or right (it holds still when let go); W and S climb and dive; it drifts back to a good distance from him on its own
+  WR.va = damp(WR.va || 0, -inp.x * .42 * (130 / WR.rad), 4, dt); if (Math.abs(inp.x) > .1) WR.spin = -Math.sign(inp.x); WR.ang += WR.va * dt; WR.rollT -= dt; WR.rollCD -= dt; WR.shotCD -= dt;
+  WR.vr = damp(WR.vr, (165 - WR.rad) * .8, 1.5, dt); WR.vy = damp(WR.vy, inp.z * 26, 5, dt);
   WR.rad = clamp(WR.rad + WR.vr * dt * (WR.rollT > 0 ? 2 : 1), WR_C.R0, WR_C.R1); WR.y = clamp(WR.y + WR.vy * dt, WR_C.Y0, WR_C.Y1);
   const [s, x] = wrPos(); P.s = s; P.x = x; P.y = WR.y; P.vs = P.vx = P.vy = 0; P.ground = true; P.standOn = null; P.heading = WR.ang + Math.PI / 2;
-  if (state === 'play' && !WR.said) { WR.said = 1; setTimeout(() => { if (LV && LV.wrath && state === 'play') banner('W S: CLIMB, DIVE · A D: IN, OUT · ATTACK: THE SILMARIL · GUARD: ROLL', 4, true); }, 3500); }
+  if (state === 'play' && !WR.said) { WR.said = 1; setTimeout(() => { if (LV && LV.wrath && state === 'play') banner('A D: FLY ROUND HIM · W S: CLIMB, DIVE · ATTACK: THE SILMARIL · GUARD: ROLL', 4, true); }, 3500); }
 }
-function wrathRoll() { if (WR.rollCD > 0) return; WR.rollT = .6; WR.rollCD = 1.1; WR.vr += (inp.x ? -Math.sign(inp.x) : 1) * 30; KH.invT = Math.max(KH.invT, .6); S.whoosh(); }
+function wrathRoll() { if (WR.rollCD > 0) return; WR.rollT = .6; WR.rollCD = 1.1; WR.va = (inp.x ? -Math.sign(inp.x) : WR.spin || 1) * 1.6 * (130 / WR.rad);   /* (a quick barrel-roll sideways round the ring, the way you push or the way she was going) */ KH.invT = Math.max(KH.invT, .6); S.whoosh(); }
 function updateWrath(dt) {
   const TH = THEMES.wrath, on = !!LV && LV.wrath && state !== 'map' && state !== 'title'; if (TH.ship) TH.ship.root.visible = on; if (!on) return;
   if (!TH.ship) { TH.ship = makeVingilot();
@@ -9106,7 +9107,7 @@ function updateWrath(dt) {
   TH.eagles = []; for (let k = 0; k < 14; k++) { const e = new THREE.Group(); for (const sx of [-1, 1]) part(GEO_BOX, lam(0x5a3a1a), e, sx * 2.2, 0, 0, 4.2, .12, 1.4).rotation.z = sx * .15; part(GEO.sph, lam(0x6a4422), e, 0, 0, 0, .6, .5, 1.6); e.userData = { a: rand(0, TAU), r: rand(140, 260), y: rand(90, 190), sp: rand(.08, .16) * (k % 2 ? 1 : -1), keep: true }; scene.add(e); TH.eagles.push(e); }
   }
   const sh = TH.ship; sh.root.rotation.set(0, 0, 0); sh.root.position.copy(tw(P.s, P.x, P.y - .05));
-  const fwd = tw(P.s - Math.sin(WR.ang), P.x + Math.cos(WR.ang), P.y - .05); sh.root.lookAt(fwd); sh.root.rotateZ(WR.rollT > 0 ? (1 - WR.rollT / .6) * TAU : -WR.vr * .01); sh.root.rotateX(-WR.vy * .012);
+  const fwd = tw(P.s - Math.cos(WR.ang) - Math.sin(WR.ang) * (WR.va || 0) * 1.5, P.x - Math.sin(WR.ang) + Math.cos(WR.ang) * (WR.va || 0) * 1.5, P.y - .05); sh.root.lookAt(fwd); sh.root.rotateZ(WR.rollT > 0 ? (1 - WR.rollT / .6) * TAU * WR.spin : (WR.va || 0) * 1.2); sh.root.rotateX(-WR.vy * .012);   // (her prow towards him, turning and banking the way she flies)
   sh.sail.scale.z = 1 + Math.sin(T * 3) * .08; sh.pen.rotation.x = Math.sin(T * 6) * .3; sh.star.scale.setScalar(3.2 + Math.sin(T * 7) * .4); sh.halo.material.opacity = .45 + Math.sin(T * 2) * .1;
   if (Math.random() < .7) vfx({ tex: 'star', p: sh.star.getWorldPosition(new V3()), v: vRand(2), life: .5, s0: .6, s1: .05, c0: 0xffffff, c1: 0x8ac8ff });
   for (const e of TH.eagles) { const u = e.userData; u.a += u.sp * dt; e.position.copy(tw(Math.cos(u.a) * u.r, Math.sin(u.a) * u.r, u.y + Math.sin(T + u.r) * 4)); e.rotation.y = -u.a + (u.sp > 0 ? 0 : Math.PI); e.children.forEach((c, i) => { if (i < 2) c.rotation.z = (i ? -1 : 1) * (.15 + Math.sin(T * 4 + u.r) * .35); }); }
@@ -9117,8 +9118,9 @@ function updateWrath(dt) {
 function belBuild(L, TH) {
   if (L.layout.ut) { buildDwarrowdelf(L, TH); buildUTTerrain(L, TH); return; }   // (a whole UT2004 map: see UT_PLACES)
   if (L.layout.gondolin) return buildGondolin(L, TH);
-  const c = L.layout.bel, T_ = L.terrain, first = scene.children.length, sky = TH.env, at = (s, x) => terrainAt(s, x, true), B = L.layout.blocks;
+  const c = L.layout.bel, T_ = L.terrain, first = scene.children.length, sky = TH.env, at = (s, x) => terrainAt(s, x, true), B = L.layout.blocks, UO = L.layout.utOpen, utLand = !!(UO && UO.TR.length && UO.meshes.length >= 60);   /* (a map that brings few meshes of its own here keeps the place's trees) */   /* (on a UT2004 map's land: see applyUTOpen) */
   const tex = TX[c.ground] || TX.grass, gcol = { meadow: [.7, .82, .55], grass: [.62, .78, .5], lush: [.55, .74, .45], lavaRock: [.42, .34, .32], plains: [.72, .74, .62], moss: [.6, .7, .58], rock: [.66, .66, .64] }[c.ground] || [.7, .8, .6];
+  if (UO) buildUTOpen(L, TH); if (!UO || !UO.TR.length && !UO.paint.floor)
   groundMesh(T_, tex, (k, sl, y) => k === 'c' || sl > 1.6 ? (c.land === 'fire' ? [.22, .16, .15] : c.snow && y > 30 ? [.95, .97, 1] : [.56, .56, .58]) : k === 'w' ? [.5, .45, .35] : gcol, 6);
   wideFloor(tex, c.land === 'fire' ? 0x3a2622 : 0x6a7a5a, 120, -5, 900);
   const white = surf(TX.marble, { sky, color: 0xf4f2ee, rough: .6, bump: 1.4, env: .35, tri: 3 }), whiteD = surf(TX.marble, { sky, color: 0xd8d4cc, rough: .7, bump: 1.6, env: .25, tri: 3 }), gold = lam(0xe0b040, { emissive: 0x3a2a04 });
@@ -9127,7 +9129,7 @@ function belBuild(L, TH) {
   const tower = (s, x, r, h, mat, roof, y0 = at(s, x)) => { const q = tw(s, x, y0); part(new THREE.CylinderGeometry(r * .9, r, h, 12), mat, scene, q.x, q.y + h / 2, q.z); part(new THREE.ConeGeometry(r * 1.25, r * 2.2, 12), roof || mat, scene, q.x, q.y + h + r * 1.1, q.z); solid(s, x, r * 2, r * 2, h, y0); };
   const house = (s, x, w, d, h, mat, roof, ang = 0, y0 = at(s, x)) => { const g = new THREE.Group(); place(g, s, x, y0, ang); scene.add(g); part(GEO_BOX, mat, g, 0, h / 2, 0, w, h, d); const r = part(new THREE.ConeGeometry(Math.max(w, d) * .75, h * .7, 4), roof, g, 0, h + h * .35, 0); r.rotation.y = Math.PI / 4; r.scale.set(w / Math.max(w, d), 1, d / Math.max(w, d)); solid(s, x, w, d, h, y0); };
   const wallRing = (s0, x0, R, h, mat, gaps = [0]) => { for (let k = 0; k < 40; k++) { const a = k / 40 * TAU; if (gaps.some(g => Math.abs(angDiff(a, g)) < .2)) continue; const s = s0 + Math.cos(a) * R, x = x0 + Math.sin(a) * R, y0 = at(s, x), q = tw(s, x, y0 + h / 2), m = part(GEO_BOX, mat, scene, q.x, q.y, q.z, 1.6, h, TAU * R / 40 + .2); m.rotation.y = -(a) - trackAng(0); solid(s, x, 2, 2, h, y0); } };
-  const trees = (n, kind, avoid) => { const tr = [], cr = [], ut = belTreeUT(c);
+  const trees = (n, kind, avoid) => { if (utLand) return; const tr = [], cr = [], ut = belTreeUT(c);   /* (on a map's land, its own trees stand where it put them) */
     if (ut) { for (let k = 0, m = 0; k < n * 4 && m < n; k++) { const s = rand(-76, 76), x = rand(-76, 76); if (T_.g[(BEL_C - Math.round(s)) * BEL_N + BEL_C - Math.round(x)] !== 'g' || at(s, x) < -.5 || (avoid && avoid(s, x)) || way(s, x)) continue; const [kt, nm, sc] = ut[m % ut.length]; belPiece(kt, nm, s, x, -.2, rand(0, TAU), sc * rand(.85, 1.2), at, { tone: [1.45, .72], rough: .9, bump: 1.2, env: .05 }); B.push([s - .5, s + .5, x - .5, x + .5, at(s, x) + 8, 'wall', at(s, x) - 2]); m++; } return; }   /* (the map's own trees: see BEL_UT) */ for (let k = 0; k < n * 4 && tr.length < n; k++) { const s = rand(-76, 76), x = rand(-76, 76); if (T_.g[(BEL_C - Math.round(s)) * BEL_N + BEL_C - Math.round(x)] !== 'g' || at(s, x) < -.5 || (avoid && avoid(s, x)) || way(s, x)) continue; const q = tw(s, x, at(s, x)), h = rand(6, 14); tr.push([q.x, q.y + h * .35, q.z, .35, h * .7, .35]); cr.push(kind === 'beech' ? [q.x, q.y + h * .8, q.z, h * .38, h * .3, h * .38] : [q.x, q.y + h * .7, q.z, h * .25, h * .7, h * .25]); }
     instanced(GEO.cyl, lam(0x5a4430), tr); instanced(kind === 'beech' ? GEO.sph : GEO.cone, lam(kind === 'beech' ? 0x5a8a3a : kind === 'dead' ? 0x3a3230 : 0x2e5a2c), cr); };
   const water = y => { const t = TX.sea.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(40, 40); const m = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.MeshPhongMaterial({ map: t, color: c.land === 'fire' ? 0xff5010 : 0x4a8aa8, emissive: c.land === 'fire' ? 0x802000 : 0x000000, specular: 0xfff0d0, shininess: 60, transparent: true, opacity: .85 })); m.rotation.x = -Math.PI / 2; tw(0, 0, y, m.position); scene.add(m); TH.flow = t; };
@@ -9163,7 +9165,7 @@ function belBuild(L, TH) {
       for (const sx of [-1, 1]) { part(new THREE.CylinderGeometry(4, 6, 40, 8), rock, g, sx * 17, 20, 0); for (let k = 0; k < 4; k++) part(GEO.cone, iron, g, sx * 17 + rand(-3, 3), 40 + k, rand(-3, 3), .6, 4, .6); }
       const gl = glowSprite(0xff5010, 26, .5); gl.position.set(0, 10, 4); g.add(gl);
       for (let k = 0; k < 20; k++) { const s = rand(-60, 40), x = rand(-60, 60), q = tw(s, x, at(s, x)), h = rand(3, 9); part(GEO.cone, rock, scene, q.x, q.y + h / 2, q.z, rand(1, 2.5), h, rand(1, 2.5)); }
-      trees(60, 'dead'); break;
+      if (!UTK.bel_magma) trees(60, 'dead'); break;   // (with CTF-Magma's kit, its volcanic rocks instead: belDress)
     }
     case 'tower': {   // Tol Sirion: Minas Tirith of Finrod, a white watch-tower become the werewolves' den
       const y0 = at(0, 0); tower(0, 0, 4.5, 30, whiteD, iron, y0); wallRing(0, 0, 11, 4, whiteD, [Math.PI]); for (let k = 0; k < 6; k++) { const a = k / 6 * TAU; tower(Math.cos(a) * 11, Math.sin(a) * 11, 1.6, 8, whiteD, iron); }
@@ -9189,7 +9191,7 @@ function belBuild(L, TH) {
       const sh = c.land === 'isle' ? -(c.big ? 70 : 48) : -34; for (let k = -2; k <= 2; k++) { const q = tw(sh + 4, k * 14, .3); part(GEO_BOX, whiteD, scene, q.x, q.y, q.z, 6, .8, 9); }
       for (let k = 0; k < 5; k++) { const sx = (k - 2) * 14, q = tw(sh - 8, sx, -1); const sp = new THREE.Group(); sp.position.copy(q); sp.rotation.y = -trackAng(0); scene.add(sp); const hl = part(GEO.sph, white, sp, 0, .4, 0, 1.4, .9, 4.4); part(GEO.cyl, wood, sp, 0, 4.5, 0, .1, 8, .1); part(new THREE.PlaneGeometry(3.6, 5), lam(0xfafaff, { side: THREE.DoubleSide }), sp, 0, 5, .2).rotation.y = Math.PI / 2; }
       tower(sh + 10, -26, 2.4, 22, white, gold); const lh = glowSprite(0xfff0c0, 8, .8); tw(sh + 10, -26, at(sh + 10, -26) + 26, lh.position); scene.add(lh);
-      for (let k = 0; k < 40; k++) { const s = rand(sh + 14, sh + 50), x = rand(-40, 40); if (at(s, x) < -.5 || Math.hypot(s - (sh + 10), x + 26) < 6) continue; house(s, x, rand(3, 5), rand(3, 5), rand(3, 6), k % 3 ? white : whiteD, lam(0x5a80b8), rand(0, 3)); }
+      for (let k = 0, n = 0; k < 120 && n < (UO ? 16 : 40); k++) { const s = rand(sh + 14, sh + 50), x = rand(-40, 40); if (at(s, x) < -.5 || Math.hypot(s - (sh + 10), x + 26) < 6) continue; if (UO && (way(s, x) || Math.abs(at(s + 2.5, x) - at(s - 2.5, x)) + Math.abs(at(s, x + 2.5) - at(s, x - 2.5)) > 1.6)) continue; n++; house(s, x, rand(3, 5), rand(3, 5), rand(3, 6), k % 3 ? white : whiteD, lam(0x5a80b8), rand(0, 3)); }
       trees(50, 'pine', (s, x) => s < sh + 52); break;
     }
     case 'dwarfgate': {   // Nogrod and Belegost: a gate carved huge in the mountain's wall, with stairs, great kings of stone either side, forge-fire within
@@ -9200,7 +9202,7 @@ function belBuild(L, TH) {
       trees(40, 'pine', (s, x) => s > 22); break;
     }
   }
-  belDress(L, c, at, way, B);   // (the UT2004 maps' trees, rocks and set pieces: BEL_UT)
+  belDress(L, c, at, way, B, utLand);   // (the UT2004 maps' trees, rocks and set pieces: BEL_UT)
   bakeScenery(scene.children.slice(first));
 }
 // --- Beleriand dressed from Unreal Tournament 2004's maps (only on your own computer: levels/ut/bel_*.json, Prep-UTKitGltf.ps1): each place's trees and rocks from the
@@ -9233,11 +9235,11 @@ const BEL_LOOK = { tone: [1.3, .74], rough: .85, bump: 1.6, env: .1 };
 // a kit's piece standing on the ground at s, x (its own foot at the ground), y up from there
 function belPiece(kit, n, s, x, up, h, sc, at, look = BEL_LOOK, B) { const K = UTK[kit], p = K && K.pieces[n]; if (!p) return null; return utPut(K, n, s, x, at(s, x) + up - p.b[2] * sc, h, sc, look, B); }
 function belTreeUT(c) { const D = BEL_UT[c.loc]; return D && D.trees.length && D.trees.some(([k, n]) => UTK[k] && UTK[k].pieces[n]) ? D.trees.filter(([k, n]) => UTK[k] && UTK[k].pieces[n]) : null; }
-function belDress(L, c, at, way, B) {
+function belDress(L, c, at, way, B, landOnly) {   // (landOnly: on a map's own land, which has its own trees and rocks: only the set pieces)
   const D = BEL_UT[c.loc]; if (!D) return; const T_ = L.terrain, kind = (s, x) => T_.g[(BEL_C - Math.round(s)) * BEL_N + BEL_C - Math.round(x)];
   const ok = ([k, n]) => UTK[k] && UTK[k].pieces[n];
   // rocks, on the cliffs and steep ground, kept off the way through
-  const rocks = D.rocks.filter(ok); if (rocks.length) for (let k = 0, n = 0; k < 600 && n < 46; k++) { const s = rand(-76, 76), x = rand(-76, 76), g = kind(s, x); if (g === 'w' || way(s, x)) continue; const sl = Math.abs(at(s + 1, x) - at(s - 1, x)) + Math.abs(at(s, x + 1) - at(s, x - 1)); if (g !== 'c' && sl < 1.2 && Math.random() < .8) continue; const [kt, nm, sc] = rocks[n % rocks.length]; belPiece(kt, nm, s, x, -.8, rand(0, TAU), sc * rand(.8, 1.3), at, BEL_LOOK); n++; }
+  const rocks = landOnly ? [] : D.rocks.filter(ok); if (rocks.length) for (let k = 0, n = 0; k < 600 && n < 46; k++) { const s = rand(-76, 76), x = rand(-76, 76), g = kind(s, x); if (g === 'w' || way(s, x)) continue; const sl = Math.abs(at(s + 1, x) - at(s - 1, x)) + Math.abs(at(s, x + 1) - at(s, x - 1)); if (g !== 'c' && sl < 1.2 && Math.random() < .8) continue; const [kt, nm, sc] = rocks[n % rocks.length]; belPiece(kt, nm, s, x, -.8, rand(0, TAU), sc * rand(.8, 1.3), at, BEL_LOOK); n++; }
   // a mountain wall faced with the map's cliffs (Nogrod and Belegost)
   if (D.wall && ok([D.wall[0], D.wall[1][0]])) for (let x = -76, i = 0; x <= 76; x += 13, i++) { if (Math.abs(x) < 34) continue; belPiece(D.wall[0], D.wall[1][i % D.wall[1].length], 33 + rand(0, 3), x, -6, rand(-.2, .2), D.wall[2], at); }   /* (clear of the gate) */
   // a ring of pillars and of fire-pots round the landmark (Tol Sirion)
@@ -9252,6 +9254,8 @@ function updateBel(dt) {
   if (TH.flow) { TH.flow.offset.x += dt * .01; TH.flow.offset.y += dt * .006; }
   if (LV.layout.gondolin) updateGondolin(dt, TH);
   if (c.land === 'fire' && Math.random() < dt * 14) bfire(tw(P.s + rand(-30, 30), P.x + rand(-30, 30), landAt(P.s, P.x) + rand(0, 1)), rand(1, 2), 2);
+  if ((c.snow || c.loc === 'himring') && Math.random() < dt * 40) fx.spawn(...tw(P.s + rand(-26, 26), P.x + rand(-26, 26), P.y + rand(7, 15)).toArray(), rand(-.4, .4), -1.3, rand(-.4, .4), rand(6, 9), .13, .1, [1, 1, 1], [.9, .95, 1], 0, 0);   // (snow falling)
+  else if (c.land !== 'fire' && Math.random() < dt * 9) fx.spawn(...tw(P.s + rand(-18, 18), P.x + rand(-18, 18), landAt(P.s, P.x) + rand(.6, 4)).toArray(), rand(-.25, .25), rand(.05, .2), rand(-.25, .25), rand(3, 5), .11, .02, [1, .96, .6], [.8, 1, .7], 0, 0);   // (motes of light drifting in the air, as the Elves' lands have)
   if (c.land === 'lake' && Math.random() < dt * 6) smoke.spawn(...tw(P.s + rand(-30, 30), P.x + rand(-30, 30), landAt(P.s, P.x) + rand(.2, 2)).toArray(), rand(-.2, .2), .05, rand(-.2, .2), rand(6, 10), 5, 12, [.8, .82, .84], [.9, .9, .92], 0, .15);   // (the mist of Hithlum)
 }
 BELV.forEach(c => { THEMES['bel_' + c.loc] = natTheme({ wallTex: TX.rock, floorTex: TX.grass, tint: [1, 1, 1], door: 0x8a6a4a, env: c.env, orc: MT_ORC, scenery(L) { belBuild(L, this); } }); });
@@ -9280,6 +9284,12 @@ async function loadUTKit(kit) {
   }
   console.log(`Valinor: ${Object.keys(pieces).length} Unreal Tournament 2004 pieces for ${kit} (levels/ut/${kit}.json)`);
   return UTK[kit] = { pieces, img: Object.fromEntries(K.tex.map((n, i) => [n, imgs[i]])) };
+}
+// a few of UT2004's pictures alone, as a kit with no pieces (textures/ut/<name>.png): CTF-MoonDragon's ground for Rivendell
+async function loadUTPics(kit, names) {
+  if (!LOCAL_ASSETS || new URLSearchParams(location.search).get('layout') === 'classic') return;
+  const imgs = await Promise.all(names.map(n => loadImage(`textures/ut/${n}.png`).catch(() => null))); if (!imgs.some(Boolean)) return;
+  UTK[kit] = { pieces: {}, img: Object.fromEntries(names.map((n, i) => [n, imgs[i]])) };
 }
 // a kit's picture, re-toned ([saturation, gamma]: toneCanvas) and tiled
 function utTex(K, name, tone) {
@@ -9542,7 +9552,7 @@ function updateGondolin(dt, TH) {
   // the names of the Seven Gates, as you pass through each
   if (state === 'play') { const k = GD.GATES.findIndex(s => P.s > s && P.s < s + 3); if (k >= 0 && TH.gdGate !== k) { TH.gdGate = k; banner(`THE SEVEN GATES: THE GATE OF ${GD_GATES[k][0]}`, 2.2); if (k === 6) setTimeout(() => banner('TUMLADEN: THE HIDDEN CITY OF GONDOLIN', 3), 2400); } }
 }
-function resetWrath() { Object.assign(WR, { ang: 0, rad: 88, y: WR_C.Y, vr: 0, vy: 0, rollT: 0, rollCD: 0, shotCD: 0, said: 0, won: false, boss: null, bolts: [] }); }
+function resetWrath() { Object.assign(WR, { ang: 0, rad: 165, y: WR_C.Y, vr: 0, va: 0, spin: 1, vy: 0, rollT: 0, rollCD: 0, shotCD: 0, said: 0, won: false, boss: null, bolts: [] }); }
 // --- The Watcher in the Water: before the Doors of Durin, by moonlight, on the paved shore of the black lake. It bursts up through the stones into a crater of broken slabs and
 //     churning water, as Battle for Middle-earth's Watcher does: only the top of its head out of the pool, its long tentacles sprawling out over the shore on every side. It's
 //     fought like a many-headed beast: each tentacle must be cut down when it comes down to the stones: they slam along a red line (and lie there a moment: strike), sweep
@@ -10064,9 +10074,12 @@ function rivContent(L) {
   const P_ = Y.peaks; [['c', 0, 5, 3], ['q', 1, 5, -3], ['b', 2, -5, 4], ['r', 3, -9, 8], ['c', 3, -9, -8], ['p', 4, 4, 4], ['q', 5, -4, 4], ['l', 6, -5, -4], ['b', 7, -5, 4], ['c', 8, -5, 5]].forEach(([k, pi, ds, dx]) => addCrate(k, P_[pi][0] + ds, P_[pi][1] + dx, 0, P_[pi][3] + 2));
 }
 function buildRivKH(L, TH) {
-  if (L.layout.ut) { buildDwarrowdelf(L, TH); buildUTTerrain(L, TH); utFalls(L, TH, 20); return; }   // (Rivendell on the whole of CTF-MoonDragon: see UT_PLACES)  const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
+  if (L.layout.ut) { buildDwarrowdelf(L, TH); buildUTTerrain(L, TH); utFalls(L, TH, 20); return; }   // (Rivendell on the whole of CTF-MoonDragon: see UT_PLACES)
+  const Y = L.layout, T_ = L.terrain, first = scene.children.length, at = (s, x) => terrainAt(s, x, true), sky = TH.env;
   const grd = surf(TX.rock, { sky, vc: true, rough: .95, bump: 4, env: .04, tri: 3 }), rep = (t, a, b) => { const c = t.clone(); c.needsUpdate = true; c.wrapS = c.wrapT = THREE.RepeatWrapping; c.repeat.set(a, b); return c; };
-  groundMesh(T_, TX.rock, (k, sl, y) => k === 'g' ? (sl < .6 ? [.42, .62, .46] : [.5, .55, .56]) : [.42 + clamp(y / 80, 0, .14), .42 + clamp(y / 80, 0, .14), .5 + clamp(y / 80, 0, .14)], 6, () => grd);
+  { const MG = UTK.mdground, gT = MG && utTex(MG, 'ArboreaTerrain.ground.flr10ar', [1.12, .84]), rT = MG && utTex(MG, 'FarEast.Rockage.Rock_Moss2', [1.05, .84]);   // (CTF-MoonDragon's own ground: its grass on the peaks' tops, its mossy rock down their sides)
+    if (gT && rT) groundMesh(T_, gT, (k, sl, y) => { const v = .92 + clamp(y / 90, 0, .14); return [v, v, v * 1.02]; }, 5, t => slopeGround(t, rT, 1 / 7));
+    else groundMesh(T_, TX.rock, (k, sl, y) => k === 'g' ? (sl < .6 ? [.42, .62, .46] : [.5, .55, .56]) : [.42 + clamp(y / 80, 0, .14), .42 + clamp(y / 80, 0, .14), .5 + clamp(y / 80, 0, .14)], 6, () => grd); }
   const pale = surf(TX.marble, { sky, color: 0xe8e8f4, rough: .55, bump: 1.4, env: .55, tri: 3 }), paleD = surf(TX.marble, { sky, color: 0xb8bcd0, rough: .6, bump: 1.4, env: .45, tri: 3 }), goldM = lam(0xd8b060, { emissive: 0x3a2806 }), roofM = surf(TX.hdPlate || TX.marble, { sky, color: 0x4a7a7a, rough: .4, bump: 1, env: .8, side: THREE.DoubleSide }), roofG = lam(0xb89040, { emissive: 0x2a1c04, side: THREE.DoubleSide }), glassM = new THREE.MeshBasicMaterial({ color: 0xffd890 });
   // a roof that sweeps up at its edge, round (or squared, n = 4), with a golden finial
   const roofPts = (r, h) => { const a = []; for (let k = 0; k <= 10; k++) { const t = k / 10; a.push(new THREE.Vector2(r * (1 - t) * (1 - t) + .02, h * Math.pow(t, 1.5) + (1 - t) * (1 - t) * r * .14)); } return a; };
@@ -11732,13 +11745,16 @@ function utTerrainGrid(TR, S0, S1, X0, X1, ox, oy, oz, SC, SH) {
 function utWithGround(DK, T_) { const D2 = { ...DK, lay: DK.lay.slice(), top: DK.top.slice() }; for (let j = 0; j < DK.h; j++) for (let i = 0; i < DK.w; i++) { const s = DK.s0 + j, x = DK.x0 + i, ti = T_.cx - x, tj = T_.cy - s; if (ti < 0 || tj < 0 || ti >= T_.w || tj >= T_.h) continue; const y = T_.hs[tj * T_.w + ti]; if (y > -29) deckPut(D2, j * DK.w + i, y); } return D2.lay; }
 // the terrain drawn as Unreal paints it: each layer's picture tiled as the map sets it, laid over the ones under it as its own painted map says, lit by the map's lights
 function buildUTTerrain(L, TH) {
-  const { U, TR, ox, oy, oz, SC, light } = L.layout.ut, T_ = L.terrain, K = U.K, W = T_.w, H = T_.h;
+  const { U, TR, ox, oy, oz, SC, light, fill, shade } = L.layout.ut, T_ = L.terrain, K = U.K, W = T_.w, H = T_.h;   // (fill: every square painted, off the map's terrain too, by the nearest; shade: darker down slopes and in hollows, brighter on tops)
   const pos = new Float32Array(W * H * 3), uu = new Float32Array(W * H * 2), col = new Float32Array(W * H * 3), idx = TR.map(() => []), c = new THREE.Color(), hs = T_.hs, own = new Int8Array(W * H).fill(-1);
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
     const k = j * W + i, s = T_.cy - j, x = T_.cx - i, y = hs[k], p = tw(s, x, y, _a); pos.set([p.x, p.y, p.z], k * 3); const X = ox - x / SC, Y = oy + s / SC; uu.set([X, Y], k * 2);
     own[k] = TR.findIndex(T => { const fi = (X - T.loc[0]) / T.sc[0] + T.w / 2, fj = (Y - T.loc[1]) / T.sc[1] + T.h / 2; return fi >= 0 && fj >= 0 && fi <= T.w - 1 && fj <= T.h - 1; });   // (which terrain this square is: each paints its own)
+    if (own[k] < 0 && fill) own[k] = 0;
     const dx = (hs[k + (i < W - 1 ? 1 : 0)] - hs[k - (i > 0 ? 1 : 0)]), ds = (hs[k - (j > 0 ? W : 0)] - hs[k + (j < H - 1 ? W : 0)]), nl = Math.hypot(dx, ds, 2);
-    if (light) light(X, Y, y / SC + oz + 30, dx / nl, ds / nl, 2 / nl, c); else c.setRGB(1, 1, 1); col.set([c.r, c.g, c.b], k * 3);
+    if (light) light(X, Y, y / SC + oz + 30, dx / nl, ds / nl, 2 / nl, c); else c.setRGB(1, 1, 1);
+    if (shade) { let av = 0, n = 0; for (let q = -3; q <= 3; q += 3) for (let r = -3; r <= 3; r += 3) { const ii = i + q, jj = j + r; if (ii >= 0 && jj >= 0 && ii < W && jj < H) { av += hs[jj * W + ii]; n++; } } const cav = clamp((y - av / n) * .08, -.16, .1), sl = 1 - 2 / nl; c.multiplyScalar(1.06 + cav - sl * .22); }   /* (hollows and slopes darker, ridges lighter) */
+    col.set([c.r, c.g, c.b], k * 3);
   }
   for (let j = 0; j < H - 1; j++) for (let i = 0; i < W - 1; i++) { const k = j * W + i; if (own[k] < 0 || hs[k] < -29 || hs[k + 1] < -29 || hs[k + W] < -29 || hs[k + W + 1] < -29) continue; idx[own[k]].push(k, k + 1, k + W, k + 1, k + W + 1, k + W); }
   const black = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, THREE.RGBAFormat); black.needsUpdate = true;
@@ -11746,22 +11762,25 @@ function buildUTTerrain(L, TH) {
     if (!idx[ti].length) return;
     const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('aUU', new THREE.BufferAttribute(uu, 2)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.setIndex(idx[ti]); geo.computeVertexNormals();
     const LY = T0.layers.slice(0, 4);
-    const tl = LY.map(l => utTex(K, U.D.tex[l.t], [1.3, .75]) || TX.grass), ta = LY.map(l => { const d = new Uint8Array(l.w * l.h * 4); for (let q = 0; q < l.a.length; q++) d[q * 4] = d[q * 4 + 1] = d[q * 4 + 2] = d[q * 4 + 3] = l.a[q]; const t = new THREE.DataTexture(d, l.w, l.h, THREE.RGBAFormat); t.magFilter = t.minFilter = THREE.LinearFilter; t.needsUpdate = true; return t; });
+    const tl = LY.map(l => utTex(K, U.D.tex[l.t], fill ? [1.06, .86] : [1.3, .75]) || TX.grass), ta = LY.map(l => { const d = new Uint8Array(l.w * l.h * 4); for (let q = 0; q < l.a.length; q++) d[q * 4] = d[q * 4 + 1] = d[q * 4 + 2] = d[q * 4 + 3] = l.a[q]; const t = new THREE.DataTexture(d, l.w, l.h, THREE.RGBAFormat); t.magFilter = t.minFilter = THREE.LinearFilter; t.needsUpdate = true; return t; });
     if (!tl.length) { tl.push(TX.grass); ta.push(black); } while (tl.length < 4) { tl.push(tl[0]); ta.push(black); }
-    const m = new THREE.MeshLambertMaterial({ vertexColors: true });
+    const m = new THREE.MeshLambertMaterial({ vertexColors: true }), rockT = L.layout.ut.rock || null;   // (rock: a picture for the cliffs, laid on from the side where the ground is steep, as the map's pictures would smear down them)
     m.onBeforeCompile = sh => {
       ps1Compile(sh); for (let q = 0; q < 4; q++) { sh.uniforms['tL' + q] = { value: tl[q] }; sh.uniforms['tA' + q] = { value: ta[q] }; sh.uniforms['sL' + q] = { value: new THREE.Vector2(LY[q] ? LY[q].u : 1, LY[q] ? LY[q].v : 1) }; }
-      sh.uniforms.uTA = { value: new THREE.Vector4(T0.loc[0] - T0.w / 2 * T0.sc[0], T0.loc[1] - T0.h / 2 * T0.sc[1], T0.w * T0.sc[0], T0.h * T0.sc[1]) };
-      sh.vertexShader = 'attribute vec2 aUU;\nvarying vec2 vUU;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vUU = aUU;');
-      sh.fragmentShader = 'uniform sampler2D tL0, tL1, tL2, tL3, tA0, tA1, tA2, tA3;\nuniform vec2 sL0, sL1, sL2, sL3;\nuniform vec4 uTA;\nvarying vec2 vUU;\n' + sh.fragmentShader.replace('#include <map_fragment>', `
+      sh.uniforms.uTA = { value: new THREE.Vector4(T0.loc[0] - T0.w / 2 * T0.sc[0], T0.loc[1] - T0.h / 2 * T0.sc[1], T0.w * T0.sc[0], T0.h * T0.sc[1]) }; sh.uniforms.tRk = { value: rockT || tl[0] };
+      sh.vertexShader = 'attribute vec2 aUU;\nvarying vec2 vUU;\nvarying vec3 vWP;\nvarying vec3 vWN;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vUU = aUU;').replace('#include <project_vertex>', '#include <project_vertex>\n vWP = (modelMatrix * vec4(transformed, 1.0)).xyz; vWN = normalize(mat3(modelMatrix) * objectNormal);');
+      sh.fragmentShader = 'uniform sampler2D tL0, tL1, tL2, tL3, tA0, tA1, tA2, tA3, tRk;\nuniform vec2 sL0, sL1, sL2, sL3;\nuniform vec4 uTA;\nvarying vec2 vUU;\nvarying vec3 vWP;\nvarying vec3 vWN;\n' + sh.fragmentShader.replace('#include <map_fragment>', `
         vec2 at = (vUU - uTA.xy) / uTA.zw;
         vec3 cc = texture2D(tL0, vUU * sL0).rgb;
         cc = mix(cc, texture2D(tL1, vUU * sL1).rgb, texture2D(tA1, at).r);
         cc = mix(cc, texture2D(tL2, vUU * sL2).rgb, texture2D(tA2, at).r);
         cc = mix(cc, texture2D(tL3, vUU * sL3).rgb, texture2D(tA3, at).r);
+        ${rockT ? `vec3 bw = pow(abs(vWN), vec3(4.0)); bw /= (bw.x + bw.y + bw.z);
+        vec3 rk = texture2D(tRk, vWP.zy * .11).rgb * bw.x + texture2D(tRk, vWP.xz * .11).rgb * bw.y + texture2D(tRk, vWP.xy * .11).rgb * bw.z;
+        cc = mix(cc, rk, smoothstep(.72, .5, vWN.y));` : ''}
         diffuseColor.rgb *= cc;`);
     };
-    m.customProgramCacheKey = () => 'utTerrain';
+    m.customProgramCacheKey = () => 'utTerrain' + (rockT ? 'R' : '');
     const me = new THREE.Mesh(geo, m); me.receiveShadow = true; me.userData.keep = true; scene.add(me);
   });
 }// waterfalls wherever a map's ground falls away in a cliff: white water down the drop, spray where it lands (as many as n, spread out)
@@ -11774,23 +11793,99 @@ function utFalls(L, TH, n) {
   for (const c of got) { const w = rand(3, 6), s = c.s + Math.cos(c.a) * 1.2, x = c.x + Math.sin(c.a) * 1.2, m = new THREE.Mesh(new THREE.PlaneGeometry(w, c.drop + 2), fm); m.position.copy(tw(s, x, c.y - c.drop / 2)); m.rotation.y = -c.a; m.userData.keep = true; scene.add(m); TH.mists.push([s + Math.cos(c.a) * 2, x + Math.sin(c.a) * 2, c.y - c.drop, w]); }
 }// whole outdoor UT2004 maps as places in Beleriand (only on your own computer: Prep-UTLevel.ps1): the map's ground, its buildings carved from its brushes, its meshes
 // where it put them, the place's own foes in three of its open places, the last at the far end of the longest walk
-const UT_PLACES = [['menegroth', 'lostfaith', 'Menegroth'], ['riv', 'moondragon', 'Rivendell', { fellow: true, theme: 'rivkh', fog: [90, 620] }],
-  ['nargo', 'adara', 'Nargothrond', { crop: 440 }], ['angband', 'magma', 'Angband'], ['tolsirion', 'goopgod', 'Tol Sirion'], ['himring', 'calandras', 'Himring'], ['hithlum', 'grassyknoll', 'Hithlum', { crop: 440 }],
-  ['vinyamar', 'desertisle', 'Vinyamar'], ['nogrod', 'antalus', 'Nogrod'], ['belegost', 'frostbite', 'Belegost', { crop: 440 }], ['falas', 'serenity', 'Eglarest', { crop: 440 }], ['balar', 'islandhop', 'Balar', { crop: 440 }], ['sirion', 'dria', 'The Havens of Sirion', { crop: 440 }]];
+const UT_PLACES = [['menegroth', 'lostfaith', 'Menegroth'],
+  ['nargo', 'adara', 'Nargothrond', { crop: 440 }], ['angband', 'magma', 'Angband'], ['tolsirion', 'goopgod', 'Tol Sirion'], ['himring', 'arctic', 'Himring'], ['hithlum', 'grassyknoll', 'Hithlum', { crop: 440 }],
+  ['vinyamar', 'desertisle', 'Vinyamar'], ['nogrod', 'antalus', 'Nogrod'], ['belegost', 'frostbite', 'Belegost', { crop: 440 }], ['falas', 'serenity', 'Eglarest', { crop: 440 }], ['balar', 'islandhop', 'Balar', { crop: 440 }], ['sirion', 'dawn', 'The Havens of Sirion']];
+let UTP_READY = false;
 async function loadUTPlaces() {   // (each built when you first go there: see utLazyFirst; here, only whether its file is there)
-  if (!LOCAL_ASSETS || new URLSearchParams(location.search).get('layout') === 'classic') return;
+  if (!LOCAL_ASSETS || new URLSearchParams(location.search).get('layout') === 'classic') { UTP_READY = true; return; }
+  setTimeout(() => { UTP_READY = true; }, 20000);   // (whatever happens)
   await Promise.all(UT_PLACES.map(async ([loc, file, name, more]) => { const r = await fetch(`levels/ut/${file}.json`, { method: 'HEAD' }).catch(() => null); if (!r || !r.ok) return; const L = LEVELS.find(L => L.loc === loc && (!more || !more.theme || L.theme === more.theme)); if (L) L.utLazy = { file, name, more: more || {} }; }));
+  UTP_READY = true;
 }
 // the first time you go to a place built on a whole UT2004 map: the map is read, carved and dressed then (a few seconds), and the level starts
 function utLazyFirst(li, then) {
   const L = LEVELS[li], Z = L.utLazy; if (!Z || Z.done) return false; if (Z.busy) return true; Z.busy = true; banner(`${Z.name.toUpperCase()}: THE WAY IS BEING MADE...`, 30, true);
   setTimeout(async () => {
-    const U = await loadUTMap(Z.file), keep = { ...L, layout: L.layout }, ok = () => Z.more.fellow ? (L.layout.fellowship || []).length >= 4 : L.layout.plazas.length >= 1;
-    if (U) try { applyUTMines(L, U, { terrain: true, name: Z.name, ...Z.more }); if (!ok()) throw new Error('nowhere to fight on the floor it can walk'); } catch (e) { console.warn(`Valinor: ${Z.name} could not be built on ${Z.file}, so it keeps its own:`, e.message); for (const k of Object.keys(L)) if (!(k in keep)) delete L[k]; Object.assign(L, keep); }   /* (a map that doesn't work out: the place as it was) */
+    const U = await loadUTMap(Z.file), keep = { ...L, layout: L.layout, terrain: L.terrain }, ok = () => Z.more.fellow ? (L.layout.fellowship || []).length >= 4 : L.layout.plazas.length >= 1;
+    if (U) try { if (L.layout.bel) applyUTOpen(L, U, { name: Z.name, ...Z.more }); else applyUTMines(L, U, { terrain: true, name: Z.name, ...Z.more }); if (!ok()) throw new Error('nowhere to fight on the floor it can walk'); } catch (e) { console.warn(`Valinor: ${Z.name} could not be built on ${Z.file}, so it keeps its own:`, e.message); for (const k of Object.keys(L)) if (!(k in keep)) delete L[k]; Object.assign(L, keep); }   /* (a map that doesn't work out: the place as it was) */
     setFrame(L); buildL = L; const before = new Set(scene.children); if (L.theme) THEMES[L.theme].scenery(L); for (const o of scene.children) if (!before.has(o)) o.userData.stat = true;
     Z.done = true; banner('', .01, true); then();
   }, 30);
   return true;
+}
+// a place in Beleriand on a UT2004 map's land, in the map's style rather than the map itself: the place keeps its own way through, its squares to fight in and
+// its landmark at the end (belLayout), and takes the map's rolling ground (its terrain's heights, squeezed to a medium open level, blended into the place's own
+// water, shores and cliffs, levelled where you fight, a trail graded between them), the map's own painted ground, and the map's meshes where the map put them
+// (its trees, rocks and ruins, standing on the new ground). A map without much terrain (Magma, Calandras, GoopGod) keeps the place's ground, painted with the
+// pictures the map floors and walls itself with, and the place is dressed from that map's kit (BEL_UT)
+function applyUTOpen(L, U, opt = {}) {
+  L.terrain = { ...L.terrain, hs: L.terrain.hs.slice() }; L.layout = { ...L.layout, blocks: L.layout.blocks.slice(), plazas: L.layout.plazas.map(p => ({ ...p })) };   // (its own copies: if the map doesn't work out, the place is as it was)
+  const D = U.D, SC = UTM_SC, c = L.layout.bel, T_ = L.terrain, N = T_.w, CX_ = T_.cx, CY_ = T_.cy, t0 = performance.now(), smoothstep = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  const TR = (D.terrains || []).filter(T => T.hs && T.hs.length && Math.abs(T.sc[0]) < 1000 && T.w * Math.abs(T.sc[0]) * SC > 120 && T.h * Math.abs(T.sc[1]) * SC > 120);   /* (not a far backdrop, not a little patch) */
+  const fi_ = (T, X, Y) => [(X - T.loc[0]) / T.sc[0] + T.w / 2, (Y - T.loc[1]) / T.sc[1] + T.h / 2], inT = (T, X, Y) => { const [fi, fj] = fi_(T, X, Y); return fi >= 0 && fj >= 0 && fi <= T.w - 1.001 && fj <= T.h - 1.001; };
+  const H = (X, Y) => { let best = -1e9; for (const T of TR) { if (!inT(T, X, Y)) continue; const [fi, fj] = fi_(T, X, Y), a = fi | 0, b = fj | 0, u = fi - a, v = fj - b, W = T.w, hs = T.hs; best = Math.max(best, (hs[b * W + a] * (1 - u) + hs[b * W + a + 1] * u) * (1 - v) + (hs[(b + 1) * W + a] * (1 - u) + hs[(b + 1) * W + a + 1] * u) * v); } return best; };
+  // the map's most-used pictures for floors and for walls (by area), for a map whose ground isn't terrain, and for the cliffs
+  const area = [{}, {}]; for (const b of D.brushes) for (const [ti, fl, v] of b.p) { if (fl & 1 || fl & 128) continue; const nm = D.tex[ti]; if (!nm || !U.img[nm] || /sky|water|fluid|glass|light|fx|sign|trim|tech|pipe|metal|grate|panel|door|lava|fire|decal|blend|alpha/i.test(nm)) continue; let nx = 0, ny = 0, nz = 0; const m = v.length / 5; for (let i = 0; i < m; i++) { const a = i * 5, q = ((i + 1) % m) * 5; nx += (v[a + 1] - v[q + 1]) * (v[a + 2] + v[q + 2]); ny += (v[a + 2] - v[q + 2]) * (v[a] + v[q]); nz += (v[a] - v[q]) * (v[a + 1] + v[q + 1]); } const A = Math.hypot(nx, ny, nz) / 2, k = Math.abs(nz) / (2 * A || 1) > .6 ? 0 : 1; area[k][nm] = (area[k][nm] || 0) + A; }
+  const NAT = /grass|dirt|ground|moss|sand|earth|mud|terrain|rock|snow|lava|volcan|mountain|cliff|stone|gravel|ash/i, top = o => Object.entries(o).filter(e => NAT.test(e[0])).sort((a, b) => b[1] - a[1]).map(e => e[0])[0] || null;
+  const paint = { floor: top(area[0]), wall: top(area[1]) || top(area[0]) };   // (only the map's natural ground: a map floored in brick leaves the place its own ground)
+  const ok = (s, x) => Math.abs(s) < CY_ && Math.abs(x) < CX_, gAt = (s, x) => T_.g[(CY_ - Math.round(s)) * N + CX_ - Math.round(x)];
+  const stops = [L.start, ...L.layout.plazas.map(p => [p.s, p.x])], segD = (s, x) => { let d = 1e9; for (let i = 0; i + 1 < stops.length; i++) { const q = stops[i], n = stops[i + 1], ds = n[0] - q[0], dx = n[1] - q[1], k = clamp(((s - q[0]) * ds + (x - q[1]) * dx) / (ds * ds + dx * dx), 0, 1); d = Math.min(d, Math.hypot(s - q[0] - ds * k, x - q[1] - dx * k)); } return d; };
+  const way = (s, x) => segD(s, x) < 5 || L.layout.plazas.some(p => Math.hypot(s - p.s, x - p.x) < p.r + 2) || Math.hypot(s - L.start[0], x - L.start[1]) < 6;
+  const MARK = { gates: [32, 0, 16], caves: [50, 0, 22], iron: [42, 0, 18], tower: [0, 0, 16], fort: [0, 0, 22], halls: [32, 0, 18], dwarfgate: [30, 0, 18], city: [0, 0, 38] }[c.mark];   // (the landmark's own ground, kept as the place made it)
+  const O = { U, TR, paint, SC, ox: 0, oy: 0, oz: 0, meshes: [] };
+  if (TR.length) {
+    // where on the map: the middle of where its bots walk over its ground (or of its ground), moved as the place says
+    let ox = 0, oy = 0, n = 0; for (const p of D.paths.length ? D.paths : D.starts) if (TR.some(T => inT(T, p[0], p[1]))) { ox += p[0]; oy += p[1]; n++; } if (n) { ox /= n; oy /= n; } else { ox = TR[0].loc[0]; oy = TR[0].loc[1]; }
+    if (opt.at) { ox += opt.at[0] / SC; oy += opt.at[1] / SC; }
+    const XY = (s, x) => [ox - x / SC, oy + s / SC], uy = new Float32Array(N * N), vals = [];
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const [X, Y] = XY(CY_ - j, CX_ - i), h = H(X, Y); uy[j * N + i] = h; if (h > -1e8) vals.push(h); }
+    vals.sort((a, b) => a - b); const base = vals[Math.floor(vals.length * .1)] || 0, hi = vals[Math.floor(vals.length * .985)] || base, vs = Math.min(1, (opt.tall || 34) / Math.max(1, (hi - base) * SC));   /* (its hills at most so high over its low ground) */
+    const mapY = h => h > -1e8 ? Math.max(.25, (h - base) * SC * vs) : 0;
+    // how much of the place's own ground to keep: its water and the shores round it, its cliffs, its landmark's ground; blended out smoothly
+    let wb = new Float32Array(N * N); for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = CY_ - j, x = CX_ - i, g = T_.g[k]; wb[k] = g === 'w' || g === 'c' || (MARK && Math.hypot(s - MARK[0], x - MARK[1]) < MARK[2]) || uy[k] < -1e8 ? 1 : 0; }
+    const grow = (a, r, f) => { const b = new Float32Array(N * N); for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { let m = f === 'max' ? 0 : 0, cnt = 0; for (let q = -r; q <= r; q++) { const ii = i + q; if (ii < 0 || ii >= N) continue; const v = a[j * N + ii]; if (f === 'max') m = Math.max(m, v); else { m += v; cnt++; } } b[j * N + i] = f === 'max' ? m : m / cnt; } const c2 = new Float32Array(N * N); for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { let m = 0, cnt = 0; for (let q = -r; q <= r; q++) { const jj = j + q; if (jj < 0 || jj >= N) continue; const v = b[jj * N + i]; if (f === 'max') m = Math.max(m, v); else { m += v; cnt++; } } c2[j * N + i] = f === 'max' ? m : m / cnt; } return c2; };
+    wb = grow(grow(wb, 7, 'max'), 6, 'mean');
+    const hs = new Float32Array(N * N); for (let k = 0; k < N * N; k++) hs[k] = lerp(mapY(uy[k]), T_.hs[k], wb[k]);
+    // a rim of the map's own hills round the edge (not where the place looks out over water), so the level's edge is land rising, as a UT2004 map's is
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, e = Math.max(Math.abs(CY_ - j), Math.abs(CX_ - i)); if (T_.g[k] !== 'w') hs[k] += 26 * smoothstep(64, 80, e) * (1 - wb[k] * .6); }
+    // a trail graded from each stop to the next (never steeper than a walk), and each square levelled to fight on
+    const hAt = (s, x) => { const fx = clamp(CX_ - x, 0, N - 1.001), fy = clamp(CY_ - s, 0, N - 1.001), i = fx | 0, j = fy | 0, u = fx - i, v = fy - j; return (hs[j * N + i] * (1 - u) + hs[j * N + i + 1] * u) * (1 - v) + (hs[(j + 1) * N + i] * (1 - u) + hs[(j + 1) * N + i + 1] * u) * v; };
+    const sy = stops.map(([s, x]) => Math.max(hAt(s, x), -.4));
+    const flat = hs.slice(); for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i, s = CY_ - j, x = CX_ - i; let w = 0, y = 0;
+      for (let q = 0; q + 1 < stops.length; q++) { const a = stops[q], b = stops[q + 1], ds = b[0] - a[0], dx = b[1] - a[1], t = clamp(((s - a[0]) * ds + (x - a[1]) * dx) / (ds * ds + dx * dx), 0, 1), d = Math.hypot(s - a[0] - ds * t, x - a[1] - dx * t), ww = smoothstep(8, 3, d); if (ww > w) { w = ww; y = lerp(sy[q], sy[q + 1], t * t * (3 - 2 * t)); } }
+      stops.forEach(([ps, px], q) => { const r = q ? L.layout.plazas[q - 1].r + 2 : 5, d = Math.hypot(s - ps, x - px), ww = smoothstep(r + 7, r, d); if (ww >= w) { w = ww; y = sy[q]; } });
+      if (T_.g[k] !== 'w') flat[k] = lerp(hs[k], y, w); }
+    T_.hs.set(flat); L.layout.plazas.forEach((p, q) => { p.y = p.fromY = sy[q + 1]; }); L.startY = sy[0];
+    // the map's meshes standing on its ground in this part of it (not its far future, not in the water, not on the way through), on the new ground as high as they stood on the old
+    for (const m of D.placed) { if (UT_SCIFI.test(m[0])) continue; const s = (m[2] - oy) * SC, x = -(m[1] - ox) * SC; if (!ok(s, x) || Math.max(Math.abs(s), Math.abs(x)) > 74) continue; const pc = U.pieces[m[0]]; if (!pc) continue;
+      const g0 = H(m[1], m[2]); if (g0 < -1e8) continue; const up = (m[3] - g0) * SC; if (up > 5 || up < -8) continue;   /* (on the ground, not up on a building the place hasn't got) */
+      const b = pc.b, rr = Math.max(b[3] - b[0], b[4] - b[1]) / 2 * Math.max(m[7], m[8]) * SC, hh = (b[5] - b[2]) * m[9] * SC, plant = /tree|bush|plant|fern|grass|flower|weed|leaf|leav|vine|shrub|reed|foliage|ivy|moss|clover/i.test(m[0]);
+      if (gAt(s, x) === 'w' || (MARK && Math.hypot(s - MARK[0], x - MARK[1]) < MARK[2] + 2)) continue; if ((!plant || rr > 2) && way(s, x) || (rr > 3 && segD(s, x) < rr + 3)) continue;
+      const y = hAt(s, x) + up * (up > 0 ? vs : 1); O.meshes.push([m, s, x, y]);
+      if (plant ? /tree/i.test(m[0]) && hh > 3 : rr > .6 && hh > 1.2) { const r = plant ? .45 : Math.min(rr * .55, 6); L.layout.blocks.push([s - r, s + r, x - r, x + r, y + Math.min(hh, 14), 'wall', y - 2]); } }
+    Object.assign(O, { ox, oy, oz: base, vs });
+  }
+  L.layout.utOpen = O;
+  console.log(`Valinor: ${opt.name || c.name} in the style of ${D.name}: ${TR.length ? `its ground (${TR.length} terrain${TR.length > 1 ? 's' : ''}) and ${O.meshes.length} of its meshes` : `the place's own ground in its pictures (${paint.floor}, ${paint.wall})`}, made in ${(performance.now() - t0) | 0} ms`);
+}
+// the ground of a place on a map's land (applyUTOpen): painted as the map paints its terrain; or, where the map has none, in its floors' and walls' pictures
+function buildUTOpen(L, TH) {
+  const O = L.layout.utOpen, K = O.U.K, first = scene.children.length;
+  if (O.TR.length) {
+    // the cliffs' picture: a rock of the map's own (one of its terrain's, or its walls'), else Valinor's
+    const D = O.U.D, rn = [...O.TR.flatMap(T => T.layers.map(l => D.tex[l.t])), O.paint.wall].find(n => n && /rock|cliff|stone|crag/i.test(n) && O.U.img[n]);
+    let rock = rn ? utTex(K, rn, [1.15, .8]) : null; if (!rock) { rock = (TX.hdRock || TX.rock).clone(); rock.needsUpdate = true; rock.wrapS = rock.wrapT = THREE.RepeatWrapping; }
+    L.layout.ut = { U: O.U, TR: O.TR, ox: O.ox, oy: O.oy, oz: 0, SC: O.SC, fill: true, shade: true, rock }; buildUTTerrain(L, TH); delete L.layout.ut; }
+  else { const ft = O.paint.floor && utTex(K, O.paint.floor, [1.25, .78]), wt = O.paint.wall && utTex(K, O.paint.wall, [1.2, .8]); if (ft) groundMesh(L.terrain, ft, (k, sl) => k === 'w' ? [.55, .55, .6] : [1 - Math.min(.2, sl * .06), 1 - Math.min(.2, sl * .06), 1 - Math.min(.2, sl * .06)], 6, () => slopeGround(ft, wt || ft, 1 / 7)); }
+  // the map's meshes, each kind drawn at once wherever it stands
+  const byMesh = {}; for (const q of O.meshes) (byMesh[q[0][0]] = byMesh[q[0][0]] || []).push(q);
+  const M4 = new THREE.Matrix4(), cx = new V3(), cy = new V3(), cz = new V3(), pp = new V3(), look = { tone: [1.32, .74], rough: .85, bump: 1.4, env: .08 };
+  for (const [nm, list] of Object.entries(byMesh)) { const pc = O.U.pieces[nm]; if (!pc) continue;
+    for (const q of pc.parts) { const im = new THREE.InstancedMesh(q.geo, utMat(K, q.tex, look), list.length);
+      list.forEach(([m, s, x, y], i) => { const ax = utAxes(m[4], m[5], m[6]); tw(s, x, y, pp); cx.set(ax[0][0], ax[0][2], ax[0][1]).multiplyScalar(m[7]); cy.set(ax[2][0], ax[2][2], ax[2][1]).multiplyScalar(m[9]); cz.set(ax[1][0], ax[1][2], ax[1][1]).multiplyScalar(m[8]); M4.makeBasis(cx, cy, cz).setPosition(pp); im.setMatrixAt(i, M4); });
+      im.castShadow = list.length < 60; im.receiveShadow = true; im.frustumCulled = false; im.userData.keep = true; scene.add(im); } }
+  bakeScenery(scene.children.slice(first));
 }
 function mineUTContent(L) {
   const Y = L.layout; for (const f of Y.fellowship || []) addCrate(['b', 'q', 'c'][Math.random() * 3 | 0], f[2] + 2, f[3] + 1, 0, f[4] + 2);   // (a crate by each of the Fellowship)
@@ -14456,7 +14551,7 @@ THEMES.rivfable = natTheme({
 });
 // boot: Oakvale, Rivendell's gorge, Mirkwood and the scenery models first if they're there (they change how levels are built), then everything else
 (async () => {
-await Promise.all([loadOakvale(), loadRivendell(), loadMirkwood(), loadProps(), loadUTKit('gondolin'), loadUTKit('rivendell'), loadMoriaUT(), loadUTPlaces(), ...BEL_KITS.map(loadUTKit)]);   // (each changes how its level is built)
+await Promise.all([loadOakvale(), loadRivendell(), loadMirkwood(), loadProps(), loadUTKit('gondolin'), loadUTKit('rivendell'), loadUTPics('mdground', ['ArboreaTerrain.ground.flr10ar', 'FarEast.Rockage.Rock_Moss2']), loadMoriaUT(), loadUTPlaces(), ...BEL_KITS.map(loadUTKit)]);   // (each changes how its level is built)
 { const before = new Set(scene.children); buildStatic(); for (const o of scene.children) if (!before.has(o)) o.userData.stat = true; }   // (the levels' scenery, not Gandalf or anything shared: see sceneryFor)
 renderer.shadowMap.enabled = !RETRO; moon.castShadow = !RETRO; softTex();
 setupEntities();
@@ -14495,6 +14590,7 @@ showScreen(null); syncPauseBtns();
       for (let f = 0; f < N; f++) { for (let i = 0; i < every; i++) step(1 / 60, i < every - 1); g.drawImage(renderer.domElement, (f % 4) * W, Math.floor(f / 4) * H, W, H); g.fillStyle = '#ff0'; g.font = '16px sans-serif'; g.fillText((f * every / 60).toFixed(2) + 's ' + URUKS.map(u => u.state + (u.m.skin && u.m.skin.curAct ? '/' + u.m.skin.curAct.getClip().name.replace(/^\d+_/, '') : '')).join(' '), (f % 4) * W + 4, Math.floor(f / 4) * H + 18); }
       cv.style.cssText = 'position:fixed;left:0;top:0;z-index:999;width:' + cv.width + 'px;height:' + cv.height + 'px'; document.body.appendChild(cv); }
     if (q.get('tris')) { const L = []; scene.traverse(o => { if (!(o.isMesh || o.isPoints) || !o.visible) return; let v = true, p = o; while (p) { if (!p.visible) v = false; p = p.parent; } if (!v) return; const g = o.geometry, n = (g.index ? g.index.count : g.attributes.position.count) / 3 * (o.isInstancedMesh ? o.count : 1); let top = o; while (top.parent && top.parent !== scene) top = top.parent; L.push([n, o.name || o.type, top.name || top.type, o.isInstancedMesh ? o.count : 1, o.castShadow]); }); L.sort((a, b) => b[0] - a[0]); console.log('TRIS total ' + Math.round(L.reduce((s, q) => s + q[0], 0) / 1000) + 'k: ' + L.slice(0, 14).map(q => Math.round(q[0] / 1000) + 'k ' + q[1] + ' in ' + q[2] + ' x' + q[3] + (q[4] ? ' shadow' : '')).join(' | ')); }
+    if (LV.wrath) console.log('wrath: Ancalagon ' + (WR.boss ? WR.boss.state + ' hp ' + Math.round(WR.boss.hp) : 'none') + ', ship at angle ' + WR.ang.toFixed(2) + ' radius ' + WR.rad.toFixed(0) + ' height ' + WR.y.toFixed(0) + ', hearts ' + Math.round(KH.hp));
     if (PROF) console.log(`PROF game logic per frame: average ${(PROF.sum / PROF.n).toFixed(2)} ms, slowest ${PROF.max.toFixed(1)} ms, ${PROF.slow} of ${PROF.n} frames over 8 ms`); if (q.get('castone') && LV.kh) { KH.mp = 100; KH.magicCD = 0; KH.atk = null; khCast(q.get('castone')); for (let i = 0; i < +(q.get('castt') || 12); i++) step(1 / 60, true); }   // (testing: one spell, a moment after)
     if (q.get('cast') === 'all' && LV.kh) { const bad = []; for (const p of KH_POWERS) { try { KH.mp = 100; KH.magicCD = 0; KH.atk = null; if (!khCast(p.id)) bad.push(p.id + ' (not cast)'); for (let i = 0; i < 90; i++) step(1 / 60, true); } catch (e) { bad.push(p.id + ': ' + e.message); } } console.log('castall ' + KH_POWERS.length + ' powers, problems: ' + (bad.join('; ') || 'none') + ', kills ' + gs.kills); }   // (&cast=all: every power in turn, for testing)
     if (q.get('cutnow') && KH.boss) { bossFall(KH.boss); for (let i = 0; i < Number(q.get('cutnow')) * 60; i++) step(1 / 60, true); }   // (&cutnow=2: the bridge's ending, 2 seconds in, for testing)
@@ -14517,7 +14613,8 @@ showScreen(null); syncPauseBtns();
     if (q.get('pick')) setTimeout(() => { const [px, py] = q.get('pick').split(',').map(Number), rc = new THREE.Raycaster(); rc.setFromCamera(new THREE.Vector2(px, py), camera); if (LV && LV.layout && LV.layout.ramps) console.log('autorun ramps ' + JSON.stringify(LV.layout.ramps.map(r => [r.sb, r.xb, r.sa, r.xa, r.ya].map(v => +v.toFixed(1))))); console.log('autorun skin ' + URUKS.filter(u => u.boss).map(u => { const O = u.m.skin && u.m.skin.obj; if (!O) return u.state + ':noobj'; const bx = new THREE.Box3().setFromObject(O); return u.state + ':' + u.m.skin.cur + ' root ' + u.m.root.visible + ' ' + u.m.root.position.toArray().map(v => v.toFixed(0)) + ' scale ' + O.scale.x.toFixed(3) + ' box ' + bx.min.toArray().map(v => v.toFixed(1)) + ' .. ' + bx.max.toArray().map(v => v.toFixed(1)); }).join(' | ') + ' hob ' + hob.root.visible + ' ' + hob.root.position.toArray().map(v => v.toFixed(1)) + ' P ' + P.y.toFixed(1)); console.log('autorun pick ' + rc.intersectObjects(scene.children, true).slice(0, 5).map(h => [h.object.type, h.distance.toFixed(1), h.object.name, h.object.material && h.object.material.type, h.object.material && h.object.material.color && h.object.material.color.getHexString(), h.object.parent && h.object.parent.type, h.object.parent && h.object.parent.parent && h.object.parent.parent.type].join(':')).join(' | ')); }, 15000);   // &pick=x,y (-1..1): what's on the screen there (testing)
     if (q.get('cam')) { const [s, x, y, ls, lx, ly] = q.get('cam').split(',').map(Number); DEBUG_CAM = { p: tw(s, x, y), l: tw(ls, lx, ly) }; }   // &cam=s,x,y,ls,lx,ly: a fixed camera in the level
     if (q.get('peek') && balrogs[0]) { const r = balrogs[0].m.root, [x, y, z] = q.get('peek').split(',').map(Number); r.updateMatrixWorld(true); DEBUG_CAM = { p: r.localToWorld(new V3(x, y, z)), l: r.localToWorld(new V3(0, 5, 0)) }; }   // &peek=8,7,12 looks at the Balrog from there
-    }; q.get("waitmodels") ? whenModels(() => Promise.all(Object.values(KH_WANT)).then(runTests)) : runTests();   // (&waitmodels=1: the rest only once your own models are in)
+    }; const runT = () => { const Z = LEVELS[li].utLazy; if (LOCAL_ASSETS && !UTP_READY || Z && !Z.done) { if (Z && !Z.busy) startGame(li); setTimeout(runT, 200); return; } iris.mode = 'none'; runTests(); };   // (a place on a UT2004 map: once it's made)
+    q.get("waitmodels") ? whenModels(() => Promise.all(Object.values(KH_WANT)).then(runT)) : runT();   // (&waitmodels=1: the rest only once your own models are in)
   }
 }
 requestAnimationFrame(frame);
