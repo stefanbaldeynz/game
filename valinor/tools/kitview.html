@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Valinor: UT2004 kit viewer</title>
+<style>html,body{margin:0;background:#8ab4e0;overflow:hidden;font:14px sans-serif}#info{position:fixed;left:8px;top:6px;color:#fff;text-shadow:0 1px 2px #000}</style></head>
+<body><div id="info"></div>
+<!-- Shows every piece in a kit made by bfme\tools\Prep-UTKit.ps1 (valinor/levels/ut/<kit>.json, only on your own computer), labelled, to pick pieces for a level.
+     ?kit=gondolin&only=Pillar|Arch&cols=8&page=0&per=40&yaw=.6&pitch=.5 (drag to turn, wheel to zoom) -->
+<script src="../lib/three.min.js"></script>
+<script>
+const Q = new URLSearchParams(location.search), KIT = Q.get('kit') || 'survey', ONLY = new RegExp(Q.get('only') || '.', 'i'), COLS = +(Q.get('cols') || 8), PER = +(Q.get('per') || 48), PAGE = +(Q.get('page') || 0);
+const R = new THREE.WebGLRenderer({ antialias: true }); R.setSize(innerWidth, innerHeight); R.outputEncoding = THREE.sRGBEncoding; document.body.appendChild(R.domElement);
+const S = new THREE.Scene(); S.background = new THREE.Color(0x8ab4e0);
+S.add(new THREE.HemisphereLight(0xffffff, 0x6a6050, .9)); const sun = new THREE.DirectionalLight(0xfff4e0, .9); sun.position.set(3, 5, 2); S.add(sun);
+const cam = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, .1, 5000);
+const TL = new THREE.TextureLoader(), texCache = {};
+const tex = n => texCache[n] || (texCache[n] = (() => { const t = TL.load('../textures/ut/' + n + '.png'); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; return t; })());
+const MASK = /leaf|leav|plant|vine|fern|grass|bush|tree|ivy|flower|web|fence|grate|foliage|branch|weed/i;
+function label(text) { const c = document.createElement('canvas'); c.width = 512; c.height = 64; const x = c.getContext('2d'); x.fillStyle = 'rgba(0,0,0,.55)'; x.fillRect(0, 0, 512, 64); x.fillStyle = '#fff'; x.font = 'bold 26px sans-serif'; x.textAlign = 'center'; x.fillText(text, 256, 42); const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false })); s.scale.set(4, .5, 1); return s; }
+fetch('../levels/ut/' + KIT + '.json').then(r => r.json()).then(K => {
+  const names = Object.keys(K.meshes).filter(n => ONLY.test(n)), page = names.slice(PAGE * PER, PAGE * PER + PER);
+  document.getElementById('info').textContent = `${KIT}: ${names.length} pieces, page ${PAGE} (${page.length})`;
+  page.forEach((n, i) => {
+    const m = K.meshes[n], b = m.b, size = Math.max(b[3] - b[0], b[4] - b[1], b[5] - b[2]) || 1, k = 3.2 / size, g = new THREE.Group();
+    for (const [ti, v, u] of m.g) {
+      const geo = new THREE.BufferGeometry(), pos = new Float32Array(v.length);
+      const uv = new Float32Array(u.length);
+      for (let j = 0; j < v.length; j += 3) { const q = j / 3, c = q - q % 3 + [0, 2, 1][q % 3], o = c * 3; pos[o] = v[j] - (b[0] + b[3]) / 2; pos[o + 1] = v[j + 2] - b[2]; pos[o + 2] = v[j + 1] - (b[1] + b[4]) / 2; uv[c * 2] = u[q * 2]; uv[c * 2 + 1] = u[q * 2 + 1]; }   // (Unreal's x, y, z up to three's x, y up, z; its triangles wound the other way)
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); geo.computeVertexNormals();
+      const tn = ti >= 0 ? K.tex[ti] : null, mk = tn && MASK.test(tn);
+      g.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tn ? tex(tn) : null, color: tn ? 0xffffff : 0xff00ff, alphaTest: mk ? .5 : 0, side: mk || Q.get('both') ? THREE.DoubleSide : THREE.FrontSide })));
+    }
+    g.scale.setScalar(k); const col = i % COLS, row = i / COLS | 0; g.position.set((col - (COLS - 1) / 2) * 5, 0, row * 6); S.add(g);
+    const l = label(n.replace(/^[^.]+\./, '') + '  ' + Math.round(size)); l.position.set(g.position.x, -.5, g.position.z + 1.8); S.add(l);
+  });
+  const rows = Math.ceil(page.length / COLS), cx = 0, cz = (rows - 1) * 3, dist = Math.max(COLS * 5, rows * 6) * 1.05;
+  let yaw = +(Q.get('yaw') || 0), pitch = +(Q.get('pitch') || .75), d = dist;
+  const put = () => { cam.position.set(cx + Math.sin(yaw) * Math.cos(pitch) * d, Math.sin(pitch) * d, cz + Math.cos(yaw) * Math.cos(pitch) * d); cam.lookAt(cx, 0, cz); };
+  put(); addEventListener('mousemove', e => { if (e.buttons) { yaw -= e.movementX * .005; pitch = Math.min(1.5, Math.max(.05, pitch + e.movementY * .005)); put(); } }); addEventListener('wheel', e => { d *= e.deltaY > 0 ? 1.1 : .9; put(); });
+  (function loop() { R.render(S, cam); requestAnimationFrame(loop); })();
+});
+</script></body></html>
